@@ -17,6 +17,7 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
+import os
 import typing
 from selenium.common.exceptions import WebDriverException
 from selenium import webdriver
@@ -49,7 +50,9 @@ class WebDriver:
 
     def __init__(self,
                  browser_type: BrowserType = BrowserType.CHROME,
-                 parameters: typing.Optional[typing.List] = None):
+                 parameters: typing.Optional[typing.List] = None,
+                 screenshots_enabled: bool = False,
+                 screenshots_dir: str = "screenshots"):
         """
         Initialize the WebDriver for the specified browser.
 
@@ -60,6 +63,9 @@ class WebDriver:
         Raises:
             ValueError: If the provided browser type is not supported.
         """
+        self._screenshots_enabled: bool = screenshots_enabled
+        self._screenshots_dir: str = screenshots_dir
+
         if browser_type == BrowserType.CHROME:
             options = self.__parse_options(parameters, browser_type)
             service = ChromeService(ChromeDriverManager().install())
@@ -76,6 +82,11 @@ class WebDriver:
 
         else:
             raise ValueError(f"Unsupported browser: {browser_type.value}")
+
+        try:
+            os.makedirs(self._screenshots_dir, exist_ok=True)
+        except OSError as e:
+            raise RuntimeError(f"Failed to create screenshots directory: {e}")
 
     @property
     def driver(self):
