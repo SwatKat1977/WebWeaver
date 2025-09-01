@@ -18,6 +18,7 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
 import os
+import time
 import typing
 from selenium.common.exceptions import WebDriverException
 from selenium import webdriver
@@ -46,7 +47,7 @@ class WebDriver:
     Attributes:
         _driver (selenium.webdriver): The internal Selenium WebDriver instance.
     """
-    __slots__ = ["_driver"]
+    __slots__ = ["_driver", "_screenshots_dir", "_screenshots_enabled"]
 
     def __init__(self,
                  browser_type: BrowserType = BrowserType.CHROME,
@@ -112,6 +113,16 @@ class WebDriver:
             self._driver.get(url)
         except WebDriverException as e:
             raise PageLoadError(url, e) from e
+
+    def take_screenshot(self, name: str = "screenshot") -> str | None:
+        if not self._screenshots_enabled:
+            return None
+
+        timestamp: str = time.strftime("%Y%m%d_%H%M%S")
+        filename: str = os.path.join(self._screenshots_dir,
+                                     f"{name}_{timestamp}.png")
+        self._driver.save_screenshot(filename)
+        return filename
 
     def __parse_options(self,
                         parameters: list,

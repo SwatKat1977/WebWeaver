@@ -57,7 +57,8 @@ def main_full(test_textbox: bool = False,
               (WebDriverOption.DISABLE_NOTIFICATIONS,),
               (WebDriverOption.LOG_LEVEL, "3")]
 
-    wb = WebDriver(BrowserType.CHROME, parameters=params)
+    wb = WebDriver(BrowserType.CHROME, parameters=params,
+                   screenshots_enabled=True)
     print(f"WD is {wb.driver}")
 
     if test_textbox:
@@ -110,6 +111,8 @@ def main_full(test_textbox: bool = False,
         ms = MultiSelectDropdownControl(wb, logger)
         ms.find_element_by_xpath(multi)
         print("ALL Multi options: ", ms.get_all_options())
+
+        wb.take_screenshot()
 
         time.sleep(5)
         ms.select_by_value("volvo")
