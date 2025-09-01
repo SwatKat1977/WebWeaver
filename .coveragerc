@@ -1,0 +1,12 @@
+[run]
+# Only measure files in your source folder(s)
+source =
+    .
+
+[report]
+# Don't include test files in the report
+omit =
+    unit_tests/*
+
+[html]
+directory = htmlcov
