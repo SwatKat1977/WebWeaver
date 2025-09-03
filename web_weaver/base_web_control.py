@@ -60,7 +60,11 @@ class BaseWebControl:
         self._logger = logger.getChild(__name__)
         self._element = None
 
-    def find_element_by_id(self, value, timeout: int = 10, retries: int = 2):
+    def find_element_by_id(self,
+                           value,
+                           timeout: int = 10,
+                           retries: int = 2,
+                           screenshot_on_fail: bool = False):
         """
         Locate a web element by its HTML ``id`` attribute.
 
@@ -72,18 +76,26 @@ class BaseWebControl:
             Maximum number of seconds to wait for the element (default is 10).
         retries : int, optional
             Number of retries if the element reference becomes stale (default is 2).
+        screenshot_on_fail : bool, optional
+            If True, take a screenshot when the element cannot be found or
+            when all retries have been exhausted (default is False).
 
         Returns
         -------
         WebElement | None
             The located element, or None if not found.
         """
-        return self.__find_element(By.ID, value, timeout, retries)
+        return self.__find_element(By.ID,
+                                   value,
+                                   timeout,
+                                   retries,
+                                   screenshot_on_fail)
 
     def find_element_by_xpath(self,
                               value: str,
                               timeout: int = 10,
-                              retries: int = 2):
+                              retries: int = 2,
+                              screenshot_on_fail: bool = False):
         """
         Locate a web element using an XPath expression.
 
@@ -95,18 +107,26 @@ class BaseWebControl:
             Maximum number of seconds to wait for the element (default is 10).
         retries : int, optional
             Number of retries if the element reference becomes stale (default is 2).
+        screenshot_on_fail : bool, optional
+            If True, take a screenshot when the element cannot be found or
+            when all retries have been exhausted (default is False).
 
         Returns
         -------
         WebElement | None
             The located element, or None if not found.
         """
-        return self.__find_element(By.XPATH, value, timeout, retries)
+        return self.__find_element(By.XPATH,
+                                   value,
+                                   timeout,
+                                   retries,
+                                   screenshot_on_fail)
 
     def find_element_by_class_name(self,
                                    value: str,
                                    timeout: int = 10,
-                                   retries: int = 2):
+                                   retries: int = 2,
+                                   screenshot_on_fail: bool = False):
         """
         Locate a web element by its ``class`` attribute.
 
@@ -118,18 +138,26 @@ class BaseWebControl:
             Maximum number of seconds to wait for the element (default is 10).
         retries : int, optional
             Number of retries if the element reference becomes stale (default is 2).
+        screenshot_on_fail : bool, optional
+            If True, take a screenshot when the element cannot be found or
+            when all retries have been exhausted (default is False).
 
         Returns
         -------
         WebElement | None
             The located element, or None if not found.
         """
-        return self.__find_element(By.CLASS_NAME, value, timeout, retries)
+        return self.__find_element(By.CLASS_NAME,
+                                   value,
+                                   timeout,
+                                   retries,
+                                   screenshot_on_fail)
 
     def find_element_by_css(self,
                             value: str,
                             timeout: int = 10,
-                            retries: int = 2):
+                            retries: int = 2,
+                            screenshot_on_fail: bool = False):
         """
         Locate a web element using a CSS selector.
 
@@ -141,15 +169,27 @@ class BaseWebControl:
             Maximum number of seconds to wait for the element (default is 10).
         retries : int, optional
             Number of retries if the element reference becomes stale (default is 2).
+        screenshot_on_fail : bool, optional
+            If True, take a screenshot when the element cannot be found or
+            when all retries have been exhausted (default is False).
 
         Returns
         -------
         WebElement | None
             The located element, or None if not found.
         """
-        return self.__find_element(By.CSS_SELECTOR, value, timeout, retries)
+        return self.__find_element(By.CSS_SELECTOR,
+                                   value,
+                                   timeout,
+                                   retries,
+                                   screenshot_on_fail)
 
-    def __find_element(self, by, value, timeout: int, retries: int):
+    def __find_element(self,
+                       by,
+                       value,
+                       timeout: int,
+                       retries: int,
+                       screenshot_on_fail: bool):
         """
         Safely locate an element with retries and explicit wait.
 
@@ -169,6 +209,7 @@ class BaseWebControl:
         WebElement | None
             The located element, or None if not found.
         """
+        # pylint: disable=too-many-positional-arguments, too-many-arguments
         attempt = 0
 
         while attempt <= retries:
@@ -186,6 +227,10 @@ class BaseWebControl:
             except StaleElementReferenceException:
                 self._logger.warning(f"Stale element reference for {by}='{value}', retrying...")
                 attempt += 1
+
         self._logger.error(f"Failed to locate stable element after {retries} "
                            f"retries: {by}='{value}'")
+        if screenshot_on_fail:
+            filename = self._driver.take_screenshot(f"fail_{value}")
+            self._logger.info(f"Screenshot saved to {filename} due to failure")
         return None
