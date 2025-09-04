@@ -19,12 +19,41 @@ Copyright 2025 SwatKat1977
 """
 import functools
 from executor_exceptions import TestFailure
-from test_result import TestResult
 from test_status import TestStatus
 
 
 # === Decorator to mark test methods ===
 def test(parallel=False):
+    """
+    Decorator to mark a function as a test case.
+
+    This decorator wraps the target function and executes it safely,
+    capturing any exceptions raised during execution. It records the
+    outcome as either a success or a failure and attaches metadata
+    used by the test runner.
+
+    Parameters
+    ----------
+    parallel : bool, optional
+        If True, the test is marked to be run in parallel (default: False).
+
+    Returns
+    -------
+    decorator : Callable
+        A decorator function that can be applied to test functions.
+
+    Notes
+    -----
+    - The decorated function is wrapped in a try/except block.
+    - If the function executes without raising an exception, the status
+      will be ``TestStatus.SUCCESS``.
+    - If the function raises a ``TestFailure`` or any other exception,
+      the status will be ``TestStatus.FAILURE`` and the exception will
+      be returned alongside the status.
+    - The wrapper attaches two attributes to the decorated function:
+        * ``is_test``: Marks the function as a test (True).
+        * ``run_in_parallel``: Indicates whether it should run in parallel.
+    """
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
