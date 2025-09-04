@@ -28,35 +28,21 @@ def test(parallel=False):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            # args[0] is usually 'self', so we can get the class name
-            cls_name = type(args[0]).__name__ if args else "<UnknownClass>"
-            method_name = func.__name__
-            print(f"Class: {cls_name} | method: {method_name}")
+            caught_exception = None
 
             try:
                 func(*args, **kwargs)
                 status = TestStatus.SUCCESS
 
-            except TestFailure as e:
-                status = f"FAIL: {e}"  # caught failure raised intentionally
+            except TestFailure as ex:
+                caught_exception = ex
+                status = TestStatus.FAILURE
 
-            except Exception as e: # pylint: disable=broad-exception-caught
-                status = f"FAIL: {e}"  # caught unexpected exceptions
+            except Exception as ex:  # pylint: disable=broad-exception-caught
+                caught_exception = ex
+                status = TestStatus.FAILURE
 
-            """
-            class TestResult:
-
-    def __init__(self,
-                 status: TestStatus,
-                 start_time: int,
-                 end_time: int,
-                 method_name: str,
-                 test_class: str):
-            """
-
-            return TestResult(status, 0, 10, method_name, cls_name)
-            # Return a tuple (class_name, method_name, status)
-            return cls_name, method_name, status
+            return status, caught_exception
 
         wrapper.is_test = True
         wrapper.run_in_parallel = parallel
