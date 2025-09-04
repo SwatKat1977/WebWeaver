@@ -51,58 +51,94 @@ class TestExecutor:
 
     def run_tests(self, test_classes):
         """
-        Collects test methods from the given classes and executes them.
+        Orchestrates the collection, execution, and result gathering for tests.
 
-        Sequential tests are executed one at a time using a lock, while
-        parallel tests are executed concurrently. Both run at the same time in
-        the executor.
+        Args:
+            test_classes (list[type]): List of test class types.
+
+        Returns:
+            dict: Mapping of task name -> TestResult.
+        """
+        sequential_tasks, parallel_tasks = self.__collect_tasks(test_classes)
+
+        with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
+            futures = self.__submit_tasks(executor, sequential_tasks, parallel_tasks)
+            results = self.__gather_results(futures)
+
+        return results
+
+    def __collect_tasks(self, test_classes):
+        """
+        Collects sequential and parallel test tasks from test classes.
+
+        Args:
+            test_classes (list[type]): List of test class types.
+
+        Returns:
+            tuple[list, list]: (sequential_tasks, parallel_tasks)
         """
         sequential_tasks = []
         parallel_tasks = []
 
-        # Collect tasks
         for cls in test_classes:
             obj = cls()
             for attr_name in dir(obj):
                 method = getattr(obj, attr_name)
                 if callable(method) and getattr(method, "is_test", False):
                     task_name = f"{cls.__name__}.{attr_name}"
-                    results_obj: TestResult = TestResult(attr_name,
-                                                         cls.__name__)
+                    results_obj = TestResult(attr_name, cls.__name__)
 
+                    task = functools.partial(method)
                     if getattr(method, "run_in_parallel", False):
-                        parallel_tasks.append((task_name,
-                                               functools.partial(method),
-                                               results_obj))
+                        parallel_tasks.append((task_name, task, results_obj))
                     else:
-                        sequential_tasks.append((task_name,
-                                                 functools.partial(method),
-                                                 results_obj))
+                        sequential_tasks.append((task_name, task, results_obj))
 
+        return sequential_tasks, parallel_tasks
+
+    def __submit_tasks(self, executor, sequential_tasks, parallel_tasks):
+        """
+        Submits sequential and parallel tasks to the executor.
+
+        Args:
+            executor (ThreadPoolExecutor): Executor for running tasks.
+            sequential_tasks (list): List of sequential task tuples.
+            parallel_tasks (list): List of parallel task tuples.
+
+        Returns:
+            dict: Mapping of Future -> task name.
+        """
+        futures = {}
+        sequential_lock = threading.Lock()
+
+        for name, task, test_result in sequential_tasks:
+            futures[executor.submit(self.__run_task,
+                                    task,
+                                    test_result,
+                                    lock=sequential_lock)] = name
+
+        for name, task, test_result in parallel_tasks:
+            futures[executor.submit(self.__run_task,
+                                    task,
+                                    test_result,
+                                    lock=None)] = name
+
+        return futures
+
+    def __gather_results(self, futures):
+        """
+        Waits for all submitted tasks to complete and collects results.
+
+        Args:
+            futures (dict): Mapping of Future -> task name.
+
+        Returns:
+            dict: Mapping of task name -> TestResult.
+        """
         results = {}
-
-        with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
-            sequential_lock = threading.Lock()
-            futures = {}
-
-            # Submit all tasks at once
-            for name, task, test_result in sequential_tasks:
-                futures[executor.submit(self.__run_task,
-                                        task,
-                                        test_result,
-                                        lock=sequential_lock)] = name
-
-            for name, task, test_result in parallel_tasks:
-                futures[executor.submit(self.__run_task,
-                                        task,
-                                        test_result,
-                                        lock=None)] = name
-
-            # Wait for all tasks to complete
-            for future in as_completed(futures):
-                name = futures[future]
-                results[name] = future.result()
-
+        for future in as_completed(futures):
+            name = futures[future]
+            results[name] = future.result()
         return results
 
     def __run_task(self,
