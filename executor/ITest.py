@@ -26,14 +26,14 @@ class ExampleTest:
     def test_failure(self):
         """ Test: (parallel) Test failed - fail_test """
         print("test_failure: This test fails intentionally")
-        time.sleep(6)
+        time.sleep(2)
         fail_test("Intentional failure")  # will be caught by decorator
 
     @test()
     def test_exception(self):
         """ Test: (sequential) Test failed - unexpected exception """
         print("This test raises an unexpected exception")
-        time.sleep(3)
+        time.sleep(4)
         x = 1 / 0  # will also be caught -> FAIL: division by zero
         print(f"X value: {x}")
 
