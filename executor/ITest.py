@@ -1,7 +1,5 @@
-import enum
+import time
 from test_decorators import test
-
-
 
 import functools
 from concurrent.futures import ThreadPoolExecutor
@@ -11,21 +9,25 @@ from executor_exceptions import TestFailure
 def fail_test(msg):
     raise TestFailure(msg)
 
+
 # === Example Test Classes ===
 class ExampleTest:
     @test()
     def test_success(self):
-        print("This test passes")
+        print("test_success: This test passes")
         # nothing raised -> PASS
+        time.sleep(7)
 
-    @test()
+    @test(parallel=True)
     def test_failure(self):
-        print("This test fails intentionally")
+        print("test_failure: This test fails intentionally")
+        time.sleep(6)
         fail_test("Intentional failure")  # will be caught by decorator
 
     @test()
     def test_exception(self):
         print("This test raises an unexpected exception")
+        time.sleep(4)
         x = 1 / 0  # will also be caught -> FAIL: division by zero
 
 """
@@ -89,4 +91,4 @@ if __name__ == "__main__":
     for name, test_result in results.items():
         logger.debug("[TEST STATUS] %s: %s",
                      name,
-                     test_result.status)
+                     test_result)
