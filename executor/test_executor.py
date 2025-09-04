@@ -100,28 +100,32 @@ class TestExecutor:
 
         return sequential_results | parallel_results
 
-    def __run_sequential_task(self, lock: threading.Lock, task, test_result):
+    def __run_sequential_task(self,
+                              lock: threading.Lock,
+                              task,
+                              test_result: TestResult):
         """
         Executes a single sequential test method under a lock to enforce
-        sequential execution.
+        sequential execution, updating start and end times in TestResult.
 
         Args:
             lock (threading.Lock): Lock to ensure one-at-a-time execution of
-                                   sequential tasks.
+            sequential tasks.
             task (callable): Test method to execute.
-            test_result (TestResult): TestResult object to store start time
-                                      and results.
+            test_result (TestResult): TestResult object to store start and end
+                                      times.
 
         Returns:
             Any: Result of the executed test method.
         """
         with lock:
-            current_time_ms = int(time.time() * 1000)
-            test_result.start_milliseconds = current_time_ms
-            print(f"[DEBUG] sequential results info: {test_result.method_name}::"
-                  f"{test_result.test_class} started {test_result.start_milliseconds}")
+            test_result.start_milliseconds = int(time.time() * 1000)
+            print(f"[DEBUG] Sequential start: {test_result.method_name}::{test_result.test_class} "
+                  f"at {test_result.start_milliseconds}")
             result = task()
-            print(f"TAsk result: {result}")
+            test_result.end_milliseconds = int(time.time() * 1000)
+            print(f"[DEBUG] Sequential end: {test_result.method_name}::{test_result.test_class} "
+                  f"at {test_result.end_milliseconds}")
             return result
 
     def __run_sequential_tests(self,
@@ -130,7 +134,7 @@ class TestExecutor:
                                lock: threading.Lock) -> dict:
         """
         Executes a list of sequential test methods one at a time using the
-        provided executor.
+        provided executor, updating TestResult start and end times.
 
         Args:
             sequential_tasks (list): List of tuples containing task name,
@@ -143,10 +147,7 @@ class TestExecutor:
         """
         results = {}
         futures = {
-            executor.submit(self.__run_sequential_task,
-                            lock,
-                            task,
-                            test_result): name
+            executor.submit(self.__run_sequential_task, lock, task, test_result): name
             for name, task, test_result in sequential_tasks
         }
 
@@ -161,7 +162,7 @@ class TestExecutor:
                              executor: ThreadPoolExecutor) -> dict:
         """
         Executes a list of parallel test methods concurrently using the
-        provided executor.
+        provided executor, updating TestResult start and end times.
 
         Args:
             parallel_tasks (list): List of tuples containing task name, task
@@ -172,9 +173,21 @@ class TestExecutor:
             dict: Dictionary mapping task names to their results.
         """
         results = {}
+
+        # Wrap each task to update start and end times
+        def wrap_task(task_callable, test_result: TestResult):
+            test_result.start_milliseconds = int(time.time() * 1000)
+            print(f"[DEBUG] Parallel start: {test_result.method_name}::{test_result.test_class} "
+                  f"at {test_result.start_milliseconds}")
+            result = task_callable()
+            test_result.end_milliseconds = int(time.time() * 1000)
+            print(f"[DEBUG] Parallel end: {test_result.method_name}::{test_result.test_class} "
+                  f"at {test_result.end_milliseconds}")
+            return result
+
         futures = {
-            executor.submit(task): name
-            for name, task, _ in parallel_tasks
+            executor.submit(wrap_task, task, test_result): name
+            for name, task, test_result in parallel_tasks
         }
 
         for future in as_completed(futures):

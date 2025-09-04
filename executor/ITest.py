@@ -33,6 +33,7 @@ class ExampleTest:
     def test_exception(self):
         """ Test: (sequential) Test failed - unexpected exception """
         print("This test raises an unexpected exception")
+        time.sleep(3)
         x = 1 / 0  # will also be caught -> FAIL: division by zero
         print(f"X value: {x}")
 
