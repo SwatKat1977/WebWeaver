@@ -32,7 +32,6 @@ class TestExecutor:
     def run_tests(self, test_classes):
         sequential_tasks = []
         parallel_tasks = []
-        results = {}
 
         for cls in test_classes:
             obj = cls()
@@ -56,18 +55,32 @@ class TestExecutor:
                                                  method,
                                                  results_obj))
 
+        sequential_results: dict = self.__run_sequential_tests(sequential_tasks)
+        parallel_results: dict = self.__run_parallel_tests(parallel_tasks)
+        return sequential_results | parallel_results
+
+    def __run_sequential_tests(self, sequential_tasks: list) -> dict:
+        results: dict = {}
+
+        self._logger.debug("================================")
         self._logger.debug("=== Running Sequential Tests ===")
+        self._logger.debug("================================")
+
         for name, task, test_result in sequential_tasks:
             current_time_ms: int = int(time.time() * 1000)
             test_result.start_milliseconds = current_time_ms
-            print((f"[DEBUG] results info: {results_obj.method_name}::"
-                   f"{results_obj.test_class} "
-                   f"started {results_obj.start_milliseconds}"))
+            print((f"[DEBUG] sequential results info: {test_result.method_name}::"
+                   f"{test_result.test_class} "
+                   f"started {test_result.start_milliseconds}"))
 
             task_result = task()
             print(f"TAsk result: {task_result}")
+            results[name] = task_result
 
-            results[name] = task()
+        return results
+
+    def __run_parallel_tests(self, parallel_tasks: list) -> dict:
+        results: dict = {}
 
         self._logger.debug("=== Running Parallel Tests ===")
         with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
