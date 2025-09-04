@@ -57,6 +57,7 @@ if __name__ == "__main__":
     logger.debug("=== Test Results ===")
 
     for name, test_result in results.items():
-        logger.debug("[TEST STATUS] %s: %s",
-                     name,
-                     test_result)
+        logger.info("[TEST STATUS] %s: %s [%s]",
+                    name,
+                    test_result.status,
+                    test_result.caught_exception)
