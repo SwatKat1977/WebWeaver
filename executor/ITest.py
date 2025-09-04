@@ -1,73 +1,41 @@
+import logging
 import time
-from test_decorators import test
-
-import functools
-from concurrent.futures import ThreadPoolExecutor
 from executor_exceptions import TestFailure
+from test_decorators import test
+from test_executor import TestExecutor
+
 
 # === Helper to assert failure inside tests ===
 def fail_test(msg):
+    """ Helper function to cause test to fail """
     raise TestFailure(msg)
 
 
 # === Example Test Classes ===
 class ExampleTest:
+    """ Example tests """
+
     @test()
     def test_success(self):
+        """ Test: (sequential) Test successful """
         print("test_success: This test passes")
         # nothing raised -> PASS
         time.sleep(7)
 
     @test(parallel=True)
     def test_failure(self):
+        """ Test: (parallel) Test failed - fail_test """
         print("test_failure: This test fails intentionally")
         time.sleep(6)
         fail_test("Intentional failure")  # will be caught by decorator
 
     @test()
     def test_exception(self):
+        """ Test: (sequential) Test failed - unexpected exception """
         print("This test raises an unexpected exception")
         time.sleep(4)
         x = 1 / 0  # will also be caught -> FAIL: division by zero
-
-"""
-# === Runner ===
-def run_tests(test_classes, max_workers=3):
-    sequential_tasks = []
-    parallel_tasks = []
-    results = {}
-
-    for cls in test_classes:
-        obj = cls()
-
-        for attr_name in dir(obj):
-            method = getattr(obj, attr_name)
-
-            if callable(method) and getattr(method, "is_test", False):
-                task_name = f"{cls.__name__}.{attr_name}"
-
-                if method.run_in_parallel:
-                    parallel_tasks.append((task_name,
-                                           functools.partial(method)))
-
-                else:
-                    sequential_tasks.append((task_name, method))
-
-    print("=== Running Sequential Tests ===")
-    for name, task in sequential_tasks:
-        results[name] = task()
-
-    print("\n=== Running Parallel Tests ===")
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_map = {executor.submit(task): name for name, task in parallel_tasks}
-        for f in future_map:
-            results[future_map[f]] = f.result()
-
-    return results
-"""
-
-import logging
-from test_executor import TestExecutor
+        print(f"X value: {x}")
 
 
 LOGGING_DATETIME_FORMAT_STRING = "%Y-%m-%d %H:%M:%S"
