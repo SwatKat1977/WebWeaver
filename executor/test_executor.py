@@ -123,12 +123,19 @@ class TestExecutor:
 
         def execute():
             test_result.start_milliseconds = int(time.time() * 1000)
-            print(f"[DEBUG] Start: {test_result.method_name}::{test_result.test_class} "
-                  f"at {test_result.start_milliseconds}")
+            mode: str = "SEQUENTIAL" if lock else "PARALLEL"
+            self._logger.debug("{%s} %s.%s started at %d",
+                               mode,
+                               test_result.method_name,
+                               test_result.test_class,
+                               test_result.start_milliseconds)
             result = task()
             test_result.end_milliseconds = int(time.time() * 1000)
-            print(f"[DEBUG] End: {test_result.method_name}::{test_result.test_class} "
-                  f"at {test_result.end_milliseconds}")
+            self._logger.debug("{%s} %s.%s ended at %d",
+                               mode,
+                               test_result.method_name,
+                               test_result.test_class,
+                               test_result.end_milliseconds)
             return result
 
         if lock:
