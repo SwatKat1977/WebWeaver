@@ -17,9 +17,10 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import functools
 import logging
+import threading
 import time
 from test_result import TestResult
 
@@ -33,15 +34,14 @@ class TestExecutor:
         sequential_tasks = []
         parallel_tasks = []
 
+        # Collect tasks
         for cls in test_classes:
             obj = cls()
 
             for attr_name in dir(obj):
                 method = getattr(obj, attr_name)
-
                 if callable(method) and getattr(method, "is_test", False):
                     task_name = f"{cls.__name__}.{attr_name}"
-
                     results_obj: TestResult = TestResult(attr_name,
                                                          cls.__name__)
 
@@ -49,45 +49,75 @@ class TestExecutor:
                         parallel_tasks.append((task_name,
                                                functools.partial(method),
                                                results_obj))
-
                     else:
                         sequential_tasks.append((task_name,
-                                                 method,
+                                                 functools.partial(method),
                                                  results_obj))
 
-        sequential_results: dict = self.__run_sequential_tests(sequential_tasks)
-        parallel_results: dict = self.__run_parallel_tests(parallel_tasks)
+        # Use a single executor for both sequential and parallel tasks
+        with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
+            # Create a single lock for sequential tasks
+            sequential_lock = threading.Lock()
+
+            # Call the helper functions
+            sequential_results = self.__run_sequential_tests(sequential_tasks,
+                                                             executor,
+                                                             sequential_lock)
+            parallel_results = self.__run_parallel_tests(parallel_tasks,
+                                                         executor)
+
         return sequential_results | parallel_results
 
-    def __run_sequential_tests(self, sequential_tasks: list) -> dict:
-        results: dict = {}
-
-        self._logger.debug("================================")
-        self._logger.debug("=== Running Sequential Tests ===")
-        self._logger.debug("================================")
-
-        for name, task, test_result in sequential_tasks:
-            current_time_ms: int = int(time.time() * 1000)
+    def __run_sequential_task(self, lock: threading.Lock, task, test_result):
+        """
+        Runs a single sequential task under a lock to enforce sequential
+        execution.
+        """
+        with lock:
+            current_time_ms = int(time.time() * 1000)
             test_result.start_milliseconds = current_time_ms
-            print((f"[DEBUG] sequential results info: {test_result.method_name}::"
-                   f"{test_result.test_class} "
-                   f"started {test_result.start_milliseconds}"))
+            print(f"[DEBUG] sequential results info: {test_result.method_name}::"
+                  f"{test_result.test_class} started {test_result.start_milliseconds}")
+            result = task()
+            print(f"TAsk result: {result}")
+            return result
 
-            task_result = task()
-            print(f"TAsk result: {task_result}")
-            results[name] = task_result
+    def __run_sequential_tests(self,
+                               sequential_tasks: list,
+                               executor: ThreadPoolExecutor,
+                               lock: threading.Lock) -> dict:
+        """
+        Runs sequential tasks one at a time in the given executor.
+        """
+        results = {}
+        futures = {
+            executor.submit(self.__run_sequential_task,
+                            lock,
+                            task,
+                            test_result): name
+            for name, task, test_result in sequential_tasks
+        }
+
+        for future in as_completed(futures):
+            name = futures[future]
+            results[name] = future.result()
 
         return results
 
-    def __run_parallel_tests(self, parallel_tasks: list) -> dict:
-        results: dict = {}
+    def __run_parallel_tests(self,
+                             parallel_tasks: list,
+                             executor: ThreadPoolExecutor) -> dict:
+        """
+        Runs parallel tasks concurrently in the given executor.
+        """
+        results = {}
+        futures = {
+            executor.submit(task): name
+            for name, task, _ in parallel_tasks
+        }
 
-        self._logger.debug("=== Running Parallel Tests ===")
-        with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
-            future_map = {executor.submit(task):
-                              name for name, task,
-                              test_result in parallel_tasks}
-            for f in future_map:
-                results[future_map[f]] = f.result()
+        for future in as_completed(futures):
+            name = futures[future]
+            results[name] = future.result()
 
         return results
