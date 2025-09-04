@@ -136,6 +136,7 @@ class TestExecutor:
                                test_result.method_name,
                                test_result.test_class,
                                test_result.end_milliseconds)
+
             test_result_status, caught_exception = result
             test_result.status = test_result_status
             test_result.caught_exception = caught_exception
@@ -148,5 +149,5 @@ class TestExecutor:
         if lock:
             with lock:
                 return execute()
-        else:
-            return execute()
+
+        return execute()
