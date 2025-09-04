@@ -17,6 +17,7 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
+import typing
 from test_status import TestStatus
 
 
@@ -28,7 +29,8 @@ class TestResult:
 
     This class provides structured access to test metadata and results.
     """
-    __slots__ = ["_end_time",
+    __slots__ = ["_caught_exception",
+                 "_end_time",
                  "_method_name",
                  "_start_time",
                  "_status",
@@ -47,6 +49,7 @@ class TestResult:
         test_class : str
             The fully qualified name of the test class.
         """
+        self._caught_exception: typing.Optional[Exception] = None
         self._end_time: int = 0
         self._method_name: str = method_name
         self._status: TestStatus = TestStatus.CREATED
@@ -140,3 +143,24 @@ class TestResult:
             The fully qualified class name containing the test method.
         """
         return self._test_class
+
+    @property
+    def caught_exception(self) -> str:
+        """
+        Gets the exception that was caught during the test execution.
+
+        Returns:
+            Exception | None: The exception instance if the test raised one,
+                              otherwise None.
+        """
+        return self._caught_exception
+
+    @caught_exception.setter
+    def caught_exception(self, exception: Exception) -> str:
+        """
+        Sets the exception caught during the test execution.
+
+        Args:
+            exception (Exception): The exception instance raised by the test.
+        """
+        self._caught_exception = exception
