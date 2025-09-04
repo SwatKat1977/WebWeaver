@@ -136,7 +136,14 @@ class TestExecutor:
                                test_result.method_name,
                                test_result.test_class,
                                test_result.end_milliseconds)
-            return result
+            test_result_status, caught_exception = result
+            test_result.status = test_result_status
+            test_result.caught_exception = caught_exception
+            print((f"[DEBUG] {mode} {test_result.method_name}."
+                   f"{test_result.test_class} | "
+                   f"Status={test_result.status}, "
+                   f"caught_except={test_result.caught_exception}"))
+            return test_result
 
         if lock:
             with lock:
