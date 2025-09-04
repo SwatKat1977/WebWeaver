@@ -36,24 +36,21 @@ class TestResult:
 
     def __init__(self,
                  method_name: str,
-                 test_class: str,
-                 start_time: int):
+                 test_class: str):
         """
         Initialize a new TestResult instance.
 
         Parameters
         ----------
-        start_time : int
-            The start timestamp of the test, in milliseconds.
         method_name : str
             The name of the test method executed.
         test_class : str
             The fully qualified name of the test class.
         """
-        self._end_time: int = start_time
+        self._end_time: int = 0
         self._method_name: str = method_name
         self._status: TestStatus = TestStatus.CREATED
-        self._start_time: int = start_time
+        self._start_time: int = 0
         self._test_class: str = test_class
 
     @property
@@ -91,6 +88,10 @@ class TestResult:
             Start time in milliseconds since epoch.
         """
         return self._start_time
+
+    @start_milliseconds.setter
+    def start_milliseconds(self, time_ms: int) -> None:
+        self._start_time = time_ms
 
     @property
     def end_milliseconds(self) -> int:
