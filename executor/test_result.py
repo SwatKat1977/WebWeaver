@@ -35,30 +35,24 @@ class TestResult:
                  "_test_class"]
 
     def __init__(self,
-                 status: TestStatus,
-                 start_time: int,
-                 end_time: int,
                  method_name: str,
-                 test_class: str):
+                 test_class: str,
+                 start_time: int):
         """
         Initialize a new TestResult instance.
 
         Parameters
         ----------
-        status : TestStatus
-            The outcome of the test (e.g., SUCCESS, FAILURE).
         start_time : int
             The start timestamp of the test, in milliseconds.
-        end_time : int
-            The end timestamp of the test, in milliseconds.
         method_name : str
             The name of the test method executed.
         test_class : str
             The fully qualified name of the test class.
         """
-        self._end_time: int = end_time
+        self._end_time: int = start_time
         self._method_name: str = method_name
-        self._status: TestStatus = status
+        self._status: TestStatus = TestStatus.CREATED
         self._start_time: int = start_time
         self._test_class: str = test_class
 
