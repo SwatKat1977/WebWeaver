@@ -26,11 +26,43 @@ from test_result import TestResult
 
 
 class TestExecutor:
+    """
+    Executes test methods from given test classes either sequentially or in
+    parallel.
+
+    Attributes:
+        _logger (logging.Logger): Logger instance for logging test execution
+                                  info.
+        _max_workers (int): Maximum number of worker threads for parallel
+                            execution.
+    """
+
     def __init__(self, logger: logging.Logger, max_workers: int = 3):
+        """
+        Initializes the TestExecutor.
+
+        Args:
+            logger (logging.Logger): Parent logger to create a child logger.
+            max_workers (int, optional): Maximum number of parallel workers.
+                                         Defaults to 3.
+        """
         self._logger = logger.getChild(__name__)
         self._max_workers = max_workers
 
     def run_tests(self, test_classes):
+        """
+        Collects test methods from the given classes and executes them.
+
+        Sequential tests are executed one at a time, while parallel tests are
+        executed concurrently using a ThreadPoolExecutor.
+
+        Args:
+            test_classes (list): List of test class types containing test
+                                 methods.
+
+        Returns:
+            dict: A dictionary mapping "ClassName.method_name" to test results.
+        """
         sequential_tasks = []
         parallel_tasks = []
 
@@ -70,8 +102,18 @@ class TestExecutor:
 
     def __run_sequential_task(self, lock: threading.Lock, task, test_result):
         """
-        Runs a single sequential task under a lock to enforce sequential
-        execution.
+        Executes a single sequential test method under a lock to enforce
+        sequential execution.
+
+        Args:
+            lock (threading.Lock): Lock to ensure one-at-a-time execution of
+                                   sequential tasks.
+            task (callable): Test method to execute.
+            test_result (TestResult): TestResult object to store start time
+                                      and results.
+
+        Returns:
+            Any: Result of the executed test method.
         """
         with lock:
             current_time_ms = int(time.time() * 1000)
@@ -87,7 +129,17 @@ class TestExecutor:
                                executor: ThreadPoolExecutor,
                                lock: threading.Lock) -> dict:
         """
-        Runs sequential tasks one at a time in the given executor.
+        Executes a list of sequential test methods one at a time using the
+        provided executor.
+
+        Args:
+            sequential_tasks (list): List of tuples containing task name,
+                                     task callable, and TestResult object.
+            executor (ThreadPoolExecutor): Executor to submit tasks.
+            lock (threading.Lock): Lock to enforce sequential execution.
+
+        Returns:
+            dict: Dictionary mapping task names to their results.
         """
         results = {}
         futures = {
@@ -108,7 +160,16 @@ class TestExecutor:
                              parallel_tasks: list,
                              executor: ThreadPoolExecutor) -> dict:
         """
-        Runs parallel tasks concurrently in the given executor.
+        Executes a list of parallel test methods concurrently using the
+        provided executor.
+
+        Args:
+            parallel_tasks (list): List of tuples containing task name, task
+                                   callable, and TestResult object.
+            executor (ThreadPoolExecutor): Executor to submit tasks.
+
+        Returns:
+            dict: Dictionary mapping task names to their results.
         """
         results = {}
         futures = {
