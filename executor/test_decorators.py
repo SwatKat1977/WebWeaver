@@ -23,7 +23,8 @@ from test_status import TestStatus
 
 
 # === Decorator to mark test methods ===
-def test(parallel=False):
+def test(parallel: bool = False,
+         enabled: bool = True):
     """
     Decorator to mark a function as a test case.
 
@@ -57,6 +58,11 @@ def test(parallel=False):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            if not enabled:
+                # You could introduce a SKIPPED status if you have one,
+                # or just return SUCCESS with a note.
+                return TestStatus.SKIPPED, None
+
             caught_exception = None
 
             try:
@@ -75,5 +81,6 @@ def test(parallel=False):
 
         wrapper.is_test = True
         wrapper.run_in_parallel = parallel
+        wrapper.enabled = enabled
         return wrapper
     return decorator

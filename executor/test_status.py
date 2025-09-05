@@ -33,4 +33,4 @@ class TestStatus(enum.Enum):
     CREATED = -1
     SUCCESS = 1
     FAILURE = 2
-    SKIP = 3
+    SKIPPED = 3
