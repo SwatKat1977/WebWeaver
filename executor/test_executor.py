@@ -22,7 +22,9 @@ import functools
 import logging
 import threading
 import time
+from test_listener import TestListener
 from test_result import TestResult
+from test_status import TestStatus
 
 
 class TestExecutor:
@@ -66,6 +68,24 @@ class TestExecutor:
             results = self.__gather_results(futures)
 
         return results
+
+    def distribute_results_to_listener(self,
+                                       results: dict,
+                                       listener: TestListener = None):
+        listener: TestListener = listener if listener is not None \
+            else TestListener()
+
+        for name, result in results.items():
+            self._logger.debug(f"{name} = {result} STATUS: {result.status}")
+
+            if result.status is TestStatus.FAILURE:
+                listener.on_test_failure(result)
+
+            elif result.status is TestStatus.SKIPPED:
+                listener.on_test_skipped(result)
+
+            elif result.status is TestStatus.SUCCESS:
+                listener.on_test_success(result)
 
     def __collect_tasks(self, test_classes):
         """

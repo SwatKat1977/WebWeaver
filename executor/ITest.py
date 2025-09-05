@@ -66,3 +66,5 @@ if __name__ == "__main__":
                     name,
                     test_result.status,
                     test_result.caught_exception)
+
+    executor.distribute_results_to_listener(results)
