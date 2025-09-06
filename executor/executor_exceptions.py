@@ -19,5 +19,17 @@ Copyright 2025 SwatKat1977
 """
 
 
-class TestFailure(Exception):
+class BaseExecutorException(Exception):
+    """ Base Executor exception """
+
+
+class TestFailure(BaseExecutorException):
     """ Custom exception to mark test failure """
+
+
+class TestSuiteSchemaFileNotFound(BaseExecutorException):
+    """ Custom exception to identify test suite schema file is missing """
+
+
+class TestSuiteSchemaParseFailed(BaseExecutorException):
+    """ Custom exception to identify test suite schema file parse failed """
