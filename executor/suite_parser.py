@@ -30,9 +30,25 @@ from executor_exceptions import (BaseExecutorException,
 
 class SuiteParser:
     """
-    Loads and validates a test suite definition (JSON or YAML).
+    Loads and validates a test suite definition provided in JSON or YAML
+    format.
+
+    This class is responsible for:
+      - Parsing test suite definition files.
+      - Validating the structure and required fields of the suite.
+      - Providing default configuration values when not explicitly defined.
+
+    Attributes:
+        DEFAULT_SUITE_THREAD_COUNT (int): The default number of threads allocated
+            for running suites if not specified in the definition.
+        DEFAULT_TEST_THREAD_COUNT (int): The default number of threads allocated
+            for running individual tests if not specified in the definition.
     """
     # pylint: disable=too-few-public-methods
+
+    DEFAULT_SUITE_THREAD_COUNT: int = 10
+
+    DEFAULT_TEST_THREAD_COUNT: int  = 10
 
     def __init__(self, schema_path: str):
         base_dir = os.path.dirname(__file__)
