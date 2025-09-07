@@ -126,10 +126,14 @@ class SuiteParser:
         suite.setdefault("thread_count", self.DEFAULT_SUITE_THREAD_COUNT)
 
         for test in data["tests"]:
-            test.setdefault("parallel", suite.get("parallel", "none"))
-            test.setdefault("thread_count",
-                            suite.get("thread_count",
-                                      self.DEFAULT_TEST_THREAD_COUNT))
+            # Tests run serially unless they override parallel themselves
+            test.setdefault("parallel", "none")
+
+            # Thread count defaults to the suite's, else test-level default
+            test.setdefault(
+                "thread_count",
+                suite.get("thread_count", self.DEFAULT_TEST_THREAD_COUNT)
+            )
 
         return data
 
