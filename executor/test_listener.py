@@ -17,20 +17,25 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
-import enum
+from test_result import TestResult
 
 
-class TestStatus(enum.Enum):
+class TestListener:
     """
-    Enum representing the possible outcomes or states of a test.
-
-    Attributes:
-        CREATED (int): Test has been created but not yet executed (-1).
-        SUCCESS (int): Test completed successfully (1).
-        FAILURE (int): Test execution failed (2).
-        SKIP (int): Test was skipped and not executed (3).
+    Listener interface for receiving notifications about test execution events.
     """
-    CREATED = -1
-    SUCCESS = 1
-    FAILURE = 2
-    SKIPPED = 3
+
+    def on_test_start(self, result: TestResult) -> None:
+        """ Called immediately before a test method begins execution."""
+
+    def on_test_success(self, result: TestResult) -> None:
+        """ Called when a test method finishes successfully without raising
+            errors. """
+
+    def on_test_failure(self, result: TestResult) -> None:
+        """ Called when a test method fails due to an exception or assertion
+            error. """
+
+    def on_test_skipped(self, result: TestResult) -> None:
+        """ Called when a test method is skipped (disabled or dependency
+            failure). """

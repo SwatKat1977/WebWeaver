@@ -8,6 +8,8 @@ Python Dependencies:
 * selenium
 * webdriver-manager
 * coverage
+* pyyaml
+* jsonschema
 
 Useful sites to test automation:
 

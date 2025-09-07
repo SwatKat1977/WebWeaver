@@ -37,6 +37,11 @@ class ExampleTest:
         x = 1 / 0  # will also be caught -> FAIL: division by zero
         print(f"X value: {x}")
 
+    @test(enabled=False)
+    def test_skipped(self):
+        """ Test: (sequential) Test not enabled - it get marked as skipped """
+        print("This test should never run")
+
 
 LOGGING_DATETIME_FORMAT_STRING = "%Y-%m-%d %H:%M:%S"
 LOGGING_DEFAULT_LOG_LEVEL = logging.DEBUG
@@ -61,3 +66,5 @@ if __name__ == "__main__":
                     name,
                     test_result.status,
                     test_result.caught_exception)
+
+    executor.distribute_results_to_listener(results)
