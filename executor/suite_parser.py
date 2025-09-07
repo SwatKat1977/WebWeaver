@@ -1,3 +1,22 @@
+"""
+This source file is part of Web Weaver
+For the latest info, see https://github.com/SwatKat1977/WebWeaver
+
+Copyright 2025 SwatKat1977
+
+    This program is free software : you can redistribute it and /or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.If not, see < https://www.gnu.org/licenses/>.
+"""
 import json
 import os
 import yaml
@@ -13,6 +32,7 @@ class SuiteParser:
     """
     Loads and validates a test suite definition (JSON or YAML).
     """
+    # pylint: disable=too-few-public-methods
 
     def __init__(self, schema_path: str):
         base_dir = os.path.dirname(__file__)
@@ -66,17 +86,18 @@ class SuiteParser:
             raise TestSuiteParseFailed(
                 f"Invalid JSON in suite file {file_path}: {ex.msg} "
                 f"(line {ex.lineno}, column {ex.colno})"
-            )
+            ) from ex
+
         except yaml.YAMLError as ex:
             raise TestSuiteParseFailed(
                 f"Invalid YAML in suite file {file_path}: {ex}"
-            )
+            ) from ex
 
         # Validate against schema
         try:
             validate(instance=data, schema=self._schema)
-        except ValidationError as e:
-            raise ValueError(f"Suite validation error: {e.message}")
+        except ValidationError as ex:
+            raise ValueError(f"Suite validation error: {ex.message}") from ex
 
         return self._normalise(data)
 
@@ -100,8 +121,8 @@ if __name__ == "__main__":
     try:
         parser = SuiteParser("suite_schema.json")
 
-        suite = parser.load_suite("test_suite.json")   # or "suite.yaml"
-        print(json.dumps(suite, indent=2))
+        test_suite = parser.load_suite("test_suite.json")   # or "suite.yaml"
+        print(json.dumps(test_suite, indent=2))
 
-    except BaseExecutorException as ex:
-        print(f"Caught: {ex}")
+    except BaseExecutorException as caught_ex:
+        print(f"Caught: {caught_ex}")

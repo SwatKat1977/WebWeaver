@@ -72,6 +72,26 @@ class TestExecutor:
     def distribute_results_to_listener(self,
                                        results: dict,
                                        listener: TestListener = None):
+        """
+        Distribute test results to a listener for handling.
+
+        Iterates over the given test results and notifies the listener
+        according to each test's status. If no listener is provided, a
+        default `TestListener` instance is created.
+
+        - On failure → `listener.on_test_failure(result)` is called.
+        - On skipped → `listener.on_test_skipped(result)` is called.
+        - On success → `listener.on_test_success(result)` is called.
+
+        Args:
+            results (dict): A mapping of test names (str) to result objects.
+                            Each result must expose a `status` attribute of type `TestStatus`.
+            listener (TestListener, optional): The listener to notify about
+                            test outcomes. Defaults to a new `TestListener` instance.
+
+        Returns:
+            None
+        """
         listener: TestListener = listener if listener is not None \
             else TestListener()
 
