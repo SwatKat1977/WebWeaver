@@ -33,3 +33,11 @@ class TestSuiteSchemaFileNotFound(BaseExecutorException):
 
 class TestSuiteSchemaParseFailed(BaseExecutorException):
     """ Custom exception to identify test suite schema file parse failed """
+
+
+class TestSuiteFileNotFound(BaseExecutorException):
+    """ Custom exception to identify test suite file is missing """
+
+
+class TestSuiteParseFailed(BaseExecutorException):
+    """ Custom exception to identify test suite file parse failed """

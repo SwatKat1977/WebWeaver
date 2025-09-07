@@ -4,7 +4,9 @@ import yaml
 from jsonschema import validate, ValidationError
 from executor_exceptions import (BaseExecutorException,
                                  TestSuiteSchemaFileNotFound,
-                                 TestSuiteSchemaParseFailed)
+                                 TestSuiteSchemaParseFailed,
+                                 TestSuiteFileNotFound,
+                                 TestSuiteParseFailed)
 
 
 class SuiteParser:
@@ -42,15 +44,33 @@ class SuiteParser:
         Raises:
             ValueError: If validation fails.
         """
-        if file_path.endswith(".json"):
-            with open(file_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
+        if not os.path.exists(file_path):
+            raise TestSuiteFileNotFound(f"Suite file '{file_path}' not found.")
 
-        elif file_path.endswith((".yaml", ".yml")):
-            with open(file_path, "r", encoding="utf-8") as f:
-                data = yaml.safe_load(f)
-        else:
-            raise ValueError("Unsupported file format. Use .json or .yaml")
+        # Parse file depending on extension
+        try:
+            if file_path.endswith(".json"):
+                with open(file_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+
+            elif file_path.endswith((".yaml", ".yml")):
+                with open(file_path, "r", encoding="utf-8") as f:
+                    data = yaml.safe_load(f)
+
+            else:
+                raise TestSuiteParseFailed(
+                    (f"Unsupported file format for '{file_path}'. "
+                      "Use .json or .yaml"))
+
+        except json.JSONDecodeError as ex:
+            raise TestSuiteParseFailed(
+                f"Invalid JSON in suite file {file_path}: {ex.msg} "
+                f"(line {ex.lineno}, column {ex.colno})"
+            )
+        except yaml.YAMLError as ex:
+            raise TestSuiteParseFailed(
+                f"Invalid YAML in suite file {file_path}: {ex}"
+            )
 
         # Validate against schema
         try:
@@ -80,7 +100,7 @@ if __name__ == "__main__":
     try:
         parser = SuiteParser("suite_schema.json")
 
-        suite = parser.load_suite("../suite.json")   # or "suite.yaml"
+        suite = parser.load_suite("test_suite.json")   # or "suite.yaml"
         print(json.dumps(suite, indent=2))
 
     except BaseExecutorException as ex:
