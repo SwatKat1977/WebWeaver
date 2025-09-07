@@ -10,7 +10,8 @@
         "parallel": { "type": "string", "enum": ["tests", "classes", "methods", "none"] },
         "thread_count": { "type": "integer", "minimum": 1 }
       },
-      "required": ["name"]
+      "required": ["name"],
+      "additionalProperties": false
     },
     "tests": {
       "type": "array",
@@ -26,9 +27,11 @@
             "minItems": 1
           }
         },
-        "required": ["name", "classes"]
+        "required": ["name", "classes"],
+        "additionalProperties": false
       }
     }
   },
-  "required": ["suite", "tests"]
+  "required": ["suite", "tests"],
+  "additionalProperties": false
 }
