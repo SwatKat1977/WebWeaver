@@ -123,11 +123,13 @@ class SuiteParser:
         """
         suite = data["suite"]
         suite.setdefault("parallel", "none")
-        suite.setdefault("thread_count", 1)
+        suite.setdefault("thread_count", self.DEFAULT_SUITE_THREAD_COUNT)
 
         for test in data["tests"]:
             test.setdefault("parallel", suite.get("parallel", "none"))
-            test.setdefault("thread_count", suite.get("thread_count", 1))
+            test.setdefault("thread_count",
+                            suite.get("thread_count",
+                                      self.DEFAULT_TEST_THREAD_COUNT))
 
         return data
 
