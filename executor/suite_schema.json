@@ -23,7 +23,35 @@
           "thread_count": { "type": "integer", "minimum": 1 },
           "classes": {
             "type": "array",
-            "items": { "type": "string" },
+            "items": {
+              "oneOf": [
+                { "type": "string" },
+                {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "methods": {
+                      "type": "object",
+                      "properties": {
+                        "include": {
+                          "type": "array",
+                          "items": { "type": "string" },
+                          "minItems": 1
+                        },
+                        "exclude": {
+                          "type": "array",
+                          "items": { "type": "string" },
+                          "minItems": 1
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["name"],
+                  "additionalProperties": false
+                }
+              ]
+            },
             "minItems": 1
           }
         },

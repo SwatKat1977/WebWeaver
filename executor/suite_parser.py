@@ -120,6 +120,8 @@ class SuiteParser:
     def _normalise(self, data: dict) -> dict:
         """
         Normalize the suite configuration, applying defaults.
+        Ensures consistent representation for classes and applies
+        default parallel/thread_count values.
         """
         suite = data["suite"]
         suite.setdefault("parallel", "none")
@@ -134,6 +136,20 @@ class SuiteParser:
                 "thread_count",
                 suite.get("thread_count", self.DEFAULT_TEST_THREAD_COUNT)
             )
+
+            # Normalize class definitions
+            normalized_classes = []
+            for cls in test["classes"]:
+                if isinstance(cls, str):
+                    # Convert shorthand string to full object form
+                    normalized_classes.append({"name": cls, "methods": {}})
+                elif isinstance(cls, dict):
+                    # Ensure "methods" key exists even if not provided
+                    cls.setdefault("methods", {})
+                    cls["methods"].setdefault("include", [])
+                    cls["methods"].setdefault("exclude", [])
+                    normalized_classes.append(cls)
+            test["classes"] = normalized_classes
 
         return data
 

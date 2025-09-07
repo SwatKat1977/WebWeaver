@@ -11,7 +11,19 @@
       "thread_count": 5,
       "classes": [
         "com.example.tests.LoginTest",
-        "com.example.tests.ProfileTest"
+        {
+          "name": "com.example.tests.ProfileTest",
+          "methods": {
+            "include": ["testViewProfile", "testUpdateProfile"],
+            "exclude": ["testDeleteProfile"]
+          }
+        },
+        {
+          "name": "com.example.tests.CartTest",
+          "methods": {
+            "include": ["add*", "removeItem"]
+          }
+        }
       ]
     }
   ]
