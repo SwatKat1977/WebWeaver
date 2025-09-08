@@ -151,6 +151,9 @@ class TestExecutor:
         cls = self._resolve_class(cls_name)
         obj = cls()
 
+        # Get listeners attached by decorator
+        listeners = getattr(cls, "__listeners__", [])
+
         # Discover test methods
         all_methods = [
             attr for attr in dir(obj)
@@ -160,10 +163,15 @@ class TestExecutor:
 
         selected = self._filter_methods(all_methods, methods_conf)
 
-        return self._collect_method_tasks(obj,
-                                          cls_name,
-                                          selected,
-                                          test_parallel)
+        seq, par = self._collect_method_tasks(obj, cls_name, selected, test_parallel)
+
+        # Inject listeners into tasks
+        sequential = [(name, task, result, listeners)
+                      for (name, task, result) in seq]
+        parallel = [(name, task, result, listeners)
+                    for (name, task, result) in par]
+
+        return sequential, parallel
 
     def __collect_from_suite(self, suite: dict):
         sequential_tasks = []
@@ -197,16 +205,18 @@ class TestExecutor:
         futures = {}
         sequential_lock = threading.Lock()
 
-        for name, task, test_result in sequential_tasks:
+        for name, task, test_result, listeners in sequential_tasks:
             futures[executor.submit(self.__run_task,
                                     task,
                                     test_result,
+                                    listeners,
                                     lock=sequential_lock)] = name
 
-        for name, task, test_result in parallel_tasks:
+        for name, task, test_result, listeners in parallel_tasks:
             futures[executor.submit(self.__run_task,
                                     task,
                                     test_result,
+                                    listeners,
                                     lock=None)] = name
 
         return futures
@@ -230,6 +240,7 @@ class TestExecutor:
     def __run_task(self,
                    task,
                    test_result: TestResult,
+                   listeners: list,
                    lock: threading.Lock = None):
         """
         Executes a test method, updating start and end times in TestResult.
@@ -245,13 +256,54 @@ class TestExecutor:
 
         def execute():
             test_result.start_milliseconds = int(time.time() * 1000)
+
+            for l in listeners:
+                l.on_test_start(test_result)
+
             mode: str = "SEQUENTIAL" if lock else "PARALLEL"
             self._logger.debug("{%s} %s.%s started at %d",
                                mode,
                                test_result.method_name,
                                test_result.test_class,
                                test_result.start_milliseconds)
-            result = task()
+            try:
+                result = task()
+
+                test_result_status, caught_exception = result
+                test_result.status = test_result_status
+                test_result.caught_exception = caught_exception
+                print((f"[DEBUG] {mode} {test_result.method_name}."
+                       f"{test_result.test_class} | "
+                       f"Status={test_result.status}, "
+                       f"caught_except={test_result.caught_exception}"))
+
+                if test_result.status is TestStatus.SUCCESS:
+                    for l in listeners:
+                        l.on_test_success(test_result)
+
+                elif test_result.status is TestStatus.FAILURE:
+                    for l in listeners:
+                        l.on_test_failure(test_result)
+
+                elif test_result.status is TestStatus.SKIPPED:
+                    for l in listeners:
+                        l.on_test_skipped(test_result)
+
+            # pylint: disable=broad-exception-caught
+            except Exception as e:
+                test_result.status = TestStatus.FAILURE
+                test_result.caught_exception = e
+                for l in listeners:
+                    l.on_test_failure(test_result)
+
+            # SystemExit, KeyboardInterrupt, etc. → bubble up
+            except BaseException:
+                self._logger.warning("Critical exception in %s.%s: %s",
+                                     test_result.test_class,
+                                     test_result.method_name,
+                                     type(e).__name__)
+                raise  # re-raise after logging
+
             test_result.end_milliseconds = int(time.time() * 1000)
             self._logger.debug("{%s} %s.%s ended at %d",
                                mode,
@@ -259,13 +311,6 @@ class TestExecutor:
                                test_result.test_class,
                                test_result.end_milliseconds)
 
-            test_result_status, caught_exception = result
-            test_result.status = test_result_status
-            test_result.caught_exception = caught_exception
-            print((f"[DEBUG] {mode} {test_result.method_name}."
-                   f"{test_result.test_class} | "
-                   f"Status={test_result.status}, "
-                   f"caught_except={test_result.caught_exception}"))
             return test_result
 
         if lock:

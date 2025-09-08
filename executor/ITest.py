@@ -2,9 +2,10 @@ import json
 import logging
 import time
 from executor_exceptions import TestFailure
-from test_decorators import test
+from test_decorators import listener, test
 from test_executor import TestExecutor
 from suite_parser import SuiteParser
+from test_listener import TestListener
 
 
 # === Helper to assert failure inside tests ===
@@ -14,6 +15,7 @@ def fail_test(msg):
 
 
 # === Example Test Classes ===
+@listener(TestListener)
 class ExampleTest:
     """ Example tests """
 

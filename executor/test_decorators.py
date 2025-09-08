@@ -84,3 +84,12 @@ def test(parallel: bool = False,
         wrapper.enabled = enabled
         return wrapper
     return decorator
+
+def listener(*listener_classes):
+    """
+    Class decorator to attach one or more listener classes to a test class.
+    """
+    def wrapper(cls):
+        setattr(cls, "__listeners__", [lc() for lc in listener_classes])
+        return cls
+    return wrapper
