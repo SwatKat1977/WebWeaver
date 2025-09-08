@@ -18,6 +18,7 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import fnmatch
 import functools
 import logging
 import threading
@@ -132,17 +133,27 @@ class TestExecutor:
                 # Discover test methods
                 all_methods = [
                     attr for attr in dir(obj)
-                    if callable(getattr(obj, attr)) and getattr(getattr(obj, attr), "is_test", False)
+                    if callable(getattr(obj, attr)) and
+                                getattr(getattr(obj, attr), "is_test", False)
                 ]
 
-                # Apply includes/excludes
-                if methods_conf["include"]:
-                    selected = [m for m in all_methods if m in methods_conf["include"]]
+                # Apply include patterns with wildcards
+                include_patterns = methods_conf.get("include", [])
+                if include_patterns:
+                    selected = [
+                        m for m in all_methods
+                        if any(fnmatch.fnmatch(m, pat) for pat in include_patterns)
+                    ]
                 else:
                     selected = list(all_methods)
 
-                if methods_conf["exclude"]:
-                    selected = [m for m in selected if m not in methods_conf["exclude"]]
+                # Apply exclude patterns with wildcards
+                exclude_patterns = methods_conf.get("exclude", [])
+                if exclude_patterns:
+                    selected = [
+                        m for m in selected
+                        if not any(fnmatch.fnmatch(m, pat) for pat in exclude_patterns)
+                    ]
 
                 for method_name in selected:
                     method = getattr(obj, method_name)

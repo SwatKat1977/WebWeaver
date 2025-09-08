@@ -21,8 +21,7 @@ import json
 import os
 import yaml
 from jsonschema import validate, ValidationError
-from executor_exceptions import (BaseExecutorException,
-                                 TestSuiteSchemaFileNotFound,
+from executor_exceptions import (TestSuiteSchemaFileNotFound,
                                  TestSuiteSchemaParseFailed,
                                  TestSuiteFileNotFound,
                                  TestSuiteParseFailed)

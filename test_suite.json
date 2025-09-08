@@ -10,16 +10,16 @@
       "parallel": "classes",
       "thread_count": 5,
       "classes": [
-        "com.example.tests.LoginTest",
+        "ITest.ExampleTest",
         {
-          "name": "com.example.tests.ProfileTest",
+          "name": "ITest.ExampleTest",
           "methods": {
             "include": ["testViewProfile", "testUpdateProfile"],
             "exclude": ["testDeleteProfile"]
           }
         },
         {
-          "name": "com.example.tests.CartTest",
+          "name": "ITest.MethodSpecificTest",
           "methods": {
             "include": ["add*", "removeItem"]
           }
