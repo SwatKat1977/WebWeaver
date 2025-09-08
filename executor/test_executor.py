@@ -287,8 +287,8 @@ class TestExecutor:
 
             test_result.start_milliseconds = int(time.time() * 1000)
 
-            for l in listeners:
-                l.on_test_start(test_result)
+            for listener in listeners:
+                listener.on_test_start(test_result)
 
             mode: str = "SEQUENTIAL" if lock else "PARALLEL"
             self._logger.debug("{%s} %s.%s started at %d",
@@ -301,24 +301,20 @@ class TestExecutor:
                 test_result_status, caught_exception = result
                 test_result.status = test_result_status
                 test_result.caught_exception = caught_exception
-                print((f"[DEBUG] {mode} {test_result.method_name}."
-                       f"{test_result.test_class} | "
-                       f"Status={test_result.status}, "
-                       f"caught_except={test_result.caught_exception}"))
 
             # pylint: disable=broad-exception-caught
-            except Exception as e:
+            except Exception as ex:
                 test_result.status = TestStatus.FAILURE
-                test_result.caught_exception = e
-                for l in listeners:
-                    l.on_test_failure(test_result)
+                test_result.caught_exception = ex
+                for listener in listeners:
+                    listener.on_test_failure(test_result)
 
             # SystemExit, KeyboardInterrupt, etc. → bubble up
-            except BaseException:
+            except BaseException as ex:
                 self._logger.warning("Critical exception in %s.%s: %s",
                                      test_result.test_class,
                                      test_result.method_name,
-                                     type(e).__name__)
+                                     type(ex).__name__)
                 raise  # re-raise after logging
 
             finally:
