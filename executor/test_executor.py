@@ -106,6 +106,26 @@ class TestExecutor:
             elif result.status is TestStatus.SUCCESS:
                 listener.on_test_success(result)
 
+    def _filter_methods(self, all_methods, methods_conf):
+        include_patterns = methods_conf.get("include", [])
+        exclude_patterns = methods_conf.get("exclude", [])
+
+        # Apply include patterns
+        if include_patterns:
+            selected = [m for m in all_methods
+                        if any(fnmatch.fnmatch(m, pat)
+                               for pat in include_patterns)]
+        else:
+            selected = list(all_methods)
+
+        # Apply exclude patterns
+        if exclude_patterns:
+            selected = [m for m in selected
+                        if not any(fnmatch.fnmatch(m, pat)
+                                   for pat in exclude_patterns)]
+
+        return selected
+
     def __collect_from_suite(self, suite: dict):
         """
         Collects sequential and parallel tasks from a suite definition.
@@ -137,23 +157,7 @@ class TestExecutor:
                                 getattr(getattr(obj, attr), "is_test", False)
                 ]
 
-                # Apply include patterns with wildcards
-                include_patterns = methods_conf.get("include", [])
-                if include_patterns:
-                    selected = [
-                        m for m in all_methods
-                        if any(fnmatch.fnmatch(m, pat) for pat in include_patterns)
-                    ]
-                else:
-                    selected = list(all_methods)
-
-                # Apply exclude patterns with wildcards
-                exclude_patterns = methods_conf.get("exclude", [])
-                if exclude_patterns:
-                    selected = [
-                        m for m in selected
-                        if not any(fnmatch.fnmatch(m, pat) for pat in exclude_patterns)
-                    ]
+                selected = self._filter_methods(all_methods, methods_conf)
 
                 for method_name in selected:
                     method = getattr(obj, method_name)
