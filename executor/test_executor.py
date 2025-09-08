@@ -126,49 +126,59 @@ class TestExecutor:
 
         return selected
 
+    def _collect_method_tasks(self, obj, cls_name, selected_methods, test_parallel):
+        """Return sequential and parallel tasks for a list of methods of a class."""
+        sequential_tasks = []
+        parallel_tasks = []
+
+        for method_name in selected_methods:
+            method = getattr(obj, method_name)
+            task_name = f"{cls_name}.{method_name}"
+            results_obj = TestResult(method_name, cls_name)
+            task = functools.partial(method)
+
+            if test_parallel in ("tests", "classes", "methods"):
+                parallel_tasks.append((task_name, task, results_obj))
+            else:
+                sequential_tasks.append((task_name, task, results_obj))
+
+        return sequential_tasks, parallel_tasks
+
+    def _collect_tasks_for_class(self, class_conf, test_parallel):
+        """Return sequential and parallel task lists for a single class."""
+        cls_name = class_conf["name"]
+        methods_conf = class_conf.get("methods", {"include": [], "exclude": []})
+        cls = self._resolve_class(cls_name)
+        obj = cls()
+
+        # Discover test methods
+        all_methods = [
+            attr for attr in dir(obj)
+            if callable(getattr(obj, attr)) and getattr(getattr(obj, attr),
+                                                        "is_test", False)
+        ]
+
+        selected = self._filter_methods(all_methods, methods_conf)
+
+        return self._collect_method_tasks(obj,
+                                          cls_name,
+                                          selected,
+                                          test_parallel)
+
     def __collect_from_suite(self, suite: dict):
-        """
-        Collects sequential and parallel tasks from a suite definition.
-
-        Args:
-            suite (dict): Normalized suite dict.
-
-        Returns:
-            tuple[list, list]: (sequential_tasks, parallel_tasks)
-        """
         sequential_tasks = []
         parallel_tasks = []
 
         suite_conf = suite["suite"]
         for test in suite["tests"]:
-            test_parallel = test.get("parallel", suite_conf.get("parallel", "none"))
+            test_parallel = test.get("parallel", suite_conf.get("parallel",
+                                                                "none"))
 
             for class_conf in test["classes"]:
-                class_name = class_conf["name"]
-                methods_conf = class_conf.get("methods", {"include": [], "exclude": []})
-
-                cls = self._resolve_class(class_name)
-                obj = cls()
-
-                # Discover test methods
-                all_methods = [
-                    attr for attr in dir(obj)
-                    if callable(getattr(obj, attr)) and
-                                getattr(getattr(obj, attr), "is_test", False)
-                ]
-
-                selected = self._filter_methods(all_methods, methods_conf)
-
-                for method_name in selected:
-                    method = getattr(obj, method_name)
-                    task_name = f"{cls.__name__}.{method_name}"
-                    results_obj = TestResult(method_name, cls.__name__)
-                    task = functools.partial(method)
-
-                    if test_parallel in ("tests", "classes", "methods"):
-                        parallel_tasks.append((task_name, task, results_obj))
-                    else:
-                        sequential_tasks.append((task_name, task, results_obj))
+                seq, par = self._collect_tasks_for_class(class_conf,
+                                                         test_parallel)
+                sequential_tasks.extend(seq)
+                parallel_tasks.extend(par)
 
         return sequential_tasks, parallel_tasks
 
