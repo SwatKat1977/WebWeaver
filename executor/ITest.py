@@ -2,9 +2,12 @@ import json
 import logging
 import time
 from executor_exceptions import TestFailure
-from test_decorators import test
+from test_decorators import (after_class, after_method,
+                             before_class, before_method,
+                             listener, test)
 from test_executor import TestExecutor
 from suite_parser import SuiteParser
+from test_listener import TestListener
 
 
 # === Helper to assert failure inside tests ===
@@ -14,8 +17,25 @@ def fail_test(msg):
 
 
 # === Example Test Classes ===
+@listener(TestListener)
 class ExampleTest:
     """ Example tests """
+
+    @before_class
+    def setup_class(self):
+        print("Connecting to database...")
+
+    @after_class
+    def teardown_class(self):
+        print("Disconnecting from database...")
+
+    @before_method
+    def setup(self):
+        print("Calling before method...")
+
+    @after_method
+    def teardown(self):
+        print("Calling after method...")
 
     @test()
     def test_success(self):
@@ -91,5 +111,3 @@ if __name__ == "__main__":
                     name,
                     test_result.status,
                     test_result.caught_exception)
-
-    executor.distribute_results_to_listener(results)

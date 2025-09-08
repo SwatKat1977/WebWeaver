@@ -84,3 +84,45 @@ def test(parallel: bool = False,
         wrapper.enabled = enabled
         return wrapper
     return decorator
+
+
+def listener(*listener_classes):
+    """
+    Class decorator to attach one or more listener classes to a test class.
+    """
+    def wrapper(cls):
+        setattr(cls, "__listeners__", [lc() for lc in listener_classes])
+        return cls
+    return wrapper
+
+
+def before_class(func):
+    """ Runs once before any test methods in a class are executed.
+        Use it for expensive setup that only needs to happen once (e.g.,
+        creating a database connection, starting a server). """
+    func.is_before_class = True
+    return func
+
+
+def after_class(func):
+    """ Runs once after all test methods in a class are executed.
+        Use it for cleanup corresponding to @before_class (closing connections,
+        stopping servers, deleting temp files). """
+    func.is_after_class = True
+    return func
+
+
+def before_method(func):
+    """ Runs before every test method in the class.
+        Use it for per-test setup (resetting state, creating fresh objects,
+        clearing caches). """
+    func.is_before_method = True
+    return func
+
+
+def after_method(func):
+    """ Runs after every test method in the class.
+        Use it for per-test cleanup (rollback database changes, reset global
+        state). """
+    func.is_after_method = True
+    return func
