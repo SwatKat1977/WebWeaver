@@ -7,9 +7,23 @@
   "tests": [
     {
       "name": "LoginTests1",
+      "parallel": "classes",
+      "thread_count": 5,
       "classes": [
-        "com.example.tests.LoginTest",
-        "com.example.tests.ProfileTest"
+        "ITest.ExampleTest",
+        {
+          "name": "ITest.ExampleTest",
+          "methods": {
+            "include": ["testViewProfile", "testUpdateProfile"],
+            "exclude": ["testDeleteProfile"]
+          }
+        },
+        {
+          "name": "ITest.MethodSpecificTest",
+          "methods": {
+            "include": ["add*", "removeItem"]
+          }
+        }
       ]
     }
   ]

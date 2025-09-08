@@ -10,7 +10,8 @@
         "parallel": { "type": "string", "enum": ["tests", "classes", "methods", "none"] },
         "thread_count": { "type": "integer", "minimum": 1 }
       },
-      "required": ["name"]
+      "required": ["name"],
+      "additionalProperties": false
     },
     "tests": {
       "type": "array",
@@ -22,13 +23,43 @@
           "thread_count": { "type": "integer", "minimum": 1 },
           "classes": {
             "type": "array",
-            "items": { "type": "string" },
+            "items": {
+              "oneOf": [
+                { "type": "string" },
+                {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "methods": {
+                      "type": "object",
+                      "properties": {
+                        "include": {
+                          "type": "array",
+                          "items": { "type": "string" },
+                          "minItems": 1
+                        },
+                        "exclude": {
+                          "type": "array",
+                          "items": { "type": "string" },
+                          "minItems": 1
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["name"],
+                  "additionalProperties": false
+                }
+              ]
+            },
             "minItems": 1
           }
         },
-        "required": ["name", "classes"]
+        "required": ["name", "classes"],
+        "additionalProperties": false
       }
     }
   },
-  "required": ["suite", "tests"]
+  "required": ["suite", "tests"],
+  "additionalProperties": false
 }

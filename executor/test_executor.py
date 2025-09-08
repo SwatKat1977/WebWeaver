@@ -18,6 +18,7 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import fnmatch
 import functools
 import logging
 import threading
@@ -29,12 +30,10 @@ from test_status import TestStatus
 
 class TestExecutor:
     """
-    Executes test methods from given test classes either sequentially or in
-    parallel.
+    Executes test methods defined in a normalized suite dict.
 
     Attributes:
-        _logger (logging.Logger): Logger instance for logging test execution
-                                  info.
+        _logger (logging.Logger): Logger instance for logging test execution.
         _max_workers (int): Maximum number of worker threads for parallel
                             execution.
     """
@@ -51,17 +50,17 @@ class TestExecutor:
         self._logger = logger.getChild(__name__)
         self._max_workers = max_workers
 
-    def run_tests(self, test_classes):
+    def run_tests(self, suite: dict):
         """
         Orchestrates the collection, execution, and result gathering for tests.
 
         Args:
-            test_classes (list[type]): List of test class types.
+            suite (dict): Normalized suite dict from SuiteParser.
 
         Returns:
             dict: Mapping of task name -> TestResult.
         """
-        sequential_tasks, parallel_tasks = self.__collect_tasks(test_classes)
+        sequential_tasks, parallel_tasks = self.__collect_from_suite(suite)
 
         with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
             futures = self.__submit_tasks(executor, sequential_tasks, parallel_tasks)
@@ -107,32 +106,79 @@ class TestExecutor:
             elif result.status is TestStatus.SUCCESS:
                 listener.on_test_success(result)
 
-    def __collect_tasks(self, test_classes):
-        """
-        Collects sequential and parallel test tasks from test classes.
+    def _filter_methods(self, all_methods, methods_conf):
+        include_patterns = methods_conf.get("include", [])
+        exclude_patterns = methods_conf.get("exclude", [])
 
-        Args:
-            test_classes (list[type]): List of test class types.
+        # Apply include patterns
+        if include_patterns:
+            selected = [m for m in all_methods
+                        if any(fnmatch.fnmatch(m, pat)
+                               for pat in include_patterns)]
+        else:
+            selected = list(all_methods)
 
-        Returns:
-            tuple[list, list]: (sequential_tasks, parallel_tasks)
-        """
+        # Apply exclude patterns
+        if exclude_patterns:
+            selected = [m for m in selected
+                        if not any(fnmatch.fnmatch(m, pat)
+                                   for pat in exclude_patterns)]
+
+        return selected
+
+    def _collect_method_tasks(self, obj, cls_name, selected_methods, test_parallel):
+        """Return sequential and parallel tasks for a list of methods of a class."""
         sequential_tasks = []
         parallel_tasks = []
 
-        for cls in test_classes:
-            obj = cls()
-            for attr_name in dir(obj):
-                method = getattr(obj, attr_name)
-                if callable(method) and getattr(method, "is_test", False):
-                    task_name = f"{cls.__name__}.{attr_name}"
-                    results_obj = TestResult(attr_name, cls.__name__)
+        for method_name in selected_methods:
+            method = getattr(obj, method_name)
+            task_name = f"{cls_name}.{method_name}"
+            results_obj = TestResult(method_name, cls_name)
+            task = functools.partial(method)
 
-                    task = functools.partial(method)
-                    if getattr(method, "run_in_parallel", False):
-                        parallel_tasks.append((task_name, task, results_obj))
-                    else:
-                        sequential_tasks.append((task_name, task, results_obj))
+            if test_parallel in ("tests", "classes", "methods"):
+                parallel_tasks.append((task_name, task, results_obj))
+            else:
+                sequential_tasks.append((task_name, task, results_obj))
+
+        return sequential_tasks, parallel_tasks
+
+    def _collect_tasks_for_class(self, class_conf, test_parallel):
+        """Return sequential and parallel task lists for a single class."""
+        cls_name = class_conf["name"]
+        methods_conf = class_conf.get("methods", {"include": [], "exclude": []})
+        cls = self._resolve_class(cls_name)
+        obj = cls()
+
+        # Discover test methods
+        all_methods = [
+            attr for attr in dir(obj)
+            if callable(getattr(obj, attr)) and getattr(getattr(obj, attr),
+                                                        "is_test", False)
+        ]
+
+        selected = self._filter_methods(all_methods, methods_conf)
+
+        return self._collect_method_tasks(obj,
+                                          cls_name,
+                                          selected,
+                                          test_parallel)
+
+    def __collect_from_suite(self, suite: dict):
+        sequential_tasks = []
+        parallel_tasks = []
+
+        suite_conf = suite["suite"]
+        for test in suite["tests"]:
+            test_parallel = test.get("parallel", suite_conf.get("parallel",
+                                                                "none"))
+
+            for class_conf in test["classes"]:
+                seq, par = self._collect_tasks_for_class(class_conf,
+                                                         test_parallel)
+                sequential_tasks.extend(seq)
+                parallel_tasks.extend(par)
 
         return sequential_tasks, parallel_tasks
 
@@ -227,3 +273,11 @@ class TestExecutor:
                 return execute()
 
         return execute()
+
+    def _resolve_class(self, dotted_path: str):
+        """
+        Import a class by dotted path, e.g. "com.example.tests.LoginTest".
+        """
+        module_name, class_name = dotted_path.rsplit(".", 1)
+        module = __import__(module_name, fromlist=[class_name])
+        return getattr(module, class_name)

@@ -21,8 +21,7 @@ import json
 import os
 import yaml
 from jsonschema import validate, ValidationError
-from executor_exceptions import (BaseExecutorException,
-                                 TestSuiteSchemaFileNotFound,
+from executor_exceptions import (TestSuiteSchemaFileNotFound,
                                  TestSuiteSchemaParseFailed,
                                  TestSuiteFileNotFound,
                                  TestSuiteParseFailed)
@@ -30,9 +29,25 @@ from executor_exceptions import (BaseExecutorException,
 
 class SuiteParser:
     """
-    Loads and validates a test suite definition (JSON or YAML).
+    Loads and validates a test suite definition provided in JSON or YAML
+    format.
+
+    This class is responsible for:
+      - Parsing test suite definition files.
+      - Validating the structure and required fields of the suite.
+      - Providing default configuration values when not explicitly defined.
+
+    Attributes:
+        DEFAULT_SUITE_THREAD_COUNT (int): The default number of threads allocated
+            for running suites if not specified in the definition.
+        DEFAULT_TEST_THREAD_COUNT (int): The default number of threads allocated
+            for running individual tests if not specified in the definition.
     """
     # pylint: disable=too-few-public-methods
+
+    DEFAULT_SUITE_THREAD_COUNT: int = 10
+
+    DEFAULT_TEST_THREAD_COUNT: int  = 10
 
     def __init__(self, schema_path: str):
         base_dir = os.path.dirname(__file__)
@@ -104,25 +119,30 @@ class SuiteParser:
     def _normalise(self, data: dict) -> dict:
         """
         Normalize the suite configuration, applying defaults.
+        Ensures consistent representation for classes and applies
+        default parallel/thread_count values.
         """
         suite = data["suite"]
         suite.setdefault("parallel", "none")
-        suite.setdefault("thread_count", 1)
+        suite.setdefault("thread_count", self.DEFAULT_SUITE_THREAD_COUNT)
 
         for test in data["tests"]:
-            test.setdefault("parallel", suite.get("parallel", "none"))
-            test.setdefault("thread_count", suite.get("thread_count", 1))
+            test.setdefault("parallel", "none")
+            test.setdefault(
+                "thread_count",
+                suite.get("thread_count", self.DEFAULT_TEST_THREAD_COUNT)
+            )
+
+            for i, cls in enumerate(test["classes"]):
+                if isinstance(cls, str):
+                    # Convert bare strings into dict with methods
+                    test["classes"][i] = {
+                        "name": cls,
+                        "methods": {"include": [], "exclude": []}
+                    }
+                else:
+                    cls.setdefault("methods", {})
+                    cls["methods"].setdefault("include", [])
+                    cls["methods"].setdefault("exclude", [])
 
         return data
-
-
-if __name__ == "__main__":
-
-    try:
-        parser = SuiteParser("suite_schema.json")
-
-        test_suite = parser.load_suite("test_suite.json")   # or "suite.yaml"
-        print(json.dumps(test_suite, indent=2))
-
-    except BaseExecutorException as caught_ex:
-        print(f"Caught: {caught_ex}")
