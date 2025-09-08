@@ -1,8 +1,10 @@
+import json
 import logging
 import time
 from executor_exceptions import TestFailure
 from test_decorators import test
 from test_executor import TestExecutor
+from suite_parser import SuiteParser
 
 
 # === Helper to assert failure inside tests ===
@@ -43,6 +45,24 @@ class ExampleTest:
         print("This test should never run")
 
 
+class MethodSpecificTest:
+    """ Example tests """
+
+    @test()
+    def removeItem(self):
+        """ Test: (sequential) Test successful """
+        print("test_success: This test passes")
+        # nothing raised -> PASS
+        time.sleep(7)
+
+    @test()
+    def addItem(self):
+        """ Test: (sequential) Test successful """
+        print("addItem: This test passes")
+        # nothing raised -> PASS
+        time.sleep(7)
+
+
 LOGGING_DATETIME_FORMAT_STRING = "%Y-%m-%d %H:%M:%S"
 LOGGING_DEFAULT_LOG_LEVEL = logging.DEBUG
 LOGGING_LOG_FORMAT_STRING = "%(asctime)s [%(levelname)s] %(message)s"
@@ -56,9 +76,14 @@ if __name__ == "__main__":
     logger.setLevel(LOGGING_DEFAULT_LOG_LEVEL)
     logger.addHandler(console_stream)
 
+    parser = SuiteParser("suite_schema.json")
+    test_suite = parser.load_suite("test_suite.json")
+
+    print(json.dumps(test_suite, indent=2))
+
     executor: TestExecutor = TestExecutor(logger)
 
-    results = executor.run_tests([ExampleTest])
+    results = executor.run_tests(test_suite)
     logger.debug("=== Test Results ===")
 
     for name, test_result in results.items():

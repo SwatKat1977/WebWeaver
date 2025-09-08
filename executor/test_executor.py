@@ -29,12 +29,10 @@ from test_status import TestStatus
 
 class TestExecutor:
     """
-    Executes test methods from given test classes either sequentially or in
-    parallel.
+    Executes test methods defined in a normalized suite dict.
 
     Attributes:
-        _logger (logging.Logger): Logger instance for logging test execution
-                                  info.
+        _logger (logging.Logger): Logger instance for logging test execution.
         _max_workers (int): Maximum number of worker threads for parallel
                             execution.
     """
@@ -51,17 +49,17 @@ class TestExecutor:
         self._logger = logger.getChild(__name__)
         self._max_workers = max_workers
 
-    def run_tests(self, test_classes):
+    def run_tests(self, suite: dict):
         """
         Orchestrates the collection, execution, and result gathering for tests.
 
         Args:
-            test_classes (list[type]): List of test class types.
+            suite (dict): Normalized suite dict from SuiteParser.
 
         Returns:
             dict: Mapping of task name -> TestResult.
         """
-        sequential_tasks, parallel_tasks = self.__collect_tasks(test_classes)
+        sequential_tasks, parallel_tasks = self.__collect_from_suite(suite)
 
         with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
             futures = self.__submit_tasks(executor, sequential_tasks, parallel_tasks)
@@ -107,12 +105,12 @@ class TestExecutor:
             elif result.status is TestStatus.SUCCESS:
                 listener.on_test_success(result)
 
-    def __collect_tasks(self, test_classes):
+    def __collect_from_suite(self, suite: dict):
         """
-        Collects sequential and parallel test tasks from test classes.
+        Collects sequential and parallel tasks from a suite definition.
 
         Args:
-            test_classes (list[type]): List of test class types.
+            suite (dict): Normalized suite dict.
 
         Returns:
             tuple[list, list]: (sequential_tasks, parallel_tasks)
@@ -120,16 +118,39 @@ class TestExecutor:
         sequential_tasks = []
         parallel_tasks = []
 
-        for cls in test_classes:
-            obj = cls()
-            for attr_name in dir(obj):
-                method = getattr(obj, attr_name)
-                if callable(method) and getattr(method, "is_test", False):
-                    task_name = f"{cls.__name__}.{attr_name}"
-                    results_obj = TestResult(attr_name, cls.__name__)
+        suite_conf = suite["suite"]
+        for test in suite["tests"]:
+            test_parallel = test.get("parallel", suite_conf.get("parallel", "none"))
 
+            for class_conf in test["classes"]:
+                class_name = class_conf["name"]
+                methods_conf = class_conf.get("methods", {"include": [], "exclude": []})
+
+                cls = self._resolve_class(class_name)
+                obj = cls()
+
+                # Discover test methods
+                all_methods = [
+                    attr for attr in dir(obj)
+                    if callable(getattr(obj, attr)) and getattr(getattr(obj, attr), "is_test", False)
+                ]
+
+                # Apply includes/excludes
+                if methods_conf["include"]:
+                    selected = [m for m in all_methods if m in methods_conf["include"]]
+                else:
+                    selected = list(all_methods)
+
+                if methods_conf["exclude"]:
+                    selected = [m for m in selected if m not in methods_conf["exclude"]]
+
+                for method_name in selected:
+                    method = getattr(obj, method_name)
+                    task_name = f"{cls.__name__}.{method_name}"
+                    results_obj = TestResult(method_name, cls.__name__)
                     task = functools.partial(method)
-                    if getattr(method, "run_in_parallel", False):
+
+                    if test_parallel in ("tests", "classes", "methods"):
                         parallel_tasks.append((task_name, task, results_obj))
                     else:
                         sequential_tasks.append((task_name, task, results_obj))
@@ -227,3 +248,11 @@ class TestExecutor:
                 return execute()
 
         return execute()
+
+    def _resolve_class(self, dotted_path: str):
+        """
+        Import a class by dotted path, e.g. "com.example.tests.LoginTest".
+        """
+        module_name, class_name = dotted_path.rsplit(".", 1)
+        module = __import__(module_name, fromlist=[class_name])
+        return getattr(module, class_name)

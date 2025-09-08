@@ -128,39 +128,22 @@ class SuiteParser:
         suite.setdefault("thread_count", self.DEFAULT_SUITE_THREAD_COUNT)
 
         for test in data["tests"]:
-            # Tests run serially unless they override parallel themselves
             test.setdefault("parallel", "none")
-
-            # Thread count defaults to the suite's, else test-level default
             test.setdefault(
                 "thread_count",
                 suite.get("thread_count", self.DEFAULT_TEST_THREAD_COUNT)
             )
 
-            # Normalize class definitions
-            normalized_classes = []
-            for cls in test["classes"]:
+            for i, cls in enumerate(test["classes"]):
                 if isinstance(cls, str):
-                    # Convert shorthand string to full object form
-                    normalized_classes.append({"name": cls, "methods": {}})
-                elif isinstance(cls, dict):
-                    # Ensure "methods" key exists even if not provided
+                    # Convert bare strings into dict with methods
+                    test["classes"][i] = {
+                        "name": cls,
+                        "methods": {"include": [], "exclude": []}
+                    }
+                else:
                     cls.setdefault("methods", {})
                     cls["methods"].setdefault("include", [])
                     cls["methods"].setdefault("exclude", [])
-                    normalized_classes.append(cls)
-            test["classes"] = normalized_classes
 
         return data
-
-
-if __name__ == "__main__":
-
-    try:
-        parser = SuiteParser("suite_schema.json")
-
-        test_suite = parser.load_suite("test_suite.json")   # or "suite.yaml"
-        print(json.dumps(test_suite, indent=2))
-
-    except BaseExecutorException as caught_ex:
-        print(f"Caught: {caught_ex}")
