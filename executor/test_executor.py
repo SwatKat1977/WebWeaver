@@ -60,51 +60,25 @@ class TestExecutor:
         Returns:
             dict: Mapping of task name -> TestResult.
         """
-        sequential_tasks, parallel_tasks = self.__collect_from_suite(suite)
+        (sequential_tasks,
+         parallel_tasks,
+         class_fixtures) = self.__collect_from_suite(suite)
+
+        # --- Run all class-level before_class hooks ---
+        for hooks in class_fixtures.values():
+            for before_method in hooks["before"]:
+                before_method()
 
         with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
             futures = self.__submit_tasks(executor, sequential_tasks, parallel_tasks)
             results = self.__gather_results(futures)
 
+        # --- Run all class-level after_class hooks ---
+        for hooks in class_fixtures.values():
+            for after_method in hooks["after"]:
+                after_method()
+
         return results
-
-    def distribute_results_to_listener(self,
-                                       results: dict,
-                                       listener: TestListener = None):
-        """
-        Distribute test results to a listener for handling.
-
-        Iterates over the given test results and notifies the listener
-        according to each test's status. If no listener is provided, a
-        default `TestListener` instance is created.
-
-        - On failure → `listener.on_test_failure(result)` is called.
-        - On skipped → `listener.on_test_skipped(result)` is called.
-        - On success → `listener.on_test_success(result)` is called.
-
-        Args:
-            results (dict): A mapping of test names (str) to result objects.
-                            Each result must expose a `status` attribute of type `TestStatus`.
-            listener (TestListener, optional): The listener to notify about
-                            test outcomes. Defaults to a new `TestListener` instance.
-
-        Returns:
-            None
-        """
-        listener: TestListener = listener if listener is not None \
-            else TestListener()
-
-        for name, result in results.items():
-            self._logger.debug(f"{name} = {result} STATUS: {result.status}")
-
-            if result.status is TestStatus.FAILURE:
-                listener.on_test_failure(result)
-
-            elif result.status is TestStatus.SKIPPED:
-                listener.on_test_skipped(result)
-
-            elif result.status is TestStatus.SUCCESS:
-                listener.on_test_success(result)
 
     def _filter_methods(self, all_methods, methods_conf):
         include_patterns = methods_conf.get("include", [])
@@ -151,6 +125,32 @@ class TestExecutor:
         cls = self._resolve_class(cls_name)
         obj = cls()
 
+        # Discover fixture methods
+        before_class_methods = [
+            getattr(obj, m) for m in dir(obj)
+            if callable(getattr(obj, m)) and getattr(getattr(obj, m),
+                                                     "is_before_class",
+                                                     False)
+        ]
+        after_class_methods = [
+            getattr(obj, m) for m in dir(obj)
+            if callable(getattr(obj, m)) and getattr(getattr(obj, m),
+                                                     "is_after_class",
+                                                     False)
+        ]
+        before_method_methods = [
+            getattr(obj, m) for m in dir(obj)
+            if callable(getattr(obj, m)) and getattr(getattr(obj, m),
+                                                     "is_before_method",
+                                                     False)
+        ]
+        after_method_methods = [
+            getattr(obj, m) for m in dir(obj)
+            if callable(getattr(obj, m)) and getattr(getattr(obj, m),
+                                                     "is_after_method",
+                                                     False)
+        ]
+
         # Get listeners attached by decorator
         listeners = getattr(cls, "__listeners__", [])
 
@@ -166,16 +166,19 @@ class TestExecutor:
         seq, par = self._collect_method_tasks(obj, cls_name, selected, test_parallel)
 
         # Inject listeners into tasks
-        sequential = [(name, task, result, listeners)
+        sequential = [(name, task, result, listeners, before_method_methods,
+                       after_method_methods)
                       for (name, task, result) in seq]
-        parallel = [(name, task, result, listeners)
+        parallel = [(name, task, result, listeners, before_method_methods,
+                     after_method_methods)
                     for (name, task, result) in par]
 
-        return sequential, parallel
+        return sequential, parallel, before_class_methods, after_class_methods
 
     def __collect_from_suite(self, suite: dict):
         sequential_tasks = []
         parallel_tasks = []
+        class_fixtures = {}
 
         suite_conf = suite["suite"]
         for test in suite["tests"]:
@@ -183,12 +186,23 @@ class TestExecutor:
                                                                 "none"))
 
             for class_conf in test["classes"]:
-                seq, par = self._collect_tasks_for_class(class_conf,
-                                                         test_parallel)
+                (seq,
+                 par,
+                 before_class,
+                 after_class) = self._collect_tasks_for_class(class_conf,
+                                                              test_parallel)
+
+                # Store class-level fixtures
+                class_name = class_conf["name"]
+                class_fixtures[class_name] = {
+                    "before": before_class,
+                    "after": after_class
+                }
+
                 sequential_tasks.extend(seq)
                 parallel_tasks.extend(par)
 
-        return sequential_tasks, parallel_tasks
+        return sequential_tasks, parallel_tasks, class_fixtures
 
     def __submit_tasks(self, executor, sequential_tasks, parallel_tasks):
         """
@@ -205,18 +219,24 @@ class TestExecutor:
         futures = {}
         sequential_lock = threading.Lock()
 
-        for name, task, test_result, listeners in sequential_tasks:
+        for (name, task, test_result,
+             listeners, before_methods, after_methods) in sequential_tasks:
             futures[executor.submit(self.__run_task,
                                     task,
                                     test_result,
                                     listeners,
+                                    before_methods=before_methods,
+                                    after_methods=after_methods,
                                     lock=sequential_lock)] = name
 
-        for name, task, test_result, listeners in parallel_tasks:
+        for (name, task, test_result,
+             listeners, before_methods, after_methods) in parallel_tasks:
             futures[executor.submit(self.__run_task,
                                     task,
                                     test_result,
                                     listeners,
+                                    before_methods=before_methods,
+                                    after_methods=after_methods,
                                     lock=None)] = name
 
         return futures
@@ -240,7 +260,8 @@ class TestExecutor:
     def __run_task(self,
                    task,
                    test_result: TestResult,
-                   listeners: list,
+                   listeners: list = None,
+                   before_methods=None, after_methods=None,
                    lock: threading.Lock = None):
         """
         Executes a test method, updating start and end times in TestResult.
@@ -253,8 +274,15 @@ class TestExecutor:
         Returns:
             Any: Result of the test method.
         """
+        before_methods = before_methods or []
+        after_methods = after_methods or []
+        listeners = listeners or []
 
         def execute():
+            # Call before_method hooks
+            for before_method in before_methods:
+                before_method()
+
             test_result.start_milliseconds = int(time.time() * 1000)
 
             for l in listeners:
@@ -268,7 +296,6 @@ class TestExecutor:
                                test_result.start_milliseconds)
             try:
                 result = task()
-
                 test_result_status, caught_exception = result
                 test_result.status = test_result_status
                 test_result.caught_exception = caught_exception
@@ -276,18 +303,6 @@ class TestExecutor:
                        f"{test_result.test_class} | "
                        f"Status={test_result.status}, "
                        f"caught_except={test_result.caught_exception}"))
-
-                if test_result.status is TestStatus.SUCCESS:
-                    for l in listeners:
-                        l.on_test_success(test_result)
-
-                elif test_result.status is TestStatus.FAILURE:
-                    for l in listeners:
-                        l.on_test_failure(test_result)
-
-                elif test_result.status is TestStatus.SKIPPED:
-                    for l in listeners:
-                        l.on_test_skipped(test_result)
 
             # pylint: disable=broad-exception-caught
             except Exception as e:
@@ -304,12 +319,33 @@ class TestExecutor:
                                      type(e).__name__)
                 raise  # re-raise after logging
 
-            test_result.end_milliseconds = int(time.time() * 1000)
-            self._logger.debug("{%s} %s.%s ended at %d",
-                               mode,
-                               test_result.method_name,
-                               test_result.test_class,
-                               test_result.end_milliseconds)
+            finally:
+                # Call after_method hooks
+                for after_method in after_methods:
+                    try:
+                        after_method()
+
+                    except Exception as ex:
+                        self._logger.warning(
+                            "Exception in after_method fixture: %s", ex)
+
+                # Notify listeners based on final status
+                for listener in listeners:
+                    if test_result.status is TestStatus.SUCCESS:
+                        listener.on_test_success(test_result)
+
+                    elif test_result.status is TestStatus.FAILURE:
+                        listener.on_test_failure(test_result)
+
+                    elif test_result.status is TestStatus.SKIPPED:
+                        listener.on_test_skipped(test_result)
+
+                test_result.end_milliseconds = int(time.time() * 1000)
+                self._logger.debug("{%s} %s.%s ended at %d",
+                                   mode,
+                                   test_result.method_name,
+                                   test_result.test_class,
+                                   test_result.end_milliseconds)
 
             return test_result
 
