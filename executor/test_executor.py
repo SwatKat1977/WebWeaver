@@ -23,7 +23,6 @@ import functools
 import logging
 import threading
 import time
-from test_listener import TestListener
 from test_result import TestResult
 from test_status import TestStatus
 
@@ -37,6 +36,7 @@ class TestExecutor:
         _max_workers (int): Maximum number of worker threads for parallel
                             execution.
     """
+    # pylint: disable=too-few-public-methods
 
     def __init__(self, logger: logging.Logger, max_workers: int = 3):
         """
@@ -120,6 +120,7 @@ class TestExecutor:
 
     def _collect_tasks_for_class(self, class_conf, test_parallel):
         """Return sequential and parallel task lists for a single class."""
+        # pylint: disable=too-many-locals
         cls_name = class_conf["name"]
         methods_conf = class_conf.get("methods", {"include": [], "exclude": []})
         cls = self._resolve_class(cls_name)
@@ -274,6 +275,7 @@ class TestExecutor:
         Returns:
             Any: Result of the test method.
         """
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
         before_methods = before_methods or []
         after_methods = after_methods or []
         listeners = listeners or []
