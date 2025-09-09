@@ -209,17 +209,19 @@ class TestExecutor:
             test_parallel = test.get("parallel", suite_conf.get("parallel", "none"))
 
             if test_parallel == "tests":
-                # Wrap whole <test>: run its classes sequentially INSIDE the wrapper,
-                # but return a dict of per-method TestResults only.
+                # Wrap whole <test>: run its classes sequentially INSIDE the
+                # wrapper, but return a dict of per-method TestResults only.
                 def test_block():
                     results = {}
                     try:
                         for class_conf in test["classes"]:
                             (seq, par, before_class, after_class) = \
-                                self._collect_tasks_for_class(class_conf, "none")
+                                self._collect_tasks_for_class(class_conf,
+                                                              "none")
 
                             class_name = class_conf["name"]
-                            class_fixtures[class_name] = {"before": before_class, "after": after_class}
+                            class_fixtures[class_name] = {"before": before_class,
+                                                          "after": after_class}
 
                             # seq here are wrapper tasks returning dicts of method results
                             for (_name, task, result, _listeners, bm, am) in seq:
@@ -230,6 +232,7 @@ class TestExecutor:
                                 else:
                                     # Safety: in case a method slipped through
                                     results[_name] = res
+
                     except Exception as ex:
                         # If entire <test> crashes, mark all its methods as SKIPPED
                         for class_conf in test["classes"]:
@@ -237,20 +240,30 @@ class TestExecutor:
                             cls = self._resolve_class(cls_name)
                             obj = cls()
                             all_methods = [attr for attr in dir(obj)
-                                           if callable(getattr(obj, attr)) and getattr(getattr(obj, attr), "is_test",
-                                                                                       False)]
-                            selected = self._filter_methods(all_methods,
-                                                            class_conf.get("methods", {"include": [], "exclude": []}))
+                                           if callable(getattr(obj, attr))
+                                           and getattr(getattr(obj, attr),
+                                                       "is_test", False)]
+                            selected = self._filter_methods(
+                                all_methods, class_conf.get("methods",
+                                                            {"include": [],
+                                                             "exclude": []}))
                             for m in selected:
                                 tr = TestResult(m, cls_name)
                                 tr.status = TestStatus.SKIPPED
                                 tr.caught_exception = ex
                                 results[f"{cls_name}.{m}"] = tr
+
                     return results
 
                 test_name = test.get("name", "UnnamedTest")
                 dummy_result = TestResult("__test_wrapper__", test_name)
-                parallel_tasks.append((test_name, test_block, dummy_result, [], [], []))
+                parallel_tasks.append((test_name,
+                                       test_block,
+                                       dummy_result,
+                                       [],
+                                       [],
+                                       []))
+
             else:
                 for class_conf in test["classes"]:
                     (seq, par, before_class, after_class) = \
