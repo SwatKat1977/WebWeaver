@@ -51,36 +51,32 @@ class TestExecutor:
         self._max_workers = max_workers
 
     def run_tests(self, suite: dict):
-        (sequential_tasks,
-         parallel_tasks,
-         class_fixtures) = self.__collect_from_suite(suite)
+        sequential_tasks, parallel_tasks, class_fixtures = self.__collect_from_suite(suite)
 
-        # --- Run all class-level before_class hooks ---
+        # run before_class hooks
         for hooks in class_fixtures.values():
-            for before_method in hooks["before"]:
-                before_method()
+            for before in hooks["before"]:
+                before()
 
         results = {}
+
         if parallel_tasks:
-            # Parallel execution
             with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
                 futures = self.__submit_tasks(executor, sequential_tasks, parallel_tasks)
                 results = self.__gather_results(futures)
         else:
-            # Pure sequential execution (no threadpool at all)
-            for (name, task, test_result,
-                 listeners, before_methods, after_methods) in sequential_tasks:
-                results[name] = self.__run_task(task,
-                                                test_result,
-                                                listeners,
-                                                before_methods,
-                                                after_methods,
-                                                lock=None)
+            # pure sequential execution (no pool)
+            for (name, task, tr, listeners, bm, am) in sequential_tasks:
+                out = self.__run_task(task, tr, listeners, bm, am, lock=None)
+                if isinstance(out, dict):
+                    results.update(out)  # <- flatten wrappers into methods
+                elif isinstance(out, TestResult):
+                    results[name] = out
 
-        # --- Run all class-level after_class hooks ---
+        # run after_class hooks
         for hooks in class_fixtures.values():
-            for after_method in hooks["after"]:
-                after_method()
+            for after in hooks["after"]:
+                after()
 
         return results
 
@@ -123,86 +119,82 @@ class TestExecutor:
         return sequential_tasks, parallel_tasks
 
     def _collect_tasks_for_class(self, class_conf, test_parallel):
-        """Return sequential and parallel task lists for a single class."""
-        # pylint: disable=too-many-locals
         cls_name = class_conf["name"]
         methods_conf = class_conf.get("methods", {"include": [], "exclude": []})
         cls = self._resolve_class(cls_name)
         obj = cls()
 
-        # Discover fixture methods
         before_class_methods = [
             getattr(obj, m) for m in dir(obj)
-            if callable(getattr(obj, m)) and getattr(getattr(obj, m),
-                                                     "is_before_class",
-                                                     False)
+            if callable(getattr(obj, m)) and getattr(getattr(obj, m), "is_before_class", False)
         ]
         after_class_methods = [
             getattr(obj, m) for m in dir(obj)
-            if callable(getattr(obj, m)) and getattr(getattr(obj, m),
-                                                     "is_after_class",
-                                                     False)
+            if callable(getattr(obj, m)) and getattr(getattr(obj, m), "is_after_class", False)
         ]
         before_method_methods = [
             getattr(obj, m) for m in dir(obj)
-            if callable(getattr(obj, m)) and getattr(getattr(obj, m),
-                                                     "is_before_method",
-                                                     False)
+            if callable(getattr(obj, m)) and getattr(getattr(obj, m), "is_before_method", False)
         ]
         after_method_methods = [
             getattr(obj, m) for m in dir(obj)
-            if callable(getattr(obj, m)) and getattr(getattr(obj, m),
-                                                     "is_after_method",
-                                                     False)
+            if callable(getattr(obj, m)) and getattr(getattr(obj, m), "is_after_method", False)
         ]
 
-        # Get listeners attached by decorator
-        listeners = getattr(cls, "__listeners__", [])
+        # listeners attached to the class (used only for method tasks)
+        method_listeners = getattr(cls, "__listeners__", [])
 
-        # Discover test methods
         all_methods = [
             attr for attr in dir(obj)
-            if callable(getattr(obj, attr)) and getattr(getattr(obj, attr),
-                                                        "is_test", False)
+            if callable(getattr(obj, attr)) and getattr(getattr(obj, attr), "is_test", False)
         ]
-
         selected = self._filter_methods(all_methods, methods_conf)
 
-        sequential = []
-        parallel = []
+        sequential, parallel = [], []
 
         if test_parallel == "methods":
-            # Each method is a parallel task
+            # each method is its own parallel task
             for method_name in selected:
                 method = getattr(obj, method_name)
                 task_name = f"{cls_name}.{method_name}"
                 results_obj = TestResult(method_name, cls_name)
                 task = functools.partial(method)
-                parallel.append((task_name, task, results_obj,
-                                 listeners, before_method_methods,
-                                 after_method_methods))
+                parallel.append((task_name, task, results_obj, method_listeners,
+                                 before_method_methods, after_method_methods))
         else:
-            # Treat the whole class as sequential unit
+            # class wrapper: run methods sequentially INSIDE; return dict of per-method results
             def class_task():
-                # Run all methods in order
-                for method_name in selected:
-                    method = getattr(obj, method_name)
-                    results_obj = TestResult(method_name, cls_name)
-                    task = functools.partial(method)
-                    self.__run_task(task, results_obj, listeners,
-                                    before_method_methods, after_method_methods)
-                return TestResult("ALL_METHODS", cls_name)
+                results = {}
+                ran = set()
+                try:
+                    for method_name in selected:
+                        method = getattr(obj, method_name)
+                        mtr = TestResult(method_name, cls_name)
+                        task = functools.partial(method)
+                        res = self.__run_task(task, mtr, method_listeners,
+                                              before_method_methods, after_method_methods)
+                        results[f"{cls_name}.{method_name}"] = res
+                        ran.add(method_name)
+                except Exception as ex:
+                    # mark remaining methods as SKIPPED if wrapper bombs
+                    for method_name in selected:
+                        if method_name in ran:
+                            continue
+                        tr = TestResult(method_name, cls_name)
+                        tr.status = TestStatus.SKIPPED
+                        tr.caught_exception = ex
+                        results[f"{cls_name}.{method_name}"] = tr
+                return results
 
-            task_name = f"{cls_name}.__class_block__"
-            results_obj = TestResult("ALL_METHODS", cls_name)
+            # important: wrapper name is irrelevant; listeners must be empty for wrappers
+            task_name = f"{cls_name}.__class_wrapper__"
+            dummy = TestResult("__class_wrapper__", cls_name)
             task = functools.partial(class_task)
 
             if test_parallel == "classes":
-                parallel.append((task_name, task, results_obj, listeners,
-                                 [], []))
+                parallel.append((task_name, task, dummy, [], [], []))
             else:
-                sequential.append((task_name, task, results_obj, listeners,
-                                   [], []))
+                sequential.append((task_name, task, dummy, [], [], []))
 
         return sequential, parallel, before_class_methods, after_class_methods
 
@@ -217,31 +209,55 @@ class TestExecutor:
             test_parallel = test.get("parallel", suite_conf.get("parallel", "none"))
 
             if test_parallel == "tests":
-                # Wrap whole test block into a parallel task
+                # Wrap whole <test>: run its classes sequentially INSIDE the wrapper,
+                # but return a dict of per-method TestResults only.
                 def test_block():
-                    for class_conf in test["classes"]:
-                        (seq, par, before_class, after_class) = \
-                            self._collect_tasks_for_class(class_conf, "none")
+                    results = {}
+                    try:
+                        for class_conf in test["classes"]:
+                            (seq, par, before_class, after_class) = \
+                                self._collect_tasks_for_class(class_conf, "none")
 
-                        class_name = class_conf["name"]
-                        class_fixtures[class_name] = {"before": before_class,
-                                                      "after": after_class}
+                            class_name = class_conf["name"]
+                            class_fixtures[class_name] = {"before": before_class, "after": after_class}
 
-                        for (name, task, result, listeners, bm, am) in seq:
-                            self.__run_task(task, result, listeners, bm, am)
+                            # seq here are wrapper tasks returning dicts of method results
+                            for (_name, task, result, _listeners, bm, am) in seq:
+                                res = self.__run_task(task, result, [], bm, am)
+                                # res is a dict of { "Class.method": TestResult }
+                                if isinstance(res, dict):
+                                    results.update(res)
+                                else:
+                                    # Safety: in case a method slipped through
+                                    results[_name] = res
+                    except Exception as ex:
+                        # If entire <test> crashes, mark all its methods as SKIPPED
+                        for class_conf in test["classes"]:
+                            cls_name = class_conf["name"]
+                            cls = self._resolve_class(cls_name)
+                            obj = cls()
+                            all_methods = [attr for attr in dir(obj)
+                                           if callable(getattr(obj, attr)) and getattr(getattr(obj, attr), "is_test",
+                                                                                       False)]
+                            selected = self._filter_methods(all_methods,
+                                                            class_conf.get("methods", {"include": [], "exclude": []}))
+                            for m in selected:
+                                tr = TestResult(m, cls_name)
+                                tr.status = TestStatus.SKIPPED
+                                tr.caught_exception = ex
+                                results[f"{cls_name}.{m}"] = tr
+                    return results
 
                 test_name = test.get("name", "UnnamedTest")
-                results_obj = TestResult("ALL_CLASSES", test_name)
-                parallel_tasks.append((test_name, test_block, results_obj, [], [], []))
-
+                dummy_result = TestResult("__test_wrapper__", test_name)
+                parallel_tasks.append((test_name, test_block, dummy_result, [], [], []))
             else:
                 for class_conf in test["classes"]:
                     (seq, par, before_class, after_class) = \
                         self._collect_tasks_for_class(class_conf, test_parallel)
 
                     class_name = class_conf["name"]
-                    class_fixtures[class_name] = {"before": before_class,
-                                                  "after": after_class}
+                    class_fixtures[class_name] = {"before": before_class, "after": after_class}
 
                     sequential_tasks.extend(seq)
                     parallel_tasks.extend(par)
@@ -286,114 +302,78 @@ class TestExecutor:
         return futures
 
     def __gather_results(self, futures):
-        """
-        Waits for all submitted tasks to complete and collects results.
-
-        Args:
-            futures (dict): Mapping of Future -> task name.
-
-        Returns:
-            dict: Mapping of task name -> TestResult.
-        """
         results = {}
         for future in as_completed(futures):
-            name = futures[future]
-            results[name] = future.result()
+            name = futures[future]  # wrapper name not used if result is dict
+            result = future.result()
+            if isinstance(result, dict):
+                results.update(result)  # <- only method entries
+            elif isinstance(result, TestResult):
+                results[name] = result  # <- method tasks only
         return results
 
-    def __run_task(self,
-                   task,
-                   test_result: TestResult,
+    def __run_task(self, task, test_result: TestResult,
                    listeners: list = None,
                    before_methods=None, after_methods=None,
                    lock: threading.Lock = None):
-        """
-        Executes a test method, updating start and end times in TestResult.
-
-        Args:
-            task (callable): The test method to execute.
-            test_result (TestResult): Object to record start and end times.
-            lock (threading.Lock, optional): Lock for sequential execution. Defaults to None.
-
-        Returns:
-            Any: Result of the test method.
-        """
-        # pylint: disable=too-many-arguments, too-many-positional-arguments
         before_methods = before_methods or []
         after_methods = after_methods or []
         listeners = listeners or []
 
         def execute():
-            # Call before_method hooks
-            for before_method in before_methods:
-                before_method()
+            for bm in before_methods:
+                bm()
 
             test_result.start_milliseconds = int(time.time() * 1000)
-
             for listener in listeners:
                 listener.on_test_start(test_result)
 
-            mode: str = "SEQUENTIAL" if lock else "PARALLEL"
+            mode = "SEQUENTIAL" if lock else "PARALLEL"
             self._logger.debug("{%s} %s.%s started at %d",
-                               mode,
-                               test_result.method_name,
-                               test_result.test_class,
+                               mode, test_result.method_name, test_result.test_class,
                                test_result.start_milliseconds)
             try:
                 result = task()
-                test_result_status, caught_exception = result
-                test_result.status = test_result_status
-                test_result.caught_exception = caught_exception
 
-            # pylint: disable=broad-exception-caught
+                if isinstance(result, dict):
+                    # wrapper case: dict of method results — bubble it up untouched
+                    return result
+                if isinstance(result, TestResult):
+                    # task managed its own result
+                    return result
+
+                # plain call: assume success
+                test_result.status = TestStatus.SUCCESS
+                return test_result
+
             except Exception as ex:
                 test_result.status = TestStatus.FAILURE
                 test_result.caught_exception = ex
-                for listener in listeners:
-                    listener.on_test_failure(test_result)
-
-            # SystemExit, KeyboardInterrupt, etc. → bubble up
-            except BaseException as ex:
-                self._logger.warning("Critical exception in %s.%s: %s",
-                                     test_result.test_class,
-                                     test_result.method_name,
-                                     type(ex).__name__)
-                raise  # re-raise after logging
+                return test_result
 
             finally:
-                # Call after_method hooks
-                for after_method in after_methods:
+                for am in after_methods:
                     try:
-                        after_method()
-
+                        am()
                     except Exception as ex:
-                        self._logger.warning(
-                            "Exception in after_method fixture: %s", ex)
+                        self._logger.warning("Exception in after_method fixture: %s", ex)
 
-                # Notify listeners based on final status
                 for listener in listeners:
                     if test_result.status is TestStatus.SUCCESS:
                         listener.on_test_success(test_result)
-
                     elif test_result.status is TestStatus.FAILURE:
                         listener.on_test_failure(test_result)
-
                     elif test_result.status is TestStatus.SKIPPED:
                         listener.on_test_skipped(test_result)
 
                 test_result.end_milliseconds = int(time.time() * 1000)
                 self._logger.debug("{%s} %s.%s ended at %d",
-                                   mode,
-                                   test_result.method_name,
-                                   test_result.test_class,
+                                   mode, test_result.method_name, test_result.test_class,
                                    test_result.end_milliseconds)
-
-            return test_result
 
         if lock:
             with lock:
                 return execute()
-
         return execute()
 
     def _resolve_class(self, dotted_path: str):
