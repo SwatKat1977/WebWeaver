@@ -341,10 +341,6 @@ class TestExecutor:
             for listener in listeners:
                 listener.on_test_start(test_result)
 
-            mode = "SEQUENTIAL" if lock else "PARALLEL"
-            self._logger.debug("{%s} %s.%s started at %d",
-                               mode, test_result.method_name, test_result.test_class,
-                               test_result.start_milliseconds)
             try:
                 result = task()
 
@@ -380,9 +376,6 @@ class TestExecutor:
                         listener.on_test_skipped(test_result)
 
                 test_result.end_milliseconds = int(time.time() * 1000)
-                self._logger.debug("{%s} %s.%s ended at %d",
-                                   mode, test_result.method_name, test_result.test_class,
-                                   test_result.end_milliseconds)
 
         if lock:
             with lock:
