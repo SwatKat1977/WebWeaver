@@ -51,15 +51,6 @@ class TestExecutor:
         self._max_workers = max_workers
 
     def run_tests(self, suite: dict):
-        """
-        Orchestrates the collection, execution, and result gathering for tests.
-
-        Args:
-            suite (dict): Normalized suite dict from SuiteParser.
-
-        Returns:
-            dict: Mapping of task name -> TestResult.
-        """
         (sequential_tasks,
          parallel_tasks,
          class_fixtures) = self.__collect_from_suite(suite)
@@ -69,9 +60,22 @@ class TestExecutor:
             for before_method in hooks["before"]:
                 before_method()
 
-        with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
-            futures = self.__submit_tasks(executor, sequential_tasks, parallel_tasks)
-            results = self.__gather_results(futures)
+        results = {}
+        if parallel_tasks:
+            # Parallel execution
+            with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
+                futures = self.__submit_tasks(executor, sequential_tasks, parallel_tasks)
+                results = self.__gather_results(futures)
+        else:
+            # Pure sequential execution (no threadpool at all)
+            for (name, task, test_result,
+                 listeners, before_methods, after_methods) in sequential_tasks:
+                results[name] = self.__run_task(task,
+                                                test_result,
+                                                listeners,
+                                                before_methods,
+                                                after_methods,
+                                                lock=None)
 
         # --- Run all class-level after_class hooks ---
         for hooks in class_fixtures.values():
@@ -164,15 +168,41 @@ class TestExecutor:
 
         selected = self._filter_methods(all_methods, methods_conf)
 
-        seq, par = self._collect_method_tasks(obj, cls_name, selected, test_parallel)
+        sequential = []
+        parallel = []
 
-        # Inject listeners into tasks
-        sequential = [(name, task, result, listeners, before_method_methods,
-                       after_method_methods)
-                      for (name, task, result) in seq]
-        parallel = [(name, task, result, listeners, before_method_methods,
-                     after_method_methods)
-                    for (name, task, result) in par]
+        if test_parallel == "methods":
+            # Each method is a parallel task
+            for method_name in selected:
+                method = getattr(obj, method_name)
+                task_name = f"{cls_name}.{method_name}"
+                results_obj = TestResult(method_name, cls_name)
+                task = functools.partial(method)
+                parallel.append((task_name, task, results_obj,
+                                 listeners, before_method_methods,
+                                 after_method_methods))
+        else:
+            # Treat the whole class as sequential unit
+            def class_task():
+                # Run all methods in order
+                for method_name in selected:
+                    method = getattr(obj, method_name)
+                    results_obj = TestResult(method_name, cls_name)
+                    task = functools.partial(method)
+                    self.__run_task(task, results_obj, listeners,
+                                    before_method_methods, after_method_methods)
+                return TestResult("ALL_METHODS", cls_name)
+
+            task_name = f"{cls_name}.__class_block__"
+            results_obj = TestResult("ALL_METHODS", cls_name)
+            task = functools.partial(class_task)
+
+            if test_parallel == "classes":
+                parallel.append((task_name, task, results_obj, listeners,
+                                 [], []))
+            else:
+                sequential.append((task_name, task, results_obj, listeners,
+                                   [], []))
 
         return sequential, parallel, before_class_methods, after_class_methods
 
@@ -182,26 +212,39 @@ class TestExecutor:
         class_fixtures = {}
 
         suite_conf = suite["suite"]
+
         for test in suite["tests"]:
-            test_parallel = test.get("parallel", suite_conf.get("parallel",
-                                                                "none"))
+            test_parallel = test.get("parallel", suite_conf.get("parallel", "none"))
 
-            for class_conf in test["classes"]:
-                (seq,
-                 par,
-                 before_class,
-                 after_class) = self._collect_tasks_for_class(class_conf,
-                                                              test_parallel)
+            if test_parallel == "tests":
+                # Wrap whole test block into a parallel task
+                def test_block():
+                    for class_conf in test["classes"]:
+                        (seq, par, before_class, after_class) = \
+                            self._collect_tasks_for_class(class_conf, "none")
 
-                # Store class-level fixtures
-                class_name = class_conf["name"]
-                class_fixtures[class_name] = {
-                    "before": before_class,
-                    "after": after_class
-                }
+                        class_name = class_conf["name"]
+                        class_fixtures[class_name] = {"before": before_class,
+                                                      "after": after_class}
 
-                sequential_tasks.extend(seq)
-                parallel_tasks.extend(par)
+                        for (name, task, result, listeners, bm, am) in seq:
+                            self.__run_task(task, result, listeners, bm, am)
+
+                test_name = test.get("name", "UnnamedTest")
+                results_obj = TestResult("ALL_CLASSES", test_name)
+                parallel_tasks.append((test_name, test_block, results_obj, [], [], []))
+
+            else:
+                for class_conf in test["classes"]:
+                    (seq, par, before_class, after_class) = \
+                        self._collect_tasks_for_class(class_conf, test_parallel)
+
+                    class_name = class_conf["name"]
+                    class_fixtures[class_name] = {"before": before_class,
+                                                  "after": after_class}
+
+                    sequential_tasks.extend(seq)
+                    parallel_tasks.extend(par)
 
         return sequential_tasks, parallel_tasks, class_fixtures
 
