@@ -124,23 +124,6 @@ class TestExecutor:
         cls = self._resolve_class(cls_name)
         obj = cls()
 
-        before_class_methods = [
-            getattr(obj, m) for m in dir(obj)
-            if callable(getattr(obj, m)) and getattr(getattr(obj, m), "is_before_class", False)
-        ]
-        after_class_methods = [
-            getattr(obj, m) for m in dir(obj)
-            if callable(getattr(obj, m)) and getattr(getattr(obj, m), "is_after_class", False)
-        ]
-        before_method_methods = [
-            getattr(obj, m) for m in dir(obj)
-            if callable(getattr(obj, m)) and getattr(getattr(obj, m), "is_before_method", False)
-        ]
-        after_method_methods = [
-            getattr(obj, m) for m in dir(obj)
-            if callable(getattr(obj, m)) and getattr(getattr(obj, m), "is_after_method", False)
-        ]
-
         # listeners attached to the class (used only for method tasks)
         method_listeners = getattr(cls, "__listeners__", [])
 
@@ -149,6 +132,33 @@ class TestExecutor:
             if callable(getattr(obj, attr)) and getattr(getattr(obj, attr), "is_test", False)
         ]
         selected = self._filter_methods(all_methods, methods_conf)
+
+        # Only collect class-level hooks if at least one enabled test exists
+        enabled_methods = [
+            m for m in selected if getattr(getattr(obj, m), "enabled", True)
+        ]
+
+        if enabled_methods:
+            before_class_methods = [
+                getattr(obj, m) for m in dir(obj)
+                if callable(getattr(obj, m)) and getattr(getattr(obj, m), "is_before_class", False)
+            ]
+            after_class_methods = [
+                getattr(obj, m) for m in dir(obj)
+                if callable(getattr(obj, m)) and getattr(getattr(obj, m), "is_after_class", False)
+            ]
+        else:
+            before_class_methods = []
+            after_class_methods = []
+
+        before_method_methods = [
+            getattr(obj, m) for m in dir(obj)
+            if callable(getattr(obj, m)) and getattr(getattr(obj, m), "is_before_method", False)
+        ]
+        after_method_methods = [
+            getattr(obj, m) for m in dir(obj)
+            if callable(getattr(obj, m)) and getattr(getattr(obj, m), "is_after_method", False)
+        ]
 
         sequential, parallel = [], []
 
@@ -186,7 +196,6 @@ class TestExecutor:
                         results[f"{cls_name}.{method_name}"] = tr
                 return results
 
-            # important: wrapper name is irrelevant; listeners must be empty for wrappers
             task_name = f"{cls_name}.__class_wrapper__"
             dummy = TestResult("__class_wrapper__", cls_name)
             task = functools.partial(class_task)
@@ -334,29 +343,33 @@ class TestExecutor:
         listeners = listeners or []
 
         def execute():
-            for bm in before_methods:
-                bm()
-
             test_result.start_milliseconds = int(time.time() * 1000)
-            for listener in listeners:
-                listener.on_test_start(test_result)
+
+            # Peek: is this test enabled?
+            is_enabled = True
+            if isinstance(task, functools.partial):
+                func = getattr(task, "func", None)
+                if func is not None:
+                    is_enabled = getattr(func, "enabled", True)
+
+            # Only run before_methods if enabled
+            if is_enabled:
+                for bm in before_methods:
+                    bm()
 
             try:
                 result = task()
 
                 if isinstance(result, dict):
                     return result
-
                 if isinstance(result, TestResult):
                     return result
-
                 if isinstance(result, tuple) and len(result) == 2:
                     status, ex = result
                     test_result.status = status
                     test_result.caught_exception = ex
                     return test_result
 
-                # plain call: assume success
                 test_result.status = TestStatus.SUCCESS
                 return test_result
 
@@ -366,11 +379,14 @@ class TestExecutor:
                 return test_result
 
             finally:
-                for am in after_methods:
-                    try:
-                        am()
-                    except Exception as ex:
-                        self._logger.warning("Exception in after_method fixture: %s", ex)
+                # Only run after_methods if not skipped
+                if test_result.status != TestStatus.SKIPPED:
+                    for am in after_methods:
+                        try:
+                            am()
+                        except Exception as ex:
+                            self._logger.warning(
+                                "Exception in after_method fixture: %s", ex)
 
                 for listener in listeners:
                     if test_result.status is TestStatus.SUCCESS:
