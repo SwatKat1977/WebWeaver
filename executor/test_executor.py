@@ -345,11 +345,16 @@ class TestExecutor:
                 result = task()
 
                 if isinstance(result, dict):
-                    # wrapper case: dict of method results — bubble it up untouched
                     return result
+
                 if isinstance(result, TestResult):
-                    # task managed its own result
                     return result
+
+                if isinstance(result, tuple) and len(result) == 2:
+                    status, ex = result
+                    test_result.status = status
+                    test_result.caught_exception = ex
+                    return test_result
 
                 # plain call: assume success
                 test_result.status = TestStatus.SUCCESS
