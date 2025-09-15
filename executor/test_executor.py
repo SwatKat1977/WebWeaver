@@ -19,11 +19,13 @@ Copyright 2025 SwatKat1977
 """
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
+from enum import IntEnum
 import fnmatch
 import functools
 import logging
 import threading
 import time
+import typing
 from test_result import TestResult
 from test_status import TestStatus
 
@@ -44,11 +46,34 @@ class TaskContext:
         lock (threading.Lock | None): Optional lock for thread-safe access and
             modification of the context, or None if synchronization is not required.
     """
-    listeners: list | None = None
-    before_methods: list | None = None
-    after_methods: list | None = None
-    lock: threading.Lock | None = None
+    listeners: typing.Optional[list] = None
+    before_methods: typing.Optional[list] = None
+    after_methods: typing.Optional[list] = None
+    lock: typing.Optional[threading.Lock] = None
 
+class SequentialTaskIndex(IntEnum):
+    """
+    Index positions for elements within a sequential task tuple.
+
+    A sequential task is represented as a 6-element tuple:
+
+        (name, task, result, listeners, before_methods, after_methods)
+
+    Attributes:
+        NAME (int): Index of the task name (str), typically in the form
+            "Class.method".
+        TASK (int): Index of the callable to be executed.
+        RESULT (int): Index of the TestResult object associated with the task.
+        LISTENERS (int): Index of the list of listeners attached to the task.
+        BEFORE_METHODS (int): Index of the list of methods to run before the task.
+        AFTER_METHODS (int): Index of the list of methods to run after the task.
+    """
+    NAME = 0
+    TASK = 1
+    RESULT = 2
+    LISTENERS = 3
+    BEFORE_METHODS = 4
+    AFTER_METHODS = 5
 
 class TestExecutor:
     """
@@ -287,6 +312,73 @@ class TestExecutor:
 
         return sequential, parallel, before_class_methods, after_class_methods
 
+    def __run_suite_test(self, suite_test: dict, class_fixtures: dict) -> dict:
+        """
+        Run a single <test> block sequentially, collecting results from its
+        classes.
+
+        Returns:
+            dict[str, TestResult]: Mapping of "Class.method" to TestResult.
+        """
+        results = {}
+        try:
+            for class_conf in suite_test["classes"]:
+                seq, _, before_class, after_class = self._collect_tasks_for_class(
+                    class_conf, "none")
+                class_name = class_conf["name"]
+                class_fixtures[class_name] = {"before": before_class, "after": after_class}
+
+                # seq here are wrapper tasks returning dicts of method results
+                for task_info in seq:
+                    # for (_name, task, result, listeners, before_methods, after_methods) in seq:
+                    ctx = TaskContext(
+                        listeners=task_info[SequentialTaskIndex.LISTENERS],
+                        before_methods=task_info[SequentialTaskIndex.BEFORE_METHODS],
+                        after_methods=task_info[SequentialTaskIndex.AFTER_METHODS],
+                        lock=None)
+                    res = self.__run_task(task_info[SequentialTaskIndex.TASK],
+                                          task_info[SequentialTaskIndex.RESULT],
+                                          ctx)
+                    if isinstance(res, dict):
+                        results.update(res)
+
+                    else:
+                        results[task_info[SequentialTaskIndex.NAME]] = res
+
+        except Exception as ex:  # pylint: disable=broad-exception-caught
+            results.update(self.__handle_test_exception(suite_test, ex))
+
+        return results
+
+    def __handle_test_exception(self, suite_test: dict, ex: Exception) -> dict:
+        """
+        Handle an exception raised while running a <test> block by marking all its
+        methods as SKIPPED.
+
+        Returns:
+            dict[str, TestResult]: Mapping of "Class.method" to skipped TestResults.
+        """
+        results = {}
+        for class_conf in suite_test["classes"]:
+            cls_name = class_conf["name"]
+            cls = self._resolve_class(cls_name)
+            obj = cls()
+            all_methods = [
+                attr for attr in dir(obj)
+                if callable(getattr(obj, attr))
+                   and getattr(getattr(obj, attr), "is_test", False)
+            ]
+            selected = self._filter_methods(
+                all_methods,
+                class_conf.get("methods", {"include": [], "exclude": []}),
+            )
+            for m in selected:
+                tr = TestResult(m, cls_name)
+                tr.status = TestStatus.SKIPPED
+                tr.caught_exception = ex
+                results[f"{cls_name}.{m}"] = tr
+        return results
+
     def __collect_from_suite(self, suite: dict):
         """
         Collect tasks from a test suite configuration and categorize them into
@@ -334,83 +426,26 @@ class TestExecutor:
         suite_conf = suite["suite"]
 
         for suite_test in suite["tests"]:
-            test_parallel = suite_test.get("parallel", suite_conf.get(
-                "parallel", "none"))
+            test_parallel = suite_test.get("parallel", suite_conf.get("parallel", "none"))
 
             if test_parallel == "tests":
-                # Wrap whole <test>: run its classes sequentially INSIDE the
-                # wrapper, but return a dict of per-method TestResults only.
-                def test_block(test=suite_test):
-                    results = {}
-                    try:
-                        for class_conf in test["classes"]:
-                            (seq, _, before_class, after_class) = \
-                                self._collect_tasks_for_class(class_conf,
-                                                              "none")
-
-                            class_name = class_conf["name"]
-                            class_fixtures[class_name] = {"before": before_class,
-                                                          "after": after_class}
-
-                            # seq here are wrapper tasks returning dicts of method results
-                            for (_name, task, result, listeners,
-                                 before_methods, after_methods) in seq:
-                                ctx = TaskContext(
-                                    listeners=listeners,
-                                    before_methods=before_methods,
-                                    after_methods=after_methods,
-                                    lock=None
-                                )
-                                res = self.__run_task(task, result, ctx)
-                                # res is a dict of { "Class.method": TestResult }
-                                if isinstance(res, dict):
-                                    results.update(res)
-                                else:
-                                    # Safety: in case a method slipped through
-                                    results[_name] = res
-
-                    # NOTE: Disabling broad exception here because this is a
-                    #       user-defined method, and we don't know what exception
-                    #       could be caught.
-                    except Exception as ex:  # pylint:  disable=broad-exception-caught
-                        # If entire <test> crashes, mark all its methods as SKIPPED
-                        for class_conf in test["classes"]:
-                            cls_name = class_conf["name"]
-                            cls = self._resolve_class(cls_name)
-                            obj = cls()
-                            all_methods = [attr for attr in dir(obj)
-                                           if callable(getattr(obj, attr))
-                                           and getattr(getattr(obj, attr),
-                                                       "is_test", False)]
-                            selected = self._filter_methods(
-                                all_methods, class_conf.get("methods",
-                                                            {"include": [],
-                                                             "exclude": []}))
-                            for m in selected:
-                                tr = TestResult(m, cls_name)
-                                tr.status = TestStatus.SKIPPED
-                                tr.caught_exception = ex
-                                results[f"{cls_name}.{m}"] = tr
-
-                    return results
-
                 test_name = suite_test.get("name", "UnnamedTest")
                 dummy_result = TestResult("__test_wrapper__", test_name)
-                parallel_tasks.append((test_name,
-                                       test_block,
-                                       dummy_result,
-                                       [],
-                                       [],
-                                       []))
-
+                parallel_tasks.append((
+                    test_name,
+                    functools.partial(self.__run_suite_test, suite_test, class_fixtures),
+                    dummy_result,
+                    [],
+                    [],
+                    []
+                ))
             else:
                 for class_conf in suite_test["classes"]:
-                    (seq, par, before_class, after_class) = \
-                        self._collect_tasks_for_class(class_conf, test_parallel)
-
+                    seq, par, before_class, after_class = self._collect_tasks_for_class(
+                        class_conf, test_parallel
+                    )
                     class_name = class_conf["name"]
                     class_fixtures[class_name] = {"before": before_class, "after": after_class}
-
                     sequential_tasks.extend(seq)
                     parallel_tasks.extend(par)
 
