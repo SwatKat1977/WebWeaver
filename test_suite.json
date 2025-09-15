@@ -6,16 +6,16 @@
     {
       "name": "LoginTests1",
       "classes": [
-        "ITest.ExampleTest",
+        "executor_test.ExampleTest",
         {
-          "name": "ITest.ExampleTest",
+          "name": "executor_test.ExampleTest",
           "methods": {
             "include": ["testViewProfile", "testUpdateProfile"],
             "exclude": ["testDeleteProfile"]
           }
         },
         {
-          "name": "ITest.MethodSpecificTest",
+          "name": "executor_test.MethodSpecificTest",
           "methods": {
             "include": ["add*", "remove_item"]
           }
