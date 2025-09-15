@@ -18,6 +18,7 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
 import fnmatch
 import functools
 import logging
@@ -25,6 +26,14 @@ import threading
 import time
 from test_result import TestResult
 from test_status import TestStatus
+
+
+@dataclass
+class TaskContext:
+    listeners: list = None
+    before_methods: list = None
+    after_methods: list = None
+    lock: threading.Lock = None
 
 
 class TestExecutor:
@@ -67,8 +76,15 @@ class TestExecutor:
                 results = self.__gather_results(futures)
         else:
             # pure sequential execution (no pool)
-            for (name, task, tr, listeners, bm, am) in sequential_tasks:
-                out = self.__run_task(task, tr, listeners, bm, am, lock=None)
+            for (name, task, test_result, listeners, before_methods,
+                 after_methods) in sequential_tasks:
+                ctx = TaskContext(
+                    listeners=listeners,
+                    before_methods=before_methods,
+                    after_methods=after_methods,
+                    lock=None
+                )
+                out = self.__run_task(task, test_result, ctx)
                 if isinstance(out, dict):
                     results.update(out)  # <- flatten wrappers into methods
                 elif isinstance(out, TestResult):
@@ -184,8 +200,14 @@ class TestExecutor:
                         method = getattr(obj, method_name)
                         mtr = TestResult(method_name, cls_name)
                         task = functools.partial(method)
-                        res = self.__run_task(task, mtr, method_listeners,
-                                              before_method_methods, after_method_methods)
+
+                        ctx = TaskContext(
+                            listeners=method_listeners,
+                            before_methods=before_method_methods,
+                            after_methods=after_method_methods,
+                            lock=None
+                        )
+                        res = self.__run_task(task, mtr, ctx)
                         results[f"{cls_name}.{method_name}"] = res
                         ran.add(method_name)
 
@@ -238,8 +260,15 @@ class TestExecutor:
                                                           "after": after_class}
 
                             # seq here are wrapper tasks returning dicts of method results
-                            for (_name, task, result, _listeners, bm, am) in seq:
-                                res = self.__run_task(task, result, [], bm, am)
+                            for (_name, task, result, listeners,
+                                 before_methods, after_methods) in seq:
+                                ctx = TaskContext(
+                                    listeners=listeners,
+                                    before_methods=before_methods,
+                                    after_methods=after_methods,
+                                    lock=None
+                                )
+                                res = self.__run_task(task, result, ctx)
                                 # res is a dict of { "Class.method": TestResult }
                                 if isinstance(res, dict):
                                     results.update(res)
@@ -308,23 +337,29 @@ class TestExecutor:
 
         for (name, task, test_result,
              listeners, before_methods, after_methods) in sequential_tasks:
+            ctx = TaskContext(
+                listeners=listeners,
+                before_methods=before_methods,
+                after_methods=after_methods,
+                lock=sequential_lock
+            )
             futures[executor.submit(self.__run_task,
                                     task,
                                     test_result,
-                                    listeners,
-                                    before_methods=before_methods,
-                                    after_methods=after_methods,
-                                    lock=sequential_lock)] = name
+                                    ctx)] = name
 
         for (name, task, test_result,
              listeners, before_methods, after_methods) in parallel_tasks:
+            ctx = TaskContext(
+                listeners=listeners,
+                before_methods=before_methods,
+                after_methods=after_methods,
+                lock=None
+            )
             futures[executor.submit(self.__run_task,
                                     task,
                                     test_result,
-                                    listeners,
-                                    before_methods=before_methods,
-                                    after_methods=after_methods,
-                                    lock=None)] = name
+                                    ctx)] = name
 
         return futures
 
@@ -340,12 +375,11 @@ class TestExecutor:
         return results
 
     def __run_task(self, task, test_result: TestResult,
-                   listeners: list = None,
-                   before_methods=None, after_methods=None,
-                   lock: threading.Lock = None):
-        before_methods = before_methods or []
-        after_methods = after_methods or []
-        listeners = listeners or []
+                   ctx: TaskContext = None):
+        ctx = ctx or TaskContext()
+        before_methods = ctx.before_methods or []
+        after_methods = ctx.after_methods or []
+        listeners = ctx.listeners or []
 
         def execute():
             test_result.start_milliseconds = int(time.time() * 1000)
@@ -403,8 +437,8 @@ class TestExecutor:
 
                 test_result.end_milliseconds = int(time.time() * 1000)
 
-        if lock:
-            with lock:
+        if ctx.lock:
+            with ctx.lock:
                 return execute()
         return execute()
 
