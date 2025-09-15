@@ -71,16 +71,14 @@ class MethodSpecificTest:
     @test()
     def removeItem(self):
         """ Test: (sequential) Test successful """
-        print("test_success: This test passes")
-        # nothing raised -> PASS
+        print("MethodSpecificTest.removeItem : PASS")
         time.sleep(7)
 
     @test()
     def addItem(self):
         """ Test: (sequential) Test successful """
-        print("addItem: This test passes")
-        # nothing raised -> PASS
-        time.sleep(7)
+        print("MethodSpecificTest.addItem : PASS")
+        time.sleep(2)
 
 
 LOGGING_DATETIME_FORMAT_STRING = "%Y-%m-%d %H:%M:%S"
