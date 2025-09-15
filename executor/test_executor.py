@@ -211,7 +211,10 @@ class TestExecutor:
                         results[f"{cls_name}.{method_name}"] = res
                         ran.add(method_name)
 
-                except Exception as ex:
+                # NOTE: Disabling broad exception here because this is a
+                #       user-defined method, and we don't know what exception
+                #       could be caught.
+                except Exception as ex:  # pylint:  disable=broad-exception-caught
                     # mark remaining methods as SKIPPED if wrapper bombs
                     for method_name in selected:
                         if method_name in ran:
@@ -251,7 +254,7 @@ class TestExecutor:
                     results = {}
                     try:
                         for class_conf in test["classes"]:
-                            (seq, par, before_class, after_class) = \
+                            (seq, _, before_class, after_class) = \
                                 self._collect_tasks_for_class(class_conf,
                                                               "none")
 
@@ -276,7 +279,10 @@ class TestExecutor:
                                     # Safety: in case a method slipped through
                                     results[_name] = res
 
-                    except Exception as ex:
+                    # NOTE: Disabling broad exception here because this is a
+                    #       user-defined method, and we don't know what exception
+                    #       could be caught.
+                    except Exception as ex:  # pylint:  disable=broad-exception-caught
                         # If entire <test> crashes, mark all its methods as SKIPPED
                         for class_conf in test["classes"]:
                             cls_name = class_conf["name"]
@@ -412,7 +418,10 @@ class TestExecutor:
                 test_result.status = TestStatus.SUCCESS
                 return test_result
 
-            except Exception as ex:
+            # NOTE: Disabling broad exception here because this is a
+            #       user-defined method, and we don't know what exception could
+            #       be caught.
+            except Exception as ex:  # pylint:  disable=broad-exception-caught
                 test_result.status = TestStatus.FAILURE
                 test_result.caught_exception = ex
                 return test_result
@@ -423,7 +432,11 @@ class TestExecutor:
                     for am in after_methods:
                         try:
                             am()
-                        except Exception as ex:
+
+                        # NOTE: Disabling broad exception here because this is
+                        #       a user-defined method, and we don't know what
+                        #       exception could be caught.
+                        except Exception as ex:  # pylint:  disable=broad-exception-caught
                             self._logger.warning(
                                 "Exception in after_method fixture: %s", ex)
 
