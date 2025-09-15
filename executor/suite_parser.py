@@ -47,7 +47,7 @@ class SuiteParser:
 
     DEFAULT_SUITE_THREAD_COUNT: int = 10
 
-    DEFAULT_TEST_THREAD_COUNT: int  = 10
+    DEFAULT_TEST_THREAD_COUNT: int = 10
 
     def __init__(self, schema_path: str):
         base_dir = os.path.dirname(__file__)
