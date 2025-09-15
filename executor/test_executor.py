@@ -51,6 +51,7 @@ class TaskContext:
     after_methods: typing.Optional[list] = None
     lock: typing.Optional[threading.Lock] = None
 
+
 class SequentialTaskIndex(IntEnum):
     """
     Index positions for elements within a sequential task tuple.
@@ -74,6 +75,30 @@ class SequentialTaskIndex(IntEnum):
     LISTENERS = 3
     BEFORE_METHODS = 4
     AFTER_METHODS = 5
+
+
+class ClassTaskIndex(IntEnum):
+    """
+    Index positions for elements within the tuple returned by
+    `_collect_tasks_for_class`.
+
+    That tuple has the following structure:
+
+        (sequential_tasks, parallel_tasks, before_classes, after_classes)
+
+    Attributes:
+        SEQUENTIAL (int): Index of the list of sequential tasks for the class.
+        PARALLEL (int): Index of the list of parallel tasks for the class.
+        BEFORE_CLASSES (int): Index of the list of class-level setup
+            ("before") methods.
+        AFTER_CLASSES (int): Index of the list of class-level teardown
+            ("after") methods.
+    """
+    SEQUENTIAL = 0
+    PARALLEL = 1
+    BEFORE_CLASS = 2
+    AFTER_CLASS = 3
+
 
 class TestExecutor:
     """
@@ -441,13 +466,15 @@ class TestExecutor:
                 ))
             else:
                 for class_conf in suite_test["classes"]:
-                    seq, par, before_class, after_class = self._collect_tasks_for_class(
-                        class_conf, test_parallel
-                    )
+                    class_entry = self._collect_tasks_for_class(class_conf,
+                                                                test_parallel)
                     class_name = class_conf["name"]
-                    class_fixtures[class_name] = {"before": before_class, "after": after_class}
-                    sequential_tasks.extend(seq)
-                    parallel_tasks.extend(par)
+                    class_fixtures[class_name] = {
+                        "before": class_entry[ClassTaskIndex.BEFORE_CLASS],
+                        "after": class_entry[ClassTaskIndex.AFTER_CLASS]
+                    }
+                    sequential_tasks.extend(class_entry[ClassTaskIndex.SEQUENTIAL])
+                    parallel_tasks.extend(class_entry[ClassTaskIndex.PARALLEL])
 
         return sequential_tasks, parallel_tasks, class_fixtures
 
@@ -505,35 +532,37 @@ class TestExecutor:
                 results[name] = result  # <- method tasks only
         return results
 
-    def __run_task(self, task, test_result: TestResult,
+    def __run_task(self,
+                   task,
+                   test_result: TestResult,
                    ctx: TaskContext = None):
+        """
+        Execute a single task with optional before/after methods, listeners,
+        and synchronization via a TaskContext.
+        """
         ctx = ctx or TaskContext()
         before_methods = ctx.before_methods or []
         after_methods = ctx.after_methods or []
         listeners = ctx.listeners or []
 
-        def execute():
-            test_result.start_milliseconds = int(time.time() * 1000)
-
-            # Peek: is this test enabled?
-            is_enabled = True
+        def _is_task_enabled(task) -> bool:
             if isinstance(task, functools.partial):
                 func = getattr(task, "func", None)
                 if func is not None:
-                    is_enabled = getattr(func, "enabled", True)
+                    return getattr(func, "enabled", True)
 
-            # Only run before_methods if enabled
-            if is_enabled:
-                for bm in before_methods:
-                    bm()
+            return True
 
+        def _run_task_body(task, test_result: TestResult):
             try:
                 result = task()
 
                 if isinstance(result, dict):
                     return result
+
                 if isinstance(result, TestResult):
                     return result
+
                 if isinstance(result, tuple) and len(result) == 2:
                     status, ex = result
                     test_result.status = status
@@ -543,37 +572,46 @@ class TestExecutor:
                 test_result.status = TestStatus.SUCCESS
                 return test_result
 
-            # NOTE: Disabling broad exception here because this is a
-            #       user-defined method, and we don't know what exception could
-            #       be caught.
-            except Exception as ex:  # pylint:  disable=broad-exception-caught
+            except Exception as ex:  # pylint: disable=broad-exception-caught
                 test_result.status = TestStatus.FAILURE
                 test_result.caught_exception = ex
                 return test_result
 
-            finally:
-                # Only run after_methods if not skipped
-                if test_result.status != TestStatus.SKIPPED:
-                    for am in after_methods:
-                        try:
-                            am()
+        def _finalize_task(test_result: TestResult):
+            # Only run after_methods if not skipped
+            if test_result.status != TestStatus.SKIPPED:
+                for am in after_methods:
+                    try:
+                        am()
 
-                        # NOTE: Disabling broad exception here because this is
-                        #       a user-defined method, and we don't know what
-                        #       exception could be caught.
-                        except Exception as ex:  # pylint:  disable=broad-exception-caught
-                            self._logger.warning(
-                                "Exception in after_method fixture: %s", ex)
+                    # NOTE: Disabling broad exception here because this is
+                    # a user-defined method, and we don't know what exception
+                    # could be caught.
+                    except Exception as ex:  # pylint: disable=broad-exception-caught
+                        self._logger.warning(
+                            "Exception in after_method fixture: %s", ex)
 
-                for listener in listeners:
-                    if test_result.status is TestStatus.SUCCESS:
-                        listener.on_test_success(test_result)
-                    elif test_result.status is TestStatus.FAILURE:
-                        listener.on_test_failure(test_result)
-                    elif test_result.status is TestStatus.SKIPPED:
-                        listener.on_test_skipped(test_result)
+            for listener in listeners:
+                if test_result.status is TestStatus.SUCCESS:
+                    listener.on_test_success(test_result)
+                elif test_result.status is TestStatus.FAILURE:
+                    listener.on_test_failure(test_result)
+                elif test_result.status is TestStatus.SKIPPED:
+                    listener.on_test_skipped(test_result)
 
-                test_result.end_milliseconds = int(time.time() * 1000)
+            test_result.end_milliseconds = int(time.time() * 1000)
+
+        def execute():
+            test_result.start_milliseconds = int(time.time() * 1000)
+
+            if _is_task_enabled(task):
+                for bm in before_methods:
+                    bm()
+
+            result = _run_task_body(task, test_result)
+
+            _finalize_task(test_result)
+            return result
 
         if ctx.lock:
             with ctx.lock:
