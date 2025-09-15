@@ -30,10 +30,24 @@ from test_status import TestStatus
 
 @dataclass
 class TaskContext:
-    listeners: list = None
-    before_methods: list = None
-    after_methods: list = None
-    lock: threading.Lock = None
+    """
+    Context container for managing task execution state, lifecycle hooks,
+    and optional synchronization.
+
+    Attributes:
+        listeners (list | None): A collection of listener objects or callbacks
+            that can be notified about task-related events, or None if not set.
+        before_methods (list | None): Callables to be executed before the main
+            task logic runs, or None if not defined.
+        after_methods (list | None): Callables to be executed after the main
+            task logic completes, or None if not defined.
+        lock (threading.Lock | None): Optional lock for thread-safe access and
+            modification of the context, or None if synchronization is not required.
+    """
+    listeners: list | None = None
+    before_methods: list | None = None
+    after_methods: list | None = None
+    lock: threading.Lock | None = None
 
 
 class TestExecutor:
@@ -98,6 +112,24 @@ class TestExecutor:
         return results
 
     def _filter_methods(self, all_methods, methods_conf):
+        """
+        Filter a list of method names based on inclusion and exclusion patterns.
+
+        Parameters:
+            all_methods (Iterable[str]): The complete set of method names to
+            filter.
+            methods_conf (dict): A configuration dictionary that may contain:
+                - "include" (list[str]): Glob-style patterns to explicitly
+                  include. If omitted or empty, all methods are considered
+                  initially.
+                - "exclude" (list[str]): Glob-style patterns to exclude from the
+                  final selection.
+
+        Returns:
+            list[str]: The subset of method names that match the inclusion
+            patterns (if any are provided) and do not match the exclusion
+            patterns.
+        """
         include_patterns = methods_conf.get("include", [])
         exclude_patterns = methods_conf.get("exclude", [])
 
@@ -118,7 +150,26 @@ class TestExecutor:
         return selected
 
     def _collect_method_tasks(self, obj, cls_name, selected_methods, test_parallel):
-        """Return sequential and parallel tasks for a list of methods of a class."""
+        """
+        Collect tasks for the given object's methods and categorize them as
+        sequential or parallel based on the test execution mode.
+
+        Parameters:
+            obj (object): The instance containing the methods to execute.
+            cls_name (str): The class name of the object, used for task naming.
+            selected_methods (Iterable[str]): Names of methods to wrap as tasks.
+            test_parallel (str): Execution mode indicator. If set to "tests",
+                "classes", or "methods", tasks will be marked as parallel;
+                otherwise, they will be sequential.
+
+        Returns:
+            tuple[list[tuple[str, Callable, TestResult]], list[tuple[str, Callable, TestResult]]]:
+                A tuple containing two lists:
+                - sequential_tasks: Tasks to run sequentially.
+                - parallel_tasks: Tasks to run in parallel.
+                Each task is represented as a tuple of
+                (task_name, task_callable, TestResult).
+        """
         sequential_tasks = []
         parallel_tasks = []
 
@@ -237,6 +288,45 @@ class TestExecutor:
         return sequential, parallel, before_class_methods, after_class_methods
 
     def __collect_from_suite(self, suite: dict):
+        """
+        Collect tasks from a test suite configuration and categorize them into
+        sequential tasks, parallel tasks, and class-level fixtures.
+
+        This method inspects the suite definition, determines whether tests
+        should run sequentially or in parallel (based on suite or test-level
+        `parallel` configuration), and prepares callable task wrappers along
+        with associated fixtures.
+
+        Parameters:
+            suite (dict): A dictionary describing the test suite. Expected keys:
+                - "suite" (dict): Suite-level configuration, may contain
+                  `"parallel"` to set default parallelism.
+                - "tests" (list[dict]): A list of test configurations. Each
+                                        test may
+                  contain:
+                    * "name" (str, optional): The test name.
+                    * "parallel" (str, optional): Parallelism mode, overrides
+                      the suite-level setting. Accepted values are
+                      `"tests"`, `"classes"`, `"methods"`, or `"none"`.
+                    * "classes" (list[dict]): Class-level configurations, each
+                      with:
+                        - "name" (str): Class name.
+                        - "methods" (dict, optional): Filtering configuration
+                          for selecting test methods with `"include"` /
+                          `"exclude"`.
+
+        Returns:
+            tuple[
+                list[tuple[str, Callable, TestResult, list, list, list]],
+                list[tuple[str, Callable, TestResult, list, list, list]],
+                dict[str, dict[str, list]]
+            ]:
+                A tuple containing:
+                - sequential_tasks: Tasks to run sequentially.
+                - parallel_tasks: Tasks to run in parallel.
+                - class_fixtures: A mapping of class names to their fixtures
+                  with `"before"` and `"after"` method lists.
+        """
         sequential_tasks = []
         parallel_tasks = []
         class_fixtures = {}
