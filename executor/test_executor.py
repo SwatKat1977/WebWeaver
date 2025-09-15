@@ -51,6 +51,7 @@ class TestExecutor:
         self._max_workers = max_workers
 
     def run_tests(self, suite: dict):
+        #pylint: disable=missing-function-docstring, too-many-locals
         sequential_tasks, parallel_tasks, class_fixtures = self.__collect_from_suite(suite)
 
         # run before_class hooks
@@ -119,6 +120,8 @@ class TestExecutor:
         return sequential_tasks, parallel_tasks
 
     def _collect_tasks_for_class(self, class_conf, test_parallel):
+        # pylint: disable=too-many-locals
+
         cls_name = class_conf["name"]
         methods_conf = class_conf.get("methods", {"include": [], "exclude": []})
         cls = self._resolve_class(cls_name)
@@ -185,6 +188,7 @@ class TestExecutor:
                                               before_method_methods, after_method_methods)
                         results[f"{cls_name}.{method_name}"] = res
                         ran.add(method_name)
+
                 except Exception as ex:
                     # mark remaining methods as SKIPPED if wrapper bombs
                     for method_name in selected:
@@ -214,13 +218,14 @@ class TestExecutor:
 
         suite_conf = suite["suite"]
 
-        for test in suite["tests"]:
-            test_parallel = test.get("parallel", suite_conf.get("parallel", "none"))
+        for suite_test in suite["tests"]:
+            test_parallel = suite_test.get("parallel", suite_conf.get(
+                "parallel", "none"))
 
             if test_parallel == "tests":
                 # Wrap whole <test>: run its classes sequentially INSIDE the
                 # wrapper, but return a dict of per-method TestResults only.
-                def test_block():
+                def test_block(test=suite_test):
                     results = {}
                     try:
                         for class_conf in test["classes"]:
@@ -264,7 +269,7 @@ class TestExecutor:
 
                     return results
 
-                test_name = test.get("name", "UnnamedTest")
+                test_name = suite_test.get("name", "UnnamedTest")
                 dummy_result = TestResult("__test_wrapper__", test_name)
                 parallel_tasks.append((test_name,
                                        test_block,
@@ -274,7 +279,7 @@ class TestExecutor:
                                        []))
 
             else:
-                for class_conf in test["classes"]:
+                for class_conf in suite_test["classes"]:
                     (seq, par, before_class, after_class) = \
                         self._collect_tasks_for_class(class_conf, test_parallel)
 
