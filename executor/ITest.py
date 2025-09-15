@@ -1,3 +1,4 @@
+""" This is a temporary module """
 import json
 import logging
 import time
@@ -23,18 +24,22 @@ class ExampleTest:
 
     @before_class
     def setup_class(self):
+        """ Setup class """
         print("Connecting to database...")
 
     @after_class
     def teardown_class(self):
+        """ Teardown class """
         print("Disconnecting from database...")
 
     @before_method
     def setup(self):
+        """ Before method """
         print("Calling before method...")
 
     @after_method
     def teardown(self):
+        """ After method """
         print("Calling after method...")
 
     @test()
@@ -69,13 +74,13 @@ class MethodSpecificTest:
     """ Example tests """
 
     @test()
-    def removeItem(self):
+    def remove_item(self):
         """ Test: (sequential) Test successful """
         print("MethodSpecificTest.removeItem : PASS")
         time.sleep(7)
 
     @test()
-    def addItem(self):
+    def add_item(self):
         """ Test: (sequential) Test successful """
         print("MethodSpecificTest.addItem : PASS")
         time.sleep(2)

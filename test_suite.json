@@ -1,14 +1,10 @@
 {
   "suite": {
-    "name": "MySuite",
-    "parallel": "tests",
-    "thread_count": 3
+    "name": "MySuite"
   },
   "tests": [
     {
       "name": "LoginTests1",
-      "parallel": "classes",
-      "thread_count": 5,
       "classes": [
         "ITest.ExampleTest",
         {
@@ -21,7 +17,7 @@
         {
           "name": "ITest.MethodSpecificTest",
           "methods": {
-            "include": ["add*", "removeItem"]
+            "include": ["add*", "remove_item"]
           }
         }
       ]
