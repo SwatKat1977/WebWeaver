@@ -26,6 +26,7 @@ import logging
 import threading
 import time
 import typing
+from suite_parser import SuiteParser
 from test_result import TestResult
 from test_status import TestStatus
 
@@ -106,25 +107,20 @@ class TestExecutor:
 
     Attributes:
         _logger (logging.Logger): Logger instance for logging test execution.
-        _max_workers (int): Maximum number of worker threads for parallel
-                            execution.
     """
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, logger: logging.Logger, max_workers: int = 3):
+    def __init__(self, logger: logging.Logger):
         """
         Initializes the TestExecutor.
 
         Args:
             logger (logging.Logger): Parent logger to create a child logger.
-            max_workers (int, optional): Maximum number of parallel workers.
-                                         Defaults to 3.
         """
         self._logger = logger.getChild(__name__)
-        self._max_workers = max_workers
 
     def run_tests(self, suite: dict):
-        #pylint: disable=missing-function-docstring, too-many-locals
+        # pylint: disable=too-many-locals
         sequential_tasks, parallel_tasks, class_fixtures = self.__collect_from_suite(suite)
 
         # run before_class hooks
@@ -135,7 +131,15 @@ class TestExecutor:
         results = {}
 
         if parallel_tasks:
-            with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
+            # Respect thread_count from suite config
+            suite_conf: dict = suite.get("suite", {})
+            pool_size: int = suite_conf.get(
+                "thread_count", SuiteParser.DEFAULT_SUITE_THREAD_COUNT)
+
+            self._logger.debug("Suite '%s' is using thread pool size: %s",
+                               suite_conf["name"], pool_size)
+
+            with ThreadPoolExecutor(max_workers=pool_size) as executor:
                 futures = self.__submit_tasks(executor, sequential_tasks, parallel_tasks)
                 results = self.__gather_results(futures)
         else:

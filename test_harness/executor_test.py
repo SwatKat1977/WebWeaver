@@ -69,6 +69,13 @@ class ExampleTest:
         """ Test: (sequential) Test not enabled - it get marked as skipped """
         print("This test should never run")
 
+    @test(parallel=True)
+    def test_excluded(self):
+        """ Test: (parallel) Test failed - fail_test """
+        print("test_failure: This test fails intentionally")
+        time.sleep(2)
+        fail_test("Test should be excluded")
+
 
 class MethodSpecificTest:
     """ Example tests """

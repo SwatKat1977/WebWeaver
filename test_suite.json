@@ -1,6 +1,8 @@
 {
   "suite": {
-    "name": "MySuite"
+    "name": "MySuite",
+    "parallel": "tests",
+    "thread_count": 3
   },
   "tests": [
     {
@@ -10,8 +12,8 @@
         {
           "name": "executor_test.ExampleTest",
           "methods": {
-            "include": ["testViewProfile", "testUpdateProfile"],
-            "exclude": ["testDeleteProfile"]
+            "include": ["test_success", "test_failure", "test_exception", "test_skipped"],
+            "exclude": ["test_excluded"]
           }
         },
         {
