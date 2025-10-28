@@ -1,12 +1,10 @@
 [build-system]
-# Minimum build system requirements
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-# Package metadata
 name = "webweaver"
-version = "0.1.0"
+version = "v0.1.0-alpha_2"
 description = "WebWeaver — a modular web automation and scraping library."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -14,26 +12,15 @@ authors = [
     { name = "SwatKat1977", email = "webweaver@invalid.invalid" }
 ]
 requires-python = ">=3.10"
-
-# List of required third-party packages (update as needed)
 dependencies = [
     "selenium",
     "webdriver_manager"
 ]
-
-# Optional: useful keywords for PyPI and package indexers
 keywords = ["web", "automation"]
-
-# Optional: classifiers for metadata (shows up on PyPI)
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
 
 [tool.setuptools]
-# Tell setuptools where to find your package code
-package-dir = { "" = "web_weaver" }
-
-[tool.setuptools.packages.find]
-# Search for packages inside the web_weaver directory
-where = ["web_weaver"]
+packages = ["web_weaver"]
