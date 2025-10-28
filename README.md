@@ -16,4 +16,4 @@ Useful sites to test automation:
 
 ## Building The Library
 
-To build the library you will need the 'build' library.
+To build the library you will need the 'build' library and then run 'python -m build'.
