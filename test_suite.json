@@ -7,21 +7,19 @@
   "tests": [
     {
       "name": "LoginTests1",
-      "parallel": "classes",
-      "thread_count": 5,
       "classes": [
-        "ITest.ExampleTest",
+        "executor_test.ExampleTest",
         {
-          "name": "ITest.ExampleTest",
+          "name": "executor_test.ExampleTest",
           "methods": {
-            "include": ["testViewProfile", "testUpdateProfile"],
-            "exclude": ["testDeleteProfile"]
+            "include": ["test_success", "test_failure", "test_exception", "test_skipped"],
+            "exclude": ["test_excluded"]
           }
         },
         {
-          "name": "ITest.MethodSpecificTest",
+          "name": "executor_test.MethodSpecificTest",
           "methods": {
-            "include": ["add*", "removeItem"]
+            "include": ["add*", "remove_item"]
           }
         }
       ]

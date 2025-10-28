@@ -28,7 +28,7 @@ class TestStatus(enum.Enum):
         CREATED (int): Test has been created but not yet executed (-1).
         SUCCESS (int): Test completed successfully (1).
         FAILURE (int): Test execution failed (2).
-        SKIP (int): Test was skipped and not executed (3).
+        SKIPPED (int): Test was skipped and not executed (3).
     """
     CREATED = -1
     SUCCESS = 1
