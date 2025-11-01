@@ -13,9 +13,25 @@ from node_picker import NodePicker
 
 
 class NodeCanvas(wx.Panel):
+    """
+    A custom wx.Panel that provides a visual, interactive node editor canvas.
+
+    The NodeCanvas supports adding, connecting, and arranging nodes in a
+    graph-like layout. Users can pan, zoom, create connections between
+    nodes, and invoke context menus for node or connection actions.
+    """
     next_id = 100
 
     def __init__(self, parent, on_node_selected, settings):
+        """
+        Initialize the node canvas and its interaction state.
+
+        Args:
+            parent (wx.Window): The parent window or panel.
+            on_node_selected (Callable): Callback triggered when a node is selected.
+            settings (dict): Dictionary containing editor settings such as
+                             'snap_size' and 'snap_enabled'.
+        """
         super().__init__(parent, style=wx.WANTS_CHARS)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.on_node_selected = on_node_selected
@@ -45,29 +61,48 @@ class NodeCanvas(wx.Panel):
         self.drag_anchor_node = None
 
         # Events
-        self.Bind(wx.EVT_PAINT, self.OnPaint)
-        self.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
-        self.Bind(wx.EVT_LEFT_UP, self.OnLeftUp)
-        self.Bind(wx.EVT_MOTION, self.OnMouseMove)
-        self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
-        self.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
-        self.Bind(wx.EVT_LEAVE_WINDOW, self.OnMouseLeave)
+        self.Bind(wx.EVT_PAINT, self._on_paint)
+        self.Bind(wx.EVT_LEFT_DOWN, self._on_left_down)
+        self.Bind(wx.EVT_LEFT_UP, self._on_left_up)
+        self.Bind(wx.EVT_MOTION, self._on_mouse_move)
+        self.Bind(wx.EVT_MOUSEWHEEL, self._on_mouse_wheel)
+        self.Bind(wx.EVT_CONTEXT_MENU, self._on_context_menu)
+        self.Bind(wx.EVT_LEAVE_WINDOW, self._on_mouse_leave)
 
     # ----- Helpers -----
 
-    def screen_to_world(self, pt: wx.Point) -> wx.RealPoint:
+    def _screen_to_world(self, pt: wx.Point) -> wx.RealPoint:
+        """
+        Convert a screen coordinate to world-space coordinates.
+
+        Args:
+            pt (wx.Point): A point in screen (pixel) coordinates.
+
+        Returns:
+            wx.RealPoint: The corresponding point in world coordinates,
+                          adjusted for offset and zoom scale.
+        """
         return wx.RealPoint(
             (pt.x - self.offset.x) / self.scale,
             (pt.y - self.offset.y) / self.scale
         )
 
-    def snap_val(self, v: float) -> float:
+    def _snap_val(self, v: float) -> float:
+        """
+        Snap a value to the nearest grid step if snapping is enabled.
+
+        Args:
+            v (float): The value to be snapped.
+
+        Returns:
+            float: The snapped value based on the snap size setting.
+        """
         s = max(1, int(self.settings["snap_size"]))
         return round(v / s) * s
 
     # ----- Paint -----
 
-    def OnPaint(self, _):
+    def _on_paint(self, _):
         dc = wx.AutoBufferedPaintDC(self)
         gc = wx.GraphicsContext.Create(dc)
         w, h = self.GetClientSize()
@@ -93,8 +128,8 @@ class NodeCanvas(wx.Panel):
         step_minor = max(5, int(self.settings.get("snap_size", 20)))  # e.g. 20
         major_every = 2  # 2*20 = 40 (bold)
 
-        tl = self.screen_to_world(wx.Point(0, 0))
-        br = self.screen_to_world(wx.Point(w, h))
+        tl = self._screen_to_world(wx.Point(0, 0))
+        br = self._screen_to_world(wx.Point(w, h))
 
         start_x = math.floor(tl.x / step_minor) * step_minor
         end_x = math.ceil(br.x / step_minor) * step_minor
@@ -195,7 +230,7 @@ class NodeCanvas(wx.Panel):
             return
         node, idx, _ = self.start_pin
         start = wx.RealPoint(node.pos.x + node.size.width + 10, node.pos.y + 30 + idx * 20)
-        end = self.screen_to_world(self.last_mouse)
+        end = self._screen_to_world(self.last_mouse)
         gc.SetPen(wx.Pen(wx.Colour(220, 200, 100), 2, wx.PENSTYLE_DOT))
         d = abs(end.x - start.x) * 0.5
         path = gc.CreatePath()
@@ -205,10 +240,10 @@ class NodeCanvas(wx.Panel):
 
     # ----- Interaction -----
 
-    def OnLeftDown(self, event):
+    def _on_left_down(self, event):
         self.CaptureMouse()
         self.last_mouse = event.GetPosition()
-        world = self.screen_to_world(self.last_mouse)
+        world = self._screen_to_world(self.last_mouse)
 
         # Start connection drag
         for n in reversed(self.nodes):
@@ -236,18 +271,18 @@ class NodeCanvas(wx.Panel):
         self.drag_node = clicked
         self.dragging = True
         if self.drag_node:
-            self.drag_anchor_world = self.screen_to_world(self.last_mouse)
+            self.drag_anchor_world = self._screen_to_world(self.last_mouse)
             self.drag_anchor_node = wx.RealPoint(self.drag_node.pos.x, self.drag_node.pos.y)
 
         self.SetFocus()
         self.Refresh(False)
 
-    def OnLeftUp(self, event):
+    def _on_left_up(self, event):
         if self.HasCapture():
             self.ReleaseMouse()
 
         if self.dragging_connection and self.start_pin:
-            world = self.screen_to_world(event.GetPosition())
+            world = self._screen_to_world(event.GetPosition())
             s_node, s_idx, _ = self.start_pin
 
             for n in self.nodes:
@@ -285,8 +320,8 @@ class NodeCanvas(wx.Panel):
         self.drag_anchor_node = None
         self.Refresh(False)
 
-    def OnMouseMove(self, event):
-        world = self.screen_to_world(event.GetPosition())
+    def _on_mouse_move(self, event):
+        world = self._screen_to_world(event.GetPosition())
 
         # Hover highlight
         for c in self.connections:
@@ -299,13 +334,13 @@ class NodeCanvas(wx.Panel):
             if self.dragging_connection:
                 self.last_mouse = event.GetPosition()
             elif self.drag_node:
-                world_now = self.screen_to_world(event.GetPosition())
+                world_now = self._screen_to_world(event.GetPosition())
                 delta = world_now - self.drag_anchor_world
                 new_x = self.drag_anchor_node.x + delta.x
                 new_y = self.drag_anchor_node.y + delta.y
                 if self.settings["snap_enabled"]:
-                    new_x = self.snap_val(new_x)
-                    new_y = self.snap_val(new_y)
+                    new_x = self._snap_val(new_x)
+                    new_y = self._snap_val(new_y)
                 self.drag_node.pos.x = new_x
                 self.drag_node.pos.y = new_y
             else:
@@ -318,25 +353,56 @@ class NodeCanvas(wx.Panel):
 
         self.Refresh(False)
 
-    def OnMouseWheel(self, event):
+    def _on_mouse_wheel(self, event):
         delta = event.GetWheelRotation() / event.GetWheelDelta()
         zoom = 1.1 if delta > 0 else 0.9
         mouse = event.GetPosition()
-        before = self.screen_to_world(mouse)
+        before = self._screen_to_world(mouse)
         self.scale = max(0.3, min(2.5, self.scale * zoom))
-        after = self.screen_to_world(mouse)
+        after = self._screen_to_world(mouse)
         self.offset.x += (after.x - before.x) * self.scale
         self.offset.y += (after.y - before.y) * self.scale
         self.Refresh(False)
 
-    def OnContextMenu(self, event):
-        world = self.screen_to_world(event.GetPosition())
+    def _on_context_menu(self, event):
+        """
+        Handles right-click context menu events in the node editor canvas.
+
+        This method determines whether the user right-clicked on an existing
+        connection or on empty space within the editor view, and displays
+        the appropriate context menu or node picker popup.
+
+        Behavior:
+            - If the user right-clicks on a hovered connection, a context menu
+              appears with the option to delete that connection.
+            - If the user right-clicks on empty space, an Unreal-style node
+              picker popup appears, allowing the user to add a new node at
+              the clicked world position.
+
+        Args:
+            event (wx.ContextMenuEvent): The wx event triggered by a right-click.
+
+        Side Effects:
+            - May delete a connection if the user selects "Delete Connection".
+            - May spawn a NodePicker popup for adding new nodes.
+            - Schedules a delayed focus shift to the NodePicker's search box
+              for reliable cross-platform UX.
+
+        Notes:
+            The `focus_search` function is called asynchronously via
+            `wx.CallLater` to ensure the popup is active before setting focus,
+            which improves behavior consistency across platforms.
+        """
+        world = self._screen_to_world(event.GetPosition())
         hovered_conn = next((c for c in self.connections if c.hovered), None)
 
         if hovered_conn:
             menu = wx.Menu()
             del_item = menu.Append(wx.ID_DELETE, "Delete Connection")
-            self.Bind(wx.EVT_MENU, lambda evt, c=hovered_conn: self.delete_connection(c), del_item)
+            self.Bind(wx.EVT_MENU,
+                      lambda evt,
+                      c=hovered_conn: self.__delete_connection(c),
+                      del_item)
             self.PopupMenu(menu)
             menu.Destroy()
             return
@@ -356,7 +422,7 @@ class NodeCanvas(wx.Panel):
 
         wx.CallLater(100, focus_search)
 
-    def OnMouseLeave(self, _):
+    def _on_mouse_leave(self, _):
         for c in self.connections:
             c.hovered = False
         self.Refresh(False)
@@ -375,7 +441,7 @@ class NodeCanvas(wx.Panel):
             mind = min(mind, math.hypot(pt.x - bx, pt.y - by))
         return mind <= tol
 
-    def delete_connection(self, c):
+    def __delete_connection(self, c):
         if c in self.connections:
             self.connections.remove(c)
             self.Refresh(False)
