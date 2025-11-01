@@ -11,12 +11,21 @@ import wx
 import wx.propgrid as wxpg
 from node_canvas import NodeCanvas
 from preferences_dialog import PreferencesDialog
+from node import Node
+from connection import Connection
 
 
 class NodeEditorFrame(wx.Frame):
+    """Main application window for the Web Weaver node editor.
+
+    Provides a split layout with a drawing canvas on the left and a
+    property editor panel on the right. Handles saving/loading of node
+    graphs and user preferences such as snap settings.
+    """
     CONFIG_PATH = os.path.expanduser("~/.weaver_settings.json")
 
     def __init__(self):
+        """Initialize the node editor frame and UI layout."""
         super().__init__(None, title="Node Editor", size=(1200, 720))
         self.settings = self.load_settings()
         splitter = wx.SplitterWindow(self)
@@ -40,7 +49,7 @@ class NodeEditorFrame(wx.Frame):
 
         self.CreateStatusBar()
         self.update_snap_status()
-        self.Bind(wx.EVT_CHAR_HOOK, self.OnKey)
+        self.Bind(wx.EVT_CHAR_HOOK, self._on_key)
         self.Bind(wxpg.EVT_PG_CHANGED, self.on_property_changed)
         self.btn_add_in.Bind(wx.EVT_BUTTON, self.on_add_input)
         self.btn_add_out.Bind(wx.EVT_BUTTON, self.on_add_output)
@@ -49,6 +58,8 @@ class NodeEditorFrame(wx.Frame):
         self.Show()
 
     def update_snap_status(self):
+        """Update the window title and status bar with the current snap state."""
+
         state = "ON" if self.settings["snap_enabled"] else "OFF"
         self.SetTitle(f"Node Editor [Snap: {state}]")
         sb = self.GetStatusBar()
@@ -56,6 +67,8 @@ class NodeEditorFrame(wx.Frame):
             sb.SetStatusText(f"Snap: {state}")
 
     def on_node_selected(self, node):
+        """Display the selected node’s properties in the property grid."""
+
         self.selected_node = node
         self.pg.GetPage(0).Clear()
         if not node:
@@ -67,6 +80,8 @@ class NodeEditorFrame(wx.Frame):
         p_out.ChangeFlag(wxpg.PG_PROP_READONLY, True)
 
     def on_property_changed(self, event):
+        """Handle changes made in the property grid."""
+
         if not self.selected_node:
             return
         if event.GetProperty().GetName() == "Name":
@@ -74,27 +89,39 @@ class NodeEditorFrame(wx.Frame):
             self.canvas.Refresh(False)
 
     def on_add_input(self, _):
-        if not self.selected_node: return
+        """Add a new input port to the currently selected node."""
+
+        if not self.selected_node:
+            return
+
         self.selected_node.inputs.append(f"Input {len(self.selected_node.inputs)+1}")
         self.on_node_selected(self.selected_node)
         self.canvas.Refresh(False)
 
     def on_add_output(self, _):
-        if not self.selected_node: return
+        """Add a new output port to the currently selected node."""
+
+        if not self.selected_node:
+            return
+
         self.selected_node.outputs.append(f"Output {len(self.selected_node.outputs)+1}")
         self.on_node_selected(self.selected_node)
         self.canvas.Refresh(False)
 
     def open_preferences(self):
+        """Open the preferences dialog to adjust editor settings."""
+
         dlg = PreferencesDialog(self, self.settings)
         if dlg.ShowModal() == wx.ID_OK:
             self.settings["snap_enabled"] = dlg.chk_snap.GetValue()
             self.settings["snap_size"] = dlg.spin_snap.GetValue()
-            save_settings(self.settings)
+            self.save_settings(self.settings)
             self.update_snap_status()
         dlg.Destroy()
 
-    def OnKey(self, e):
+    def _on_key(self, e):
+        """Handle keyboard shortcuts for save, open, and toggle snap."""
+
         ctrl = e.ControlDown()
         code = e.GetKeyCode()
         if ctrl and code in (ord('S'), ord('s')):
@@ -109,6 +136,8 @@ class NodeEditorFrame(wx.Frame):
             e.Skip()
 
     def save_graph(self):
+        """Save the current graph to a JSON file."""
+
         dlg = wx.FileDialog(self, "Save graph", "", "", "JSON files (*.json)|*.json",
                             wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
         if dlg.ShowModal() != wx.ID_OK:
@@ -129,16 +158,18 @@ class NodeEditorFrame(wx.Frame):
                 "in_index": c.in_index
             } for c in self.canvas.connections]
         }
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4)
         dlg.Destroy()
 
     def load_graph(self):
+        """Load a graph from a JSON file and populate the canvas."""
+
         dlg = wx.FileDialog(self, "Open graph", "", "", "JSON files (*.json)|*.json", wx.FD_OPEN)
         if dlg.ShowModal() != wx.ID_OK:
             return
         path = dlg.GetPath()
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
         self.canvas.nodes.clear()
         node_map = {}
@@ -162,21 +193,24 @@ class NodeEditorFrame(wx.Frame):
         dlg.Destroy()
 
     def load_settings(self):
+        """Load user preferences such as snap settings from disk."""
+
         try:
-            with open(self.CONFIG_PATH) as f:
+            with open(self.CONFIG_PATH, encoding="utf-8") as f:
                 data = json.load(f)
                 return {
                     "snap_enabled": bool(data.get("snap_enabled", False)),
                     "snap_size": int(data.get("snap_size", 20)),
                 }
-        except Exception:
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
             return {"snap_enabled": False, "snap_size": 20}
 
-
     def save_settings(self, data):
-        try:
-            with open(self.CONFIG_PATH, "w") as f:
-                json.dump(data, f, indent=4)
-        except Exception as ex:
-            wx.LogError(f"Could not save settings: {ex}")
+        """Save current user preferences to disk."""
 
+        try:
+            with open(self.CONFIG_PATH, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=4)
+
+        except (FileNotFoundError, json.JSONDecodeError, OSError) as ex:
+            wx.LogError(f"Could not save settings: {ex}")
