@@ -9,6 +9,7 @@ import math
 import wx
 from connection import Connection
 from node import Node
+from node_types import NODE_TYPES
 
 
 class NodeCanvas(wx.Panel):
@@ -133,7 +134,7 @@ class NodeCanvas(wx.Panel):
                 gc.DrawRoundedRectangle(r.x - 4, r.y - 4, r.width + 8, r.height + 8, 12)
 
             # body
-            fill = wx.Colour(45, 47, 52)
+            fill = n.color
             border = wx.Colour(255, 140, 0) if n.selected else wx.Colour(60, 62, 68)
             gc.SetBrush(wx.Brush(fill))
             gc.SetPen(wx.Pen(border, 2))
@@ -313,8 +314,15 @@ class NodeCanvas(wx.Panel):
             del_item = menu.Append(wx.ID_DELETE, "Delete Connection")
             self.Bind(wx.EVT_MENU, lambda evt, c=hovered_conn: self.delete_connection(c), del_item)
         else:
-            add_item = menu.Append(-1, "Add Node Here")
-            self.Bind(wx.EVT_MENU, lambda evt, pos=world: self.add_node("Node", pos), add_item)
+            # Create a "Add Node" submenu
+            add_menu = wx.Menu()
+            for node_type in NODE_TYPES:
+                item = add_menu.Append(-1, node_type)
+                self.Bind(wx.EVT_MENU,
+                          lambda evt, t=node_type, pos=world: self.add_node(t, pos),
+                          item)
+            menu.AppendSubMenu(add_menu, "Add Node")
+
             menu.AppendSeparator()
             pref_item = menu.Append(-1, "Preferences…")
             self.Bind(wx.EVT_MENU, lambda evt: self.GetParent().GetParent().open_preferences(), pref_item)
@@ -346,8 +354,8 @@ class NodeCanvas(wx.Panel):
             self.connections.remove(c)
             self.Refresh(False)
 
-    def add_node(self, name, pos):
-        n = Node(NodeCanvas.next_id, name, (pos.x, pos.y))
+    def add_node(self, node_type, pos):
+        n = Node(NodeCanvas.next_id, node_type, (pos.x, pos.y))
         NodeCanvas.next_id += 1
         self.nodes.append(n)
         self.Refresh(False)
