@@ -20,6 +20,7 @@ class NodeCanvas(wx.Panel):
     graph-like layout. Users can pan, zoom, create connections between
     nodes, and invoke context menus for node or connection actions.
     """
+    # pylint: disable=too-many-instance-attributes
     next_id = 100
 
     def __init__(self, parent, on_node_selected, settings):
@@ -134,6 +135,7 @@ class NodeCanvas(wx.Panel):
         Args:
             gc (wx.GraphicsContext): The graphics context used for drawing.
         """
+        # pylint: disable=too-many-locals
         w, h = self.GetClientSize()
 
         # Minor step = snap size; major every 2 minors
@@ -312,7 +314,7 @@ class NodeCanvas(wx.Panel):
                 break
 
         for n in self.nodes:
-            n.selected = (n == clicked)
+            n.selected = n == clicked
         self.on_node_selected(clicked)
 
         self.drag_node = clicked
