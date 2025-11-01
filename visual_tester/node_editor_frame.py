@@ -1,9 +1,17 @@
+"""
+Copyright (C) 2025  Web Weaver Development Team
+SPDX-License-Identifier: GPL-3.0-or-later
+
+This file is part of Web Weaver (https://github.com/SwatKat1977/WebWeaver).
+See the LICENSE file in the project root for full license details.
+"""
 import json
 import os
 import wx
 import wx.propgrid as wxpg
 from node_canvas import NodeCanvas
 from preferences_dialog import PreferencesDialog
+
 
 class NodeEditorFrame(wx.Frame):
     CONFIG_PATH = os.path.expanduser("~/.weaver_settings.json")
