@@ -323,6 +323,15 @@ class NodeCanvas(wx.Panel):
         picker.Position(screen_pt, (0, 0))
         picker.Popup()
 
+        # Delay focus until popup is fully active (cross-platform reliable)
+        def focus_search():
+            if picker and picker.search:
+                picker.Raise()
+                picker.search.SetFocus()
+                picker.search.SetInsertionPointEnd()
+
+        wx.CallLater(100, focus_search)
+
     def OnMouseLeave(self, _):
         for c in self.connections:
             c.hovered = False
