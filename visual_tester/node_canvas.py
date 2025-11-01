@@ -103,6 +103,12 @@ class NodeCanvas(wx.Panel):
     # ----- Paint -----
 
     def _on_paint(self, _):
+        """
+        Handle paint events for the node canvas.
+
+        Draws the background, grid, nodes, connections, temporary
+        connections (during drags), and visual effects such as pin flashes.
+        """
         dc = wx.AutoBufferedPaintDC(self)
         gc = wx.GraphicsContext.Create(dc)
         w, h = self.GetClientSize()
@@ -122,6 +128,12 @@ class NodeCanvas(wx.Panel):
         self.draw_pin_flashes(gc)
 
     def draw_grid(self, gc):
+        """
+        Draw the background grid with minor and major gridlines.
+
+        Args:
+            gc (wx.GraphicsContext): The graphics context used for drawing.
+        """
         w, h = self.GetClientSize()
 
         # Minor step = snap size; major every 2 minors
@@ -158,6 +170,12 @@ class NodeCanvas(wx.Panel):
             j += 1
 
     def draw_nodes(self, gc):
+        """
+        Draw all nodes in the canvas, including selection and shadow effects.
+
+        Args:
+            gc (wx.GraphicsContext): The graphics context used for drawing.
+        """
         for n in self.nodes:
             r = n.rect()
 
@@ -187,6 +205,13 @@ class NodeCanvas(wx.Panel):
             self.draw_pins(gc, n)
 
     def draw_pins(self, gc, n: Node):
+        """
+        Draw input and output pins for a node.
+
+        Args:
+            gc (wx.GraphicsContext): The graphics context used for drawing.
+            n (Node): The node whose pins are to be drawn.
+        """
         pr = 5
         spacing = 20
         text_offset = 22
@@ -213,6 +238,12 @@ class NodeCanvas(wx.Panel):
             gc.DrawText(label, px - text_w - text_offset + 10, py - 7)
 
     def draw_connections(self, gc):
+        """
+        Draw all established connections between node pins.
+
+        Args:
+            gc (wx.GraphicsContext): The graphics context used for drawing.
+        """
         for c in self.connections:
             n1, n2 = c.out_node, c.in_node
             p1 = wx.RealPoint(n1.pos.x + n1.size.width + 10, n1.pos.y + 30 + c.out_index * 20)
@@ -226,6 +257,13 @@ class NodeCanvas(wx.Panel):
             gc.StrokePath(path)
 
     def draw_temp_connection(self, gc):
+        """
+        Draw a temporary connection line while the user is dragging
+        from an output pin toward an input pin.
+
+        Args:
+            gc (wx.GraphicsContext): The graphics context used for drawing.
+        """
         if not (self.dragging_connection and self.start_pin):
             return
         node, idx, _ = self.start_pin
@@ -241,6 +279,15 @@ class NodeCanvas(wx.Panel):
     # ----- Interaction -----
 
     def _on_left_down(self, event):
+        """
+        Handle left mouse button press.
+
+        Begins dragging a node or initiates a connection drag if the user
+        clicks on an output pin. Also updates node selection state.
+
+        Args:
+            event (wx.MouseEvent): The mouse event object.
+        """
         self.CaptureMouse()
         self.last_mouse = event.GetPosition()
         world = self._screen_to_world(self.last_mouse)
@@ -278,6 +325,15 @@ class NodeCanvas(wx.Panel):
         self.Refresh(False)
 
     def _on_left_up(self, event):
+        """
+        Handle left mouse button release.
+
+        Finalizes dragging of nodes or connections, establishes new
+        connections if appropriate, and resets drag state.
+
+        Args:
+            event (wx.MouseEvent): The mouse event object.
+        """
         if self.HasCapture():
             self.ReleaseMouse()
 
@@ -321,6 +377,15 @@ class NodeCanvas(wx.Panel):
         self.Refresh(False)
 
     def _on_mouse_move(self, event):
+        """
+        Handle mouse movement and dragging.
+
+        Updates connection hover highlights, node dragging, or camera
+        panning depending on the current interaction state.
+
+        Args:
+            event (wx.MouseEvent): The mouse event object.
+        """
         world = self._screen_to_world(event.GetPosition())
 
         # Hover highlight
@@ -354,6 +419,15 @@ class NodeCanvas(wx.Panel):
         self.Refresh(False)
 
     def _on_mouse_wheel(self, event):
+        """
+        Handle zooming using the mouse wheel.
+
+        Zooms in or out centered around the mouse cursor, maintaining
+        the cursor’s world position under the zoom.
+
+        Args:
+            event (wx.MouseEvent): The mouse wheel event.
+        """
         delta = event.GetWheelRotation() / event.GetWheelDelta()
         zoom = 1.1 if delta > 0 else 0.9
         mouse = event.GetPosition()
@@ -423,6 +497,11 @@ class NodeCanvas(wx.Panel):
         wx.CallLater(100, focus_search)
 
     def _on_mouse_leave(self, _):
+        """
+        Handle mouse leaving the canvas area.
+
+        Clears hover states for all connections and triggers a redraw.
+        """
         for c in self.connections:
             c.hovered = False
         self.Refresh(False)
@@ -430,6 +509,18 @@ class NodeCanvas(wx.Panel):
     # ----- Geometry helpers -----
 
     def point_near_curve(self, pt, p1, p2, tol=6):
+        """
+        Check if a point lies within a given tolerance of a Bezier curve.
+
+        Args:
+            pt (wx.RealPoint): The test point.
+            p1 (wx.RealPoint): The start point of the curve.
+            p2 (wx.RealPoint): The end point of the curve.
+            tol (float, optional): The distance threshold in world units.
+
+        Returns:
+            bool: True if the point is near the curve; otherwise False.
+        """
         steps = 24
         mind = 1e9
         d = abs(p2.x - p1.x) * 0.5
@@ -442,18 +533,40 @@ class NodeCanvas(wx.Panel):
         return mind <= tol
 
     def __delete_connection(self, c):
+        """
+        Delete a connection from the canvas and refresh the display.
+
+        Args:
+            c (Connection): The connection to be deleted.
+        """
         if c in self.connections:
             self.connections.remove(c)
             self.Refresh(False)
 
     def add_node(self, node_type, pos):
+        """
+        Add a new node to the canvas at a given position.
+
+        Args:
+            node_type (str): The type or name of the node to create.
+            pos (wx.RealPoint): The world position where the node is placed.
+        """
         n = Node(NodeCanvas.next_id, node_type, (pos.x, pos.y))
         NodeCanvas.next_id += 1
         self.nodes.append(n)
         self.Refresh(False)
 
     def draw_pin_flashes(self, gc):
-        """Draw fading highlights for recently connected pins."""
+        """
+        Draw fading highlights for recently connected pins.
+
+        This provides a short visual feedback effect to indicate a successful
+        connection creation. The flash gradually fades and triggers periodic
+        redraws until fully expired.
+
+        Args:
+            gc (wx.GraphicsContext): The graphics context used for drawing.
+        """
         if not self.flash_pins:
             return
 
