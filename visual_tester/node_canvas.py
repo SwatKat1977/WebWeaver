@@ -9,7 +9,7 @@ import math
 import wx
 from connection import Connection
 from node import Node
-from node_types import NODE_TYPES
+from node_picker import NodePicker
 
 
 class NodeCanvas(wx.Panel):
@@ -309,26 +309,19 @@ class NodeCanvas(wx.Panel):
         world = self.screen_to_world(event.GetPosition())
         hovered_conn = next((c for c in self.connections if c.hovered), None)
 
-        menu = wx.Menu()
         if hovered_conn:
+            menu = wx.Menu()
             del_item = menu.Append(wx.ID_DELETE, "Delete Connection")
             self.Bind(wx.EVT_MENU, lambda evt, c=hovered_conn: self.delete_connection(c), del_item)
-        else:
-            # Create a "Add Node" submenu
-            add_menu = wx.Menu()
-            for node_type in NODE_TYPES:
-                item = add_menu.Append(-1, node_type)
-                self.Bind(wx.EVT_MENU,
-                          lambda evt, t=node_type, pos=world: self.add_node(t, pos),
-                          item)
-            menu.AppendSubMenu(add_menu, "Add Node")
+            self.PopupMenu(menu)
+            menu.Destroy()
+            return
 
-            menu.AppendSeparator()
-            pref_item = menu.Append(-1, "Preferences…")
-            self.Bind(wx.EVT_MENU, lambda evt: self.GetParent().GetParent().open_preferences(), pref_item)
-
-        self.PopupMenu(menu)
-        menu.Destroy()
+        # Show Unreal-style node picker
+        screen_pt = self.ClientToScreen(event.GetPosition())
+        picker = NodePicker(self, world, self.add_node)
+        picker.Position(screen_pt, (0, 0))
+        picker.Popup()
 
     def OnMouseLeave(self, _):
         for c in self.connections:
