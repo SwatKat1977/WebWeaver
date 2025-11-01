@@ -20,6 +20,7 @@ class NodeCanvas(wx.Panel):
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.on_node_selected = on_node_selected
         self.settings = settings
+        self.flash_pins = []  # list of (node, input_index, time_remaining)
 
         self.nodes = [
             Node(1, "Start", (80, 80)),
@@ -81,6 +82,9 @@ class NodeCanvas(wx.Panel):
         self.draw_connections(gc)
         self.draw_nodes(gc)
         self.draw_temp_connection(gc)
+
+        # Draw pin flashes
+        self.draw_pin_flashes(gc)
 
     def draw_grid(self, gc):
         w, h = self.GetClientSize()
@@ -250,7 +254,6 @@ class NodeCanvas(wx.Panel):
                     px = n.pos.x - 10
                     py = n.pos.y + 30 + i * 20
                     if (world.x - px) ** 2 + (world.y - py) ** 2 <= 6 ** 2:
-                        # --- Prevent duplicate connections between same points ---
                         already_exists = any(
                             (c.out_node == s_node and c.out_index == s_idx and
                              c.in_node == n and c.in_index == i)
@@ -258,12 +261,13 @@ class NodeCanvas(wx.Panel):
                         )
                         if not already_exists:
                             self.connections.append(Connection(s_node, s_idx, n, i))
-                        break  # Break inner loop, not return
+                            self.flash_pins.append([n, i, 6])
+                        break
                 else:
                     continue
-                break  # Break outer loop, not return
+                break
 
-        # ✅ Always reset dragging state
+        # --- Always cleanup ---
         self.dragging = False
         self.drag_node = None
         self.dragging_connection = False
@@ -372,3 +376,27 @@ class NodeCanvas(wx.Panel):
         NodeCanvas.next_id += 1
         self.nodes.append(n)
         self.Refresh(False)
+
+    def draw_pin_flashes(self, gc):
+        """Draw fading highlights for recently connected pins."""
+        if not self.flash_pins:
+            return
+
+        new_flashes = []
+        for n, i, t in self.flash_pins:
+            if t <= 0:
+                continue
+            px = n.pos.x - 10
+            py = n.pos.y + 30 + i * 20
+            radius = 5 + (6 - t)
+            alpha = int(255 * (t / 6))
+            gc.SetBrush(wx.Brush(wx.Colour(90, 210, 120, alpha)))
+            gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
+            gc.DrawEllipse(px - radius, py - radius, radius * 2, radius * 2)
+            new_flashes.append([n, i, t - 1])
+
+        self.flash_pins = new_flashes
+
+        # Schedule next redraw if any flashes remain
+        if self.flash_pins:
+            wx.CallLater(50, self.Refresh, False)
