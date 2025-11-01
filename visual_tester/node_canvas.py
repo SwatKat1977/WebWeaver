@@ -244,15 +244,26 @@ class NodeCanvas(wx.Panel):
 
         if self.dragging_connection and self.start_pin:
             world = self.screen_to_world(event.GetPosition())
+            s_node, s_idx, _ = self.start_pin
             for n in self.nodes:
                 for i, _ in enumerate(n.inputs):
                     px = n.pos.x - 10
                     py = n.pos.y + 30 + i * 20
                     if (world.x - px) ** 2 + (world.y - py) ** 2 <= 6 ** 2:
-                        s_node, s_idx, _ = self.start_pin
-                        self.connections.append(Connection(s_node, s_idx, n, i))
-                        break
+                        # --- Prevent duplicate connections between same points ---
+                        already_exists = any(
+                            (c.out_node == s_node and c.out_index == s_idx and
+                             c.in_node == n and c.in_index == i)
+                            for c in self.connections
+                        )
+                        if not already_exists:
+                            self.connections.append(Connection(s_node, s_idx, n, i))
+                        break  # Break inner loop, not return
+                else:
+                    continue
+                break  # Break outer loop, not return
 
+        # ✅ Always reset dragging state
         self.dragging = False
         self.drag_node = None
         self.dragging_connection = False
