@@ -249,19 +249,28 @@ class NodeCanvas(wx.Panel):
         if self.dragging_connection and self.start_pin:
             world = self.screen_to_world(event.GetPosition())
             s_node, s_idx, _ = self.start_pin
+
             for n in self.nodes:
                 for i, _ in enumerate(n.inputs):
                     px = n.pos.x - 10
                     py = n.pos.y + 30 + i * 20
                     if (world.x - px) ** 2 + (world.y - py) ** 2 <= 6 ** 2:
-                        already_exists = any(
-                            (c.out_node == s_node and c.out_index == s_idx and
-                             c.in_node == n and c.in_index == i)
-                            for c in self.connections
-                        )
-                        if not already_exists:
-                            self.connections.append(Connection(s_node, s_idx, n, i))
-                            self.flash_pins.append([n, i, 6])
+                        # --- Remove any existing connections involving this pin pair ---
+                        self.connections = [
+                            c for c in self.connections
+                            if not (
+                                    (c.in_node == n and c.in_index == i) or
+                                    (c.out_node == s_node and c.out_index == s_idx)
+                            )
+                        ]
+
+                        # --- Add the new connection ---
+                        self.connections.append(Connection(s_node, s_idx, n, i))
+
+                        # --- Trigger the input flash effect ---
+                        self.flash_pins.append([n, i, 6])
+
+                        # Done — exit both loops
                         break
                 else:
                     continue
