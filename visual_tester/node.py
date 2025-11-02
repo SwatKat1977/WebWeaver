@@ -10,7 +10,24 @@ from node_types import NODE_TYPES
 
 
 class Node:
+    """Represents a visual and logical node within the editor canvas.
+
+    Each node defines its type, position, size, input and output ports,
+    and rendering colours. Nodes are the fundamental building blocks
+    in the node editor and can be connected using `Connection` objects.
+    """
+    # pylint: disable=too-few-public-methods, too-many-instance-attributes
+
     def __init__(self, node_id, node_type, pos):
+        """Initialise a new node instance.
+
+        Args:
+            node_id (int): Unique identifier for this node.
+            node_type (str): The type name of the node, used to look up
+                its visual and functional properties from `NODE_TYPES`.
+            pos (tuple[float, float]): The (x, y) position of the node
+                in the canvas coordinate space.
+        """
         t = NODE_TYPES.get(node_type, NODE_TYPES["Condition"])
         self.id = node_id
         self.name = t.type_name
@@ -25,4 +42,9 @@ class Node:
         self.label_color = wx.Colour(*t.label_color)
 
     def rect(self):
+        """Return the rectangular bounds of the node in canvas coordinates.
+
+        Returns:
+            wx.Rect: The rectangle representing the node's position and size.
+        """
         return wx.Rect(int(self.pos.x), int(self.pos.y), self.size.width, self.size.height)
