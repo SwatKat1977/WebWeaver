@@ -47,7 +47,7 @@ class SuiteParser:
 
     DEFAULT_SUITE_THREAD_COUNT: int = 10
 
-    DEFAULT_TEST_THREAD_COUNT: int  = 10
+    DEFAULT_TEST_THREAD_COUNT: int = 10
 
     def __init__(self, schema_path: str):
         base_dir = os.path.dirname(__file__)
@@ -118,31 +118,74 @@ class SuiteParser:
 
     def _normalise(self, data: dict) -> dict:
         """
-        Normalize the suite configuration, applying defaults.
-        Ensures consistent representation for classes and applies
-        default parallel/thread_count values.
+        Normalize the suite configuration, applying defaults and merging classes.
+
+        - suite.parallel defaults to "none"
+        - suite.thread_count defaults to DEFAULT_SUITE_THREAD_COUNT
+        - test.parallel inherits from suite.parallel if missing
+        - test.thread_count:
+            * if test.parallel == "none": set to 1
+            * else: inherit suite.thread_count if missing, or DEFAULT_TEST_THREAD_COUNT
+        - classes:
+            * strings and dicts merged by 'name'
+            * methods.include/exclude default to [] and are deduped (order preserved)
         """
         suite = data["suite"]
+
+        # Suite-level defaults
         suite.setdefault("parallel", "none")
         suite.setdefault("thread_count", self.DEFAULT_SUITE_THREAD_COUNT)
 
         for test in data["tests"]:
-            test.setdefault("parallel", "none")
-            test.setdefault(
-                "thread_count",
-                suite.get("thread_count", self.DEFAULT_TEST_THREAD_COUNT)
-            )
+            # Inherit parallel from suite if not specified
+            test["parallel"] = test.get("parallel", suite.get("parallel", "none"))
 
-            for i, cls in enumerate(test["classes"]):
+            # Compute thread_count with sensible defaults
+            if test["parallel"] == "none":
+                # If user explicitly set a non-1 value while parallel is none, coerce to 1
+                test["thread_count"] = 1
+            else:
+                test.setdefault(
+                    "thread_count",
+                    suite.get("thread_count", self.DEFAULT_TEST_THREAD_COUNT)
+                )
+
+            # Merge class entries by name (strings + dicts)
+            merged = {}
+            order = []  # preserve first-seen order
+
+            for cls in test["classes"]:
                 if isinstance(cls, str):
-                    # Convert bare strings into dict with methods
-                    test["classes"][i] = {
-                        "name": cls,
-                        "methods": {"include": [], "exclude": []}
-                    }
+                    name = cls
+                    methods = {"include": [], "exclude": []}
                 else:
-                    cls.setdefault("methods", {})
-                    cls["methods"].setdefault("include", [])
-                    cls["methods"].setdefault("exclude", [])
+                    name = cls["name"]
+                    methods = cls.get("methods", {})
+                    # defaults for methods
+                    include = methods.get("include", [])
+                    exclude = methods.get("exclude", [])
+                    if isinstance(include, str):
+                        include = [include]
+                    if isinstance(exclude, str):
+                        exclude = [exclude]
+                    methods = {"include": include, "exclude": exclude}
+
+                if name not in merged:
+                    merged[name] = {"name": name, "methods": {"include": [], "exclude": []}}
+                    order.append(name)
+
+                # Merge include/exclude, preserving order and removing dups
+                def _extend_unique(dst_list, src_list):
+                    seen = set(dst_list)
+                    for item in src_list:
+                        if item not in seen:
+                            dst_list.append(item)
+                            seen.add(item)
+
+                _extend_unique(merged[name]["methods"]["include"], methods["include"])
+                _extend_unique(merged[name]["methods"]["exclude"], methods["exclude"])
+
+            # Rebuild in first-seen order
+            test["classes"] = [merged[name] for name in order]
 
         return data
