@@ -14,8 +14,20 @@ from node_types import NODE_TYPES
 # ----------------------------
 
 class NodeList(wx.VListBox):
-    """Custom list displaying node types with coloured squares."""
+    """Custom list widget that displays available node types.
+
+    Each entry is rendered with a small coloured square and label.
+    The list supports filtering based on search text and triggers a
+    callback when a node type is double-clicked.
+    """
+
     def __init__(self, parent, on_select):
+        """Initialise the node list.
+
+        Args:
+            parent (wx.Window): The parent window or panel.
+            on_select (Callable): Callback invoked when a node type is selected.
+        """
         super().__init__(parent, style=wx.BORDER_NONE)
         self.on_select = on_select
         self.nodes = list(NODE_TYPES.keys())
@@ -25,6 +37,11 @@ class NodeList(wx.VListBox):
         self.SetBackgroundColour(wx.Colour(38, 39, 43))
 
     def update_filter(self, text):
+        """Filter visible node types based on search text.
+
+        Args:
+            text (str): Substring used to filter node names.
+        """
         ft = text.lower().strip()
         self.filtered = [name for name in self.nodes if not ft or ft in name.lower()]
         self.SetItemCount(len(self.filtered))
@@ -32,10 +49,24 @@ class NodeList(wx.VListBox):
         if self.filtered:
             self.SetSelection(0)
 
-    def OnMeasureItem(self, n):
+    def OnMeasureItem(self, _n):
+        """
+        Return the height of each list row.
+        Note: Disable pylint warning as this an overridden method.
+        """
+        # pylint: disable=invalid-name
         return 26  # row height
 
     def OnDrawItem(self, dc, rect, n):
+        """Custom draw handler for rendering each node type entry.
+           Note: Disable pylint warning as this an overridden method.
+
+        Args:
+            dc (wx.DC): The device context to draw with.
+            rect (wx.Rect): The rectangle bounds for the item.
+            n (int): The index of the item being drawn.
+        """
+        # pylint: disable=invalid-name
         if n < 0 or n >= len(self.filtered):
             return
         name = self.filtered[n]
@@ -58,7 +89,9 @@ class NodeList(wx.VListBox):
         dc.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
         dc.DrawText(name, rect.x + 30, rect.y + 5)
 
-    def on_double_click(self, event):
+    def on_double_click(self, _event):
+        """Handle double-click events and trigger the selection callback."""
+
         sel = self.GetSelection()
         if sel != wx.NOT_FOUND:
             name = self.filtered[sel]
@@ -70,14 +103,27 @@ class NodeList(wx.VListBox):
 # ----------------------------
 
 class NodePicker(wx.PopupTransientWindow):
-    """Unreal-style popup node creation dialog with rounded corners and shadow."""
+    """Popup dialog for creating new nodes.
+
+    Provides a searchable, Unreal-style node selection list with a
+    rounded, gradient background. Used to insert new node types into
+    the editor canvas at a given position.
+    """
+
     def __init__(self, parent, position, add_callback):
+        """Initialise the popup window and its UI components.
+
+        Args:
+            parent (wx.Window): Parent window to attach the popup to.
+            position (wx.Point): Screen position where the popup appears.
+            add_callback (Callable): Function called when a node type is chosen.
+        """
         super().__init__(parent, wx.BORDER_NONE)
         self.add_callback = add_callback
         self.position = position
 
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
-        self.Bind(wx.EVT_PAINT, self.OnPaint)
+        self.Bind(wx.EVT_PAINT, self._on_paint)
 
         panel = wx.Panel(self, style=wx.TAB_TRAVERSAL)
         vbox = wx.BoxSizer(wx.VERTICAL)
@@ -113,7 +159,12 @@ class NodePicker(wx.PopupTransientWindow):
         self.Bind(wx.EVT_ACTIVATE, lambda e: (self.search.SetFocus(), e.Skip()))
 
     # ---- Drawing rounded popup background ----
-    def OnPaint(self, event):
+    def _on_paint(self, _event):
+        """Handle paint events for the popup background.
+
+        Draws a rounded rectangle with a drop shadow and vertical
+        gradient to give the popup a modern, stylised appearance.
+        """
         dc = wx.AutoBufferedPaintDC(self)
         gc = wx.GraphicsContext.Create(dc)
 
@@ -134,10 +185,18 @@ class NodePicker(wx.PopupTransientWindow):
         gc.DrawPath(path)
 
     # ---- Logic ----
-    def on_filter(self, event):
+    def on_filter(self, _event):
+        """Filter node types as the user types into the search box."""
         self.listbox.update_filter(self.search.GetValue())
 
     def on_key(self, event):
+        """Handle keyboard navigation and selection within the popup.
+
+        Supports:
+            - Enter to confirm selection
+            - Up/Down arrows to navigate
+            - Escape to dismiss the popup
+        """
         code = event.GetKeyCode()
         sel = self.listbox.GetSelection()
 
@@ -153,6 +212,11 @@ class NodePicker(wx.PopupTransientWindow):
             event.Skip()
 
     def on_pick(self, sel):
+        """Handle node selection and trigger the add callback.
+
+        Args:
+            sel (int | str): Index of the selected node or node name.
+        """
         if isinstance(sel, int):
             if sel < 0 or sel >= len(self.listbox.filtered):
                 return
@@ -163,6 +227,7 @@ class NodePicker(wx.PopupTransientWindow):
         self.Dismiss()
 
     def on_show(self, event):
+        """Ensure search box regains focus when the popup becomes visible."""
         if event.IsShown():
             wx.CallAfter(self.search.SetFocus)
         event.Skip()
