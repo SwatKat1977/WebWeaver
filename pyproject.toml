@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "webweaver"
+version = "v0.1.0-alpha_2"
+description = "WebWeaver — a modular web automation and scraping library."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+    { name = "SwatKat1977", email = "webweaver@invalid.invalid" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "selenium",
+    "webdriver_manager"
+]
+keywords = ["web", "automation"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+[tool.setuptools]
+packages = ["web_weaver"]
