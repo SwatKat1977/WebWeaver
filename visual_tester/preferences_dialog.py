@@ -9,7 +9,24 @@ import wx
 
 
 class PreferencesDialog(wx.Dialog):
+    """Dialog for editing user preferences related to the node editor.
+
+    Provides a simple interface for configuring grid snapping options,
+    including enabling/disabling snapping and adjusting the snap grid size.
+    """
+    # pylint: disable=too-few-public-methods
+
     def __init__(self, parent, settings):
+        """Initialise the preferences dialog.
+
+        Args:
+            parent (wx.Window): The parent window or frame that owns this
+                                dialog.
+            settings (dict): Dictionary of current editor settings, expected
+                             to contain:
+                - "snap_enabled" (bool): Whether grid snapping is enabled.
+                - "snap_size" (int): The grid size in pixels.
+        """
         super().__init__(parent, title="Preferences", size=(320, 180))
         vbox = wx.BoxSizer(wx.VERTICAL)
 
