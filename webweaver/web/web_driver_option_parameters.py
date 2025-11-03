@@ -94,5 +94,12 @@ WebDriverOptionParameters: dict = {
             BrowserType.EDGE: "--log-level"
         },
         True
-    )
+    ),
+    WebDriverOption.IGNORE_CERTIFICATE_ERROR: WebDriverOptionParameter(
+        WebDriverOption.LOG_LEVEL,
+        {
+            BrowserType.CHROME: "--ignore-certificate-errors"
+        },
+        True
+    ),
 }
