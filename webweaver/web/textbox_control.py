@@ -17,7 +17,7 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
-from base_web_control import BaseWebControl
+from web.base_web_control import BaseWebControl
 
 
 class TextboxControl(BaseWebControl):

@@ -30,11 +30,11 @@ from selenium.webdriver.edge.options import Options as EdgeOptions
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
-from browser_type import BrowserType
-from exceptions import PageLoadError, InvalidBrowserOptionError, \
-                       BrowserOptionIncompatibleError, \
-                       BrowserOptionMissingParameterError
-from web_driver_option_parameters import WebDriverOptionParameters
+from web.browser_type import BrowserType
+from web.exceptions import PageLoadError, InvalidBrowserOptionError, \
+                           BrowserOptionIncompatibleError, \
+                           BrowserOptionMissingParameterError
+from web.web_driver_option_parameters import WebDriverOptionParameters
 
 
 class WebDriver:
