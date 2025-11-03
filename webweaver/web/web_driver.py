@@ -20,6 +20,7 @@ Copyright 2025 SwatKat1977
 import os
 import time
 import typing
+from urllib.parse import urlparse, urlunparse, quote
 from selenium.common.exceptions import WebDriverException
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
@@ -135,6 +136,42 @@ class WebDriver:
             self._driver.get(url)
         except WebDriverException as e:
             raise PageLoadError(url, e) from e
+
+    def open_page_with_auth(self, url: str, username: str, password: str):
+        """
+        Attempt to navigate to the given URL, passing in authentication.
+
+        Args:
+            url (str): The URL to open.
+            username (str): The username to authenticate with.
+            password (str): The password to authenticate with.
+
+        Raises:
+            PageLoadError: If the page could not be loaded.
+        """
+        encoded_password: str = quote(password)
+        auth = f"{username}:{encoded_password}"
+
+        # Parse the URL into components
+        parts = urlparse(url)
+
+        # Inject the auth string into the netloc (domain part)
+        netloc = f"{auth}@{parts.netloc}"
+
+        # Rebuild the URL with the new netloc
+        new_url = urlunparse((
+            parts.scheme,
+            netloc,
+            parts.path,
+            parts.params,
+            parts.query,
+            parts.fragment
+        ))
+
+        try:
+            self._driver.get(new_url)
+        except WebDriverException as e:
+            raise PageLoadError(new_url, e) from e
 
     def take_screenshot(self, name: str = "screenshot") -> str | None:
         """
