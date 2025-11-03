@@ -38,6 +38,7 @@ class NodeCanvas(wx.Panel):
         self.on_node_selected = on_node_selected
         self.settings = settings
         self.flash_pins = []  # list of (node, input_index, time_remaining)
+        self.active_picker = None
 
         self.nodes = [
             Node(1, "Start", (80, 80)),
@@ -441,62 +442,48 @@ class NodeCanvas(wx.Panel):
         self.Refresh(False)
 
     def _on_context_menu(self, event):
-        """
-        Handles right-click context menu events in the node editor canvas.
+        pt_screen = wx.GetMousePosition()
+        pt_client = self.ScreenToClient(pt_screen)
+        mouse_screen = wx.GetMousePosition()
 
-        This method determines whether the user right-clicked on an existing
-        connection or on empty space within the editor view, and displays
-        the appropriate context menu or node picker popup.
-
-        Behavior:
-            - If the user right-clicks on a hovered connection, a context menu
-              appears with the option to delete that connection.
-            - If the user right-clicks on empty space, an Unreal-style node
-              picker popup appears, allowing the user to add a new node at
-              the clicked world position.
-
-        Args:
-            event (wx.ContextMenuEvent): The wx event triggered by a right-click.
-
-        Side Effects:
-            - May delete a connection if the user selects "Delete Connection".
-            - May spawn a NodePicker popup for adding new nodes.
-            - Schedules a delayed focus shift to the NodePicker's search box
-              for reliable cross-platform UX.
-
-        Notes:
-            The `focus_search` function is called asynchronously via
-            `wx.CallLater` to ensure the popup is active before setting focus,
-            which improves behavior consistency across platforms.
-        """
-        world = self._screen_to_world(event.GetPosition())
-        hovered_conn = next((c for c in self.connections if c.hovered), None)
-
+        # delete-connection menu
+        hovered_conn = next((c for c in self.connections if getattr(c, "hovered", False)), None)
         if hovered_conn:
             menu = wx.Menu()
             del_item = menu.Append(wx.ID_DELETE, "Delete Connection")
-            self.Bind(wx.EVT_MENU,
-                      lambda evt,
-                      c=hovered_conn: self.__delete_connection(c),
-                      del_item)
+            self.Bind(wx.EVT_MENU, lambda _e, c=hovered_conn: self.__delete_connection(c), del_item)
             self.PopupMenu(menu)
             menu.Destroy()
             return
 
-        # Show Unreal-style node picker
-        screen_pt = self.ClientToScreen(event.GetPosition())
-        picker = NodePicker(self, world, self.add_node)
-        picker.Position(screen_pt, (0, 0))
-        picker.Popup()
+        # close any open picker
+        if getattr(self, "active_picker", None) and self.active_picker.IsShown():
+            self.active_picker.Close()
+            self.active_picker = None
 
-        # Delay focus until popup is fully active (cross-platform reliable)
-        def focus_search():
-            if picker and picker.search:
-                picker.Raise()
-                picker.search.SetFocus()
-                picker.search.SetInsertionPointEnd()
+        def add_from_picker(node_type, _pos):
+            # Reverse the transform used in OnPaint
+            world_x = (pt_client.x - self.offset.x) / self.scale
+            world_y = (pt_client.y - self.offset.y) / self.scale
+            world_point = wx.RealPoint(world_x, world_y)
 
-        wx.CallLater(100, focus_search)
+            print(f"Click client={pt_client}  offset={self.offset}  scale={self.scale}")
+            print(f"Computed world point = {world_point}")
+            self.add_node(node_type, world_point)
+
+        # show picker at mouse
+        popup_point = wx.Point(mouse_screen.x - 10, mouse_screen.y - 10)
+        self.active_picker = NodePicker(self, popup_point, add_from_picker)
+        self.active_picker.Show()
+
+        wx.CallLater(
+            100,
+            lambda: (
+                self.active_picker.Raise(),
+                self.active_picker.search.SetFocus(),
+                self.active_picker.search.SetInsertionPointEnd()
+            )
+        )
 
     def _on_mouse_leave(self, _):
         """
@@ -554,6 +541,7 @@ class NodeCanvas(wx.Panel):
             pos (wx.RealPoint): The world position where the node is placed.
         """
         n = Node(NodeCanvas.next_id, node_type, (pos.x, pos.y))
+
         NodeCanvas.next_id += 1
         self.nodes.append(n)
         self.Refresh(False)

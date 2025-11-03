@@ -102,12 +102,12 @@ class NodeList(wx.VListBox):
 #  Node Picker Popup
 # ----------------------------
 
-class NodePicker(wx.PopupTransientWindow):
+class NodePicker(wx.MiniFrame):
     """Popup dialog for creating new nodes.
 
-    Provides a searchable, Unreal-style node selection list with a
-    rounded, gradient background. Used to insert new node types into
-    the editor canvas at a given position.
+    Cross-platform version of the Unreal-style node picker.
+    Provides a searchable list of node types with gradient background,
+    proper focus handling, and consistent positioning.
     """
 
     def __init__(self, parent, position, add_callback):
@@ -115,30 +115,45 @@ class NodePicker(wx.PopupTransientWindow):
 
         Args:
             parent (wx.Window): Parent window to attach the popup to.
-            position (wx.Point): Screen position where the popup appears.
+            position (wx.Point | wx.RealPoint): Screen position where the popup appears.
             add_callback (Callable): Function called when a node type is chosen.
         """
-        super().__init__(parent, wx.BORDER_NONE)
+        super().__init__(
+            parent,
+            title="",
+            style=wx.FRAME_NO_TASKBAR | wx.STAY_ON_TOP | wx.BORDER_NONE
+        )
         self.add_callback = add_callback
-        self.position = position
+        self._parent = parent
 
+        # Ensure proper background and paint handling
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.Bind(wx.EVT_PAINT, self._on_paint)
 
+        # position is already in screen coordinates — just move
+        if isinstance(position, wx.RealPoint):
+            position = wx.Point(int(position.x), int(position.y))
+        elif isinstance(position, tuple):
+            position = wx.Point(int(position[0]), int(position[1]))
+        self.Move(position)
+
+        # --- Main layout ---
         panel = wx.Panel(self, style=wx.TAB_TRAVERSAL)
+        panel.SetBackgroundColour(wx.Colour(0, 0, 0, 0))
         vbox = wx.BoxSizer(wx.VERTICAL)
 
+        # Search box
         self.search = wx.SearchCtrl(panel, style=wx.TE_PROCESS_ENTER)
         self.search.ShowCancelButton(True)
         vbox.Add(self.search, 0, wx.EXPAND | wx.ALL, 6)
 
+        # Node list
         self.listbox = NodeList(panel, self.on_pick)
         vbox.Add(self.listbox, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
 
         panel.SetSizer(vbox)
         panel.Layout()
 
-        # Populate list before sizing
         self.listbox.update_filter("")
         panel.FitInside()
         panel.SetMinSize((260, 220))
@@ -146,25 +161,22 @@ class NodePicker(wx.PopupTransientWindow):
         self.SetClientSize(panel.GetSize())
         self.Layout()
 
+        # --- Bindings ---
         self.search.Bind(wx.EVT_TEXT, self.on_filter)
         self.search.Bind(wx.EVT_KEY_DOWN, self.on_key)
         self.listbox.Bind(wx.EVT_KEY_DOWN, self.on_key)
         self.Bind(wx.EVT_SHOW, self.on_show)
+        self.Bind(wx.EVT_ACTIVATE, self.on_activate)
 
-        # Give focus to the search box immediately
-        self.search.SetFocus()
+        # Track clicks outside window (to dismiss)
+        self.Bind(wx.EVT_KILL_FOCUS, self._on_focus_lost)
 
-        # Ensure search box focus when popup activates (macOS/Linux fix)
-
-        self.Bind(wx.EVT_ACTIVATE, lambda e: (self.search.SetFocus(), e.Skip()))
+        # Give focus to the search box once shown
+        wx.CallLater(50, self.search.SetFocus)
 
     # ---- Drawing rounded popup background ----
     def _on_paint(self, _event):
-        """Handle paint events for the popup background.
-
-        Draws a rounded rectangle with a drop shadow and vertical
-        gradient to give the popup a modern, stylised appearance.
-        """
+        """Handle paint events for the popup background."""
         dc = wx.AutoBufferedPaintDC(self)
         gc = wx.GraphicsContext.Create(dc)
 
@@ -172,15 +184,17 @@ class NodePicker(wx.PopupTransientWindow):
         path = gc.CreatePath()
         path.AddRoundedRectangle(0, 0, w, h, 8)
 
-        # shadow
+        # Shadow
         gc.SetBrush(wx.Brush(wx.Colour(0, 0, 0, 80)))
         gc.DrawRoundedRectangle(4, 4, w - 4, h - 4, 8)
 
-        # gradient background
-        grad = gc.CreateLinearGradientBrush(0, 0, 0, h,
-                                            wx.Colour(45, 46, 50),
-                                            wx.Colour(35, 36, 40))
-        gc.SetBrush(grad)  # Use gradient brush directly
+        # Gradient background
+        grad = gc.CreateLinearGradientBrush(
+            0, 0, 0, h,
+            wx.Colour(45, 46, 50),
+            wx.Colour(35, 36, 40)
+        )
+        gc.SetBrush(grad)
         gc.SetPen(wx.Pen(wx.Colour(80, 80, 80)))
         gc.DrawPath(path)
 
@@ -190,13 +204,7 @@ class NodePicker(wx.PopupTransientWindow):
         self.listbox.update_filter(self.search.GetValue())
 
     def on_key(self, event):
-        """Handle keyboard navigation and selection within the popup.
-
-        Supports:
-            - Enter to confirm selection
-            - Up/Down arrows to navigate
-            - Escape to dismiss the popup
-        """
+        """Handle keyboard navigation and selection."""
         code = event.GetKeyCode()
         sel = self.listbox.GetSelection()
 
@@ -207,27 +215,34 @@ class NodePicker(wx.PopupTransientWindow):
         elif code == wx.WXK_DOWN and sel < len(self.listbox.filtered) - 1:
             self.listbox.SetSelection(sel + 1)
         elif code == wx.WXK_ESCAPE:
-            self.Dismiss()
+            self.Close()
         else:
             event.Skip()
 
     def on_pick(self, sel):
-        """Handle node selection and trigger the add callback.
-
-        Args:
-            sel (int | str): Index of the selected node or node name.
-        """
+        """Handle node selection and trigger the add callback."""
         if isinstance(sel, int):
             if sel < 0 or sel >= len(self.listbox.filtered):
                 return
             node_type = self.listbox.filtered[sel]
         else:
             node_type = sel
-        self.add_callback(node_type, self.position)
-        self.Dismiss()
+        self.add_callback(node_type, self.GetPosition())
+        self.Close()
 
     def on_show(self, event):
-        """Ensure search box regains focus when the popup becomes visible."""
+        """Ensure search box focus after showing."""
         if event.IsShown():
-            wx.CallAfter(self.search.SetFocus)
+            wx.CallLater(50, self.search.SetFocus)
         event.Skip()
+
+    def on_activate(self, event):
+        """Refocus when reactivated."""
+        if event.GetActive():
+            wx.CallLater(50, self.search.SetFocus)
+        event.Skip()
+
+    def _on_focus_lost(self, _event):
+        """Dismiss when losing focus (simulate transient popup behaviour)."""
+        if not self.IsActive():
+            self.Close()
