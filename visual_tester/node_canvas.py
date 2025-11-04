@@ -173,38 +173,59 @@ class NodeCanvas(wx.Panel):
             j += 1
 
     def draw_nodes(self, gc):
-        """
-        Draw all nodes in the canvas, including selection and shadow effects.
+        from node_types import NodeShape, NodeCategory
 
-        Args:
-            gc (wx.GraphicsContext): The graphics context used for drawing.
-        """
         for n in self.nodes:
             r = n.rect()
 
-            # shadow
-            gc.SetBrush(wx.Brush(wx.Colour(0, 0, 0, 130)))
-            gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
-            gc.DrawRoundedRectangle(r.x + 6, r.y + 6, r.width, r.height, 10)
-
-            # selection glow
-            if n.selected:
-                gc.SetBrush(wx.Brush(wx.Colour(255, 140, 0, 80)))
+            # ---- Shadow (soft) ----
+            if n.shape == NodeShape.CIRCLE:
+                gc.SetBrush(wx.Brush(wx.Colour(0, 0, 0, 60)))  # softer shadow
                 gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
-                gc.DrawRoundedRectangle(r.x - 4, r.y - 4, r.width + 8, r.height + 8, 12)
+                gc.DrawEllipse(r.x + 3, r.y + 3, r.width - 1, r.height - 1)
+            else:
+                gc.SetBrush(wx.Brush(wx.Colour(0, 0, 0, 100)))
+                gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
+                gc.DrawRoundedRectangle(r.x + 6, r.y + 6, r.width, r.height, 10)
 
-            # body
-            fill = n.color
+            # ---- Category glow (optional) ----
+            if n.category == NodeCategory.START:
+                glow = wx.Colour(80, 255, 80, 50)
+            elif n.category == NodeCategory.END:
+                glow = wx.Colour(255, 80, 80, 70)
+            elif n.selected:
+                glow = wx.Colour(255, 140, 0, 80)
+            else:
+                glow = None
+
+            if glow:
+                gc.SetBrush(wx.Brush(glow))
+                gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
+                if n.shape == NodeShape.CIRCLE:
+                    gc.DrawEllipse(r.x - 3, r.y - 3, r.width + 6, r.height + 6)
+                else:
+                    gc.DrawRoundedRectangle(r.x - 4, r.y - 4, r.width + 8, r.height + 8, 12)
+
+            # ---- Body ----
             border = wx.Colour(255, 140, 0) if n.selected else wx.Colour(60, 62, 68)
-            gc.SetBrush(wx.Brush(fill))
+            gc.SetBrush(wx.Brush(n.color))
             gc.SetPen(wx.Pen(border, 2))
-            gc.DrawRoundedRectangle(r.x, r.y, r.width, r.height, 10)
+            if n.shape == NodeShape.CIRCLE:
+                gc.DrawEllipse(r.x, r.y, r.width, r.height)
+            else:
+                gc.DrawRoundedRectangle(r.x, r.y, r.width, r.height, 10)
 
-            # title
+            # ---- Label ----
             gc.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD),
-                       wx.Colour(255, 255, 255))
-            gc.DrawText(n.name, r.x + 10, r.y + 8)
+                       n.label_color)
+            if n.category not in [NodeCategory.START, NodeCategory.END]:
+                text_w, text_h, _, _ = gc.GetFullTextExtent(n.name)
+                if n.shape == NodeShape.CIRCLE:
+                    gc.DrawText(n.name, r.x + (r.width - text_w) / 2, r.y + (r.height - text_h) / 2)
+                else:
+                    gc.DrawText(n.name, r.x + 10, r.y + 8)
 
+            # ---- Pins ----
             self.draw_pins(gc, n)
 
     def draw_pins(self, gc, n: Node):
@@ -389,7 +410,20 @@ class NodeCanvas(wx.Panel):
         Args:
             event (wx.MouseEvent): The mouse event object.
         """
+        # --- Node hover detection ---
+        hovered = None
         world = self._screen_to_world(event.GetPosition())
+
+        # Convert world (RealPoint) -> wx.Point for hit testing
+        world_pt = wx.Point(int(world.x), int(world.y))
+
+        for n in self.nodes:
+            r = n.rect()
+            n.hovered = r.Contains(world_pt)
+            if n.hovered:
+                hovered = n
+
+        self.hovered_node = hovered
 
         # Hover highlight
         for c in self.connections:
@@ -446,6 +480,22 @@ class NodeCanvas(wx.Panel):
         pt_client = self.ScreenToClient(pt_screen)
         mouse_screen = wx.GetMousePosition()
 
+        if self.hovered_node:
+            node = self.hovered_node
+            menu = wx.Menu()
+
+            if not node.is_protected():
+                delete_item = menu.Append(wx.ID_DELETE, "Delete Node")
+                self.Bind(
+                    wx.EVT_MENU,
+                    lambda _evt, n=node: self._delete_node(n),
+                    delete_item
+                )
+
+            self.PopupMenu(menu)
+            menu.Destroy()
+            return
+
         # delete-connection menu
         hovered_conn = next((c for c in self.connections if getattr(c, "hovered", False)), None)
         if hovered_conn:
@@ -467,8 +517,6 @@ class NodeCanvas(wx.Panel):
             world_y = (pt_client.y - self.offset.y) / self.scale
             world_point = wx.RealPoint(world_x, world_y)
 
-            print(f"Click client={pt_client}  offset={self.offset}  scale={self.scale}")
-            print(f"Computed world point = {world_point}")
             self.add_node(node_type, world_point)
 
         # show picker at mouse
@@ -578,3 +626,19 @@ class NodeCanvas(wx.Panel):
         # Schedule next redraw if any flashes remain
         if self.flash_pins:
             wx.CallLater(50, self.Refresh, False)
+
+    def _delete_node(self, node):
+        """Remove a node from the canvas, unless it's protected."""
+        if node.is_protected():
+            wx.LogMessage(f"Cannot delete protected node: {node.name}")
+            return
+
+        # Also delete connections attached to this node
+        self.connections = [
+            c for c in self.connections
+            if c.in_node != node and c.out_node != node
+        ]
+
+        # Remove from the node list
+        self.nodes.remove(node)
+        self.Refresh(False)

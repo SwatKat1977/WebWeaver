@@ -6,7 +6,18 @@ This file is part of Web Weaver (https://github.com/SwatKat1977/WebWeaver).
 See the LICENSE file in the project root for full license details.
 """
 from dataclasses import dataclass
+from enum import Enum
 from typing import List, Tuple
+
+class NodeShape(Enum):
+    RECTANGLE = "rectangle"
+    CIRCLE = "circle"
+
+class NodeCategory(Enum):
+    NORMAL = "normal"
+    START = "start"
+    END = "end"
+
 
 @dataclass
 class NodeType:
@@ -31,15 +42,33 @@ class NodeType:
     outputs: List[str]
     color: Tuple[int, int, int] = (45, 47, 52)  # default fill colour
     label_color: Tuple[int, int, int] = (255, 255, 255)
-
+    shape: NodeShape = NodeShape.RECTANGLE
+    category: NodeCategory = NodeCategory.NORMAL
 
 # Registry of available node types
 NODE_TYPES = {
-    "Start": NodeType("Start", [], ["Next"], (40, 90, 180)),
-    "Condition": NodeType("Condition", ["Input"], ["True", "False"], (70, 70, 80)),
-    "Action": NodeType("Action", ["Trigger"], ["Done"], (90, 60, 120)),
-    "End": NodeType("End", ["Input"], [], (160, 50, 50)),
+    "Start": NodeType("",
+                      [],
+                      ["Next"],
+                      (40, 180, 90),
+                      shape=NodeShape.CIRCLE,
+                      category=NodeCategory.START),
+    "Condition": NodeType("Condition",
+                          ["Input"],
+                          ["True", "False"],
+                          (70, 70, 80)),
+    "Action": NodeType("Action",
+                       ["Trigger"],
+                       ["Done"],
+                       (90, 60, 120)),
+    "End": NodeType("",
+                    [""],
+                    [],
+                    (180, 50, 50),
+                    shape=NodeShape.RECTANGLE,
+                    category=NodeCategory.END)
 }
+
 """dict[str, NodeType]: A global registry of all predefined node types.
 
 Each key is the internal name of a node type, and each value is a

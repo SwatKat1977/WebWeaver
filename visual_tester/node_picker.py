@@ -7,6 +7,7 @@ See the LICENSE file in the project root for full license details.
 """
 import wx
 from node_types import NODE_TYPES
+from node_types import NodeCategory
 
 
 # ----------------------------
@@ -30,7 +31,11 @@ class NodeList(wx.VListBox):
         """
         super().__init__(parent, style=wx.BORDER_NONE)
         self.on_select = on_select
-        self.nodes = list(NODE_TYPES.keys())
+        # Exclude special node types (e.g. Start, End) from picker
+        self.nodes = [
+            name for name, t in NODE_TYPES.items()
+            if t.category == NodeCategory.NORMAL
+        ]
         self.filtered = self.nodes
         self.SetItemCount(len(self.filtered))
         self.Bind(wx.EVT_LEFT_DCLICK, self.on_double_click)
