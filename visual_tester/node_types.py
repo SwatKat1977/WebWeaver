@@ -47,7 +47,7 @@ class NodeType:
 
 # Registry of available node types
 NODE_TYPES = {
-    "Start": NodeType("Start",
+    "Start": NodeType("",
                       [],
                       ["Next"],
                       (40, 180, 90),
@@ -61,8 +61,8 @@ NODE_TYPES = {
                        ["Trigger"],
                        ["Done"],
                        (90, 60, 120)),
-    "End": NodeType("End",
-                    ["Input"],
+    "End": NodeType("",
+                    [""],
                     [],
                     (180, 50, 50),
                     shape=NodeShape.RECTANGLE,

@@ -34,14 +34,25 @@ class Node:
         self.node_type = node_type
         self.pos = wx.RealPoint(*pos)
         self.size = wx.Size(160, 100)
-        self.inputs = ["In A"]
-        self.outputs = ["Out A"]
+        self.inputs = list(t.inputs)
+        self.outputs = list(t.outputs)
         self.selected = False
         self.hovered = False
         self.color = wx.Colour(*t.color)
         self.label_color = wx.Colour(*t.label_color)
         self._shape = t.shape
         self._category = t.category
+
+        # default size
+        self.size = wx.Size(160, 100)
+
+        # Apply special rules for specific categories
+        if self.category == NodeCategory.START:
+            self.size = wx.Size(60, 60)     # smaller circle
+            self.inputs = []                # no inputs
+            self.outputs = [""]               # no outputs
+        elif self.category == NodeCategory.END:
+            self.size = wx.Size(100, 60)    # slightly smaller rectangle
 
     def rect(self):
         """Return the rectangular bounds of the node in canvas coordinates.
