@@ -389,7 +389,20 @@ class NodeCanvas(wx.Panel):
         Args:
             event (wx.MouseEvent): The mouse event object.
         """
+        # --- Node hover detection ---
+        hovered = None
         world = self._screen_to_world(event.GetPosition())
+
+        # Convert world (RealPoint) -> wx.Point for hit testing
+        world_pt = wx.Point(int(world.x), int(world.y))
+
+        for n in self.nodes:
+            r = n.rect()
+            n.hovered = r.Contains(world_pt)
+            if n.hovered:
+                hovered = n
+
+        self.hovered_node = hovered
 
         # Hover highlight
         for c in self.connections:
@@ -445,6 +458,22 @@ class NodeCanvas(wx.Panel):
         pt_screen = wx.GetMousePosition()
         pt_client = self.ScreenToClient(pt_screen)
         mouse_screen = wx.GetMousePosition()
+
+        if self.hovered_node:
+            node = self.hovered_node
+            menu = wx.Menu()
+
+            if not node.is_protected():
+                delete_item = menu.Append(wx.ID_DELETE, "Delete Node")
+                self.Bind(
+                    wx.EVT_MENU,
+                    lambda _evt, n=node: self._delete_node(n),
+                    delete_item
+                )
+
+            self.PopupMenu(menu)
+            menu.Destroy()
+            return
 
         # delete-connection menu
         hovered_conn = next((c for c in self.connections if getattr(c, "hovered", False)), None)
@@ -578,3 +607,19 @@ class NodeCanvas(wx.Panel):
         # Schedule next redraw if any flashes remain
         if self.flash_pins:
             wx.CallLater(50, self.Refresh, False)
+
+    def _delete_node(self, node):
+        """Remove a node from the canvas, unless it's protected."""
+        if node.is_protected():
+            wx.LogMessage(f"Cannot delete protected node: {node.name}")
+            return
+
+        # Also delete connections attached to this node
+        self.connections = [
+            c for c in self.connections
+            if c.src_node != node and c.dst_node != node
+        ]
+
+        # Remove from the node list
+        self.nodes.remove(node)
+        self.Refresh(False)

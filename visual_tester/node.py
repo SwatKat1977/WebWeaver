@@ -6,7 +6,7 @@ This file is part of Web Weaver (https://github.com/SwatKat1977/WebWeaver).
 See the LICENSE file in the project root for full license details.
 """
 import wx
-from node_types import NODE_TYPES
+from node_types import NODE_TYPES, NodeShape, NodeCategory
 
 
 class Node:
@@ -40,6 +40,8 @@ class Node:
         self.hovered = False
         self.color = wx.Colour(*t.color)
         self.label_color = wx.Colour(*t.label_color)
+        self._shape = t.shape
+        self._category = t.category
 
     def rect(self):
         """Return the rectangular bounds of the node in canvas coordinates.
@@ -48,3 +50,15 @@ class Node:
             wx.Rect: The rectangle representing the node's position and size.
         """
         return wx.Rect(int(self.pos.x), int(self.pos.y), self.size.width, self.size.height)
+
+    def is_protected(self) -> bool:
+        """Return True if this node cannot be deleted."""
+        return self.category in (NodeCategory.START, NodeCategory.END)
+
+    @property
+    def shape(self) -> NodeShape:
+        return self._shape
+
+    @property
+    def category(self) -> NodeCategory:
+        return self._category
