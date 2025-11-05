@@ -61,11 +61,19 @@ NODE_TYPES = {
                        ["Trigger"],
                        ["Done"],
                        (90, 60, 120)),
+    "Combiner": NodeType("Combiner",
+                       ["Input 2"],
+                       ["Output"],
+                       (90, 60, 120)),
+    "Splitter": NodeType("Splitter",
+                         ["Input"],
+                         ["Out 1", "Out 2"],
+                         (90, 60, 120)),
     "End": NodeType("",
                     [""],
                     [],
                     (180, 50, 50),
-                    shape=NodeShape.RECTANGLE,
+                    shape=NodeShape.CIRCLE,
                     category=NodeCategory.END)
 }
 

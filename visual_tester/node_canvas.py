@@ -8,8 +8,9 @@ See the LICENSE file in the project root for full license details.
 import math
 import wx
 from connection import Connection
-from node import Node
+from node import Node, NodeCategory
 from node_picker import NodePicker
+from node_types import NodeShape
 
 
 class NodeCanvas(wx.Panel):
@@ -173,8 +174,6 @@ class NodeCanvas(wx.Panel):
             j += 1
 
     def draw_nodes(self, gc):
-        from node_types import NodeShape, NodeCategory
-
         for n in self.nodes:
             r = n.rect()
 
@@ -237,29 +236,44 @@ class NodeCanvas(wx.Panel):
             n (Node): The node whose pins are to be drawn.
         """
         pr = 5
-        spacing = 20
         text_offset = 22
 
-        # Inputs
-        for i, label in enumerate(n.inputs):
-            px = n.pos.x - 10
-            py = n.pos.y + 30 + i * spacing
-            gc.SetBrush(wx.Brush(wx.Colour(255, 100, 60)))
-            gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
-            gc.DrawEllipse(px - pr, py - pr, pr * 2, pr * 2)
-            gc.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL),
-                       wx.Colour(255, 255, 255))
-            gc.DrawText(label, px + text_offset - 10, py - 7)
-
-        # Outputs
-        for i, label in enumerate(n.outputs):
-            px = n.pos.x + n.size.width + 10
-            py = n.pos.y + 30 + i * spacing
+        # START: output only (centered)
+        if n.category == NodeCategory.START:
+            p = self._pin_pos(n, 'out', 0)
             gc.SetBrush(wx.Brush(wx.Colour(90, 210, 120)))
             gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
-            gc.DrawEllipse(px - pr, py - pr, pr * 2, pr * 2)
-            text_w, _, _, _ = gc.GetFullTextExtent(label)
-            gc.DrawText(label, px - text_w - text_offset + 10, py - 7)
+            gc.DrawEllipse(p.x - pr, p.y - pr, pr * 2, pr * 2)
+            return
+
+        # END: input only (centered)
+        if n.category == NodeCategory.END:
+            p = self._pin_pos(n, 'in', 0)
+            gc.SetBrush(wx.Brush(wx.Colour(255, 100, 60)))
+            gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
+            gc.DrawEllipse(p.x - pr, p.y - pr, pr * 2, pr * 2)
+            return
+
+        # NORMAL: inputs
+        gc.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL),
+                   wx.Colour(255, 255, 255))
+        for i, label in enumerate(n.inputs):
+            p = self._pin_pos(n, 'in', i)
+            gc.SetBrush(wx.Brush(wx.Colour(255, 100, 60)))
+            gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
+            gc.DrawEllipse(p.x - pr, p.y - pr, pr * 2, pr * 2)
+            if label:
+                gc.DrawText(label, p.x + text_offset - 10, p.y - 7)
+
+        # NORMAL: outputs
+        for i, label in enumerate(n.outputs):
+            p = self._pin_pos(n, 'out', i)
+            gc.SetBrush(wx.Brush(wx.Colour(90, 210, 120)))
+            gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
+            gc.DrawEllipse(p.x - pr, p.y - pr, pr * 2, pr * 2)
+            if label:
+                text_w, _, _, _ = gc.GetFullTextExtent(label)
+                gc.DrawText(label, p.x - text_w - text_offset + 10, p.y - 7)
 
     def draw_connections(self, gc):
         """
@@ -269,9 +283,8 @@ class NodeCanvas(wx.Panel):
             gc (wx.GraphicsContext): The graphics context used for drawing.
         """
         for c in self.connections:
-            n1, n2 = c.out_node, c.in_node
-            p1 = wx.RealPoint(n1.pos.x + n1.size.width + 10, n1.pos.y + 30 + c.out_index * 20)
-            p2 = wx.RealPoint(n2.pos.x - 10, n2.pos.y + 30 + c.in_index * 20)
+            p1 = self._pin_pos(c.out_node, 'out', c.out_index)
+            p2 = self._pin_pos(c.in_node, 'in', c.in_index)
             d = abs(p2.x - p1.x) * 0.5
             colour = wx.Colour(255, 255, 255) if c.hovered else wx.Colour(160, 160, 160)
             gc.SetPen(wx.Pen(colour, 2))
@@ -288,17 +301,16 @@ class NodeCanvas(wx.Panel):
         Args:
             gc (wx.GraphicsContext): The graphics context used for drawing.
         """
-        if not (self.dragging_connection and self.start_pin):
-            return
-        node, idx, _ = self.start_pin
-        start = wx.RealPoint(node.pos.x + node.size.width + 10, node.pos.y + 30 + idx * 20)
-        end = self._screen_to_world(self.last_mouse)
-        gc.SetPen(wx.Pen(wx.Colour(220, 200, 100), 2, wx.PENSTYLE_DOT))
-        d = abs(end.x - start.x) * 0.5
-        path = gc.CreatePath()
-        path.MoveToPoint(start.x, start.y)
-        path.AddCurveToPoint(start.x + d, start.y, end.x - d, end.y, end.x, end.y)
-        gc.StrokePath(path)
+        if self.dragging_connection and self.start_pin:
+            node, idx, _ = self.start_pin
+            start = self._pin_pos(node, 'out', idx)
+            end = self._screen_to_world(self.last_mouse)
+            gc.SetPen(wx.Pen(wx.Colour(220, 200, 100), 2, wx.PENSTYLE_DOT))
+            d = abs(end.x - start.x) * 0.5
+            path = gc.CreatePath()
+            path.MoveToPoint(start.x, start.y)
+            path.AddCurveToPoint(start.x + d, start.y, end.x - d, end.y, end.x, end.y)
+            gc.StrokePath(path)
 
     # ----- Interaction -----
 
@@ -319,9 +331,8 @@ class NodeCanvas(wx.Panel):
         # Start connection drag
         for n in reversed(self.nodes):
             for i, _ in enumerate(n.outputs):
-                px = n.pos.x + n.size.width + 10
-                py = n.pos.y + 30 + i * 20
-                if (world.x - px) ** 2 + (world.y - py) ** 2 <= 6 ** 2:
+                p = self._pin_pos(n, 'out', i)
+                if (world.x - p.x) ** 2 + (world.y - p.y) ** 2 <= 6 ** 2:
                     self.dragging_connection = True
                     self.start_pin = (n, i, "out")
                     self.SetFocus()
@@ -367,10 +378,9 @@ class NodeCanvas(wx.Panel):
 
             for n in self.nodes:
                 for i, _ in enumerate(n.inputs):
-                    px = n.pos.x - 10
-                    py = n.pos.y + 30 + i * 20
-                    if (world.x - px) ** 2 + (world.y - py) ** 2 <= 6 ** 2:
-                        # --- Remove any existing connections involving this pin pair ---
+                    p = self._pin_pos(n, 'in', i)
+                    if (world.x - p.x) ** 2 + (world.y - p.y) ** 2 <= 6 ** 2:
+                        # remove conflicting connections
                         self.connections = [
                             c for c in self.connections
                             if not (
@@ -378,14 +388,8 @@ class NodeCanvas(wx.Panel):
                                     (c.out_node == s_node and c.out_index == s_idx)
                             )
                         ]
-
-                        # --- Add the new connection ---
                         self.connections.append(Connection(s_node, s_idx, n, i))
-
-                        # --- Trigger the input flash effect ---
                         self.flash_pins.append([n, i, 6])
-
-                        # Done — exit both loops
                         break
                 else:
                     continue
@@ -427,9 +431,8 @@ class NodeCanvas(wx.Panel):
 
         # Hover highlight
         for c in self.connections:
-            n1, n2 = c.out_node, c.in_node
-            p1 = wx.RealPoint(n1.pos.x + n1.size.width + 10, n1.pos.y + 30 + c.out_index * 20)
-            p2 = wx.RealPoint(n2.pos.x - 10, n2.pos.y + 30 + c.in_index * 20)
+            p1 = self._pin_pos(c.out_node, 'out', c.out_index)
+            p2 = self._pin_pos(c.in_node, 'in', c.in_index)
             c.hovered = self.point_near_curve(world, p1, p2, tol=6)
 
         if event.Dragging() and event.LeftIsDown():
@@ -642,3 +645,25 @@ class NodeCanvas(wx.Panel):
         # Remove from the node list
         self.nodes.remove(node)
         self.Refresh(False)
+
+    def _pin_pos(self, n, kind: str, index: int) -> wx.RealPoint:
+        """
+        Return the world-space position of a pin.
+        kind: 'in' or 'out'
+        index: pin index on that side
+        """
+        # horizontal anchor
+        if kind == "in":
+            x = n.pos.x - 10
+        else:
+            x = n.pos.x + n.size.width + 10
+
+        # vertical anchor
+        if n.category == NodeCategory.START and kind == "out":
+            y = n.pos.y + n.size.height / 2
+        elif n.category == NodeCategory.END and kind == "in":
+            y = n.pos.y + n.size.height / 2
+        else:
+            y = n.pos.y + 30 + index * 20
+
+        return wx.RealPoint(x, y)
