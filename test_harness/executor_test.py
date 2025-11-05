@@ -9,6 +9,7 @@ from test_decorators import (after_class, after_method,
 from test_executor import TestExecutor
 from suite_parser import SuiteParser
 from test_listener import TestListener
+from test_result import TestResult
 
 
 # === Helper to assert failure inside tests ===
@@ -16,9 +17,29 @@ def fail_test(msg):
     """ Helper function to cause test to fail """
     raise TestFailure(msg)
 
+class LocalListener(TestListener):
+    def on_test_start(self, result: TestResult) -> None:
+        """ Called immediately before a test method begins execution."""
+        print("[DEBUG] Local on_test_start()")
+
+    def on_test_success(self, result: TestResult) -> None:
+        """ Called when a test method finishes successfully without raising
+            errors. """
+        print("[DEBUG] Local on_test_success()")
+
+    def on_test_failure(self, result: TestResult) -> None:
+        """ Called when a test method fails due to an exception or assertion
+            error. """
+        print("[DEBUG] Local on_test_failure()")
+
+    def on_test_skipped(self, result: TestResult) -> None:
+        """ Called when a test method is skipped (disabled or dependency
+            failure). """
+        print("[DEBUG] Local on_test_skipped()")
+
 
 # === Example Test Classes ===
-@listener(TestListener)
+@listener(LocalListener)
 class ExampleTest:
     """ Example tests """
 
