@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "webweaver"
-version = "v0.1.0-alpha_2"
+version = "v0.2.0"
 description = "WebWeaver — a modular web automation and scraping library."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -23,4 +23,4 @@ classifiers = [
 ]
 
 [tool.setuptools]
-packages = ["web_weaver"]
+packages = ["webweaver"]

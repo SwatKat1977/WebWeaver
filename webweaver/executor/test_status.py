@@ -17,5 +17,20 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
+import enum
 
-__version__ = "0.1.0"
+
+class TestStatus(enum.Enum):
+    """
+    Enum representing the possible outcomes or states of a test.
+
+    Attributes:
+        CREATED (int): Test has been created but not yet executed (-1).
+        SUCCESS (int): Test completed successfully (1).
+        FAILURE (int): Test execution failed (2).
+        SKIPPED (int): Test was skipped and not executed (3).
+    """
+    CREATED = -1
+    SUCCESS = 1
+    FAILURE = 2
+    SKIPPED = 3

@@ -1,0 +1,28 @@
+{
+  "suite": {
+    "name": "MySuite",
+    "parallel": "tests",
+    "thread_count": 3
+  },
+  "tests": [
+    {
+      "name": "LoginTests1",
+      "classes": [
+        "test_harness.executor_test.ExampleTest",
+        {
+          "name": "test_harness.executor_test.ExampleTest",
+          "methods": {
+            "include": ["test_success", "test_failure", "test_exception", "test_skipped"],
+            "exclude": ["test_excluded"]
+          }
+        },
+        {
+          "name": "test_harness.executor_test.MethodSpecificTest",
+          "methods": {
+            "include": ["add*", "remove_item"]
+          }
+        }
+      ]
+    }
+  ]
+}
