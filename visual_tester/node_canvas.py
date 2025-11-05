@@ -376,10 +376,7 @@ class NodeCanvas(wx.Panel):
             world = self._screen_to_world(event.GetPosition())
             s_node, s_idx, _ = self.start_pin
 
-            print("DEBUG: releasing at", world.x, world.y)
             for n in self.nodes:
-                print(f"  node={n.name} cat={n.category} inputs={len(n.inputs)} outputs={len(n.outputs)}")
-
                 for i, _ in enumerate(n.inputs):
                     p = self._pin_pos(n, 'in', i)
                     if (world.x - p.x) ** 2 + (world.y - p.y) ** 2 <= 6 ** 2:

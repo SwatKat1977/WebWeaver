@@ -52,7 +52,7 @@ class Node:
             self.size = wx.Size(60, 60)
             self.inputs = []  # no inputs
             self.outputs = [""]  # single output (centered)
-    
+
         elif self.category == NodeCategory.END:
             # Smaller circular end node, input only
             self.size = wx.Size(60, 60)
