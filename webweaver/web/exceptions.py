@@ -26,6 +26,7 @@ class PageLoadError(Exception):
         self.original_exception = original_exception
         super().__init__(f"Failed to load page: {url} ({original_exception})")
 
+
 class InvalidBrowserOptionError(Exception):
     """
     Raised when an unsupported or unrecognized WebDriver option is provided.
@@ -41,6 +42,7 @@ class InvalidBrowserOptionError(Exception):
     def __init__(self, exception_str: str):
         super().__init__(exception_str)
 
+
 class BrowserOptionIncompatibleError(Exception):
     """
     Raised when a valid WebDriver option is not supported by the selected browser.
@@ -55,6 +57,7 @@ class BrowserOptionIncompatibleError(Exception):
     """
     def __init__(self, exception_str: str):
         super().__init__(exception_str)
+
 
 class BrowserOptionMissingParameterError(Exception):
     """
