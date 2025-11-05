@@ -174,7 +174,10 @@ class WebDriver:
         except WebDriverException as e:
             raise PageLoadError(new_url, e) from e
 
-    def open_page_with_manual_ntml(self, url: str, username: str, password: str):
+    def open_page_with_manual_ntml(self,
+                                   url: str,
+                                   username: str,
+                                   password: str):
         """
         Attempt to navigate to the given URL, passing in authentication.
 
