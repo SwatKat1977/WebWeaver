@@ -21,6 +21,7 @@ import os
 import time
 import typing
 import keyboard
+import requests
 from urllib.parse import urlparse, urlunparse, quote
 from selenium.common.exceptions import WebDriverException
 from selenium import webdriver
@@ -35,6 +36,7 @@ from web.browser_type import BrowserType
 from web.exceptions import PageLoadError, InvalidBrowserOptionError, \
                            BrowserOptionIncompatibleError, \
                            BrowserOptionMissingParameterError
+from web.web_driver_option import WebDriverOption
 from web.web_driver_option_parameters import WebDriverOptionParameters
 
 
@@ -49,7 +51,8 @@ class WebDriver:
     Attributes:
         _driver (selenium.webdriver): The internal Selenium WebDriver instance.
     """
-    __slots__ = ["_driver", "_screenshots_dir", "_screenshots_enabled"]
+    __slots__ = ["_driver", "_driver_parameters", "_screenshots_dir",
+                 "_screenshots_enabled"]
 
     def __init__(self,
                  browser_type: BrowserType = BrowserType.CHROME,
@@ -89,6 +92,7 @@ class WebDriver:
         """
         self._screenshots_enabled: bool = screenshots_enabled
         self._screenshots_dir: str = screenshots_dir
+        self._driver_parameters = parameters
 
         if browser_type == BrowserType.CHROME:
             options = self.__parse_options(parameters, browser_type)
@@ -133,10 +137,7 @@ class WebDriver:
         Raises:
             PageLoadError: If the page could not be loaded.
         """
-        try:
-            self._driver.get(url)
-        except WebDriverException as e:
-            raise PageLoadError(url, e) from e
+        self._fetch_page(url)
 
     def open_page_with_auth(self, url: str, username: str, password: str):
         """
@@ -169,10 +170,7 @@ class WebDriver:
             parts.fragment
         ))
 
-        try:
-            self._driver.get(new_url)
-        except WebDriverException as e:
-            raise PageLoadError(new_url, e) from e
+        self._fetch_page(new_url)
 
     def open_page_with_manual_ntml(self,
                                    url: str,
@@ -189,10 +187,7 @@ class WebDriver:
         Raises:
             PageLoadError: If the page could not be loaded.
         """
-        try:
-            self._driver.get(url)
-        except WebDriverException as e:
-            raise PageLoadError(url, e) from e
+        self._fetch_page(url)
 
         time.sleep(3)
         keyboard.write(username)
@@ -233,6 +228,27 @@ class WebDriver:
                                      f"{name}_{timestamp}.png")
         self._driver.save_screenshot(filename)
         return filename
+
+    def _fetch_page(self, url: str):
+
+        ignore_cert_warning: bool = any(
+            parameter[0] == WebDriverOption.IGNORE_CERTIFICATE_ERROR for
+               parameter in self._driver_parameters)
+
+        try:
+            # Check HTTP status first
+            response = requests.head(url, allow_redirects=True, timeout=5,
+                                     verify=not ignore_cert_warning)
+            if response.status_code >= 400:
+                raise PageLoadError(url, f"HTTP {response.status_code}")
+
+            # Load in Selenium
+            self._driver.get(url)
+
+        except (requests.RequestException, WebDriverException) as e:
+            # Wrap either type of error in your custom exception
+            self.take_screenshot("page_not_found")
+            raise PageLoadError(url, e) from e
 
     def __parse_options(self,
                         parameters: list,
