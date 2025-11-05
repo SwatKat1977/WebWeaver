@@ -46,22 +46,22 @@ class ExampleTest:
     @before_class
     def setup_class(self):
         """ Setup class """
-        print("Connecting to database...")
+        self.logger.info("Connecting to database...")
 
     @after_class
     def teardown_class(self):
         """ Teardown class """
-        print("Disconnecting from database...")
+        self.logger.info("Disconnecting from database...")
 
     @before_method
     def setup(self):
         """ Before method """
-        print("Calling before method...")
+        self.logger.info("Calling before method...")
 
     @after_method
     def teardown(self):
         """ After method """
-        print("Calling after method...")
+        self.logger.info("Calling after method...")
 
     @test()
     def test_success(self):

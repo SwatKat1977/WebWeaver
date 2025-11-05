@@ -353,9 +353,35 @@ class TestExecutor:
         else:
             # class wrapper: run methods sequentially INSIDE; return dict of per-method results
             def class_task():
+                """
+                Class wrapper task:
+                  1) run all @before_class hooks
+                  2) execute selected test methods sequentially (with before/after_method + listeners)
+                  3) always run all @after_class hooks (even on failure)
+                  4) if the wrapper bombs, mark any not-yet-run methods as SKIPPED
+                """
                 results = {}
                 ran = set()
+
                 try:
+                    # --- 1) Run @before_class hooks first ---
+                    for before_class in before_class_methods:
+                        try:
+                            before_class()
+
+                        except Exception as ex:  # if a before_class fails, skip all methods
+                            self._logger.warning("Exception in before_class '%s' for %s: %s",
+                                                 getattr(before_class, "__name__", str(before_class)),
+                                                 cls_name, ex)
+                            for method_name in selected:
+                                tr = TestResult(method_name, cls_name)
+                                tr.status = TestStatus.SKIPPED
+                                tr.caught_exception = ex
+                                results[f"{cls_name}.{method_name}"] = tr
+                            # Abort method execution; finally will still run after_class
+                            return results
+
+                    # --- 2) Run test methods sequentially ---
                     for method_name in selected:
                         method = getattr(obj, method_name)
                         mtr = TestResult(method_name, cls_name)
@@ -367,15 +393,14 @@ class TestExecutor:
                             after_methods=after_method_methods,
                             lock=None
                         )
+
                         res = self.__run_task(task, mtr, ctx)
                         results[f"{cls_name}.{method_name}"] = res
                         ran.add(method_name)
 
-                # NOTE: Disabling broad exception here because this is a
-                #       user-defined method, and we don't know what exception
-                #       could be caught.
-                except Exception as ex:  # pylint:  disable=broad-exception-caught
-                    # mark remaining methods as SKIPPED if wrapper bombs
+                except Exception as ex:  # pylint: disable=broad-exception-caught
+                    # --- 3) Wrapper failure: mark any not-yet-run methods as SKIPPED ---
+                    self._logger.warning("Exception in class wrapper for %s: %s", cls_name, ex)
                     for method_name in selected:
                         if method_name in ran:
                             continue
@@ -383,6 +408,18 @@ class TestExecutor:
                         tr.status = TestStatus.SKIPPED
                         tr.caught_exception = ex
                         results[f"{cls_name}.{method_name}"] = tr
+
+                finally:
+                    # --- 4) Always run @after_class hooks ---
+                    for after_class in after_class_methods:
+                        try:
+                            after_class()
+
+                        except Exception as ex2:
+                            self._logger.warning("Exception in after_class '%s' for %s: %s",
+                                                 getattr(after_class, "__name__", str(after_class)),
+                                                 cls_name, ex2)
+
                 return results
 
             task_name = f"{cls_name}.__class_wrapper__"
