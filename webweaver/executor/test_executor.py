@@ -117,8 +117,47 @@ class TestExecutor:
         Args:
             logger (logging.Logger): Parent logger to create a child logger.
         """
-        self._logger = logger.getChild(__name__)
+        # Executor logger
+        self._logger = logger.getChild("executor")
 
+        # === Ensure a single console handler exists SOMEWHERE ===
+        # Prefer using the handler(s) already on the passed-in logger.
+        def _ensure_console_handler_on(lgr: logging.Logger) -> None:
+            if not lgr.handlers:
+                h = logging.StreamHandler()
+                h.setFormatter(logging.Formatter(
+                    "%(asctime)s [%(levelname)s] %(message)s",
+                    "%Y-%m-%d %H:%M:%S",
+                ))
+                lgr.addHandler(h)
+
+        # If the root has no handlers and the provided logger has none,
+        # create a sane default on the provided logger.
+        root = logging.getLogger()
+        if not root.handlers and not logger.handlers:
+            _ensure_console_handler_on(logger)
+
+        # === Make 'webweaver' the sink for all test logs ===
+        weaver = logging.getLogger("webweaver")
+
+        # If 'webweaver' has no handlers, borrow the provided logger's handlers.
+        if not weaver.handlers:
+            for h in logger.handlers:
+                if h not in weaver.handlers:
+                    weaver.addHandler(h)
+
+        # Keep propagation ON so child loggers bubble to 'webweaver' if needed.
+        weaver.propagate = False  # weaver itself owns handlers now
+        weaver.setLevel(logger.level or logging.DEBUG)
+
+        # Remove duplicate handlers from executor logger to avoid double output
+        for h in list(self._logger.handlers):
+            self._logger.removeHandler(h)
+
+        self._logger.debug("Executor logging pipeline initialized. "
+                           f"weaver.handlers={len(weaver.handlers)}, "
+                           f"root.handlers={len(root.handlers)}, "
+                           f"exec.handlers={len(self._logger.handlers)}")
     def run_tests(self, suite: dict):
         # pylint: disable=too-many-locals
         sequential_tasks, parallel_tasks, class_fixtures = self.__collect_from_suite(suite)
@@ -247,6 +286,11 @@ class TestExecutor:
         methods_conf = class_conf.get("methods", {"include": [], "exclude": []})
         cls = self._resolve_class(cls_name)
         obj = cls()
+
+        # Inject shared test logger into the class instance if not already present
+        if not hasattr(obj, "logger"):
+            obj.logger = logging.getLogger(f"webweaver.{cls_name}")
+            self._logger.debug(f"Injected logger into test class: {cls_name}")
 
         # listeners attached to the class (used only for method tasks)
         method_listeners = getattr(cls, "__listeners__", [])
