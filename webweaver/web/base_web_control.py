@@ -24,7 +24,7 @@ from selenium.common.exceptions import NoSuchElementException, \
                                        TimeoutException, \
                                        StaleElementReferenceException
 from selenium.webdriver.common.by import By
-from web_driver import WebDriver
+from web.web_driver import WebDriver
 
 
 class BaseWebControl:

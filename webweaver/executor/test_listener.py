@@ -17,32 +17,25 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
-from selenium.common.exceptions import WebDriverException
-from base_web_control import BaseWebControl
+from test_result import TestResult
 
 
-class ButtonControl(BaseWebControl):
+class TestListener:
     """
-    Control for interacting with buttons or clickable elements.
+    Listener interface for receiving notifications about test execution events.
     """
 
-    def click(self) -> bool:
-        """
-        Click a button (or button-like element).
+    def on_test_start(self, result: TestResult) -> None:
+        """ Called immediately before a test method begins execution."""
 
-        Returns
-        -------
-        bool
-            True if the button was clicked, False otherwise.
-        """
+    def on_test_success(self, result: TestResult) -> None:
+        """ Called when a test method finishes successfully without raising
+            errors. """
 
-        if self._element is not None:
-            try:
-                self._element.click()
-                return True
+    def on_test_failure(self, result: TestResult) -> None:
+        """ Called when a test method fails due to an exception or assertion
+            error. """
 
-            except WebDriverException as e:
-                self._logger.error(
-                    f"Failed to click button {self._element}: {e}")
-
-        return False
+    def on_test_skipped(self, result: TestResult) -> None:
+        """ Called when a test method is skipped (disabled or dependency
+            failure). """
