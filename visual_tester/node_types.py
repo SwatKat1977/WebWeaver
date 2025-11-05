@@ -65,7 +65,7 @@ NODE_TYPES = {
                     [""],
                     [],
                     (180, 50, 50),
-                    shape=NodeShape.RECTANGLE,
+                    shape=NodeShape.CIRCLE,
                     category=NodeCategory.END)
 }
 

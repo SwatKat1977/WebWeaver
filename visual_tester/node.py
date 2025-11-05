@@ -48,11 +48,16 @@ class Node:
 
         # Apply special rules for specific categories
         if self.category == NodeCategory.START:
-            self.size = wx.Size(60, 60)     # smaller circle
-            self.inputs = []                # no inputs
-            self.outputs = [""]               # no outputs
+            # Smaller circular start node, output only
+            self.size = wx.Size(60, 60)
+            self.inputs = []  # no inputs
+            self.outputs = [""]  # single output (centered)
+    
         elif self.category == NodeCategory.END:
-            self.size = wx.Size(100, 60)    # slightly smaller rectangle
+            # Smaller circular end node, input only
+            self.size = wx.Size(60, 60)
+            self.inputs = [""]  # single input (centered)
+            self.outputs = []  # no outputs
 
     def rect(self):
         """Return the rectangular bounds of the node in canvas coordinates.
