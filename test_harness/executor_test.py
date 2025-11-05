@@ -46,7 +46,6 @@ class ExampleTest:
     @before_class
     def setup_class(self):
         """ Setup class """
-        #self._logger.info("hello")
         print("Connecting to database...")
 
     @after_class
