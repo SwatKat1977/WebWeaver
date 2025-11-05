@@ -174,9 +174,12 @@ class WebDriver:
         ))
 
         try:
-            self._driver.get(new_url)
+            response = requests.head(url, allow_redirects=True, timeout=5)
+            if response.status_code >= 400:
+                raise PageLoadError(url, f"HTTP {response.status_code}")
+            self._driver.get(url)
         except WebDriverException as e:
-            raise PageLoadError(new_url, e) from e
+            raise PageLoadError(url, e) from e
 
     def open_page_with_manual_ntml(self,
                                    url: str,
