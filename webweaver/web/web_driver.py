@@ -21,6 +21,7 @@ import os
 import time
 import typing
 import keyboard
+import requests
 from urllib.parse import urlparse, urlunparse, quote
 from selenium.common.exceptions import WebDriverException
 from selenium import webdriver
@@ -134,6 +135,9 @@ class WebDriver:
             PageLoadError: If the page could not be loaded.
         """
         try:
+            response = requests.head(url, allow_redirects=True, timeout=5)
+            if response.status_code >= 400:
+                raise PageLoadError(url, f"HTTP {response.status_code}")
             self._driver.get(url)
         except WebDriverException as e:
             raise PageLoadError(url, e) from e
