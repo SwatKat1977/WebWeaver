@@ -18,49 +18,31 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
 from selenium.common.exceptions import WebDriverException
-from base_web_control import BaseWebControl
+from web.base_web_control import BaseWebControl
 
 
-class RadioButtonControl(BaseWebControl):
+class ButtonControl(BaseWebControl):
     """
-    Control for interacting with radio button groups.
+    Control for interacting with buttons or clickable elements.
     """
 
-    def select(self) -> bool:
+    def click(self) -> bool:
         """
-        Select a radio button from a group.
+        Click a button (or button-like element).
 
         Returns
         -------
         bool
-            True if selection succeeded, False otherwise.
+            True if the button was clicked, False otherwise.
         """
-        if self._element:
+
+        if self._element is not None:
             try:
                 self._element.click()
                 return True
 
-            except WebDriverException  as e:
-                self._logger.error(f"Failed to click radio button {self._element}: {e}")
+            except WebDriverException as e:
+                self._logger.error(
+                    f"Failed to click button {self._element}: {e}")
 
         return False
-
-    def is_selected(self) -> bool:
-        """
-        Check whether a specific radio button is selected.
-
-        Parameters
-        ----------
-        name : str
-            The ``name`` attribute shared by the radio group.
-        value : str
-            The ``value`` attribute of the radio button to check.
-        timeout : int, optional
-            Maximum seconds to wait for the element (default 10).
-
-        Returns
-        -------
-        bool
-            True if selected, False otherwise.
-        """
-        return self._element.is_selected() if self._element else False

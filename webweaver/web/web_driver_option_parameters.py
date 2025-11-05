@@ -17,9 +17,9 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
-from browser_type import BrowserType
-from web_driver_option import WebDriverOption
-from web_driver_option_parameter import WebDriverOptionParameter
+from web.browser_type import BrowserType
+from web.web_driver_option import WebDriverOption
+from web.web_driver_option_parameter import WebDriverOptionParameter
 
 WebDriverOptionParameters: dict = {
     WebDriverOption.HEADLESS: WebDriverOptionParameter(
@@ -94,5 +94,11 @@ WebDriverOptionParameters: dict = {
             BrowserType.EDGE: "--log-level"
         },
         True
-    )
+    ),
+    WebDriverOption.IGNORE_CERTIFICATE_ERROR: WebDriverOptionParameter(
+        WebDriverOption.IGNORE_CERTIFICATE_ERROR,
+        {
+            BrowserType.CHROME: "--ignore-certificate-errors"
+        }
+    ),
 }

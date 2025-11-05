@@ -18,8 +18,8 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
 import typing
-from browser_type import BrowserType
-from web_driver_option import WebDriverOption
+from web.browser_type import BrowserType
+from web.web_driver_option import WebDriverOption
 
 
 class WebDriverOptionParameter:
