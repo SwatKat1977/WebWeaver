@@ -36,6 +36,7 @@ from web.browser_type import BrowserType
 from web.exceptions import PageLoadError, InvalidBrowserOptionError, \
                            BrowserOptionIncompatibleError, \
                            BrowserOptionMissingParameterError
+from web.web_driver_option import WebDriverOption
 from web.web_driver_option_parameters import WebDriverOptionParameters
 
 
@@ -50,7 +51,8 @@ class WebDriver:
     Attributes:
         _driver (selenium.webdriver): The internal Selenium WebDriver instance.
     """
-    __slots__ = ["_driver", "_screenshots_dir", "_screenshots_enabled"]
+    __slots__ = ["_driver", "_driver_parameters", "_screenshots_dir",
+                 "_screenshots_enabled"]
 
     def __init__(self,
                  browser_type: BrowserType = BrowserType.CHROME,
@@ -90,6 +92,7 @@ class WebDriver:
         """
         self._screenshots_enabled: bool = screenshots_enabled
         self._screenshots_dir: str = screenshots_dir
+        self._driver_parameters = parameters
 
         if browser_type == BrowserType.CHROME:
             options = self.__parse_options(parameters, browser_type)
@@ -227,9 +230,15 @@ class WebDriver:
         return filename
 
     def _fetch_page(self, url: str):
+
+        ignore_cert_warning: bool = any(
+            parameter[0] == WebDriverOption.IGNORE_CERTIFICATE_ERROR for
+               parameter in self._driver_parameters)
+
         try:
             # Check HTTP status first
-            response = requests.head(url, allow_redirects=True, timeout=5)
+            response = requests.head(url, allow_redirects=True, timeout=5,
+                                     verify=not ignore_cert_warning)
             if response.status_code >= 400:
                 raise PageLoadError(url, f"HTTP {response.status_code}")
 
