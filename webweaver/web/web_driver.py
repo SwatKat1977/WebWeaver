@@ -197,6 +197,9 @@ class WebDriver:
             PageLoadError: If the page could not be loaded.
         """
         try:
+            response = requests.head(url, allow_redirects=True, timeout=5)
+            if response.status_code >= 400:
+                raise PageLoadError(url, f"HTTP {response.status_code}")
             self._driver.get(url)
         except WebDriverException as e:
             raise PageLoadError(url, e) from e
