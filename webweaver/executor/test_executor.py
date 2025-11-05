@@ -288,8 +288,19 @@ class TestExecutor:
         obj = cls()
 
         # Inject shared test logger into the class instance if not already present
+        # Inject shared test logger into the class instance if not already present
         if not hasattr(obj, "logger"):
             obj.logger = logging.getLogger(f"webweaver.{cls_name}")
+
+            # Add a clean formatter with (Class::Method)
+            short_cls = cls_name.rsplit(".", 1)[-1]
+            for handler in obj.logger.handlers or logging.getLogger("webweaver").handlers:
+                handler.setFormatter(logging.Formatter(
+                    "%(asctime)s [%(levelname)s] "
+                    f"({short_cls}::%(funcName)s) %(message)s",
+                    "%Y-%m-%d %H:%M:%S",
+                ))
+
             self._logger.debug(f"Injected logger into test class: {cls_name}")
 
         # listeners attached to the class (used only for method tasks)

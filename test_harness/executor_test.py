@@ -46,6 +46,7 @@ class ExampleTest:
     @before_class
     def setup_class(self):
         """ Setup class """
+        #self._logger.info("hello")
         print("Connecting to database...")
 
     @after_class
@@ -66,8 +67,15 @@ class ExampleTest:
     @test()
     def test_success(self):
         """ Test: (sequential) Test successful """
-        print("test_success: This test passes")
+        print("[ExampleTest::test_success] test_success: This test passes")
+        self.logger.info("hello")
         # nothing raised -> PASS
+
+        print("Logger handlers:", self.logger.handlers)
+        print("Logger name:", self.logger.name)
+        print("Logger propagate:", self.logger.propagate)
+        self.logger.info("hello from test logger!")
+
         time.sleep(7)
 
     @test(parallel=True)
