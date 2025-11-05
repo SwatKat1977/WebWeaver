@@ -68,12 +68,7 @@ class ExampleTest:
     def test_success(self):
         """ Test: (sequential) Test successful """
         print("[ExampleTest::test_success] test_success: This test passes")
-        self.logger.info("hello")
         # nothing raised -> PASS
-
-        print("Logger handlers:", self.logger.handlers)
-        print("Logger name:", self.logger.name)
-        print("Logger propagate:", self.logger.propagate)
         self.logger.info("hello from test logger!")
 
         time.sleep(7)
