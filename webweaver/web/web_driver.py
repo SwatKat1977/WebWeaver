@@ -134,13 +134,7 @@ class WebDriver:
         Raises:
             PageLoadError: If the page could not be loaded.
         """
-        try:
-            response = requests.head(url, allow_redirects=True, timeout=5)
-            if response.status_code >= 400:
-                raise PageLoadError(url, f"HTTP {response.status_code}")
-            self._driver.get(url)
-        except WebDriverException as e:
-            raise PageLoadError(url, e) from e
+        self._fetch_page(url)
 
     def open_page_with_auth(self, url: str, username: str, password: str):
         """
@@ -173,13 +167,7 @@ class WebDriver:
             parts.fragment
         ))
 
-        try:
-            response = requests.head(url, allow_redirects=True, timeout=5)
-            if response.status_code >= 400:
-                raise PageLoadError(url, f"HTTP {response.status_code}")
-            self._driver.get(url)
-        except WebDriverException as e:
-            raise PageLoadError(url, e) from e
+        self._fetch_page(new_url)
 
     def open_page_with_manual_ntml(self,
                                    url: str,
@@ -196,13 +184,7 @@ class WebDriver:
         Raises:
             PageLoadError: If the page could not be loaded.
         """
-        try:
-            response = requests.head(url, allow_redirects=True, timeout=5)
-            if response.status_code >= 400:
-                raise PageLoadError(url, f"HTTP {response.status_code}")
-            self._driver.get(url)
-        except WebDriverException as e:
-            raise PageLoadError(url, e) from e
+        self._fetch_page(url)
 
         time.sleep(3)
         keyboard.write(username)
@@ -243,6 +225,21 @@ class WebDriver:
                                      f"{name}_{timestamp}.png")
         self._driver.save_screenshot(filename)
         return filename
+
+    def _fetch_page(self, url: str):
+        try:
+            # Check HTTP status first
+            response = requests.head(url, allow_redirects=True, timeout=5)
+            if response.status_code >= 400:
+                raise PageLoadError(url, f"HTTP {response.status_code}")
+
+            # Load in Selenium
+            self._driver.get(url)
+
+        except (requests.RequestException, WebDriverException) as e:
+            # Wrap either type of error in your custom exception
+            self.take_screenshot("page_not_found")
+            raise PageLoadError(url, e) from e
 
     def __parse_options(self,
                         parameters: list,
