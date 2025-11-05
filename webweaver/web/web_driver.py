@@ -20,6 +20,7 @@ Copyright 2025 SwatKat1977
 import os
 import time
 import typing
+import keyboard
 from urllib.parse import urlparse, urlunparse, quote
 from selenium.common.exceptions import WebDriverException
 from selenium import webdriver
@@ -172,6 +173,33 @@ class WebDriver:
             self._driver.get(new_url)
         except WebDriverException as e:
             raise PageLoadError(new_url, e) from e
+
+    def open_page_with_manual_ntml(self, url: str, username: str, password: str):
+        """
+        Attempt to navigate to the given URL, passing in authentication.
+
+        Args:
+            url (str): The URL to open.
+            username (str): The username to authenticate with.
+            password (str): The password to authenticate with.
+
+        Raises:
+            PageLoadError: If the page could not be loaded.
+        """
+        try:
+            self._driver.get(url)
+        except WebDriverException as e:
+            raise PageLoadError(url, e) from e
+
+        time.sleep(3)
+        keyboard.write(username)
+        time.sleep(0.3)
+        keyboard.press("tab")
+        keyboard.release("tab")
+        keyboard.write(password)
+        time.sleep(2)
+        keyboard.press("enter")
+        keyboard.release('enter')
 
     def take_screenshot(self, name: str = "screenshot") -> str | None:
         """
