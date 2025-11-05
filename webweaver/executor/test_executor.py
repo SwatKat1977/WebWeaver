@@ -117,8 +117,47 @@ class TestExecutor:
         Args:
             logger (logging.Logger): Parent logger to create a child logger.
         """
-        self._logger = logger.getChild(__name__)
+        # Executor logger
+        self._logger = logger.getChild("executor")
 
+        # === Ensure a single console handler exists SOMEWHERE ===
+        # Prefer using the handler(s) already on the passed-in logger.
+        def _ensure_console_handler_on(lgr: logging.Logger) -> None:
+            if not lgr.handlers:
+                h = logging.StreamHandler()
+                h.setFormatter(logging.Formatter(
+                    "%(asctime)s [%(levelname)s] %(message)s",
+                    "%Y-%m-%d %H:%M:%S",
+                ))
+                lgr.addHandler(h)
+
+        # If the root has no handlers and the provided logger has none,
+        # create a sane default on the provided logger.
+        root = logging.getLogger()
+        if not root.handlers and not logger.handlers:
+            _ensure_console_handler_on(logger)
+
+        # === Make 'webweaver' the sink for all test logs ===
+        weaver = logging.getLogger("webweaver")
+
+        # If 'webweaver' has no handlers, borrow the provided logger's handlers.
+        if not weaver.handlers:
+            for h in logger.handlers:
+                if h not in weaver.handlers:
+                    weaver.addHandler(h)
+
+        # Keep propagation ON so child loggers bubble to 'webweaver' if needed.
+        weaver.propagate = False  # weaver itself owns handlers now
+        weaver.setLevel(logger.level or logging.DEBUG)
+
+        # Remove duplicate handlers from executor logger to avoid double output
+        for h in list(self._logger.handlers):
+            self._logger.removeHandler(h)
+
+        self._logger.debug("Executor logging pipeline initialized. "
+                           f"weaver.handlers={len(weaver.handlers)}, "
+                           f"root.handlers={len(root.handlers)}, "
+                           f"exec.handlers={len(self._logger.handlers)}")
     def run_tests(self, suite: dict):
         # pylint: disable=too-many-locals
         sequential_tasks, parallel_tasks, class_fixtures = self.__collect_from_suite(suite)
@@ -248,6 +287,22 @@ class TestExecutor:
         cls = self._resolve_class(cls_name)
         obj = cls()
 
+        # Inject shared test logger into the class instance if not already present
+        # Inject shared test logger into the class instance if not already present
+        if not hasattr(obj, "logger"):
+            obj.logger = logging.getLogger(f"webweaver.{cls_name}")
+
+            # Add a clean formatter with (Class::Method)
+            short_cls = cls_name.rsplit(".", 1)[-1]
+            for handler in obj.logger.handlers or logging.getLogger("webweaver").handlers:
+                handler.setFormatter(logging.Formatter(
+                    "%(asctime)s [%(levelname)s] "
+                    f"({short_cls}::%(funcName)s) %(message)s",
+                    "%Y-%m-%d %H:%M:%S",
+                ))
+
+            self._logger.debug(f"Injected logger into test class: {cls_name}")
+
         # listeners attached to the class (used only for method tasks)
         method_listeners = getattr(cls, "__listeners__", [])
 
@@ -298,9 +353,35 @@ class TestExecutor:
         else:
             # class wrapper: run methods sequentially INSIDE; return dict of per-method results
             def class_task():
+                """
+                Class wrapper task:
+                  1) run all @before_class hooks
+                  2) execute selected test methods sequentially (with before/after_method + listeners)
+                  3) always run all @after_class hooks (even on failure)
+                  4) if the wrapper bombs, mark any not-yet-run methods as SKIPPED
+                """
                 results = {}
                 ran = set()
+
                 try:
+                    # --- 1) Run @before_class hooks first ---
+                    for before_class in before_class_methods:
+                        try:
+                            before_class()
+
+                        except Exception as ex:  # if a before_class fails, skip all methods
+                            self._logger.warning("Exception in before_class '%s' for %s: %s",
+                                                 getattr(before_class, "__name__", str(before_class)),
+                                                 cls_name, ex)
+                            for method_name in selected:
+                                tr = TestResult(method_name, cls_name)
+                                tr.status = TestStatus.SKIPPED
+                                tr.caught_exception = ex
+                                results[f"{cls_name}.{method_name}"] = tr
+                            # Abort method execution; finally will still run after_class
+                            return results
+
+                    # --- 2) Run test methods sequentially ---
                     for method_name in selected:
                         method = getattr(obj, method_name)
                         mtr = TestResult(method_name, cls_name)
@@ -312,15 +393,14 @@ class TestExecutor:
                             after_methods=after_method_methods,
                             lock=None
                         )
+
                         res = self.__run_task(task, mtr, ctx)
                         results[f"{cls_name}.{method_name}"] = res
                         ran.add(method_name)
 
-                # NOTE: Disabling broad exception here because this is a
-                #       user-defined method, and we don't know what exception
-                #       could be caught.
-                except Exception as ex:  # pylint:  disable=broad-exception-caught
-                    # mark remaining methods as SKIPPED if wrapper bombs
+                except Exception as ex:  # pylint: disable=broad-exception-caught
+                    # --- 3) Wrapper failure: mark any not-yet-run methods as SKIPPED ---
+                    self._logger.warning("Exception in class wrapper for %s: %s", cls_name, ex)
                     for method_name in selected:
                         if method_name in ran:
                             continue
@@ -328,6 +408,18 @@ class TestExecutor:
                         tr.status = TestStatus.SKIPPED
                         tr.caught_exception = ex
                         results[f"{cls_name}.{method_name}"] = tr
+
+                finally:
+                    # --- 4) Always run @after_class hooks ---
+                    for after_class in after_class_methods:
+                        try:
+                            after_class()
+
+                        except Exception as ex2:
+                            self._logger.warning("Exception in after_class '%s' for %s: %s",
+                                                 getattr(after_class, "__name__", str(after_class)),
+                                                 cls_name, ex2)
+
                 return results
 
             task_name = f"{cls_name}.__class_wrapper__"
