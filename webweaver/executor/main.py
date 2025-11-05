@@ -48,9 +48,6 @@ def main():
     parser = SuiteParser("suite_schema.json")
     suite = parser.load_suite(args.suite_json)
 
-    # Pre-import test modules
-    import_test_modules(args.search)
-
     # Discover TestListener implementations
     listeners = discover_listeners(args.search)
     logger.info("Discovered %d TestListener(s).", len(listeners))

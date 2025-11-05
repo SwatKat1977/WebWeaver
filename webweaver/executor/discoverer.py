@@ -19,12 +19,15 @@ Copyright 2025 SwatKat1977
 """
 import importlib.util
 import inspect
+import logging
 import pathlib
 from typing import List
 from test_listener import TestListener
 
 
-def discover_listeners(search_path: str | pathlib.Path = ".") -> List[TestListener]:
+def discover_listeners(
+        logger: logging.Logger,
+        search_path: str | pathlib.Path = ".") -> List[TestListener]:
     """
     Discover *global* TestListener subclasses from listener_*.py modules
     within the given path. These apply to all tests automatically.
