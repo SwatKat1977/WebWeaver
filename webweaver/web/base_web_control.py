@@ -217,14 +217,12 @@ class BaseWebControl:
             try:
                 self._logger.debug(f"Looking for element by {by}='{value}' (attempt {attempt+1})")
                 element = WebDriverWait(self._driver.driver, timeout).until(
-                    expected_conditions.presence_of_element_located((by,
-                                                                     value))
-                )
+                    expected_conditions.presence_of_element_located((by, value)))
                 self._element = element
                 return element
             except (TimeoutException, NoSuchElementException) as e:
                 raise ElementNotFoundError(
-                    f"Element not found: {by}='{value}', error={e}")
+                    f"Element not found: {by}='{value}'")
             except StaleElementReferenceException:
                 self._logger.warning(f"Stale element reference for {by}='{value}', retrying...")
                 attempt += 1
