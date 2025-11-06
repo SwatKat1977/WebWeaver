@@ -25,6 +25,7 @@ from selenium.common.exceptions import NoSuchElementException, \
                                        StaleElementReferenceException
 from selenium.webdriver.common.by import By
 from web.web_driver import WebDriver
+from web.exceptions import ElementNotFoundError
 
 
 class BaseWebControl:
@@ -216,14 +217,12 @@ class BaseWebControl:
             try:
                 self._logger.debug(f"Looking for element by {by}='{value}' (attempt {attempt+1})")
                 element = WebDriverWait(self._driver.driver, timeout).until(
-                    expected_conditions.presence_of_element_located((by,
-                                                                     value))
-                )
+                    expected_conditions.presence_of_element_located((by, value)))
                 self._element = element
                 return element
             except (TimeoutException, NoSuchElementException) as e:
-                self._logger.warning(f"Element not found: {by}='{value}', error={e}")
-                return None
+                raise ElementNotFoundError(
+                    f"Element not found: {by}='{value}'")
             except StaleElementReferenceException:
                 self._logger.warning(f"Stale element reference for {by}='{value}', retrying...")
                 attempt += 1
@@ -233,4 +232,5 @@ class BaseWebControl:
         if screenshot_on_fail:
             filename = self._driver.take_screenshot(f"fail_{value}")
             self._logger.info(f"Screenshot saved to {filename} due to failure")
-        return None
+
+        raise ElementNotFoundError(f"Element Not found: {value}")
