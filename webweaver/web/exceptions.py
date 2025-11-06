@@ -73,3 +73,16 @@ class BrowserOptionMissingParameterError(Exception):
     """
     def __init__(self, exception_str: str):
         super().__init__(exception_str)
+
+
+class ElementNotFoundError(Exception):
+    """
+    Raised when a WebDriver element cannot be found.
+
+    Parameters
+    ----------
+    exception_str : str
+        The error message describing the missing element.
+    """
+    def __init__(self, exception_str: str):
+        super().__init__(exception_str)
