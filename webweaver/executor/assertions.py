@@ -22,22 +22,44 @@ import logging
 
 class AssertionFailure(AssertionError):
     """Raised when a hard assertion fails."""
-    pass
 
 
 class AssumptionFailure(AssertionError):
     """Raised when a soft (assume) assertion fails."""
-    pass
 
 
 class AssertionContext:
-    """Shared base for both hard and soft assertions."""
+    """
+    Shared base for both hard and soft assertions.
+
+    Provides two main entry points:
+        - assert_that(value, description): performs hard assertions (raise
+          immediately)
+        - assume_that(value, description): performs soft assertions (collect
+          for later)
+    """
 
     def __init__(self, logger: logging.Logger | None = None):
+        """
+        Initialize the assertion context.
+
+        Args:
+            logger: Optional logger instance. If not provided, a default
+                    'webweaver.Assertions' logger is used.
+        """
         self.logger = logger or logging.getLogger("webweaver.Assertions")
 
     def assert_that(self, actual, description=None):
-        """Hard assertion: fails immediately."""
+        """
+        Create a hard assertion chain for the given value.
+
+        Args:
+            actual: The actual value under test.
+            description: Optional human-readable description of the assertion.
+
+        Returns:
+            _AssertValue: A fluent assertion chain configured for hard assertion mode.
+        """
         return _AssertValue(self,
                             actual,
                             description,
@@ -45,7 +67,19 @@ class AssertionContext:
                             assume=False)
 
     def assume_that(self, actual, description=None):
-        """Soft assertion: collects and reports later."""
+        """
+        Create a soft assertion chain for the given value.
+
+        Unlike hard assertions, failures are logged and collected rather than raised
+        immediately, allowing test execution to continue.
+
+        Args:
+            actual: The actual value under test.
+            description: Optional human-readable description of the assertion.
+
+        Returns:
+            _AssertValue: A fluent assertion chain configured for soft assertion mode.
+        """
         return _AssertValue(self,
                             actual,
                             description,
@@ -64,16 +98,32 @@ class SoftAssertions(AssertionContext):
     """
 
     def __init__(self, logger: logging.Logger | None = None):
+        """
+        Initialize a SoftAssertions context.
+
+        Args:
+            logger: Optional logger instance for reporting soft failures.
+        """
         super().__init__(logger)
         self.failures: list[str] = []
 
     def add_failure(self, message: str):
-        """Record a soft failure."""
+        """
+        Record a soft failure for later summarization.
+
+        Args:
+            message: The failure message to store.
+        """
         self.failures.append(message)
         self.logger.error(f"[Assume] {message}")
 
     def summarise(self):
-        """Raise a combined error if any assumptions failed."""
+        """
+        Summarize all collected soft assumption failures.
+
+        Raises:
+            AssertionError: If one or more soft assumptions failed.
+        """
         if not self.failures:
             self.logger.debug("All soft assumptions passed.")
             return
@@ -82,7 +132,15 @@ class SoftAssertions(AssertionContext):
 
 
 class _AssertValue:
-    """Fluent chain for both hard and soft assertions."""
+    """
+    Fluent chain for both hard and soft assertions.
+
+    Each method in this class performs a specific type of assertion
+    (e.g., equality, comparison, type checking) and returns `self`
+    for fluent chaining.
+
+    Internal class; users should access it via AssertionContext methods.
+    """
 
     def __init__(self,
                  parent: AssertionContext,
@@ -95,66 +153,96 @@ class _AssertValue:
         self.description = description or ""
         self.hard = hard
         self.assume = assume
+        """
+        Initialize an assertion chain.
+
+        Args:
+            parent: The parent assertion context (hard or soft).
+            actual: The value being tested.
+            description: Optional text describing the assertion.
+            hard: Whether this is a hard (raise immediately) assertion.
+            assume: Whether this is a soft assumption instead of a true assertion.
+        """
 
     # --- Assertion primitives ---
     def _fail(self, msg: str):
+        """
+        Handle assertion failure based on context (hard or soft).
+
+        Logs the message and either raises an exception or records the failure.
+
+        Args:
+            msg: Description of the failed condition.
+
+        Raises:
+            AssertionFailure or AssumptionFailure for hard assertions,
+            or records the failure for soft ones.
+        """
         message = f"{self.description} {msg}".strip()
 
         if self.assume:
             self.parent.logger.warning(f"[Assume] {message}")
             raise AssumptionFailure(message)
 
-        elif self.hard:
+        if self.hard:
             self.parent.logger.error(f"[Assert] {message}")
             raise AssertionFailure(message)
 
-        else:
-            # Soft (collect) mode
-            assert isinstance(self.parent, SoftAssertions)
-            self.parent.add_failure(message)
+        # Soft (collect) mode
+        assert isinstance(self.parent, SoftAssertions)
+        self.parent.add_failure(message)
 
     # --- Fluent matchers ---
     def is_equal_to(self, expected):
+        """Assert that the actual value equals the expected value."""
         if self.actual != expected:
             self._fail(f"expected {expected}, got {self.actual}")
         return self
 
     def is_not_equal_to(self, unexpected):
+        """Assert that the actual value does not equal the unexpected value."""
         if self.actual == unexpected:
             self._fail(f"expected not {unexpected}, but got it")
         return self
 
     def is_true(self):
+        """Assert that the actual value is True."""
         if not self.actual:
             self._fail(f"expected True, got {self.actual}")
         return self
 
     def is_false(self):
+        """Assert that the actual value is False."""
         if self.actual:
             self._fail(f"expected False, got {self.actual}")
         return self
 
     def is_not_none(self):
+        """Assert that the actual value is not None."""
         if self.actual is None:
             self._fail("expected a non-None value")
         return self
 
     def is_none(self):
+        """Assert that the actual value is None."""
         if self.actual is not None:
             self._fail(f"expected None, got {self.actual}")
         return self
 
     def is_greater_than(self, value):
-        if not (self.actual > value):
+        """Assert that the actual value is greater than the given value."""
+        if not self.actual > value:
             self._fail(f"expected > {value}, got {self.actual}")
         return self
 
     def is_less_than(self, value):
-        if not (self.actual < value):
+        """Assert that the actual value is less than the given value."""
+        if not self.actual < value:
             self._fail(f"expected < {value}, got {self.actual}")
         return self
 
     def contains(self, element):
+        """Assert that the actual value (iterable) contains the given element."""
         try:
             if element not in self.actual:
                 self._fail(f"expected {self.actual} to contain {element}")
@@ -163,7 +251,13 @@ class _AssertValue:
         return self
 
     def matches(self, predicate, description=None):
-        """Custom match: pass a lambda and optional description."""
+        """
+        Assert that a custom predicate returns True for the actual value.
+
+        Args:
+            predicate: A callable that takes the actual value and returns a bool.
+            description: Optional custom failure message.
+        """
         try:
             if not predicate(self.actual):
                 self._fail(description or "custom predicate failed")
@@ -172,16 +266,19 @@ class _AssertValue:
         return self
 
     def is_in(self, collection):
+        """Assert that the actual value is a member of the given collection."""
         if self.actual not in collection:
             self._fail(f"expected {self.actual} to be in {collection}")
         return self
 
     def is_instance_of(self, cls):
+        """Assert that the actual value is an instance of the given class."""
         if not isinstance(self.actual, cls):
             self._fail(f"expected instance of {cls.__name__}, got {type(self.actual).__name__}")
         return self
 
     def starts_with(self, prefix: str):
+        """Assert that the actual string starts with the given prefix."""
         if not isinstance(self.actual, str):
             self._fail("starts_with() only applies to strings")
         elif not self.actual.startswith(prefix):
@@ -189,6 +286,7 @@ class _AssertValue:
         return self
 
     def ends_with(self, suffix: str):
+        """Assert that the actual string ends with the given suffix."""
         if not isinstance(self.actual, str):
             self._fail("ends_with() only applies to strings")
         elif not self.actual.endswith(suffix):
