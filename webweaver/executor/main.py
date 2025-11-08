@@ -74,10 +74,10 @@ def main():
 
             existing_types = {type(l) for l in cls.__listeners__}
 
-            # Merge in only *new* listener types
-            for l in listeners:  # these are from discover_listeners()
-                if type(l) not in existing_types:
-                    cls.__listeners__.append(l)
+            # Merge in only *new* listener types from discover_listeners()
+            for listener in listeners:
+                if type(listener) not in existing_types:
+                    cls.__listeners__.append(listener)
 
     results = executor.run_tests(suite)
 
