@@ -54,8 +54,7 @@ def main():
     ensure_suite_path_on_sys_path(args.suite_json)
 
     suite_schema_file: str = os.path.join(webweaver_root, "suite_schema.json")
-    print(suite_schema_file)
-    parser = SuiteParser(os.path.join(webweaver_root, "suite_schema.json"))
+    parser = SuiteParser(suite_schema_file)
     suite = parser.load_suite(args.suite_json)
 
     # Discover TestListener implementations
