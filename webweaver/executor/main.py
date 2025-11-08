@@ -19,11 +19,12 @@ Copyright 2025 SwatKat1977
 """
 import argparse
 import logging
+import os
 import pathlib
 import sys
-from suite_parser import SuiteParser
-from test_executor import TestExecutor
-from discoverer import discover_listeners, import_test_modules
+from executor.suite_parser import SuiteParser
+from executor.test_executor import TestExecutor
+from executor.discoverer import discover_listeners, import_test_modules
 
 
 def ensure_suite_path_on_sys_path(suite_path: str):
@@ -32,6 +33,11 @@ def ensure_suite_path_on_sys_path(suite_path: str):
         sys.path.insert(0, str(suite_dir))
 
 def main():
+    webweaver_root = os.getenv("WEAVER_PATH", None)
+
+    if not webweaver_root:
+        print("Please set WEAVER_PATH environment variable.")
+
     parser = argparse.ArgumentParser(description="Web Weaver Test Executor")
     parser.add_argument("suite_json", help="Path to test suite JSON file")
     parser.add_argument("--search", default=".", help="Path to discover listeners (default: current dir)")
@@ -45,7 +51,9 @@ def main():
 
     ensure_suite_path_on_sys_path(args.suite_json)
 
-    parser = SuiteParser("suite_schema.json")
+    suite_schema_file: str = os.path.join(webweaver_root, "suite_schema.json")
+    print(suite_schema_file)
+    parser = SuiteParser(os.path.join(webweaver_root, "suite_schema.json"))
     suite = parser.load_suite(args.suite_json)
 
     # Discover TestListener implementations

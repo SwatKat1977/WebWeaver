@@ -18,8 +18,8 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
 import functools
-from executor_exceptions import TestFailure
-from test_status import TestStatus
+from executor.executor_exceptions import TestFailure
+from executor.test_status import TestStatus
 
 
 # === Decorator to mark test methods ===
