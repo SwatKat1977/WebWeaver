@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "webweaver"
-version = "v0.2.0"
+version = "v0.3.0"
 description = "WebWeaver — a modular web automation and scraping library."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -14,7 +14,10 @@ authors = [
 requires-python = ">=3.10"
 dependencies = [
     "selenium",
-    "webdriver_manager"
+    "webdriver_manager",
+    "pyyaml",
+    "jsonschema",
+    "keyboard"
 ]
 keywords = ["web", "automation"]
 classifiers = [
