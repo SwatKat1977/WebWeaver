@@ -32,11 +32,13 @@ def ensure_suite_path_on_sys_path(suite_path: str):
     if str(suite_dir) not in sys.path:
         sys.path.insert(0, str(suite_dir))
 
+
 def main():
-    webweaver_root = os.getenv("WEAVER_PATH", None)
+    webweaver_root = os.getenv("WEBWEAVER_PATH", None)
 
     if not webweaver_root:
         print("Please set WEAVER_PATH environment variable.")
+        return
 
     parser = argparse.ArgumentParser(description="Web Weaver Test Executor")
     parser.add_argument("suite_json", help="Path to test suite JSON file")

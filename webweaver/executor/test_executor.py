@@ -29,6 +29,10 @@ import typing
 from executor.suite_parser import SuiteParser
 from executor.test_result import TestResult
 from executor.test_status import TestStatus
+from executor.assertions import (SoftAssertions,
+                                 AssertionFailure,
+                                 AssumptionFailure,
+                                 AssertionContext)
 
 
 @dataclass
@@ -302,6 +306,24 @@ class TestExecutor:
                 ))
 
             self._logger.debug(f"Injected logger into test class: {cls_name}")
+
+        # === Inject soft/hard assertion helpers ===
+
+        # Hard assertion context — raises immediately (assert/assume)
+        if not hasattr(obj, "assertions"):
+            obj.assertions = AssertionContext(obj.logger)
+
+        # Soft assertions collector — records and summarizes later
+        if not hasattr(obj, "softly"):
+            obj.softly = SoftAssertions(obj.logger)
+
+        # Bind convenience methods for hard assertions
+        if not hasattr(obj, "assert_that"):
+            obj.assert_that = obj.assertions.assert_that
+
+        if not hasattr(obj, "assume_that"):
+            obj.assume_that = obj.assertions.assume_that
+
 
         # listeners attached to the class (used only for method tasks)
         method_listeners = getattr(cls, "__listeners__", [])
@@ -641,6 +663,7 @@ class TestExecutor:
         after_methods = ctx.after_methods or []
         listeners = ctx.listeners or []
 
+        # Skip disabled tests
         def _is_task_enabled(task) -> bool:
             if isinstance(task, functools.partial):
                 func = getattr(task, "func", None)
@@ -668,9 +691,28 @@ class TestExecutor:
                 test_result.status = TestStatus.SUCCESS
                 return test_result
 
-            except Exception as ex:  # pylint: disable=broad-exception-caught
+            except AssumptionFailure as ex:
+                # Assumption failed → SKIPPED
+                test_result.status = TestStatus.SKIPPED
+                test_result.caught_exception = ex
+                self._logger.warning("Assumption failed in '%s': %s",
+                                     getattr(task, "__name__", str(task)), ex)
+                return test_result
+
+            except AssertionFailure as ex:
+                # Assertion failed → FAILURE
                 test_result.status = TestStatus.FAILURE
                 test_result.caught_exception = ex
+                self._logger.error("Assertion failed in '%s': %s",
+                                   getattr(task, "__name__", str(task)), ex)
+                return test_result
+
+            except Exception as ex:  # pylint: disable=broad-exception-caught
+                # Unhandled exception → FAILURE (retain your current behavior)
+                test_result.status = TestStatus.FAILURE
+                test_result.caught_exception = ex
+                self._logger.exception("Unexpected exception in '%s'",
+                                       getattr(task, "__name__", str(task)))
                 return test_result
 
         def _finalize_task(test_result: TestResult):

@@ -108,12 +108,19 @@ class MethodSpecificTest:
         """ Test: (sequential) Test successful """
         print("MethodSpecificTest.removeItem : PASS")
         time.sleep(7)
+        y: bool = False
+        z: bool = True
+        self.assume_that(y).is_true()  # immediate skip
+        self.softly.assume_that(z).is_true()  # record, continue
+        self.softly.summarize()
 
     @test()
     def add_item(self):
         """ Test: (sequential) Test successful """
         print("MethodSpecificTest.addItem : PASS")
         time.sleep(2)
+        x: bool = False
+        self.assert_that(x).is_true()      # immediate fail
 
 
 LOGGING_DATETIME_FORMAT_STRING = "%Y-%m-%d %H:%M:%S"
