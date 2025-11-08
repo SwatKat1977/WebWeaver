@@ -26,9 +26,9 @@ import logging
 import threading
 import time
 import typing
-from suite_parser import SuiteParser
-from test_result import TestResult
-from test_status import TestStatus
+from executor.suite_parser import SuiteParser
+from executor.test_result import TestResult
+from executor.test_status import TestStatus
 
 
 @dataclass

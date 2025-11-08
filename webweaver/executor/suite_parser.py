@@ -21,10 +21,10 @@ import json
 import os
 import yaml
 from jsonschema import validate, ValidationError
-from executor_exceptions import (TestSuiteSchemaFileNotFound,
-                                 TestSuiteSchemaParseFailed,
-                                 TestSuiteFileNotFound,
-                                 TestSuiteParseFailed)
+from executor.executor_exceptions import (TestSuiteSchemaFileNotFound,
+                                          TestSuiteSchemaParseFailed,
+                                          TestSuiteFileNotFound,
+                                          TestSuiteParseFailed)
 
 
 class SuiteParser:
@@ -50,20 +50,17 @@ class SuiteParser:
     DEFAULT_TEST_THREAD_COUNT: int = 10
 
     def __init__(self, schema_path: str):
-        base_dir = os.path.dirname(__file__)
-        full_path = os.path.join(base_dir, schema_path)
-
         try:
-            with open(full_path, "r", encoding="utf-8") as f:
+            with open(schema_path, "r", encoding="utf-8") as f:
                 self._schema = json.load(f)
 
         except FileNotFoundError as ex:
             raise TestSuiteSchemaFileNotFound(
-                f"Schema file '{full_path}' not found.") from ex
+                f"Schema file '{schema_path}' not found.") from ex
 
         except json.JSONDecodeError as ex:
             raise TestSuiteSchemaParseFailed(
-                f"Invalid JSON in schema file {full_path}: {ex.msg} "
+                f"Invalid JSON in schema file {schema_path}: {ex.msg} "
                 f"(line {ex.lineno}, column {ex.colno})") from ex
 
     def load_suite(self, file_path: str) -> dict:
