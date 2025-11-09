@@ -100,7 +100,7 @@ def main():
     suite = parser.load_suite(args.suite_json)
 
     # Discover TestListener implementations
-    listeners = discover_listeners(args.search)
+    listeners = discover_listeners(logger, args.search)
     logger.info("Discovered %d TestListener(s).", len(listeners))
 
     executor = TestExecutor(logger)

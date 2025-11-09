@@ -142,6 +142,7 @@ class _AssertValue:
     Internal class; users should access it via AssertionContext methods.
     """
 
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(self,
                  parent: AssertionContext,
                  actual,

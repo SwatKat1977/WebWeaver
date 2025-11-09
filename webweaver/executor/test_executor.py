@@ -380,7 +380,8 @@ class TestExecutor:
                 """
                 Class wrapper task:
                   1) run all @before_class hooks
-                  2) execute selected test methods sequentially (with before/after_method + listeners)
+                  2) execute selected test methods sequentially (with
+                     before/after_method + listeners)
                   3) always run all @after_class hooks (even on failure)
                   4) if the wrapper bombs, mark any not-yet-run methods as SKIPPED
                 """
@@ -394,9 +395,10 @@ class TestExecutor:
                             before_class()
 
                         except Exception as ex:  # if a before_class fails, skip all methods
-                            self._logger.warning("Exception in before_class '%s' for %s: %s",
-                                                 getattr(before_class, "__name__", str(before_class)),
-                                                 cls_name, ex)
+                            self._logger.warning(
+                                "Exception in before_class '%s' for %s: %s",
+                                getattr(before_class, "__name__",
+                                        str(before_class)), cls_name, ex)
                             for method_name in selected:
                                 tr = TestResult(method_name, cls_name)
                                 tr.status = TestStatus.SKIPPED
