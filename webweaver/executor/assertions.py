@@ -83,7 +83,7 @@ class AssertionContext:
         return _AssertValue(self,
                             actual,
                             description,
-                            hard=True,
+                            hard=False,
                             assume=True)
 
 
@@ -180,15 +180,25 @@ class _AssertValue:
         """
         message = f"{self.description} {msg}".strip()
 
-        if self.assume:
+        # Case 1: soft assume (collect and continue, no raise)
+        if self.assume and not self.hard:
+            self.parent.logger.warning(f"[Assume] {message}")
+            # if parent has SoftAssertions collector, record it
+            if hasattr(self.parent, "soft_collector"):
+                self.parent.soft_collector.add_failure(message)
+            return
+
+        # Case 2: hard assume (immediate skip)
+        if self.assume and self.hard:
             self.parent.logger.warning(f"[Assume] {message}")
             raise AssumptionFailure(message)
 
+        # Case 3: hard assert (immediate fail)
         if self.hard:
             self.parent.logger.error(f"[Assert] {message}")
             raise AssertionFailure(message)
 
-        # Soft (collect) mode
+        # Case 4: default soft collector (e.g., self.softly.assume_that())
         assert isinstance(self.parent, SoftAssertions)
         self.parent.add_failure(message)
 

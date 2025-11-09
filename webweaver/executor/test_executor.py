@@ -324,6 +324,8 @@ class TestExecutor:
         if not hasattr(obj, "assume_that"):
             obj.assume_that = obj.assertions.assume_that
 
+        # link assertion context to collector for assume_that()
+        obj.assertions.soft_collector = obj.softly
 
         # listeners attached to the class (used only for method tasks)
         method_listeners = getattr(cls, "__listeners__", [])
@@ -689,14 +691,6 @@ class TestExecutor:
                     return test_result
 
                 test_result.status = TestStatus.SUCCESS
-                return test_result
-
-            except AssumptionFailure as ex:
-                # Assumption failed → SKIPPED
-                test_result.status = TestStatus.SKIPPED
-                test_result.caught_exception = ex
-                self._logger.warning("Assumption failed in '%s': %s",
-                                     getattr(task, "__name__", str(task)), ex)
                 return test_result
 
             except AssertionFailure as ex:

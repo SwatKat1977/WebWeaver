@@ -110,9 +110,12 @@ class MethodSpecificTest:
         time.sleep(7)
         y: bool = False
         z: bool = True
+        self.logger.info("Calling before assume that fails...")
         self.assume_that(y).is_true()  # immediate skip
+        self.logger.info("Calling before assume that passes...")
         self.softly.assume_that(z).is_true()  # record, continue
-        self.softly.summarize()
+        self.logger.info("All assumes processed...")
+        self.softly.summarise()
 
     @test()
     def add_item(self):
