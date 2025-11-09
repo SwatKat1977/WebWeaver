@@ -11,6 +11,7 @@ Python Dependencies:
 * pyyaml
 * jsonschema
 * keyboard
+* aiohttp
 
 Useful sites to test automation:
 
