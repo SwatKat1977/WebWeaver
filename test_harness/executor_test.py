@@ -108,12 +108,22 @@ class MethodSpecificTest:
         """ Test: (sequential) Test successful """
         print("MethodSpecificTest.removeItem : PASS")
         time.sleep(7)
+        y: bool = False
+        z: bool = True
+        self.logger.info("Calling before assume that fails...")
+        self.assume_that(y).is_true()  # immediate skip
+        self.logger.info("Calling before assume that passes...")
+        self.softly.assume_that(z).is_true()  # record, continue
+        self.logger.info("All assumes processed...")
+        self.softly.summarise()
 
     @test()
     def add_item(self):
         """ Test: (sequential) Test successful """
         print("MethodSpecificTest.addItem : PASS")
         time.sleep(2)
+        x: bool = False
+        self.assert_that(x).is_true()      # immediate fail
 
 
 LOGGING_DATETIME_FORMAT_STRING = "%Y-%m-%d %H:%M:%S"
