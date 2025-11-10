@@ -22,7 +22,7 @@ import inspect
 import logging
 import pathlib
 from typing import List
-from executor.test_listener import TestListener
+from webweaver.executor.test_listener import TestListener
 
 
 def discover_listeners(

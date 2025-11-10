@@ -21,10 +21,11 @@ import json
 import os
 import yaml
 from jsonschema import validate, ValidationError
-from executor.executor_exceptions import (TestSuiteSchemaFileNotFound,
-                                          TestSuiteSchemaParseFailed,
-                                          TestSuiteFileNotFound,
-                                          TestSuiteParseFailed)
+from webweaver.executor.executor_exceptions import (
+    TestSuiteSchemaFileNotFound,
+    TestSuiteSchemaParseFailed,
+    TestSuiteFileNotFound,
+    TestSuiteParseFailed)
 
 
 class SuiteParser:

@@ -22,9 +22,9 @@ import logging
 import os
 import pathlib
 import sys
-from executor.suite_parser import SuiteParser
-from executor.test_executor import TestExecutor
-from executor.discoverer import discover_listeners
+from webweaver.executor.suite_parser import SuiteParser
+from webweaver.executor.test_executor import TestExecutor
+from webweaver.executor.discoverer import discover_listeners
 
 
 def ensure_suite_path_on_sys_path(suite_path: str):
