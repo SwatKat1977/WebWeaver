@@ -46,28 +46,30 @@ class ExampleTest:
     @before_class
     def setup_class(self):
         """ Setup class """
-        print("Connecting to database...")
+        self.logger.info("Connecting to database...")
 
     @after_class
     def teardown_class(self):
         """ Teardown class """
-        print("Disconnecting from database...")
+        self.logger.info("Disconnecting from database...")
 
     @before_method
     def setup(self):
         """ Before method """
-        print("Calling before method...")
+        self.logger.info("Calling before method...")
 
     @after_method
     def teardown(self):
         """ After method """
-        print("Calling after method...")
+        self.logger.info("Calling after method...")
 
     @test()
     def test_success(self):
         """ Test: (sequential) Test successful """
-        print("test_success: This test passes")
+        print("[ExampleTest::test_success] test_success: This test passes")
         # nothing raised -> PASS
+        self.logger.info("hello from test logger!")
+
         time.sleep(7)
 
     @test(parallel=True)
@@ -106,12 +108,22 @@ class MethodSpecificTest:
         """ Test: (sequential) Test successful """
         print("MethodSpecificTest.removeItem : PASS")
         time.sleep(7)
+        y: bool = False
+        z: bool = True
+        self.logger.info("Calling before assume that fails...")
+        self.assume_that(y).is_true()  # immediate skip
+        self.logger.info("Calling before assume that passes...")
+        self.softly.assume_that(z).is_true()  # record, continue
+        self.logger.info("All assumes processed...")
+        self.softly.summarise()
 
     @test()
     def add_item(self):
         """ Test: (sequential) Test successful """
         print("MethodSpecificTest.addItem : PASS")
         time.sleep(2)
+        x: bool = False
+        self.assert_that(x).is_true()      # immediate fail
 
 
 LOGGING_DATETIME_FORMAT_STRING = "%Y-%m-%d %H:%M:%S"

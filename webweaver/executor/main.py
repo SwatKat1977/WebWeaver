@@ -19,22 +19,72 @@ Copyright 2025 SwatKat1977
 """
 import argparse
 import logging
+import os
 import pathlib
 import sys
-from suite_parser import SuiteParser
-from test_executor import TestExecutor
-from discoverer import discover_listeners, import_test_modules
+from executor.suite_parser import SuiteParser
+from executor.test_executor import TestExecutor
+from executor.discoverer import discover_listeners
 
 
 def ensure_suite_path_on_sys_path(suite_path: str):
+    """
+    Ensure the parent directory of a test suite is present on sys.path.
+
+    This allows Python to locate and import modules within the suite’s
+    directory, even when executed from outside the suite hierarchy.
+
+    Args:
+        suite_path: The file path to a test suite or test module.
+                    Its parent directory will be added to sys.path if not
+                    already present.
+    """
     suite_dir = pathlib.Path(suite_path).resolve().parent
     if str(suite_dir) not in sys.path:
         sys.path.insert(0, str(suite_dir))
 
+
 def main():
+    """
+    Entry point for the Web Weaver test executor CLI.
+
+    This function loads a test suite definition, discovers available test
+    listeners, injects them into the appropriate test classes, and then
+    executes all defined tests.
+
+    Environment:
+        WEBWEAVER_PATH: Must point to the root of the Web Weaver installation.
+                        It is used to locate the suite schema definition.
+
+    Command-line Arguments:
+        suite_json: Path to the JSON file describing the test suite to run.
+        --search: Optional directory to search for TestListener implementations
+                  (default: current working directory).
+
+    Workflow:
+        1. Validates the WEBWEAVER_PATH environment variable.
+        2. Configures logging for the test executor.
+        3. Ensures the test suite directory is added to sys.path.
+        4. Loads the test suite via SuiteParser using the suite schema.
+        5. Discovers TestListener implementations dynamically.
+        6. Injects discovered listeners into each test class.
+        7. Executes all tests through TestExecutor.
+        8. Prints a summary of test results to stdout.
+
+    Exits gracefully if the WEBWEAVER_PATH environment variable is missing.
+    """
+    # pylint: disable=too-many-locals
+    webweaver_root = os.getenv("WEBWEAVER_PATH", None)
+
+    if not webweaver_root:
+        print("Please set WEAVER_PATH environment variable.")
+        return
+
     parser = argparse.ArgumentParser(description="Web Weaver Test Executor")
-    parser.add_argument("suite_json", help="Path to test suite JSON file")
-    parser.add_argument("--search", default=".", help="Path to discover listeners (default: current dir)")
+    parser.add_argument("suite_json",
+                        help="Path to test suite JSON file")
+    parser.add_argument("--search", default=".",
+                        help="Path to discover listeners (default: current dir)")
     args = parser.parse_args()
 
     logger = logging.getLogger("executor")
@@ -45,11 +95,12 @@ def main():
 
     ensure_suite_path_on_sys_path(args.suite_json)
 
-    parser = SuiteParser("suite_schema.json")
+    suite_schema_file: str = os.path.join(webweaver_root, "suite_schema.json")
+    parser = SuiteParser(suite_schema_file)
     suite = parser.load_suite(args.suite_json)
 
     # Discover TestListener implementations
-    listeners = discover_listeners(args.search)
+    listeners = discover_listeners(logger, args.search)
     logger.info("Discovered %d TestListener(s).", len(listeners))
 
     executor = TestExecutor(logger)
@@ -65,10 +116,10 @@ def main():
 
             existing_types = {type(l) for l in cls.__listeners__}
 
-            # Merge in only *new* listener types
-            for l in listeners:  # these are from discover_listeners()
-                if type(l) not in existing_types:
-                    cls.__listeners__.append(l)
+            # Merge in only *new* listener types from discover_listeners()
+            for listener in listeners:
+                if type(listener) not in existing_types:
+                    cls.__listeners__.append(listener)
 
     results = executor.run_tests(suite)
 

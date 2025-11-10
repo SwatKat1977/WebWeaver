@@ -22,7 +22,7 @@ import inspect
 import logging
 import pathlib
 from typing import List
-from test_listener import TestListener
+from executor.test_listener import TestListener
 
 
 def discover_listeners(
@@ -37,14 +37,17 @@ def discover_listeners(
     search_path = pathlib.Path(search_path).resolve()
     found_listeners = []
 
-    print(f"[INFO] Scanning for listeners in {search_path}")
+    logger.debug("Scanning for listeners in %s", search_path)
 
     for file in search_path.rglob("listener_*.py"):
         # Skip hidden/system dirs
-        if any(part.startswith(".") or part in ("__pycache__", "venv", ".venv") for part in file.parts):
+        if any(part.startswith(".") or
+               part in ("__pycache__",
+                        "venv",
+                        ".venv") for part in file.parts):
             continue
 
-        print(f"[DEBUG] Importing listener module: {file}")
+        logger.debug("Importing listener module: %s", file)
         spec = importlib.util.spec_from_file_location(file.stem, file)
         module = importlib.util.module_from_spec(spec)
 
@@ -76,7 +79,10 @@ def import_test_modules(search_path: str | pathlib.Path = ".") -> List[str]:
     print(f"[INFO] Importing test modules from {search_path}")
 
     for file in search_path.rglob("test_*.py"):
-        if any(part.startswith(".") or part in ("__pycache__", "venv", ".venv") for part in file.parts):
+        if any(part.startswith(".") or
+               part in ("__pycache__",
+                        "venv",
+                        ".venv") for part in file.parts):
             continue
 
         print(f"[DEBUG] Importing test module: {file}")

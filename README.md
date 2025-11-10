@@ -10,6 +10,8 @@ Python Dependencies:
 * coverage
 * pyyaml
 * jsonschema
+* keyboard
+* aiohttp
 
 Useful sites to test automation:
 
