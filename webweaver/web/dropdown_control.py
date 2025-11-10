@@ -18,7 +18,7 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
 from selenium.webdriver.support.ui import Select
-from web.base_dropdown_control import BaseDropdownControl
+from webweaver.web.base_dropdown_control import BaseDropdownControl
 
 
 class DropdownControl(BaseDropdownControl):
