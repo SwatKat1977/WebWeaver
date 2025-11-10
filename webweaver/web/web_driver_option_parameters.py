@@ -17,9 +17,9 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
-from web.browser_type import BrowserType
-from web.web_driver_option import WebDriverOption
-from web.web_driver_option_parameter import WebDriverOptionParameter
+from webweaver.web.browser_type import BrowserType
+from webweaver.web.web_driver_option import WebDriverOption
+from webweaver.web.web_driver_option_parameter import WebDriverOptionParameter
 
 WebDriverOptionParameters: dict = {
     WebDriverOption.HEADLESS: WebDriverOptionParameter(

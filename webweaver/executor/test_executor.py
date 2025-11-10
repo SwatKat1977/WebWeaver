@@ -26,13 +26,11 @@ import logging
 import threading
 import time
 import typing
-from executor.suite_parser import SuiteParser
-from executor.test_result import TestResult
-from executor.test_status import TestStatus
-from executor.assertions import (SoftAssertions,
-                                 AssertionFailure,
-                                 AssumptionFailure,
-                                 AssertionContext)
+from webweaver.executor.suite_parser import SuiteParser
+from webweaver.executor.test_result import TestResult
+from webweaver.executor.test_status import TestStatus
+from webweaver.executor.assertions import (
+    SoftAssertions, AssertionFailure, AssertionContext)
 
 
 @dataclass
