@@ -77,7 +77,7 @@ def main():
     webweaver_root = os.getenv("WEBWEAVER_PATH", None)
 
     if not webweaver_root:
-        print("Please set WEAVER_PATH environment variable.")
+        print("Please set WEBWEAVER_PATH environment variable.")
         return
 
     parser = argparse.ArgumentParser(description="Web Weaver Test Executor")
