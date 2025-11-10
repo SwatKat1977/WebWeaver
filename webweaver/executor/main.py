@@ -27,21 +27,18 @@ from webweaver.executor.test_executor import TestExecutor
 from webweaver.executor.discoverer import discover_listeners
 
 
-def ensure_suite_path_on_sys_path(suite_path: str):
+def ensure_path_in_sys_path(path: str):
     """
-    Ensure the parent directory of a test suite is present on sys.path.
+    Ensure the directory is present on sys.path.
 
-    This allows Python to locate and import modules within the suite’s
-    directory, even when executed from outside the suite hierarchy.
+    This allows Python to locate and import modules within the directory.
 
     Args:
-        suite_path: The file path to a test suite or test module.
-                    Its parent directory will be added to sys.path if not
-                    already present.
+        path: The file path to be added.
     """
-    suite_dir = pathlib.Path(suite_path).resolve().parent
-    if str(suite_dir) not in sys.path:
-        sys.path.insert(0, str(suite_dir))
+    if str(path) not in sys.path:
+        sys.path.insert(0, str(path))
+        print(f"Added '{path}' to sys.path")
 
 
 def main():
@@ -93,7 +90,9 @@ def main():
     handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
     logger.addHandler(handler)
 
-    ensure_suite_path_on_sys_path(args.suite_json)
+    suite_dir = str(pathlib.Path(args.suite_json).resolve().parent)
+    ensure_path_in_sys_path(suite_dir)
+    ensure_path_in_sys_path(args.search)
 
     suite_schema_file: str = os.path.join(webweaver_root, "suite_schema.json")
     parser = SuiteParser(suite_schema_file)
