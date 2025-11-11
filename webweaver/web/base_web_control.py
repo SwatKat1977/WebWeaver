@@ -24,8 +24,8 @@ from selenium.common.exceptions import NoSuchElementException, \
                                        TimeoutException, \
                                        StaleElementReferenceException
 from selenium.webdriver.common.by import By
-from web.web_driver import WebDriver
-from web.exceptions import ElementNotFoundError
+from webweaver.web.web_driver import WebDriver
+from webweaver.web.exceptions import ElementNotFoundError
 
 
 class BaseWebControl:

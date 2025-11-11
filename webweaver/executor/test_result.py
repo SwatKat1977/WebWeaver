@@ -18,7 +18,7 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
 import typing
-from executor.test_status import TestStatus
+from webweaver.executor.test_status import TestStatus
 
 
 class TestResult:

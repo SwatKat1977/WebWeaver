@@ -18,7 +18,7 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
 from selenium.common.exceptions import WebDriverException
-from web.base_web_control import BaseWebControl
+from webweaver.web.base_web_control import BaseWebControl
 
 
 class ButtonControl(BaseWebControl):
