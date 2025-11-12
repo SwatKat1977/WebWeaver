@@ -102,6 +102,30 @@ class NodeCanvas(wx.Panel):
         print(exec_tree)
         return exec_tree
 
+    def _build_execution_tree(self,
+                              start_node,
+                              adjacency,
+                              node_lookup,
+                              visited=None):
+        if visited is None:
+            visited = set()
+        if start_node.id in visited:
+            return None  # avoid cycles
+        visited.add(start_node.id)
+
+        exec_node = ExecutionNode(start_node)
+        for child_id in adjacency.get(start_node.id, []):
+            child_node = node_lookup[child_id]
+            child_exec = self._build_execution_tree(child_node,
+                                                    adjacency,
+                                                    node_lookup,
+                                                    visited)
+
+            if child_exec:
+                exec_node.children.append(child_exec)
+
+        return exec_node
+
     # ----- Helpers -----
 
     def _screen_to_world(self, pt: wx.Point) -> wx.RealPoint:
@@ -697,27 +721,3 @@ class NodeCanvas(wx.Panel):
             y = n.pos.y + 30 + index * 20
 
         return wx.RealPoint(x, y)
-
-    def _build_execution_tree(self,
-                              start_node,
-                              adjacency,
-                              node_lookup,
-                              visited=None):
-        if visited is None:
-            visited = set()
-        if start_node.id in visited:
-            return None  # avoid cycles
-        visited.add(start_node.id)
-
-        exec_node = ExecutionNode(start_node)
-        for child_id in adjacency.get(start_node.id, []):
-            child_node = node_lookup[child_id]
-            child_exec = self._build_execution_tree(child_node,
-                                                    adjacency,
-                                                    node_lookup,
-                                                    visited)
-
-            if child_exec:
-                exec_node.children.append(child_exec)
-
-        return exec_node
