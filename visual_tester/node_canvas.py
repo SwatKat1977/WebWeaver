@@ -13,6 +13,15 @@ from node_picker import NodePicker
 from node_types import NodeShape
 
 
+class ExecutionNode:
+    def __init__(self, node):
+        self.node = node  # reference to the visual Node
+        self.children = []
+
+    def __repr__(self):
+        return f"ExecutionNode({self.node.name}, children={len(self.children)})"
+
+
 class NodeCanvas(wx.Panel):
     """
     A custom wx.Panel that provides a visual, interactive node editor canvas.
@@ -71,6 +80,27 @@ class NodeCanvas(wx.Panel):
         self.Bind(wx.EVT_MOUSEWHEEL, self._on_mouse_wheel)
         self.Bind(wx.EVT_CONTEXT_MENU, self._on_context_menu)
         self.Bind(wx.EVT_LEAVE_WINDOW, self._on_mouse_leave)
+
+    def get_execution_tree(self):
+        # Map node IDs
+        node_lookup = {n.id: n for n in self.nodes}
+
+        # Build adjacency list
+        adjacency = {}
+        for c in self.connections:
+            adjacency.setdefault(c.out_node.id, []).append(c.in_node.id)
+
+        # Find the Start node
+        start_node = next((n for n in self.nodes if n.category == NodeCategory.START), None)
+        if not start_node:
+            raise ValueError("No Start node found")
+
+        # Recursively build the execution tree
+        exec_tree = self._build_execution_tree(start_node,
+                                               adjacency,
+                                               node_lookup)
+        print(exec_tree)
+        return exec_tree
 
     # ----- Helpers -----
 
@@ -667,3 +697,27 @@ class NodeCanvas(wx.Panel):
             y = n.pos.y + 30 + index * 20
 
         return wx.RealPoint(x, y)
+
+    def _build_execution_tree(self,
+                              start_node,
+                              adjacency,
+                              node_lookup,
+                              visited=None):
+        if visited is None:
+            visited = set()
+        if start_node.id in visited:
+            return None  # avoid cycles
+        visited.add(start_node.id)
+
+        exec_node = ExecutionNode(start_node)
+        for child_id in adjacency.get(start_node.id, []):
+            child_node = node_lookup[child_id]
+            child_exec = self._build_execution_tree(child_node,
+                                                    adjacency,
+                                                    node_lookup,
+                                                    visited)
+
+            if child_exec:
+                exec_node.children.append(child_exec)
+
+        return exec_node
