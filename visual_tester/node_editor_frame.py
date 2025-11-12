@@ -24,6 +24,8 @@ class NodeEditorFrame(wx.Frame):
     """
     CONFIG_PATH = os.path.expanduser("~/.weaver_settings.json")
 
+    ID_BUILD_TEST = wx.NewIdRef()
+
     def __init__(self):
         """Initialize the node editor frame and UI layout."""
         super().__init__(None, title="Node Editor", size=(1200, 720))
@@ -56,6 +58,8 @@ class NodeEditorFrame(wx.Frame):
         self.selected_node = None
         self.Layout()
         self.Show()
+
+        self._create_menu_bar()
 
     def update_snap_status(self):
         """Update the window title and status bar with the current snap state."""
@@ -214,3 +218,59 @@ class NodeEditorFrame(wx.Frame):
 
         except (FileNotFoundError, json.JSONDecodeError, OSError) as ex:
             wx.LogError(f"Could not save settings: {ex}")
+
+    def _create_menu_bar(self):
+        """Create and attach the application menu bar."""
+        menubar = wx.MenuBar()
+
+        # --- File Menu ---
+        file_menu = wx.Menu()
+        file_menu.Append(wx.ID_NEW, "&New\tCtrl+N", "Create a new graph")
+        file_menu.Append(wx.ID_OPEN, "&Open...\tCtrl+O", "Open an existing graph")
+        file_menu.Append(wx.ID_SAVE, "&Save\tCtrl+S", "Save the current graph")
+        file_menu.Append(wx.ID_SAVEAS, "Save &As...\tShift+Ctrl+S", "Save under a new file name")
+        file_menu.AppendSeparator()
+        file_menu.Append(wx.ID_PREFERENCES, "&Preferences...\tCtrl+,", "Open preferences dialog")
+        file_menu.AppendSeparator()
+        file_menu.Append(wx.ID_EXIT, "E&xit\tCtrl+Q", "Quit the application")
+        menubar.Append(file_menu, "&File")
+
+        # --- Edit Menu ---
+        edit_menu = wx.Menu()
+        edit_menu.Append(wx.ID_UNDO, "&Undo\tCtrl+Z")
+        edit_menu.Append(wx.ID_REDO, "&Redo\tCtrl+Y")
+        edit_menu.AppendSeparator()
+        edit_menu.Append(wx.ID_DELETE, "&Delete\tDel", "Delete selected node or connection")
+        menubar.Append(edit_menu, "&Edit")
+
+        # --- View Menu ---
+        view_menu = wx.Menu()
+        view_menu.AppendCheckItem(wx.ID_ANY, "Snap to Grid", "Toggle snap-to-grid")
+        menubar.Append(view_menu, "&View")
+
+        # --- Test Menu ---
+        test_menu = wx.Menu()
+        test_menu.Append(self.ID_BUILD_TEST, "Build Test", "Build the test")
+        menubar.Append(test_menu, "&Test")
+
+        # --- Help Menu ---
+        help_menu = wx.Menu()
+        help_menu.Append(wx.ID_ABOUT, "&About", "About Web Weaver")
+        menubar.Append(help_menu, "&Help")
+
+        self.SetMenuBar(menubar)
+
+        # --- Event bindings - File ---
+        self.Bind(wx.EVT_MENU, lambda e: self.canvas.nodes.clear() or self.canvas.Refresh(False), id=wx.ID_NEW)
+        self.Bind(wx.EVT_MENU, lambda e: self.load_graph(), id=wx.ID_OPEN)
+        self.Bind(wx.EVT_MENU, lambda e: self.save_graph(), id=wx.ID_SAVE)
+        self.Bind(wx.EVT_MENU, lambda e: self.open_preferences(), id=wx.ID_PREFERENCES)
+        self.Bind(wx.EVT_MENU, lambda e: self.Close(), id=wx.ID_EXIT)
+        # self.Bind(wx.EVT_MENU, self.on_about, id=wx.ID_ABOUT)
+
+        # --- Event bindings - Test ---
+
+        self.Bind(wx.EVT_MENU, lambda e: self.canvas.get_execution_tree(), id=self.ID_BUILD_TEST)
+
+        # View menu snap checkbox
+        # view_menu.Bind(wx.EVT_MENU, self.on_toggle_snap)
