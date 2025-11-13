@@ -86,7 +86,8 @@ class NodeCanvas(wx.Panel):
 
         adjacency = {}
         for c in self.connections:
-            adjacency.setdefault(c.out_node.id, []).append(c.in_node.id)
+            # store tuples: (out_index, in_node.id)
+            adjacency.setdefault(c.out_node.id, []).append((c.out_index, c.in_node.id))
 
         start_node = next((n for n in self.nodes if n.category == NodeCategory.START), None)
         if not start_node:
@@ -107,17 +108,20 @@ class NodeCanvas(wx.Panel):
         if visited is None:
             visited = set()
         if start_node.id in visited:
-            return None  # avoid cycles within a branch
-
+            return None  # avoid cycles
         visited.add(start_node.id)
+
         exec_node = ExecutionNode(start_node)
 
-        for child_id in adjacency.get(start_node.id, []):
+        for out_index, child_id in adjacency.get(start_node.id, []):
             child_node = node_lookup[child_id]
-            # IMPORTANT: use a *copy* so sibling branches don’t block each other
             child_exec = self._build_execution_tree(child_node, adjacency, node_lookup, visited.copy())
             if child_exec:
-                exec_node.children.append(child_exec)
+                # Keep output label and ExecutionNode together
+                label = ""
+                if out_index < len(start_node.outputs):
+                    label = start_node.outputs[out_index]
+                exec_node.children.append((label, child_exec))
 
         return exec_node
 
@@ -127,19 +131,24 @@ class NodeCanvas(wx.Panel):
         if seen is None:
             seen = set()
 
-        label = getattr(node.node, "name", None) or getattr(node.node, "node_type", "") or str(node.node.id)
+        name = getattr(node.node, "name", None) or getattr(node.node, "node_type", "") or str(node.node.id)
         prefix = "└── " if is_last else "├── "
-        print(indent + prefix + label)
+        print(indent + prefix + name)
 
-        # If you want to avoid expanding shared nodes multiple times:
+        # Prevent expanding the same node twice
         if node.node.id in seen:
             print(indent + "    ↳ [shared node]")
             return
         seen.add(node.node.id)
 
         new_indent = indent + ("    " if is_last else "│   ")
-        for i, child in enumerate(node.children):
-            self.print_execution_tree(child, new_indent, i == len(node.children) - 1, seen)
+
+        # Each child in node.children is (edge_label, child_exec_node)
+        for i, (edge_label, child) in enumerate(node.children):
+            is_last_child = (i == len(node.children) - 1)
+            if edge_label:
+                print(new_indent + f"({edge_label})")  # print parent → child label once here
+            self.print_execution_tree(child, new_indent, is_last_child, seen)
 
     # ----- Helpers -----
 
