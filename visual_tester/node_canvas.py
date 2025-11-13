@@ -13,6 +13,15 @@ from node_picker import NodePicker
 from node_types import NodeShape
 
 
+class ExecutionNode:
+    def __init__(self, node):
+        self.node = node  # reference to the visual Node
+        self.children = []
+
+    def __repr__(self):
+        return f"ExecutionNode({self.node.name}, children={len(self.children)})"
+
+
 class NodeCanvas(wx.Panel):
     """
     A custom wx.Panel that provides a visual, interactive node editor canvas.
@@ -71,6 +80,75 @@ class NodeCanvas(wx.Panel):
         self.Bind(wx.EVT_MOUSEWHEEL, self._on_mouse_wheel)
         self.Bind(wx.EVT_CONTEXT_MENU, self._on_context_menu)
         self.Bind(wx.EVT_LEAVE_WINDOW, self._on_mouse_leave)
+
+    def get_execution_tree(self):
+        node_lookup = {n.id: n for n in self.nodes}
+
+        adjacency = {}
+        for c in self.connections:
+            # store tuples: (out_index, in_node.id)
+            adjacency.setdefault(c.out_node.id, []).append((c.out_index, c.in_node.id))
+
+        start_node = next((n for n in self.nodes if n.category == NodeCategory.START), None)
+        if not start_node:
+            raise ValueError("No Start node found")
+
+        exec_tree = self._build_execution_tree(start_node, adjacency, node_lookup)
+
+        # For debugging: show the whole thing
+        self.print_execution_tree(exec_tree)
+
+        return exec_tree
+
+    def _build_execution_tree(self,
+                              start_node,
+                              adjacency,
+                              node_lookup,
+                              visited=None):
+        if visited is None:
+            visited = set()
+        if start_node.id in visited:
+            return None  # avoid cycles
+        visited.add(start_node.id)
+
+        exec_node = ExecutionNode(start_node)
+
+        for out_index, child_id in adjacency.get(start_node.id, []):
+            child_node = node_lookup[child_id]
+            child_exec = self._build_execution_tree(child_node, adjacency, node_lookup, visited.copy())
+            if child_exec:
+                # Keep output label and ExecutionNode together
+                label = ""
+                if out_index < len(start_node.outputs):
+                    label = start_node.outputs[out_index]
+                exec_node.children.append((label, child_exec))
+
+        return exec_node
+
+    def print_execution_tree(self, node, indent="", is_last=True, seen=None):
+        if node is None:
+            return
+        if seen is None:
+            seen = set()
+
+        name = getattr(node.node, "name", None) or getattr(node.node, "node_type", "") or str(node.node.id)
+        prefix = "└── " if is_last else "├── "
+        print(indent + prefix + name)
+
+        # Prevent expanding the same node twice
+        if node.node.id in seen:
+            print(indent + "    ↳ [shared node]")
+            return
+        seen.add(node.node.id)
+
+        new_indent = indent + ("    " if is_last else "│   ")
+
+        # Each child in node.children is (edge_label, child_exec_node)
+        for i, (edge_label, child) in enumerate(node.children):
+            is_last_child = (i == len(node.children) - 1)
+            if edge_label:
+                print(new_indent + f"({edge_label})")  # print parent → child label once here
+            self.print_execution_tree(child, new_indent, is_last_child, seen)
 
     # ----- Helpers -----
 
