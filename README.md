@@ -2,6 +2,7 @@
 
 Lightweight Python framework/wrapper for Selenium. 
 
+Website: https://webweaverautomation.com/
 
 Python Dependencies:
 
