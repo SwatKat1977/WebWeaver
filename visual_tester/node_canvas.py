@@ -73,13 +73,13 @@ class NodeCanvas(wx.Panel):
         self.drag_anchor_node = None
 
         # Events
-        self.Bind(wx.EVT_PAINT, self._on_paint)
-        self.Bind(wx.EVT_LEFT_DOWN, self._on_left_down)
-        self.Bind(wx.EVT_LEFT_UP, self._on_left_up)
-        self.Bind(wx.EVT_MOTION, self._on_mouse_move)
-        self.Bind(wx.EVT_MOUSEWHEEL, self._on_mouse_wheel)
-        self.Bind(wx.EVT_CONTEXT_MENU, self._on_context_menu)
-        self.Bind(wx.EVT_LEAVE_WINDOW, self._on_mouse_leave)
+        self.Bind(wx.EVT_PAINT, self.__on_paint)
+        self.Bind(wx.EVT_LEFT_DOWN, self.__on_left_down)
+        self.Bind(wx.EVT_LEFT_UP, self.__on_left_up)
+        self.Bind(wx.EVT_MOTION, self.__on_mouse_move)
+        self.Bind(wx.EVT_MOUSEWHEEL, self.__on_mouse_wheel)
+        self.Bind(wx.EVT_CONTEXT_MENU, self.__on_context_menu)
+        self.Bind(wx.EVT_LEAVE_WINDOW, self.__on_mouse_leave)
 
     def get_execution_tree(self):
         node_lookup = {n.id: n for n in self.nodes}
@@ -168,7 +168,7 @@ class NodeCanvas(wx.Panel):
             (pt.y - self.offset.y) / self.scale
         )
 
-    def _snap_val(self, v: float) -> float:
+    def __snap_grid_value(self, v: float) -> float:
         """
         Snap a value to the nearest grid step if snapping is enabled.
 
@@ -183,7 +183,7 @@ class NodeCanvas(wx.Panel):
 
     # ----- Paint -----
 
-    def _on_paint(self, _):
+    def __on_paint(self, _):
         """
         Handle paint events for the node canvas.
 
@@ -200,15 +200,15 @@ class NodeCanvas(wx.Panel):
         gc.Translate(self.offset.x, self.offset.y)
         gc.Scale(self.scale, self.scale)
 
-        self.draw_grid(gc)
-        self.draw_connections(gc)
-        self.draw_nodes(gc)
-        self.draw_temp_connection(gc)
+        self.__draw_grid(gc)
+        self.__draw_connections(gc)
+        self.__draw_nodes(gc)
+        self.__draw_temp_connection(gc)
 
         # Draw pin flashes
-        self.draw_pin_flashes(gc)
+        self.__draw_pin_flashes(gc)
 
-    def draw_grid(self, gc):
+    def __draw_grid(self, gc):
         """
         Draw the background grid with minor and major gridlines.
 
@@ -251,7 +251,7 @@ class NodeCanvas(wx.Panel):
             y += step_minor
             j += 1
 
-    def draw_nodes(self, gc):
+    def __draw_nodes(self, gc):
         for n in self.nodes:
             r = n.rect()
 
@@ -301,9 +301,9 @@ class NodeCanvas(wx.Panel):
                     gc.DrawText(n.name, r.x + 10, r.y + 8)
 
             # ---- Pins ----
-            self.draw_pins(gc, n)
+            self.__draw_pins(gc, n)
 
-    def draw_pins(self, gc, n: Node):
+    def __draw_pins(self, gc, n: Node):
         """
         Draw input and output pins for a node.
 
@@ -316,7 +316,7 @@ class NodeCanvas(wx.Panel):
 
         # START: output only (centered)
         if n.category == NodeCategory.START:
-            p = self._pin_pos(n, 'out', 0)
+            p = self.__calculate_pin_position(n, 'out', 0)
             gc.SetBrush(wx.Brush(wx.Colour(90, 210, 120)))
             gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
             gc.DrawEllipse(p.x - pr, p.y - pr, pr * 2, pr * 2)
@@ -326,7 +326,7 @@ class NodeCanvas(wx.Panel):
         gc.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL),
                    wx.Colour(255, 255, 255))
         for i, label in enumerate(n.inputs):
-            p = self._pin_pos(n, 'in', i)
+            p = self.__calculate_pin_position(n, 'in', i)
             gc.SetBrush(wx.Brush(wx.Colour(255, 100, 60)))
             gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
             gc.DrawEllipse(p.x - pr, p.y - pr, pr * 2, pr * 2)
@@ -335,7 +335,7 @@ class NodeCanvas(wx.Panel):
 
         # NORMAL: outputs
         for i, label in enumerate(n.outputs):
-            p = self._pin_pos(n, 'out', i)
+            p = self.__calculate_pin_position(n, 'out', i)
             gc.SetBrush(wx.Brush(wx.Colour(90, 210, 120)))
             gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
             gc.DrawEllipse(p.x - pr, p.y - pr, pr * 2, pr * 2)
@@ -343,7 +343,7 @@ class NodeCanvas(wx.Panel):
                 text_w, _, _, _ = gc.GetFullTextExtent(label)
                 gc.DrawText(label, p.x - text_w - text_offset + 10, p.y - 7)
 
-    def draw_connections(self, gc):
+    def __draw_connections(self, gc):
         """
         Draw all established connections between node pins.
 
@@ -351,8 +351,8 @@ class NodeCanvas(wx.Panel):
             gc (wx.GraphicsContext): The graphics context used for drawing.
         """
         for c in self.connections:
-            p1 = self._pin_pos(c.out_node, 'out', c.out_index)
-            p2 = self._pin_pos(c.in_node, 'in', c.in_index)
+            p1 = self.__calculate_pin_position(c.out_node, 'out', c.out_index)
+            p2 = self.__calculate_pin_position(c.in_node, 'in', c.in_index)
             d = abs(p2.x - p1.x) * 0.5
             colour = wx.Colour(255, 255, 255) if c.hovered else wx.Colour(160, 160, 160)
             gc.SetPen(wx.Pen(colour, 2))
@@ -361,7 +361,7 @@ class NodeCanvas(wx.Panel):
             path.AddCurveToPoint(p1.x + d, p1.y, p2.x - d, p2.y, p2.x, p2.y)
             gc.StrokePath(path)
 
-    def draw_temp_connection(self, gc):
+    def __draw_temp_connection(self, gc):
         """
         Draw a temporary connection line while the user is dragging
         from an output pin toward an input pin.
@@ -371,7 +371,7 @@ class NodeCanvas(wx.Panel):
         """
         if self.dragging_connection and self.start_pin:
             node, idx, _ = self.start_pin
-            start = self._pin_pos(node, 'out', idx)
+            start = self.__calculate_pin_position(node, 'out', idx)
             end = self._screen_to_world(self.last_mouse)
             gc.SetPen(wx.Pen(wx.Colour(220, 200, 100), 2, wx.PENSTYLE_DOT))
             d = abs(end.x - start.x) * 0.5
@@ -382,7 +382,7 @@ class NodeCanvas(wx.Panel):
 
     # ----- Interaction -----
 
-    def _on_left_down(self, event):
+    def __on_left_down(self, event):
         """
         Handle left mouse button press.
 
@@ -399,7 +399,7 @@ class NodeCanvas(wx.Panel):
         # Start connection drag
         for n in reversed(self.nodes):
             for i, _ in enumerate(n.outputs):
-                p = self._pin_pos(n, 'out', i)
+                p = self.__calculate_pin_position(n, 'out', i)
                 if (world.x - p.x) ** 2 + (world.y - p.y) ** 2 <= 6 ** 2:
                     self.dragging_connection = True
                     self.start_pin = (n, i, "out")
@@ -427,7 +427,7 @@ class NodeCanvas(wx.Panel):
         self.SetFocus()
         self.Refresh(False)
 
-    def _on_left_up(self, event):
+    def __on_left_up(self, event):
         """
         Handle left mouse button release.
 
@@ -446,7 +446,7 @@ class NodeCanvas(wx.Panel):
 
             for n in self.nodes:
                 for i, _ in enumerate(n.inputs):
-                    p = self._pin_pos(n, 'in', i)
+                    p = self.__calculate_pin_position(n, 'in', i)
                     if (world.x - p.x) ** 2 + (world.y - p.y) ** 2 <= 6 ** 2:
                         # remove conflicting connections
                         self.connections = [
@@ -472,7 +472,7 @@ class NodeCanvas(wx.Panel):
         self.drag_anchor_node = None
         self.Refresh(False)
 
-    def _on_mouse_move(self, event):
+    def __on_mouse_move(self, event):
         """
         Handle mouse movement and dragging.
 
@@ -499,9 +499,9 @@ class NodeCanvas(wx.Panel):
 
         # Hover highlight
         for c in self.connections:
-            p1 = self._pin_pos(c.out_node, 'out', c.out_index)
-            p2 = self._pin_pos(c.in_node, 'in', c.in_index)
-            c.hovered = self.point_near_curve(world, p1, p2, tol=6)
+            p1 = self.__calculate_pin_position(c.out_node, 'out', c.out_index)
+            p2 = self.__calculate_pin_position(c.in_node, 'in', c.in_index)
+            c.hovered = self.__point_near_curve(world, p1, p2, tol=6)
 
         if event.Dragging() and event.LeftIsDown():
             if self.dragging_connection:
@@ -512,8 +512,8 @@ class NodeCanvas(wx.Panel):
                 new_x = self.drag_anchor_node.x + delta.x
                 new_y = self.drag_anchor_node.y + delta.y
                 if self.settings["snap_enabled"]:
-                    new_x = self._snap_val(new_x)
-                    new_y = self._snap_val(new_y)
+                    new_x = self.__snap_grid_value(new_x)
+                    new_y = self.__snap_grid_value(new_y)
                 self.drag_node.pos.x = new_x
                 self.drag_node.pos.y = new_y
             else:
@@ -526,7 +526,7 @@ class NodeCanvas(wx.Panel):
 
         self.Refresh(False)
 
-    def _on_mouse_wheel(self, event):
+    def __on_mouse_wheel(self, event):
         """
         Handle zooming using the mouse wheel.
 
@@ -546,7 +546,7 @@ class NodeCanvas(wx.Panel):
         self.offset.y += (after.y - before.y) * self.scale
         self.Refresh(False)
 
-    def _on_context_menu(self, event):
+    def __on_context_menu(self, event):
         pt_screen = wx.GetMousePosition()
         pt_client = self.ScreenToClient(pt_screen)
         mouse_screen = wx.GetMousePosition()
@@ -559,7 +559,7 @@ class NodeCanvas(wx.Panel):
                 delete_item = menu.Append(wx.ID_DELETE, "Delete Node")
                 self.Bind(
                     wx.EVT_MENU,
-                    lambda _evt, n=node: self._delete_node(n),
+                    lambda _evt, n=node: self.__delete_node(n),
                     delete_item
                 )
 
@@ -588,7 +588,7 @@ class NodeCanvas(wx.Panel):
             world_y = (pt_client.y - self.offset.y) / self.scale
             world_point = wx.RealPoint(world_x, world_y)
 
-            self.add_node(node_type, world_point)
+            self.__add_node(node_type, world_point)
 
         # show picker at mouse
         popup_point = wx.Point(mouse_screen.x - 10, mouse_screen.y - 10)
@@ -604,7 +604,7 @@ class NodeCanvas(wx.Panel):
             )
         )
 
-    def _on_mouse_leave(self, _):
+    def __on_mouse_leave(self, _):
         """
         Handle mouse leaving the canvas area.
 
@@ -616,7 +616,7 @@ class NodeCanvas(wx.Panel):
 
     # ----- Geometry helpers -----
 
-    def point_near_curve(self, pt, p1, p2, tol=6):
+    def __point_near_curve(self, pt, p1, p2, tol=6):
         """
         Check if a point lies within a given tolerance of a Bezier curve.
 
@@ -651,7 +651,7 @@ class NodeCanvas(wx.Panel):
             self.connections.remove(c)
             self.Refresh(False)
 
-    def add_node(self, node_type, pos):
+    def __add_node(self, node_type, pos):
         """
         Add a new node to the canvas at a given position.
 
@@ -665,7 +665,7 @@ class NodeCanvas(wx.Panel):
         self.nodes.append(n)
         self.Refresh(False)
 
-    def draw_pin_flashes(self, gc):
+    def __draw_pin_flashes(self, gc):
         """
         Draw fading highlights for recently connected pins.
 
@@ -698,7 +698,7 @@ class NodeCanvas(wx.Panel):
         if self.flash_pins:
             wx.CallLater(50, self.Refresh, False)
 
-    def _delete_node(self, node):
+    def __delete_node(self, node):
         """Remove a node from the canvas, unless it's protected."""
         if node.is_protected():
             wx.LogMessage(f"Cannot delete protected node: {node.name}")
@@ -714,7 +714,7 @@ class NodeCanvas(wx.Panel):
         self.nodes.remove(node)
         self.Refresh(False)
 
-    def _pin_pos(self, n, kind: str, index: int) -> wx.RealPoint:
+    def __calculate_pin_position(self, n, kind: str, index: int) -> wx.RealPoint:
         """
         Return the world-space position of a pin.
         kind: 'in' or 'out'
