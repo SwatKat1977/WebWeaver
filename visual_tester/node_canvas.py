@@ -14,11 +14,39 @@ from node_types import NodeShape
 
 
 class ExecutionNode:
+    """
+    Represents a runtime wrapper for a visual ``Node`` within an execution graph.
+
+    An ``ExecutionNode`` mirrors a visual node from the editor but is used
+    strictly for logical or runtime evaluation. It stores references to child
+    execution nodes, forming a tree or directed graph representing execution
+    flow.
+
+    Attributes:
+        node (Node): The visual node this execution wrapper corresponds to.
+        children (list[ExecutionNode]): Child execution nodes that follow from
+            this node in the execution graph.
+    """
+    # pylint: disable=too-few-public-methods
+
     def __init__(self, node):
+        """
+        Initialise a new execution node wrapper.
+
+        Args:
+            node (Node): The visual node this execution node is based on.
+        """
         self.node = node  # reference to the visual Node
         self.children = []
 
     def __repr__(self):
+        """
+        Return a concise string representation of the execution node.
+
+        Returns:
+            str: A representation including the node's name and the number of
+                child execution nodes.
+        """
         return f"ExecutionNode({self.node.name}, children={len(self.children)})"
 
 
@@ -49,6 +77,7 @@ class NodeCanvas(wx.Panel):
         self.settings = settings
         self.flash_pins = []  # list of (node, input_index, time_remaining)
         self.active_picker = None
+        self.hovered_node = None
 
         self.nodes = [
             Node(1, "Start", (80, 80)),
@@ -82,6 +111,26 @@ class NodeCanvas(wx.Panel):
         self.Bind(wx.EVT_LEAVE_WINDOW, self.__on_mouse_leave)
 
     def get_execution_tree(self):
+        """
+        Construct and return the execution tree starting from the Start node.
+
+        This method transforms the visual node graph (defined by ``self.nodes`` and
+        ``self.connections``) into a logical execution tree made of ``ExecutionNode``
+        instances. It first builds lookup tables for nodes and their adjacency
+        relationships, identifies the unique Start node, and then recursively
+        constructs the execution tree via ``_build_execution_tree()``.
+
+        The method also prints the tree structure for debugging using
+        ``print_execution_tree()``.
+
+        Returns:
+            ExecutionNode: The root execution node representing the Start node
+            and its recursive execution subtree.
+
+        Raises:
+            ValueError: If no node in the graph is categorized as
+                ``NodeCategory.START``.
+        """
         node_lookup = {n.id: n for n in self.nodes}
 
         adjacency = {}
@@ -129,6 +178,33 @@ class NodeCanvas(wx.Panel):
         return exec_node
 
     def print_execution_tree(self, node, indent="", is_last=True, seen=None):
+        """
+        Recursively print a human-readable ASCII representation of the execution
+        tree.
+
+        This method visually displays the execution tree structure using
+        branching characters (``├──``, ``└──``, ``│``) similar to the Unix
+        ``tree`` command.
+        It prints each ``ExecutionNode`` along with its children, showing the
+        order and hierarchy of the execution flow.
+
+        The function also prevents infinite loops by tracking visited nodes,
+        ensuring shared or cyclic references are not expanded more than once.
+
+        Args:
+            node (ExecutionNode): The current execution node to print.
+            indent (str, optional): Prefix indentation carried through
+                recursion. Defaults to an empty string.
+            is_last (bool, optional): Whether this node is the last child of
+                its parent, influencing the branch characters used. Defaults
+                to ``True``.
+            seen (set[int], optional): A set of node IDs already printed, used
+                to avoid re-expanding shared or cyclic nodes. Defaults to
+                ``None`` (initialised on first call).
+
+        Returns:
+            None
+        """
         if node is None:
             return
         if seen is None:
@@ -152,7 +228,8 @@ class NodeCanvas(wx.Panel):
         for i, (edge_label, child) in enumerate(node.children):
             is_last_child = (i == len(node.children) - 1)
             if edge_label:
-                print(new_indent + f"({edge_label})")  # print parent → child label once here
+                # print parent → child label once here
+                print(new_indent + f"({edge_label})")
             self.print_execution_tree(child, new_indent, is_last_child, seen)
 
     # ----- Helpers -----
