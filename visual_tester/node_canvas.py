@@ -115,7 +115,10 @@ class NodeCanvas(wx.Panel):
 
         for out_index, child_id in adjacency.get(start_node.id, []):
             child_node = node_lookup[child_id]
-            child_exec = self._build_execution_tree(child_node, adjacency, node_lookup, visited.copy())
+            child_exec = self._build_execution_tree(child_node,
+                                                    adjacency,
+                                                    node_lookup,
+                                                    visited.copy())
             if child_exec:
                 # Keep output label and ExecutionNode together
                 label = ""
@@ -131,7 +134,9 @@ class NodeCanvas(wx.Panel):
         if seen is None:
             seen = set()
 
-        name = getattr(node.node, "name", None) or getattr(node.node, "node_type", "") or str(node.node.id)
+        name = getattr(node.node, "name", None) \
+               or getattr(node.node, "node_type", "") \
+               or str(node.node.id)
         prefix = "└── " if is_last else "├── "
         print(indent + prefix + name)
 
@@ -546,7 +551,7 @@ class NodeCanvas(wx.Panel):
         self.offset.y += (after.y - before.y) * self.scale
         self.Refresh(False)
 
-    def __on_context_menu(self, event):
+    def __on_context_menu(self, _event):
         pt_screen = wx.GetMousePosition()
         pt_client = self.ScreenToClient(pt_screen)
         mouse_screen = wx.GetMousePosition()
