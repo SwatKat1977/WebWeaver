@@ -334,56 +334,83 @@ class NodeCanvas(wx.Panel):
             j += 1
 
     def __draw_nodes(self, gc):
-        for n in self.nodes:
-            r = n.rect()
+        for node in self.nodes:
+            r = node.rect()
 
-            # ---- Shadow (soft) ----
-            if n.shape == NodeShape.CIRCLE:
-                gc.SetBrush(wx.Brush(wx.Colour(0, 0, 0, 60)))  # softer shadow
-                gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
-                gc.DrawEllipse(r.x + 3, r.y + 3, r.width - 1, r.height - 1)
-            else:
-                gc.SetBrush(wx.Brush(wx.Colour(0, 0, 0, 100)))
-                gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
-                gc.DrawRoundedRectangle(r.x + 6, r.y + 6, r.width, r.height, 10)
-
-            # ---- Category glow (optional) ----
-            if n.category == NodeCategory.START:
-                glow = wx.Colour(80, 255, 80, 50)
-            elif n.selected:
-                glow = wx.Colour(255, 140, 0, 80)
-            else:
-                glow = None
-
-            if glow:
-                gc.SetBrush(wx.Brush(glow))
-                gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
-                if n.shape == NodeShape.CIRCLE:
-                    gc.DrawEllipse(r.x - 3, r.y - 3, r.width + 6, r.height + 6)
-                else:
-                    gc.DrawRoundedRectangle(r.x - 4, r.y - 4, r.width + 8, r.height + 8, 12)
+            self.__draw_node_shadow_and_glow(gc, node, r)
 
             # ---- Body ----
-            border = wx.Colour(255, 140, 0) if n.selected else wx.Colour(60, 62, 68)
-            gc.SetBrush(wx.Brush(n.color))
+            border = wx.Colour(255, 140, 0) \
+                if node.selected else wx.Colour(60, 62, 68)
+            gc.SetBrush(wx.Brush(node.color))
             gc.SetPen(wx.Pen(border, 2))
-            if n.shape == NodeShape.CIRCLE:
+            if node.shape == NodeShape.CIRCLE:
                 gc.DrawEllipse(r.x, r.y, r.width, r.height)
             else:
                 gc.DrawRoundedRectangle(r.x, r.y, r.width, r.height, 10)
 
             # ---- Label ----
-            gc.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD),
-                       n.label_color)
-            if n.category not in [NodeCategory.START,]:
-                text_w, text_h, _, _ = gc.GetFullTextExtent(n.name)
-                if n.shape == NodeShape.CIRCLE:
-                    gc.DrawText(n.name, r.x + (r.width - text_w) / 2, r.y + (r.height - text_h) / 2)
+            gc.SetFont(wx.Font(10,
+                               wx.FONTFAMILY_DEFAULT,
+                               wx.FONTSTYLE_NORMAL,
+                               wx.FONTWEIGHT_BOLD),
+                       node.label_color)
+            if node.category not in [NodeCategory.START,]:
+                text_w, text_h, _, _ = gc.GetFullTextExtent(node.name)
+                if node.shape == NodeShape.CIRCLE:
+                    gc.DrawText(node.name,
+                                r.x + (r.width - text_w) / 2,
+                                r.y + (r.height - text_h) / 2)
+
                 else:
-                    gc.DrawText(n.name, r.x + 10, r.y + 8)
+                    gc.DrawText(node.name, r.x + 10, r.y + 8)
 
             # ---- Pins ----
-            self.__draw_pins(gc, n)
+            self.__draw_pins(gc, node)
+
+    def __draw_node_shadow_and_glow(self, gc, node, rect):
+        """ Draw a soft shadow behind the node and glow """
+
+        # ---- Shadow (soft) ----
+        if node.shape == NodeShape.CIRCLE:
+            gc.SetBrush(wx.Brush(wx.Colour(0, 0, 0, 60)))  # softer shadow
+            gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
+            gc.DrawEllipse(rect.x + 3,
+                           rect.y + 3,
+                           rect.width - 1,
+                           rect.height - 1)
+        else:
+            gc.SetBrush(wx.Brush(wx.Colour(0, 0, 0, 100)))
+            gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
+            gc.DrawRoundedRectangle(rect.x + 6,
+                                    rect.y + 6,
+                                    rect.width,
+                                    rect.height, 10)
+
+        # ---- Category glow (optional) ----
+        if node.category == NodeCategory.START:
+            glow = wx.Colour(80, 255, 80, 50)
+
+        elif node.selected:
+            glow = wx.Colour(255, 140, 0, 80)
+
+        else:
+            glow = None
+
+        if glow:
+            gc.SetBrush(wx.Brush(glow))
+            gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
+            if node.shape == NodeShape.CIRCLE:
+                gc.DrawEllipse(rect.x - 3,
+                               rect.y - 3,
+                               rect.width + 6,
+                               rect.height + 6)
+
+            else:
+                gc.DrawRoundedRectangle(rect.x - 4,
+                                        rect.y - 4,
+                                        rect.width + 8,
+                                        rect.height + 8, 12)
 
     def __draw_pins(self, gc, n: Node):
         """
