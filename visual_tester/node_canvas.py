@@ -268,8 +268,6 @@ class NodeCanvas(wx.Panel):
             # ---- Category glow (optional) ----
             if n.category == NodeCategory.START:
                 glow = wx.Colour(80, 255, 80, 50)
-            elif n.category == NodeCategory.END:
-                glow = wx.Colour(255, 80, 80, 70)
             elif n.selected:
                 glow = wx.Colour(255, 140, 0, 80)
             else:
@@ -295,7 +293,7 @@ class NodeCanvas(wx.Panel):
             # ---- Label ----
             gc.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD),
                        n.label_color)
-            if n.category not in [NodeCategory.START, NodeCategory.END]:
+            if n.category not in [NodeCategory.START,]:
                 text_w, text_h, _, _ = gc.GetFullTextExtent(n.name)
                 if n.shape == NodeShape.CIRCLE:
                     gc.DrawText(n.name, r.x + (r.width - text_w) / 2, r.y + (r.height - text_h) / 2)
@@ -320,14 +318,6 @@ class NodeCanvas(wx.Panel):
         if n.category == NodeCategory.START:
             p = self._pin_pos(n, 'out', 0)
             gc.SetBrush(wx.Brush(wx.Colour(90, 210, 120)))
-            gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
-            gc.DrawEllipse(p.x - pr, p.y - pr, pr * 2, pr * 2)
-            return
-
-        # END: input only (centered)
-        if n.category == NodeCategory.END:
-            p = self._pin_pos(n, 'in', 0)
-            gc.SetBrush(wx.Brush(wx.Colour(255, 100, 60)))
             gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
             gc.DrawEllipse(p.x - pr, p.y - pr, pr * 2, pr * 2)
             return
@@ -739,8 +729,7 @@ class NodeCanvas(wx.Panel):
         # vertical anchor
         if n.category == NodeCategory.START and kind == "out":
             y = n.pos.y + n.size.height / 2
-        elif n.category == NodeCategory.END and kind == "in":
-            y = n.pos.y + n.size.height / 2
+
         else:
             y = n.pos.y + 30 + index * 20
 

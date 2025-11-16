@@ -16,7 +16,6 @@ class NodeShape(Enum):
 class NodeCategory(Enum):
     NORMAL = "normal"
     START = "start"
-    END = "end"
 
 
 @dataclass
@@ -45,6 +44,7 @@ class NodeType:
     shape: NodeShape = NodeShape.RECTANGLE
     category: NodeCategory = NodeCategory.NORMAL
 
+
 # Registry of available node types
 NODE_TYPES = {
     "Start": NodeType("",
@@ -68,13 +68,7 @@ NODE_TYPES = {
     "Splitter": NodeType("Splitter",
                          ["Input"],
                          ["Out 1", "Out 2"],
-                         (90, 60, 120)),
-    "End": NodeType("",
-                    [""],
-                    [],
-                    (180, 50, 50),
-                    shape=NodeShape.CIRCLE,
-                    category=NodeCategory.END)
+                         (90, 60, 120))
 }
 
 """dict[str, NodeType]: A global registry of all predefined node types.

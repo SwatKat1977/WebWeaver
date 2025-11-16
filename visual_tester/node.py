@@ -52,13 +52,6 @@ class Node:
             self.size = wx.Size(60, 60)
             self.inputs = []  # no inputs
             self.outputs = [""]  # single output (centered)
-
-        elif self.category == NodeCategory.END:
-            # Smaller circular end node, input only
-            self.size = wx.Size(60, 60)
-            self.inputs = [""]  # single input (centered)
-            self.outputs = []  # no outputs
-
     def rect(self):
         """Return the rectangular bounds of the node in canvas coordinates.
 
@@ -69,7 +62,7 @@ class Node:
 
     def is_protected(self) -> bool:
         """Return True if this node cannot be deleted."""
-        return self.category in (NodeCategory.START, NodeCategory.END)
+        return self.category == NodeCategory.START
 
     @property
     def shape(self) -> NodeShape:
