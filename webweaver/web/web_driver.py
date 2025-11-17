@@ -39,6 +39,7 @@ from webweaver.web.exceptions import (
     BrowserOptionMissingParameterError)
 from webweaver.web.web_driver_option import WebDriverOption
 from webweaver.web.web_driver_option_parameters import WebDriverOptionParameters
+from webweaver.web.webweaver_page import WebWeaverPage
 
 
 class WebDriver:
@@ -139,6 +140,7 @@ class WebDriver:
             PageLoadError: If the page could not be loaded.
         """
         self._fetch_page(url)
+        return WebWeaverPage(self)
 
     def open_page_with_auth(self, url: str, username: str, password: str):
         """
@@ -172,6 +174,7 @@ class WebDriver:
         ))
 
         self._fetch_page(new_url)
+        return WebWeaverPage(self)
 
     def open_page_with_manual_ntml(self,
                                    url: str,
@@ -199,6 +202,7 @@ class WebDriver:
         time.sleep(2)
         keyboard.press("enter")
         keyboard.release('enter')
+        return WebWeaverPage(self)
 
     def take_screenshot(self, name: str = "screenshot") -> str | None:
         """
@@ -229,6 +233,11 @@ class WebDriver:
                                      f"{name}_{timestamp}.png")
         self._driver.save_screenshot(filename)
         return filename
+
+    def disable_webdriver_flag(self):
+        self._driver.execute_script("""
+        Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+        """)
 
     def _fetch_page(self, url: str):
 
