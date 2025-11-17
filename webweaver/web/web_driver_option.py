@@ -28,14 +28,32 @@ class WebDriverOption(enum.Enum):
     Selenium framework. They control the behavior, appearance, and privacy of
     the browser session.
     """
-    HEADLESS = enum.auto()
-    """Run the browser in headless mode (without a visible UI)."""
+
+    DISABLE_BLINK_FEATURES = enum.auto()
+    """Disable specific Blink rendering engine features for compatibility or
+       testing."""
 
     DISABLE_EXTENSIONS = enum.auto()
     """Disable all installed browser extensions during the session."""
 
     DISABLE_GPU = enum.auto()
     """Disable GPU hardware acceleration (useful for headless environments)."""
+
+    DISABLE_NOTIFICATIONS = enum.auto()
+    """Suppress browser notifications (e.g., push notifications)."""
+
+    DISABLE_POPUP_BLOCKING = enum.auto()
+    """Turn off the browser's built-in popup blocking feature."""
+
+    HEADLESS = enum.auto()
+    """Run the browser in headless mode (without a visible UI)."""
+
+    IGNORE_CERTIFICATE_ERROR = enum.auto()
+    """Ignore SSL/TLS certificate errors, allowing access to sites with invalid
+       certificates."""
+
+    LOG_LEVEL = enum.auto()
+    """Specify the logging verbosity level for the browser or driver."""
 
     MAXIMISED = enum.auto()
     """Launch the browser window in maximized mode."""
@@ -44,21 +62,12 @@ class WebDriverOption(enum.Enum):
     """Open the browser in private/incognito mode to avoid storing history or
        cookies."""
 
-    DISABLE_POPUP_BLOCKING = enum.auto()
-    """Turn off the browser's built-in popup blocking feature."""
-
-    WINDOW_SIZE = enum.auto()
-    """Set a custom initial window size for the browser session."""
-
-    DISABLE_NOTIFICATIONS = enum.auto()
-    """Suppress browser notifications (e.g., push notifications)."""
-
     REMOTE_DEBUGGING_PORT = enum.auto()
     """Enable remote debugging via a specified port for developer tools or
        automation."""
 
-    DISABLE_BLINK_FEATURES = enum.auto()
+    USER_AGENT = enum.auto()
+    """Set a custom User-Agent string for the browser session."""
 
-    IGNORE_CERTIFICATE_ERROR = enum.auto()
-
-    LOG_LEVEL = enum.auto()
+    WINDOW_SIZE = enum.auto()
+    """Set a custom initial window size for the browser session."""
