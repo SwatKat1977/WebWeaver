@@ -57,6 +57,8 @@ class WebDriverOption(enum.Enum):
     """Enable remote debugging via a specified port for developer tools or
        automation."""
 
+    DISABLE_BLINK_FEATURES = enum.auto()
+
     IGNORE_CERTIFICATE_ERROR = enum.auto()
 
     LOG_LEVEL = enum.auto()

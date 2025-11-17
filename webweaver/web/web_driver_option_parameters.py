@@ -101,4 +101,12 @@ WebDriverOptionParameters: dict = {
             BrowserType.CHROME: "--ignore-certificate-errors"
         }
     ),
+
+    WebDriverOption.DISABLE_BLINK_FEATURES: WebDriverOptionParameter(
+        WebDriverOption.DISABLE_BLINK_FEATURES,
+        {
+            BrowserType.CHROME: "--disable-blink-features"
+        },
+        True
+    )
 }
