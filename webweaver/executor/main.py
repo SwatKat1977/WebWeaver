@@ -25,6 +25,7 @@ import sys
 from webweaver.executor.suite_parser import SuiteParser
 from webweaver.executor.test_executor import TestExecutor
 from webweaver.executor.discoverer import discover_listeners
+from webweaver.version import __version__
 
 
 def ensure_path_in_sys_path(path: str):
@@ -82,6 +83,8 @@ def main():
                         help="Path to test suite JSON file")
     parser.add_argument("--search", default=".",
                         help="Path to discover listeners (default: current dir)")
+    parser.add_argument("--version", action="version",
+                        version=f"Webweaver Test Executor {__version__}")
     args = parser.parse_args()
 
     logger = logging.getLogger("executor")
