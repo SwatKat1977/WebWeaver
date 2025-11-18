@@ -97,6 +97,10 @@ def main():
     ensure_path_in_sys_path(suite_dir)
     ensure_path_in_sys_path(args.search)
 
+    if not os.path.isfile(args.suite_json):
+        logger.critical("Test suite JSON file not found.")
+        return
+
     suite_schema_file: str = os.path.join(webweaver_root, "suite_schema.json")
     parser = SuiteParser(suite_schema_file)
     suite = parser.load_suite(args.suite_json)
