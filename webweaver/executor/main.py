@@ -28,18 +28,19 @@ from webweaver.executor.discoverer import discover_listeners
 from webweaver.version import __version__
 
 
-def ensure_path_in_sys_path(path: str):
+def ensure_path_in_sys_path(logger: logging.Logger, path: str):
     """
     Ensure the directory is present on sys.path.
 
     This allows Python to locate and import modules within the directory.
 
     Args:
+        logger: Logger to use
         path: The file path to be added.
     """
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
-        print(f"Added '{path}' to sys.path")
+        logger.debug(f"Added '%s' to sys.path", path)
 
 
 def main():
@@ -93,15 +94,24 @@ def main():
     handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
     logger.addHandler(handler)
 
+    logger.info("Web Weaver Test Executor %s", __version__)
+    logger.info("Copyright 2025 Webweaver development team")
+    logger.info("Distributed under the GNU General Public License V2")
+
     suite_dir = str(pathlib.Path(args.suite_json).resolve().parent)
-    ensure_path_in_sys_path(suite_dir)
-    ensure_path_in_sys_path(args.search)
+    ensure_path_in_sys_path(logger, suite_dir)
+    ensure_path_in_sys_path(logger, args.search)
 
     if not os.path.isfile(args.suite_json):
-        logger.critical("Test suite JSON file not found.")
+        logger.critical("Test suite JSON file not found")
         return
 
     suite_schema_file: str = os.path.join(webweaver_root, "suite_schema.json")
+    if not os.path.isfile(suite_schema_file):
+        logger.critical("Test suite schema file '%s' not found",
+                        suite_schema_file)
+        return
+
     parser = SuiteParser(suite_schema_file)
     suite = parser.load_suite(args.suite_json)
 
