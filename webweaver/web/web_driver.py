@@ -39,7 +39,7 @@ from webweaver.web.exceptions import (
     BrowserOptionMissingParameterError)
 from webweaver.web.web_driver_option import WebDriverOption
 from webweaver.web.web_driver_option_parameters import WebDriverOptionParameters
-from webweaver.web.webweaver_page import WebWeaverPage
+from webweaver.web.web_weaver_page import WebWeaverPage
 
 
 class WebDriver:
