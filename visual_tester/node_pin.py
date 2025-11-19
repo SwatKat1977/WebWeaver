@@ -25,5 +25,5 @@ DEFAULT_PIN_COLOUR: typing.Tuple = (200, 200, 200)
 @dataclass
 class NodePin:
     name: str
-    ping_type: PinType = PinType.EXECUTE
+    pin_type: PinType = PinType.EXECUTE
     colour: typing.Tuple[int, int, int] = DEFAULT_PIN_COLOUR
