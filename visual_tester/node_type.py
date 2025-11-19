@@ -8,6 +8,7 @@ See the LICENSE file in the project root for full license details.
 from dataclasses import dataclass
 import enum
 from typing import List, Optional, Tuple
+from node_pin import NodePin
 
 
 class NodeShape(enum.Enum):
@@ -55,8 +56,8 @@ class NodeType:
     node_group: NodeGroup
 
     # Pins
-    inputs: List[str]
-    outputs: List[str]
+    inputs: List[NodePin]
+    outputs: List[NodePin]
 
     # Visuals
     colour: Tuple[int, int, int] = DEFAULT_NODE_FILL_COLOUR
