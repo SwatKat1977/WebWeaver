@@ -39,7 +39,7 @@ from webweaver.web.exceptions import (
     BrowserOptionMissingParameterError)
 from webweaver.web.web_driver_option import WebDriverOption
 from webweaver.web.web_driver_option_parameters import WebDriverOptionParameters
-from webweaver.web.web_weaver_page import WebWeaverPage
+from webweaver.web.webweaver_page import WebWeaverPage
 
 
 class WebDriver:
@@ -238,6 +238,9 @@ class WebDriver:
         self._driver.execute_script("""
         Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
         """)
+
+    def execute_script(self, script):
+        return self._driver.execute_script(script)
 
     def _fetch_page(self, url: str):
 
