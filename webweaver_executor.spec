@@ -33,6 +33,7 @@ a = Analysis(
         'webweaver.web.web_driver_option',
         'webweaver.web.browser_type',
         'webweaver.web.button_control',
+        'webweaver.web.autocomplete_textbox_control',
         'webweaver.web.dropdown_control',
         'webweaver.web.radio_button_control',
         'webweaver.web.tickbox_control',
@@ -62,7 +63,7 @@ exe = EXE(
     name='webweaver_executor',
     debug=False,
     strip=False,
-    upx=True,
+    upx=False,
     console=True,
-    onefile=True,  # this enables --onefile mode
+    onefile=True,
 )
