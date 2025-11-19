@@ -101,4 +101,22 @@ WebDriverOptionParameters: dict = {
             BrowserType.CHROME: "--ignore-certificate-errors"
         }
     ),
+
+    WebDriverOption.DISABLE_BLINK_FEATURES: WebDriverOptionParameter(
+        WebDriverOption.DISABLE_BLINK_FEATURES,
+        {
+            BrowserType.CHROME: "--disable-blink-features"
+        },
+        True
+    ),
+
+    WebDriverOption.USER_AGENT: WebDriverOptionParameter(
+        WebDriverOption.USER_AGENT,
+        {
+            BrowserType.CHROME: "--user-agent",
+            BrowserType.EDGE: "--user-agent",
+            BrowserType.FIREFOX: "general.useragent.override"
+        },
+        True
+    )
 }
