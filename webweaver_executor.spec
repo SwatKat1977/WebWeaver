@@ -41,7 +41,7 @@ a = Analysis(
         'webweaver.web.textbox_control',
         'webweaver.web.text_element_control',
         'webweaver.web.exceptions',
-        'webweaver.web.web_weaver_page',
+        'webweaver.web.webweaver_page',
 
         # Auto include aiohttp and dependencies
         *aiohttp_modules,
