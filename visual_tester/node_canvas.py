@@ -855,22 +855,18 @@ class NodeCanvas(wx.Panel):
         self.Refresh(False)
 
     def __calculate_pin_position(self, n, kind: str, index: int) -> wx.RealPoint:
-        """
-        Return the world-space position of a pin.
-        kind: 'in' or 'out'
-        index: pin index on that side
-        """
-        # horizontal anchor
+        r = n.rect()
+
+        # Center pin *on* border
         if kind == "in":
-            x = n.pos.x - 10
+            x = r.x  # dead center on border
         else:
-            x = n.pos.x + n.size.width + 10
+            x = r.x + r.width
 
-        # vertical anchor
+        # Vertical placement
         if n.category == NodeCategory.START and kind == "out":
-            y = n.pos.y + n.size.height / 2
-
+            y = r.y + r.height / 2
         else:
-            y = n.pos.y + 30 + index * 20
+            y = r.y + 30 + index * 20
 
         return wx.RealPoint(x, y)
