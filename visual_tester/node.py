@@ -82,8 +82,6 @@ class Node:
         if self.category == NodeCategory.START:
             # Smaller circular start node, output only
             self.size = wx.Size(60, 60)
-            self._inputs = []  # no inputs
-            self._outputs = [""]  # single output (centered)
 
     @property
     def inputs(self):
