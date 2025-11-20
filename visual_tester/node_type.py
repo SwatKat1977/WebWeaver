@@ -62,7 +62,7 @@ class NodeType:
     # Visuals
     colour: Tuple[int, int, int] = DEFAULT_NODE_FILL_COLOUR
     label_colour: Tuple[int, int, int] = DEFAULT_NODE_LABEL_COLOUR
-    header_color: Optional[Tuple[int, int, int]] = None
+    header_colour: Optional[Tuple[int, int, int]] = None
     shape: NodeShape = NodeShape.RECTANGLE
     category: NodeCategory = NodeCategory.NORMAL
 
@@ -74,7 +74,7 @@ class NodeType:
     version: int = 1
 
     def __post_init__(self):
-        if self.header_color is None:
+        if self.header_colour is None:
             # default: darker version of main color
-            r, g, b = self.color
-            self.header_color = (max(0, r-20), max(0, g-20), max(0, b-20))
+            r, g, b = self.colour
+            self.header_colour = (max(0, r-20), max(0, g-20), max(0, b-20))

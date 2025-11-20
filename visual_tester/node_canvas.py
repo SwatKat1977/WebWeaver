@@ -81,8 +81,7 @@ class NodeCanvas(wx.Panel):
 
         self.nodes = [
             Node(1, "Start", (80, 80)),
-            Node(2, "Condition", (360, 160)),
-            Node(3, "End", (700, 120)),
+            Node(2, "Condition", (360, 160))
         ]
         self.connections = []
 
@@ -342,7 +341,7 @@ class NodeCanvas(wx.Panel):
             # ---- Body ----
             border = wx.Colour(255, 140, 0) \
                 if node.selected else wx.Colour(60, 62, 68)
-            gc.SetBrush(wx.Brush(node.color))
+            gc.SetBrush(wx.Brush(node.type.colour))
             gc.SetPen(wx.Pen(border, 2))
             if node.shape == NodeShape.CIRCLE:
                 gc.DrawEllipse(r.x, r.y, r.width, r.height)
@@ -354,16 +353,16 @@ class NodeCanvas(wx.Panel):
                                wx.FONTFAMILY_DEFAULT,
                                wx.FONTSTYLE_NORMAL,
                                wx.FONTWEIGHT_BOLD),
-                       node.label_color)
+                       node.type.label_colour)
             if node.category not in [NodeCategory.START,]:
-                text_w, text_h, _, _ = gc.GetFullTextExtent(node.name)
+                text_w, text_h, _, _ = gc.GetFullTextExtent(node.title)
                 if node.shape == NodeShape.CIRCLE:
-                    gc.DrawText(node.name,
+                    gc.DrawText(node.title,
                                 r.x + (r.width - text_w) / 2,
                                 r.y + (r.height - text_h) / 2)
 
                 else:
-                    gc.DrawText(node.name, r.x + 10, r.y + 8)
+                    gc.DrawText(node.title, r.x + 10, r.y + 8)
 
             # ---- Pins ----
             self.__draw_pins(gc, node)
@@ -434,7 +433,8 @@ class NodeCanvas(wx.Panel):
         # NORMAL: inputs
         gc.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL),
                    wx.Colour(255, 255, 255))
-        for i, label in enumerate(n.inputs):
+        for i, pin in enumerate(n.inputs):
+            label = pin.name
             p = self.__calculate_pin_position(n, 'in', i)
             gc.SetBrush(wx.Brush(wx.Colour(255, 100, 60)))
             gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
@@ -443,7 +443,8 @@ class NodeCanvas(wx.Panel):
                 gc.DrawText(label, p.x + text_offset - 10, p.y - 7)
 
         # NORMAL: outputs
-        for i, label in enumerate(n.outputs):
+        for i, pin in enumerate(n.outputs):
+            label = pin.name
             p = self.__calculate_pin_position(n, 'out', i)
             gc.SetBrush(wx.Brush(wx.Colour(90, 210, 120)))
             gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))

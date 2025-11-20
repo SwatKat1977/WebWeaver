@@ -7,6 +7,7 @@ See the LICENSE file in the project root for full license details.
 """
 import wx
 from node_types import NODE_TYPES, NodeShape, NodeCategory
+from node_registry import NodeRegistry
 
 
 class Node:
@@ -62,20 +63,17 @@ class Node:
             pos (tuple[float, float]): The (x, y) position of the node
                 in the canvas coordinate space.
         """
-        t = NODE_TYPES.get(node_type, NODE_TYPES["Condition"])
+        self.type = NodeRegistry.get(node_type)
+
         self.id = node_id
-        self.name = t.type_name
-        self.node_type = node_type
+        self.title = self.type.title
+        self.type_name = node_type
         self.pos = wx.RealPoint(*pos)
         self.size = wx.Size(160, 100)
-        self.inputs = list(t.inputs)
-        self.outputs = list(t.outputs)
         self.selected = False
         self.hovered = False
-        self.color = wx.Colour(*t.color)
-        self.label_color = wx.Colour(*t.label_color)
-        self._shape = t.shape
-        self._category = t.category
+        self._inputs = self.type.inputs
+        self._outputs = self.type.outputs
 
         # default size
         self.size = wx.Size(160, 100)
@@ -84,8 +82,17 @@ class Node:
         if self.category == NodeCategory.START:
             # Smaller circular start node, output only
             self.size = wx.Size(60, 60)
-            self.inputs = []  # no inputs
-            self.outputs = [""]  # single output (centered)
+            self._inputs = []  # no inputs
+            self._outputs = [""]  # single output (centered)
+
+    @property
+    def inputs(self):
+        return self._inputs
+
+    @property
+    def outputs(self):
+        return self._outputs
+
     def rect(self):
         """
         Return the rectangular bounds of the node in canvas coordinates.
@@ -125,7 +132,7 @@ class Node:
         Returns:
             NodeShape: The enum value representing the node's visual shape.
         """
-        return self._shape
+        return self.type.shape
 
     @property
     def category(self) -> NodeCategory:
@@ -139,4 +146,4 @@ class Node:
         Returns:
             NodeCategory: The enum value representing the node's category.
         """
-        return self._category
+        return self.type.category
