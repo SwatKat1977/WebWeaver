@@ -145,3 +145,25 @@ class Node:
             NodeCategory: The enum value representing the node's category.
         """
         return self.type.category
+
+    def auto_size(self, gc):
+        font = wx.Font(
+            10,
+            wx.FONTFAMILY_DEFAULT,
+            wx.FONTSTYLE_NORMAL,
+            wx.FONTWEIGHT_BOLD
+        )
+
+        # Must include text colour when using GraphicsContext
+        gc.SetFont(font, wx.Colour(255, 255, 255))
+
+        text_w, text_h, _, _ = gc.GetFullTextExtent(self.title)
+
+        padding = 40
+        min_width = 120
+
+        new_width = int(max(min_width, text_w + padding))
+
+        # Apply size change
+        self.size = wx.Size(new_width, self.size.height)
+

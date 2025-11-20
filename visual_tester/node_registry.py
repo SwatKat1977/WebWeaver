@@ -1,4 +1,4 @@
-from node_type import NodeCategory, NodeGroup, NodeType
+from node_type import NodeCategory, NodeGroup, NodeShape, NodeType
 from node_pin import NodePin, PinType
 
 
@@ -19,14 +19,22 @@ class NodeRegistry:
 
 
 def register_default_nodes():
-    NodeRegistry.register("Start", NodeType(
-        title="Start",
+    NodeRegistry.register("Execute Test", NodeType(
+        title="Execute Test",
         node_group=NodeGroup.EVENT,
+
+
         inputs=[],
         outputs=[NodePin("Exec",
-                         pin_type=PinType.EXECUTE,
-                         colour=(255, 255, 255))],
-        colour=(200, 60, 60),
+                         pin_type=PinType.EXECUTE)],
+
+        # Main Body
+        colour=(25, 25, 20),
+
+        # header (red)
+        header_colour=(180, 40, 40),
+
+        shape=NodeShape.RECTANGLE,
         category=NodeCategory.START,
     ))
 

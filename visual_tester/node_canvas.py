@@ -80,7 +80,7 @@ class NodeCanvas(wx.Panel):
         self.hovered_node = None
 
         self.nodes = [
-            Node(1, "Start", (80, 80)),
+            Node(1, "Execute Test", (80, 80)),
             Node(2, "Condition", (360, 160))
         ]
         self.connections = []
@@ -334,37 +334,37 @@ class NodeCanvas(wx.Panel):
 
     def __draw_nodes(self, gc):
         for node in self.nodes:
+            node.auto_size(gc)
             r = node.rect()
 
             self.__draw_node_shadow_and_glow(gc, node, r)
 
-            # ---- Body ----
-            border = wx.Colour(255, 140, 0) \
-                if node.selected else wx.Colour(60, 62, 68)
-            gc.SetBrush(wx.Brush(node.type.colour))
+            # ----- BODY -----
+            body_col = wx.Colour(*node.type.colour)
+            header_col = wx.Colour(*node.type.header_colour)
+
+            border = wx.Colour(255, 140, 0) if node.selected else wx.Colour(60, 62, 68)
+
+            # --- Draw main rounded body ---
             gc.SetPen(wx.Pen(border, 2))
-            if node.shape == NodeShape.CIRCLE:
-                gc.DrawEllipse(r.x, r.y, r.width, r.height)
-            else:
-                gc.DrawRoundedRectangle(r.x, r.y, r.width, r.height, 10)
+            gc.SetBrush(wx.Brush(body_col))
+            gc.DrawRoundedRectangle(r.x, r.y, r.width, r.height, 10)
 
-            # ---- Label ----
-            gc.SetFont(wx.Font(10,
-                               wx.FONTFAMILY_DEFAULT,
-                               wx.FONTSTYLE_NORMAL,
-                               wx.FONTWEIGHT_BOLD),
+            header_height = 24
+            self._draw_header(gc,
+                              r,
+                              header_height,
+                              node.type.header_colour,
+                              radius=10)
+
+            # ----- TITLE TEXT -----
+            gc.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD),
                        node.type.label_colour)
-            if node.category not in [NodeCategory.START,]:
-                text_w, text_h, _, _ = gc.GetFullTextExtent(node.title)
-                if node.shape == NodeShape.CIRCLE:
-                    gc.DrawText(node.title,
-                                r.x + (r.width - text_w) / 2,
-                                r.y + (r.height - text_h) / 2)
 
-                else:
-                    gc.DrawText(node.title, r.x + 10, r.y + 8)
+            text_w, text_h, _, _ = gc.GetFullTextExtent(node.title)
+            gc.DrawText(node.title, r.x + 10, r.y + (header_height - text_h) / 2)
 
-            # ---- Pins ----
+            # ----- Draw pins -----
             self.__draw_pins(gc, node)
 
     def __draw_node_shadow_and_glow(self, gc, node, rect):
@@ -410,6 +410,36 @@ class NodeCanvas(wx.Panel):
                                         rect.y - 4,
                                         rect.width + 8,
                                         rect.height + 8, 12)
+
+    def _draw_header(self, gc, r, header_h, colour, radius):
+        gc.SetBrush(wx.Brush(colour))
+        gc.SetPen(wx.TRANSPARENT_PEN)
+
+        path = gc.CreatePath()
+
+        # Start top-left (after radius)
+        path.MoveToPoint(r.x + radius, r.y)
+
+        # Top edge to radius before top-right
+        path.AddLineToPoint(r.x + r.width - radius, r.y)
+
+        # Top-right corner arc
+        path.AddArcToPoint(r.x + r.width, r.y, r.x + r.width, r.y + radius, radius)
+
+        # Right edge straight down to bottom of header
+        path.AddLineToPoint(r.x + r.width, r.y + header_h)
+
+        # Bottom edge (square)
+        path.AddLineToPoint(r.x, r.y + header_h)
+
+        # Left edge up to arc start
+        path.AddLineToPoint(r.x, r.y + radius)
+
+        # Top-left corner arc
+        path.AddArcToPoint(r.x, r.y, r.x + radius, r.y, radius)
+
+        path.CloseSubpath()
+        gc.DrawPath(path)
 
     def __draw_pins(self, gc, n: Node):
         """
