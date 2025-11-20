@@ -6,8 +6,8 @@ This file is part of Web Weaver (https://github.com/SwatKat1977/WebWeaver).
 See the LICENSE file in the project root for full license details.
 """
 import wx
-from node_types import NODE_TYPES
-from node_types import NodeCategory
+from node_type import NodeCategory
+from node_registry import NodeRegistry
 
 
 # ----------------------------
@@ -33,7 +33,7 @@ class NodeList(wx.VListBox):
         self.on_select = on_select
         # Exclude special node types (e.g. Start, End) from picker
         self.nodes = [
-            name for name, t in NODE_TYPES.items()
+            name for name, t in NodeRegistry.all()
             if t.category == NodeCategory.NORMAL
         ]
         self.filtered = self.nodes
@@ -74,24 +74,41 @@ class NodeList(wx.VListBox):
         # pylint: disable=invalid-name
         if n < 0 or n >= len(self.filtered):
             return
+
         name = self.filtered[n]
-        t = NODE_TYPES[name]
+        t = NodeRegistry.get(name)
+
+        # --- Row background (this removes the white) ---
+        dc.SetBrush(wx.Brush(wx.Colour(30, 30, 35)))
+        dc.SetPen(wx.TRANSPARENT_PEN)
+        dc.DrawRectangle(rect.x, rect.y, rect.width, rect.height)
 
         # Selection highlight
         if self.IsSelected(n):
-            dc.SetBrush(wx.Brush(wx.Colour(255, 140, 0, 60)))
+            dc.SetBrush(wx.Brush(wx.Colour(255, 140, 0, 160)))
             dc.SetPen(wx.TRANSPARENT_PEN)
             dc.DrawRoundedRectangle(rect.x, rect.y, rect.width, rect.height, 4)
 
         # Colour swatch
-        colour = wx.Colour(*t.color)
-        dc.SetBrush(wx.Brush(colour))
-        dc.SetPen(wx.Pen(wx.Colour(0, 0, 0), 1))
+        swatch = wx.Colour(*t.colour)
+        dc.SetBrush(wx.Brush(swatch))
+        dc.SetPen(wx.Pen(wx.Colour(0, 0, 0)))
         dc.DrawRectangle(rect.x + 8, rect.y + 5, 16, rect.height - 10)
 
+        # Text style - make disabled options a muted text
+        is_disabled = (t.category != NodeCategory.NORMAL)
+
+        if is_disabled:
+            text_colour = wx.Colour(110, 110, 110)
+        else:
+            text_colour = wx.Colour(240, 240, 240)
+
         # Label
-        dc.SetTextForeground(wx.Colour(240, 240, 240))
-        dc.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+        dc.SetTextForeground(text_colour)
+        dc.SetFont(wx.Font(10,
+                           wx.FONTFAMILY_DEFAULT,
+                           wx.FONTSTYLE_NORMAL,
+                           wx.FONTWEIGHT_NORMAL))
         dc.DrawText(name, rect.x + 30, rect.y + 5)
 
     def on_double_click(self, _event):
@@ -107,7 +124,7 @@ class NodeList(wx.VListBox):
 #  Node Picker Popup
 # ----------------------------
 
-class NodePicker(wx.MiniFrame):
+class NodePicker(wx.PopupTransientWindow):
     """Popup dialog for creating new nodes.
 
     Cross-platform version of the Unreal-style node picker.
@@ -123,11 +140,8 @@ class NodePicker(wx.MiniFrame):
             position (wx.Point | wx.RealPoint): Screen position where the popup appears.
             add_callback (Callable): Function called when a node type is chosen.
         """
-        super().__init__(
-            parent,
-            title="",
-            style=wx.FRAME_NO_TASKBAR | wx.STAY_ON_TOP | wx.BORDER_NONE
-        )
+        super().__init__(parent, flags=wx.BORDER_NONE)
+
         self.add_callback = add_callback
         self._parent = parent
 
@@ -143,12 +157,21 @@ class NodePicker(wx.MiniFrame):
         self.Move(position)
 
         # --- Main layout ---
-        panel = wx.Panel(self, style=wx.TAB_TRAVERSAL)
-        panel.SetBackgroundColour(wx.Colour(0, 0, 0, 0))
+        panel = wx.Panel(self, style=wx.BORDER_NONE)
+        panel.SetBackgroundStyle(wx.BG_STYLE_PAINT)
+        panel.SetBackgroundColour(wx.Colour(0,0,0,0))
+
+        # DARK POPUP BACKGROUND
+        bg = wx.Colour(30, 30, 35)
+        self.SetBackgroundColour(bg)
+
         vbox = wx.BoxSizer(wx.VERTICAL)
 
         # Search box
         self.search = wx.SearchCtrl(panel, style=wx.TE_PROCESS_ENTER)
+        self.search.SetBackgroundColour(bg)
+        self.search.SetForegroundColour(wx.Colour(230, 230, 230))
+
         self.search.ShowCancelButton(True)
         vbox.Add(self.search, 0, wx.EXPAND | wx.ALL, 6)
 
@@ -185,17 +208,26 @@ class NodePicker(wx.MiniFrame):
         dc = wx.AutoBufferedPaintDC(self)
         gc = wx.GraphicsContext.Create(dc)
 
-        w, h = self.GetClientSize()
+        width, height = self.GetClientSize()
         path = gc.CreatePath()
-        path.AddRoundedRectangle(0, 0, w, h, 8)
+        path.AddRoundedRectangle(0,
+                                 0,
+                                 width,
+                                 height,
+                                 8)
+
+        # Full background fill (fixes white behind rounded popup)
+        gc.SetBrush(wx.Brush(wx.Colour(30, 30, 35)))
+        gc.SetPen(wx.TRANSPARENT_PEN)
+        gc.DrawRectangle(0, 0, width, height)
 
         # Shadow
         gc.SetBrush(wx.Brush(wx.Colour(0, 0, 0, 80)))
-        gc.DrawRoundedRectangle(4, 4, w - 4, h - 4, 8)
+        gc.DrawRoundedRectangle(4, 4, width - 4, height - 4, 8)
 
         # Gradient background
         grad = gc.CreateLinearGradientBrush(
-            0, 0, 0, h,
+            0, 0, 0, height,
             wx.Colour(45, 46, 50),
             wx.Colour(35, 36, 40)
         )
@@ -220,7 +252,7 @@ class NodePicker(wx.MiniFrame):
         elif code == wx.WXK_DOWN and sel < len(self.listbox.filtered) - 1:
             self.listbox.SetSelection(sel + 1)
         elif code == wx.WXK_ESCAPE:
-            self.Close()
+            self.Dismiss()
         else:
             event.Skip()
 
@@ -232,8 +264,9 @@ class NodePicker(wx.MiniFrame):
             node_type = self.listbox.filtered[sel]
         else:
             node_type = sel
+
         self.add_callback(node_type, self.GetPosition())
-        self.Close()
+        self.Dismiss()
 
     def on_show(self, event):
         """Ensure search box focus after showing."""
@@ -250,4 +283,4 @@ class NodePicker(wx.MiniFrame):
     def _on_focus_lost(self, _event):
         """Dismiss when losing focus (simulate transient popup behaviour)."""
         if not self.IsActive():
-            self.Close()
+            self.Dismiss()

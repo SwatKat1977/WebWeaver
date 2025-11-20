@@ -10,7 +10,7 @@ import wx
 from connection import Connection
 from node import Node, NodeCategory
 from node_picker import NodePicker
-from node_types import NodeShape
+from node_type import NodeShape
 
 
 class ExecutionNode:

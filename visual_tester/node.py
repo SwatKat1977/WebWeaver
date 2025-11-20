@@ -6,7 +6,7 @@ This file is part of Web Weaver (https://github.com/SwatKat1977/WebWeaver).
 See the LICENSE file in the project root for full license details.
 """
 import wx
-from node_types import NODE_TYPES, NodeShape, NodeCategory
+from node_type import NodeShape, NodeCategory
 from node_registry import NodeRegistry
 
 
