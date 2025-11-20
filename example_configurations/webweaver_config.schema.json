@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WebWeaverConfig",
+  "type": "object",
+
+  "properties": {
+    "browser_type": {
+      "type": "string",
+      "enum": ["CHROME", "FIREFOX", "EDGE"]
+    },
+
+    "browser_options": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "array",
+        "prefixItems": [
+          {
+            "type": "string",
+            "enum": [
+              "MAXIMISED",
+              "HEADLESS",
+              "LOG_LEVEL",
+              "IGNORE_CERTIFICATE_ERROR",
+              "DISABLE_BLINK_FEATURES",
+              "USER_AGENT",
+              "START_MAXIMIZED"
+            ]
+          },
+          {
+            "type": "string"
+          }
+        ],
+        "minItems": 1,
+        "maxItems": 2
+      }
+    },
+
+    "screenshots_enabled": {
+      "type": "boolean"
+    },
+
+    "screenshots_dir": {
+      "type": "string"
+    },
+
+    "log_level": {
+      "type": "string",
+      "enum": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+    }
+  },
+
+  "required": ["browser_type"],
+  "additionalProperties": false
+}

@@ -1,0 +1,11 @@
+{
+  "browser_type": "CHROME",
+  "browser_options": [
+    ["MAXIMISED"],
+    ["LOG_LEVEL", "3"],
+    ["DISABLE_BLINK_FEATURES", "AutomationControlled"]
+  ],
+  "screenshots_enabled": true,
+  "screenshots_dir": "screenshots",
+  "log_level": "DEBUG"
+}
