@@ -261,7 +261,9 @@ class NodeEditorFrame(wx.Frame):
         self.SetMenuBar(menubar)
 
         # --- Event bindings - File ---
-        self.Bind(wx.EVT_MENU, lambda e: self.canvas.nodes.clear() or self.canvas.Refresh(False), id=wx.ID_NEW)
+        self.Bind(wx.EVT_MENU, lambda e: self.canvas.nodes.clear() or
+                                         self.canvas.Refresh(False),
+                                         id=wx.ID_NEW)
         self.Bind(wx.EVT_MENU, lambda e: self.load_graph(), id=wx.ID_OPEN)
         self.Bind(wx.EVT_MENU, lambda e: self.save_graph(), id=wx.ID_SAVE)
         self.Bind(wx.EVT_MENU, lambda e: self.open_preferences(), id=wx.ID_PREFERENCES)

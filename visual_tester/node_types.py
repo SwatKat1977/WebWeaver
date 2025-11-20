@@ -9,14 +9,27 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import List, Tuple
 
+
 class NodeShape(Enum):
+    """Enumeration of available node shapes.
+
+    Attributes:
+        RECTANGLE: A standard rectangular node shape.
+        CIRCLE: A circular node shape.
+    """
     RECTANGLE = "rectangle"
     CIRCLE = "circle"
 
+
 class NodeCategory(Enum):
+    """Enumeration of logical categories a node can belong to.
+
+    Attributes:
+        NORMAL: A regular node without any special semantics.
+        START: A designated starting node within a node graph or flow.
+    """
     NORMAL = "normal"
     START = "start"
-    END = "end"
 
 
 @dataclass
@@ -45,6 +58,7 @@ class NodeType:
     shape: NodeShape = NodeShape.RECTANGLE
     category: NodeCategory = NodeCategory.NORMAL
 
+
 # Registry of available node types
 NODE_TYPES = {
     "Start": NodeType("",
@@ -68,13 +82,7 @@ NODE_TYPES = {
     "Splitter": NodeType("Splitter",
                          ["Input"],
                          ["Out 1", "Out 2"],
-                         (90, 60, 120)),
-    "End": NodeType("",
-                    [""],
-                    [],
-                    (180, 50, 50),
-                    shape=NodeShape.CIRCLE,
-                    category=NodeCategory.END)
+                         (90, 60, 120))
 }
 
 """dict[str, NodeType]: A global registry of all predefined node types.
