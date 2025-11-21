@@ -17,72 +17,67 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
+import asyncio
 import functools
 from webweaver.executor.executor_exceptions import TestFailure
 from webweaver.executor.test_status import TestStatus
 
+data_providers = {}
+
+def data_provider(name):
+    def wrapper(func):
+        data_providers[name] = func
+        return func
+
+    return wrapper
+
 
 # === Decorator to mark test methods ===
-def test(parallel: bool = False,
+def test(provider: str | None = None,
+         parallel: bool = False,
          enabled: bool = True):
-    """
-    Decorator to mark a function as a test case.
-
-    This decorator wraps the target function and executes it safely,
-    capturing any exceptions raised during execution. It records the
-    outcome as either a success or a failure and attaches metadata
-    used by the test runner.
-
-    Parameters
-    ----------
-    parallel : bool, optional
-        If True, the test is marked to be run in parallel (default: False).
-
-    Returns
-    -------
-    decorator : Callable
-        A decorator function that can be applied to test functions.
-
-    Notes
-    -----
-    - The decorated function is wrapped in a try/except block.
-    - If the function executes without raising an exception, the status
-      will be ``TestStatus.SUCCESS``.
-    - If the function raises a ``TestFailure`` or any other exception,
-      the status will be ``TestStatus.FAILURE`` and the exception will
-      be returned alongside the status.
-    - The wrapper attaches two attributes to the decorated function:
-        * ``is_test``: Marks the function as a test (True).
-        * ``run_in_parallel``: Indicates whether it should run in parallel.
-    """
     def decorator(func):
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs):
             if not enabled:
-                # You could introduce a SKIPPED status if you have one,
-                # or just return SUCCESS with a note.
                 return TestStatus.SKIPPED, None
 
-            caught_exception = None
-
             try:
-                func(*args, **kwargs)
-                status = TestStatus.SUCCESS
+                if provider:
+                    # Run once per dataset row
+                    for row in data_providers[provider]():
+                        try:
+                            if isinstance(row, dict):
+                                await func(**row)
+
+                            else:
+                                await func(*row)
+
+                        except Exception as ex:
+                            return TestStatus.FAILURE, ex
+
+                    return TestStatus.SUCCESS, None
+
+                else:
+                    # Normal non-parametrized test
+                    result = func(*args, **kwargs)
+                    if asyncio.iscoroutine(result):
+                        await result
+
+                    return TestStatus.SUCCESS, None
 
             except TestFailure as ex:
-                caught_exception = ex
-                status = TestStatus.FAILURE
+                return TestStatus.FAILURE, ex
 
-            except Exception as ex:  # pylint: disable=broad-exception-caught
-                caught_exception = ex
-                status = TestStatus.FAILURE
-
-            return status, caught_exception
+            except Exception as ex:
+                return TestStatus.FAILURE, ex
 
         wrapper.is_test = True
         wrapper.run_in_parallel = parallel
         wrapper.enabled = enabled
+        wrapper.data_provider = provider
         return wrapper
+
     return decorator
 
 
