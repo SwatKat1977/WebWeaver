@@ -33,9 +33,7 @@ def data_provider(name):
 
 
 # === Decorator to mark test methods ===
-def test(provider: str | None = None,
-         parallel: bool = False,
-         enabled: bool = True):
+def test(provider=None, parallel=False, enabled=True):
     def decorator(func):
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
@@ -43,28 +41,10 @@ def test(provider: str | None = None,
                 return TestStatus.SKIPPED, None
 
             try:
-                if provider:
-                    # Run once per dataset row
-                    for row in data_providers[provider]():
-                        try:
-                            if isinstance(row, dict):
-                                await func(**row)
-
-                            else:
-                                await func(*row)
-
-                        except Exception as ex:
-                            return TestStatus.FAILURE, ex
-
-                    return TestStatus.SUCCESS, None
-
-                else:
-                    # Normal non-parametrized test
-                    result = func(*args, **kwargs)
-                    if asyncio.iscoroutine(result):
-                        await result
-
-                    return TestStatus.SUCCESS, None
+                result = func(*args, **kwargs)
+                if asyncio.iscoroutine(result):
+                    await result
+                return TestStatus.SUCCESS, None
 
             except TestFailure as ex:
                 return TestStatus.FAILURE, ex
@@ -75,9 +55,8 @@ def test(provider: str | None = None,
         wrapper.is_test = True
         wrapper.run_in_parallel = parallel
         wrapper.enabled = enabled
-        wrapper.data_provider = provider
+        wrapper.data_provider = provider  # store provider function!
         return wrapper
-
     return decorator
 
 

@@ -2,6 +2,7 @@
 import json
 import logging
 import time
+import traceback
 from executor_exceptions import TestFailure
 from test_decorators import (after_class, after_method,
                              before_class, before_method,
@@ -36,7 +37,12 @@ class LocalListener(TestListener):
     def on_test_failure(self, result: TestResult) -> None:
         """ Called when a test method fails due to an exception or assertion
             error. """
-        print("[DEBUG] Local on_test_failure()")
+        print(f"[DEBUG] {result.method_name} : Local on_test_failure()")
+
+        if result.caught_exception:
+            print("  Exception:", result.caught_exception)
+            print("  Type:", type(result.caught_exception))
+            print()
 
     def on_test_skipped(self, result: TestResult) -> None:
         """ Called when a test method is skipped (disabled or dependency
@@ -52,27 +58,32 @@ class ExampleTest:
     @before_class
     def setup_class(self):
         """ Setup class """
-        self.logger.info("Connecting to database...")
+        #self.logger.info("Connecting to database...")
 
     @after_class
     def teardown_class(self):
         """ Teardown class """
-        self.logger.info("Disconnecting from database...")
+        #self.logger.info("Disconnecting from database...")
 
     @before_method
     def setup(self):
         """ Before method """
-        self.logger.info("Calling before method...")
+        #self.logger.info("Calling before method...")
 
     @after_method
     def teardown(self):
         """ After method """
-        self.logger.info("Calling after method...")
+        #self.logger.info("Calling after method...")
 
     @test(provider=post_data)
     async def async_success_test(self, title, body):
-        print(f"title: {title} | body: {body}")
-        print("[ExampleTest::async_success_test] This test passes")
+        try:
+            print(f"title: {title} | body: {body}")
+            print("[ExampleTest::async_success_test] This test passes")
+
+        except Exception:
+            traceback.print_exc()
+
 
     @test()
     def test_success(self):
@@ -165,3 +176,9 @@ if __name__ == "__main__":
                     name,
                     test_result.status,
                     test_result.caught_exception)
+
+        if test_result.caught_exception:
+            print("  Exception:", test_result.caught_exception)
+            print("  Type:", type(test_result.caught_exception))
+            print()
+

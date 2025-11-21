@@ -19,16 +19,13 @@ Copyright 2025 SwatKat1977
 """
 import asyncio
 import inspect
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from enum import IntEnum
 import fnmatch
-import functools
 import logging
 import threading
 import time
 import typing
-from webweaver.executor.suite_parser import SuiteParser
 from webweaver.executor.test_result import TestResult
 from webweaver.executor.test_status import TestStatus
 from webweaver.executor.assertions import (
@@ -384,18 +381,56 @@ class TestExecutor:
 
         sequential, parallel = [], []
 
-        if test_parallel == "methods":
-            # each method is its own parallel async task
-            for method_name in selected:
-                method = getattr(obj, method_name)
-                task_name = f"{cls_name}.{method_name}"
-                results_obj = TestResult(method_name, cls_name)
+        for method_name in selected:
+            method = getattr(obj, method_name)
+            provider = getattr(method, "data_provider", None)
 
-                # Do NOT wrap in functools.partial — breaks async
+            # ---------- CASE 1: Data Provider ----------
+            if provider:
+                rows = provider()
+                if inspect.iscoroutine(rows):
+                    rows = await rows
+
+                for idx, row in enumerate(rows):
+                    case_name = f"{method_name}[{idx}]"
+                    test_name = f"{cls_name}.{case_name}"
+                    mtr = TestResult(case_name, cls_name)
+
+                    async def parameterised_task(method=method, row=row):
+                        # dict → kwargs | list/tuple → positional args
+                        if isinstance(row, dict):
+                            return await self._call(method, **row)
+                        return await self._call(method, *row)
+
+                    target = parallel if test_parallel == "methods" else sequential
+                    target.append((
+                        test_name,
+                        parameterised_task,
+                        mtr,
+                        method_listeners,
+                        before_method_methods,
+                        after_method_methods
+                    ))
+
+                continue
+
+            # ---------- CASE 2: Normal test (no provider) ----------
+            else:
+                case_name = method_name
+                test_name = f"{cls_name}.{case_name}"
+                mtr = TestResult(case_name, cls_name)
+
                 task = method
+                target = parallel if test_parallel == "methods" else sequential
 
-                parallel.append((task_name, task, results_obj, method_listeners,
-                                 before_method_methods, after_method_methods))
+                target.append((
+                    test_name,
+                    task,
+                    mtr,
+                    method_listeners,
+                    before_method_methods,
+                    after_method_methods
+                ))
 
         else:
             # class wrapper: run methods sequentially INSIDE; return dict of per-method results
@@ -726,3 +761,9 @@ class TestExecutor:
         module_name, class_name = dotted_path.rsplit(".", 1)
         module = __import__(module_name, fromlist=[class_name])
         return getattr(module, class_name)
+
+    async def _call(self, func, *args, **kwargs):
+        result = func(*args, **kwargs)
+        if inspect.iscoroutine(result):
+            return await result
+        return result
