@@ -17,6 +17,8 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
+import asyncio
+import inspect
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from enum import IntEnum
@@ -160,31 +162,47 @@ class TestExecutor:
                            f"weaver.handlers={len(weaver.handlers)}, "
                            f"root.handlers={len(root.handlers)}, "
                            f"exec.handlers={len(self._logger.handlers)}")
-    def run_tests(self, suite: dict):
+
+    async def run_tests(self, suite: dict):
         # pylint: disable=too-many-locals
-        sequential_tasks, parallel_tasks, class_fixtures = self.__collect_from_suite(suite)
+        (sequential_tasks,
+         parallel_tasks,
+         class_fixtures) = await self.__collect_from_suite(suite)
 
         # run before_class hooks
         for hooks in class_fixtures.values():
             for before in hooks["before"]:
-                before()
+                result = before()
+                if inspect.iscoroutine(result):
+                    await result
 
         results = {}
 
+        # === PARALLEL EXECUTION (async replacement for ThreadPoolExecutor) ===
         if parallel_tasks:
-            # Respect thread_count from suite config
-            suite_conf: dict = suite.get("suite", {})
-            pool_size: int = suite_conf.get(
-                "thread_count", SuiteParser.DEFAULT_SUITE_THREAD_COUNT)
+            tasks = []
 
-            self._logger.debug("Suite '%s' is using thread pool size: %s",
-                               suite_conf["name"], pool_size)
+            for (name, task, test_result, listeners, before_methods, after_methods) in parallel_tasks:
+                ctx = TaskContext(
+                    listeners=listeners,
+                    before_methods=before_methods,
+                    after_methods=after_methods,
+                    lock=None
+                )
+                tasks.append(self.__run_task(task, test_result, ctx))
 
-            with ThreadPoolExecutor(max_workers=pool_size) as executor:
-                futures = self.__submit_tasks(executor, sequential_tasks, parallel_tasks)
-                results = self.__gather_results(futures)
+            # Run everything concurrently
+            parallel_results = await asyncio.gather(*tasks)
+
+            # Merge results back into dict
+            for (name, *_), res in zip(parallel_tasks, parallel_results):
+                if isinstance(res, dict):
+                    results.update(res)
+                else:
+                    results[name] = res
+
+        # === SEQUENTIAL EXECUTION ===
         else:
-            # pure sequential execution (no pool)
             for (name, task, test_result, listeners, before_methods,
                  after_methods) in sequential_tasks:
                 ctx = TaskContext(
@@ -193,7 +211,8 @@ class TestExecutor:
                     after_methods=after_methods,
                     lock=None
                 )
-                out = self.__run_task(task, test_result, ctx)
+                out = await self.__run_task(task, test_result, ctx)
+
                 if isinstance(out, dict):
                     results.update(out)  # <- flatten wrappers into methods
                 elif isinstance(out, TestResult):
@@ -202,7 +221,9 @@ class TestExecutor:
         # run after_class hooks
         for hooks in class_fixtures.values():
             for after in hooks["after"]:
-                after()
+                result = after()
+                if inspect.iscoroutine(result):
+                    await result
 
         return results
 
@@ -272,7 +293,7 @@ class TestExecutor:
             method = getattr(obj, method_name)
             task_name = f"{cls_name}.{method_name}"
             results_obj = TestResult(method_name, cls_name)
-            task = functools.partial(method)
+            task = method
 
             if test_parallel in ("tests", "classes", "methods"):
                 parallel_tasks.append((task_name, task, results_obj))
@@ -281,7 +302,7 @@ class TestExecutor:
 
         return sequential_tasks, parallel_tasks
 
-    def _collect_tasks_for_class(self, class_conf, test_parallel):
+    async def _collect_tasks_for_class(self, class_conf, test_parallel):
         # pylint: disable=too-many-locals
 
         cls_name = class_conf["name"]
@@ -364,17 +385,21 @@ class TestExecutor:
         sequential, parallel = [], []
 
         if test_parallel == "methods":
-            # each method is its own parallel task
+            # each method is its own parallel async task
             for method_name in selected:
                 method = getattr(obj, method_name)
                 task_name = f"{cls_name}.{method_name}"
                 results_obj = TestResult(method_name, cls_name)
-                task = functools.partial(method)
+
+                # Do NOT wrap in functools.partial — breaks async
+                task = method
+
                 parallel.append((task_name, task, results_obj, method_listeners,
                                  before_method_methods, after_method_methods))
+
         else:
             # class wrapper: run methods sequentially INSIDE; return dict of per-method results
-            def class_task():
+            async def class_task():
                 """
                 Class wrapper task:
                   1) run all @before_class hooks
@@ -390,7 +415,9 @@ class TestExecutor:
                     # --- 1) Run @before_class hooks first ---
                     for before_class in before_class_methods:
                         try:
-                            before_class()
+                            result = before_class()
+                            if inspect.iscoroutine(result):
+                                await result
 
                         except Exception as ex:  # if a before_class fails, skip all methods
                             self._logger.warning(
@@ -409,7 +436,7 @@ class TestExecutor:
                     for method_name in selected:
                         method = getattr(obj, method_name)
                         mtr = TestResult(method_name, cls_name)
-                        task = functools.partial(method)
+                        task = method
 
                         ctx = TaskContext(
                             listeners=method_listeners,
@@ -418,7 +445,7 @@ class TestExecutor:
                             lock=None
                         )
 
-                        res = self.__run_task(task, mtr, ctx)
+                        res = await self.__run_task(task, mtr, ctx)
                         results[f"{cls_name}.{method_name}"] = res
                         ran.add(method_name)
 
@@ -437,7 +464,9 @@ class TestExecutor:
                     # --- 4) Always run @after_class hooks ---
                     for after_class in after_class_methods:
                         try:
-                            after_class()
+                            result = after_class()
+                            if inspect.iscoroutine(result):
+                                await result
 
                         except Exception as ex2:
                             self._logger.warning("Exception in after_class '%s' for %s: %s",
@@ -448,7 +477,7 @@ class TestExecutor:
 
             task_name = f"{cls_name}.__class_wrapper__"
             dummy = TestResult("__class_wrapper__", cls_name)
-            task = functools.partial(class_task)
+            task = class_task
 
             if test_parallel == "classes":
                 parallel.append((task_name, task, dummy, [], [], []))
@@ -457,7 +486,7 @@ class TestExecutor:
 
         return sequential, parallel, before_class_methods, after_class_methods
 
-    def __run_suite_test(self, suite_test: dict, class_fixtures: dict) -> dict:
+    async def __run_suite_test(self, suite_test: dict, class_fixtures: dict) -> dict:
         """
         Run a single <test> block sequentially, collecting results from its
         classes.
@@ -468,7 +497,7 @@ class TestExecutor:
         results = {}
         try:
             for class_conf in suite_test["classes"]:
-                seq, _, before_class, after_class = self._collect_tasks_for_class(
+                seq, _, before_class, after_class = await self._collect_tasks_for_class(
                     class_conf, "none")
                 class_name = class_conf["name"]
                 class_fixtures[class_name] = {"before": before_class, "after": after_class}
@@ -481,9 +510,10 @@ class TestExecutor:
                         before_methods=task_info[SequentialTaskIndex.BEFORE_METHODS],
                         after_methods=task_info[SequentialTaskIndex.AFTER_METHODS],
                         lock=None)
-                    res = self.__run_task(task_info[SequentialTaskIndex.TASK],
-                                          task_info[SequentialTaskIndex.RESULT],
-                                          ctx)
+                    res = await self.__run_task(
+                        task_info[SequentialTaskIndex.TASK],
+                        task_info[SequentialTaskIndex.RESULT],
+                        ctx)
                     if isinstance(res, dict):
                         results.update(res)
 
@@ -524,7 +554,7 @@ class TestExecutor:
                 results[f"{cls_name}.{m}"] = tr
         return results
 
-    def __collect_from_suite(self, suite: dict):
+    async def __collect_from_suite(self, suite: dict):
         """
         Collect tasks from a test suite configuration and categorize them into
         sequential tasks, parallel tasks, and class-level fixtures.
@@ -578,7 +608,7 @@ class TestExecutor:
                 dummy_result = TestResult("__test_wrapper__", test_name)
                 parallel_tasks.append((
                     test_name,
-                    functools.partial(self.__run_suite_test, suite_test, class_fixtures),
+                    lambda: self.__run_suite_test(suite_test, class_fixtures),
                     dummy_result,
                     [],
                     [],
@@ -586,7 +616,7 @@ class TestExecutor:
                 ))
             else:
                 for class_conf in suite_test["classes"]:
-                    class_entry = self._collect_tasks_for_class(class_conf,
+                    class_entry = await self._collect_tasks_for_class(class_conf,
                                                                 test_parallel)
                     class_name = class_conf["name"]
                     class_fixtures[class_name] = {
@@ -598,157 +628,96 @@ class TestExecutor:
 
         return sequential_tasks, parallel_tasks, class_fixtures
 
-    def __submit_tasks(self, executor, sequential_tasks, parallel_tasks):
-        """
-        Submits sequential and parallel tasks to the executor.
+    async def __run_task(self,
+                         task,
+                         test_result: TestResult,
+                         ctx: TaskContext = None):
 
-        Args:
-            executor (ThreadPoolExecutor): Executor for running tasks.
-            sequential_tasks (list): List of sequential task tuples.
-            parallel_tasks (list): List of parallel task tuples.
-
-        Returns:
-            dict: Mapping of Future -> task name.
-        """
-        futures = {}
-        sequential_lock = threading.Lock()
-
-        for (name, task, test_result,
-             listeners, before_methods, after_methods) in sequential_tasks:
-            ctx = TaskContext(
-                listeners=listeners,
-                before_methods=before_methods,
-                after_methods=after_methods,
-                lock=sequential_lock
-            )
-            futures[executor.submit(self.__run_task,
-                                    task,
-                                    test_result,
-                                    ctx)] = name
-
-        for (name, task, test_result,
-             listeners, before_methods, after_methods) in parallel_tasks:
-            ctx = TaskContext(
-                listeners=listeners,
-                before_methods=before_methods,
-                after_methods=after_methods,
-                lock=None
-            )
-            futures[executor.submit(self.__run_task,
-                                    task,
-                                    test_result,
-                                    ctx)] = name
-
-        return futures
-
-    def __gather_results(self, futures):
-        results = {}
-        for future in as_completed(futures):
-            name = futures[future]  # wrapper name not used if result is dict
-            result = future.result()
-            if isinstance(result, dict):
-                results.update(result)  # <- only method entries
-            elif isinstance(result, TestResult):
-                results[name] = result  # <- method tasks only
-        return results
-
-    def __run_task(self,
-                   task,
-                   test_result: TestResult,
-                   ctx: TaskContext = None):
-        """
-        Execute a single task with optional before/after methods, listeners,
-        and synchronization via a TaskContext.
-        """
         ctx = ctx or TaskContext()
+
         before_methods = ctx.before_methods or []
         after_methods = ctx.after_methods or []
         listeners = ctx.listeners or []
 
-        # Skip disabled tests
-        def _is_task_enabled(task) -> bool:
-            if isinstance(task, functools.partial):
-                func = getattr(task, "func", None)
-                if func is not None:
-                    return getattr(func, "enabled", True)
+        lock = ctx.lock or None
 
-            return True
+        async def _call(func, *args, **kwargs):
+            """Call a function whether it's sync or async."""
+            result = func(*args, **kwargs)
+            if inspect.iscoroutine(result):
+                return await result
+            return result
 
-        def _run_task_body(task, test_result: TestResult):
+        async def _run_task_body():
             try:
                 result = task()
 
+                # Await coroutine-based tasks
+                if inspect.iscoroutine(result):
+                    result = await result
+
+                # If a data-provider wrapped call already returned TestResult or dict, return it
                 if isinstance(result, dict):
                     return result
 
                 if isinstance(result, TestResult):
                     return result
 
+                # Old: (status, exception)
                 if isinstance(result, tuple) and len(result) == 2:
                     status, ex = result
                     test_result.status = status
                     test_result.caught_exception = ex
                     return test_result
 
+                # Normal success
                 test_result.status = TestStatus.SUCCESS
                 return test_result
 
             except AssertionFailure as ex:
-                # Assertion failed → FAILURE
                 test_result.status = TestStatus.FAILURE
                 test_result.caught_exception = ex
-                self._logger.error("Assertion failed in '%s': %s",
-                                   getattr(task, "__name__", str(task)), ex)
                 return test_result
 
-            except Exception as ex:  # pylint: disable=broad-exception-caught
-                # Unhandled exception → FAILURE (retain your current behavior)
+            except Exception as ex:
                 test_result.status = TestStatus.FAILURE
                 test_result.caught_exception = ex
-                self._logger.exception("Unexpected exception in '%s'",
-                                       getattr(task, "__name__", str(task)))
                 return test_result
 
-        def _finalize_task(test_result: TestResult):
-            # Only run after_methods if not skipped
+        async def _finalize_task():
+            # Run after-method hooks only if not skipped
             if test_result.status != TestStatus.SKIPPED:
                 for am in after_methods:
-                    try:
-                        am()
+                    await _call(am)
 
-                    # NOTE: Disabling broad exception here because this is
-                    # a user-defined method, and we don't know what exception
-                    # could be caught.
-                    except Exception as ex:  # pylint: disable=broad-exception-caught
-                        self._logger.warning(
-                            "Exception in after_method fixture: %s", ex)
-
+            # Notify listeners
             for listener in listeners:
                 if test_result.status is TestStatus.SUCCESS:
-                    listener.on_test_success(test_result)
+                    await _call(listener.on_test_success, test_result)
                 elif test_result.status is TestStatus.FAILURE:
-                    listener.on_test_failure(test_result)
+                    await _call(listener.on_test_failure, test_result)
                 elif test_result.status is TestStatus.SKIPPED:
-                    listener.on_test_skipped(test_result)
+                    await _call(listener.on_test_skipped, test_result)
 
             test_result.end_milliseconds = int(time.time() * 1000)
 
-        def execute():
+        async def execute():
             test_result.start_milliseconds = int(time.time() * 1000)
 
-            if _is_task_enabled(task):
-                for bm in before_methods:
-                    bm()
+            # Run before-method hooks
+            for bm in before_methods:
+                await _call(bm)
 
-            result = _run_task_body(task, test_result)
-
-            _finalize_task(test_result)
+            result = await _run_task_body()
+            await _finalize_task()
             return result
 
-        if ctx.lock:
-            with ctx.lock:
-                return execute()
-        return execute()
+        # If task has a lock, wrap execution
+        if lock:
+            async with lock:
+                return await execute()
+
+        return await execute()
 
     def _resolve_class(self, dotted_path: str):
         """

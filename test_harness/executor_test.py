@@ -5,12 +5,18 @@ import time
 from executor_exceptions import TestFailure
 from test_decorators import (after_class, after_method,
                              before_class, before_method,
-                             listener, test)
+                             listener, test, data_provider)
 from test_executor import TestExecutor
 from suite_parser import SuiteParser
 from test_listener import TestListener
 from test_result import TestResult
 
+@data_provider("post_data")
+def post_data():
+    return [
+        {"title": "Hello", "body": "World"},
+        {"title": "Foo", "body": "Bar"},
+    ]
 
 # === Helper to assert failure inside tests ===
 def fail_test(msg):
@@ -62,6 +68,11 @@ class ExampleTest:
     def teardown(self):
         """ After method """
         self.logger.info("Calling after method...")
+
+    @test(provider=post_data)
+    async def async_success_test(self, title, body):
+        print(f"title: {title} | body: {body}")
+        print("[ExampleTest::async_success_test] This test passes")
 
     @test()
     def test_success(self):

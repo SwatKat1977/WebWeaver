@@ -12,7 +12,11 @@
         {
           "name": "test_harness.executor_test.ExampleTest",
           "methods": {
-            "include": ["test_success", "test_failure", "test_exception", "test_skipped"],
+            "include": ["test_success",
+                        "test_failure",
+                        "async_success_test",
+                        "test_exception",
+                        "test_skipped"],
             "exclude": ["test_excluded"]
           }
         },

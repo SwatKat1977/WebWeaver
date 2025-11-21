@@ -18,6 +18,7 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
 import argparse
+import asyncio
 import logging
 import os
 import pathlib
@@ -137,7 +138,7 @@ def main():
                 if type(listener) not in existing_types:
                     cls.__listeners__.append(listener)
 
-    results = executor.run_tests(suite)
+    results = asyncio.run(executor.run_tests(suite))
 
     print("\n=== Test Results ===")
     for name, result in results.items():
