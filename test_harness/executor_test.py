@@ -15,8 +15,8 @@ from test_result import TestResult
 @data_provider("post_data")
 def post_data():
     return [
-        {"title": "Hello", "body": "World"},
-        {"title": "Foo", "body": "Bar"},
+        {"name": "test_1", "title": "Hello", "body": "World"},
+        {"name": "test_2", "title": "Foo", "body": "Bar"},
     ]
 
 # === Helper to assert failure inside tests ===

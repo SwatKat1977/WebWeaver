@@ -392,7 +392,14 @@ class TestExecutor:
                     rows = await rows
 
                 for idx, row in enumerate(rows):
-                    case_name = f"{method_name}[{idx}]"
+
+                    # --- Use row["name"] if present, otherwise fallback to index ---
+                    if isinstance(row, dict) and "name" in row:
+                        label = row["name"]
+                    else:
+                        label = str(idx)
+
+                    case_name = f"{method_name}[{label}]"
                     test_name = f"{cls_name}.{case_name}"
                     mtr = TestResult(case_name, cls_name)
 
@@ -470,16 +477,48 @@ class TestExecutor:
                     # --- 2) Run test methods sequentially ---
                     for method_name in selected:
                         method = getattr(obj, method_name)
+                        provider = getattr(method, "data_provider", None)
+
+                        # ---- Data Provider Case ----
+                        if provider:
+                            rows = provider()
+                            if inspect.iscoroutine(rows):
+                                rows = await rows
+
+                            for idx, row in enumerate(rows):
+
+                                # Naming rule
+                                if isinstance(row, dict) and "name" in row:
+                                    label = row["name"]
+                                else:
+                                    label = str(idx)
+
+                                case_name = f"{method_name}[{label}]"
+                                mtr = TestResult(case_name, cls_name)
+
+                                async def parameterised_task(method=method, row=row):
+                                    if isinstance(row, dict):
+                                        clean_row = dict(row)
+                                        clean_row.pop("name", None)
+                                        return await self._call(method, **clean_row)
+                                    return await self._call(method, *row)
+
+                                ctx = TaskContext(
+                                    listeners=method_listeners,
+                                    before_methods=before_method_methods,
+                                    after_methods=after_method_methods,
+                                    lock=None
+                                )
+
+                                res = await self.__run_task(parameterised_task, mtr, ctx)
+                                results[f"{cls_name}.{case_name}"] = res
+                                ran.add(method_name)
+
+                            continue  # <-- prevents raw run
+
+                        # ---- Normal test (no provider) ----
                         mtr = TestResult(method_name, cls_name)
                         task = method
-
-                        ctx = TaskContext(
-                            listeners=method_listeners,
-                            before_methods=before_method_methods,
-                            after_methods=after_method_methods,
-                            lock=None
-                        )
-
                         res = await self.__run_task(task, mtr, ctx)
                         results[f"{cls_name}.{method_name}"] = res
                         ran.add(method_name)
