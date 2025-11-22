@@ -18,7 +18,7 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
 import importlib
-from core.interfaces import DatabaseBackend
+from data_dog.core.database_backend import DatabaseBackend
 
 
 def load_backend(backend_name: str) -> DatabaseBackend:
