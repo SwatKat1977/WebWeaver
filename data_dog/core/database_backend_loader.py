@@ -18,11 +18,17 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
 import importlib
+import os
 from data_dog.core.database_backend import DatabaseBackend
 
 
 def load_backend(backend_name: str) -> DatabaseBackend:
-    module_path = f"plugins.{backend_name}.backend"
+    module_path = f"data_dog.plugins.{backend_name}.backend"
+
+    actual_path: str = os.path.join("data_dog", "plugins", backend_name)
+
+    if not os.path.isdir(actual_path):
+        raise RuntimeError(f"'plugins' directory '{actual_path}' doesn't exist.")
 
     try:
         module = importlib.import_module(module_path)
@@ -38,4 +44,10 @@ def load_backend(backend_name: str) -> DatabaseBackend:
         raise TypeError(f"Backend '{backend_name}' does not implement DatabaseBackend.")
 
     return backend
-s
+
+try:
+    load_backend("sqlserver")
+
+except RuntimeError as ex:
+    print(ex)
+

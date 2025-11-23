@@ -17,19 +17,19 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
-from abc import ABC, abstractmethod
+from data_dog.core.database_backend import DatabaseBackend
 
 
-class DatabaseBackend(ABC):
-
-    @abstractmethod
+class SqlServerBackend(DatabaseBackend):
     def connect(self):
-        raise NotImplementedError
+        pass
 
-    @abstractmethod
     def execute(self, query, params=None):
-        raise NotImplementedError
+        pass
 
-    @abstractmethod
     def insert(self, table, data: dict):
-        raise NotImplementedError
+        pass
+
+
+def create_backend():
+    return SqlServerBackend()
