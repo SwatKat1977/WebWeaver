@@ -20,11 +20,11 @@ Copyright 2025 SwatKat1977
 
 # Semantic version components
 MAJOR = 0
-MINOR = 5
+MINOR = 6
 PATCH = 0
 
 # e.g. "alpha", "beta", "rc1", or None
-PRE_RELEASE = None # "Alpha #1"
+PRE_RELEASE = "Dev Build #1"
 
 # Version tuple for comparisons
 VERSION = (MAJOR, MINOR, PATCH, PRE_RELEASE)
