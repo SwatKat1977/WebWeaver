@@ -1,2 +1,7 @@
+# Python
 __pycache__
 .coverage
+.idea
+
+# C++
+*.user
