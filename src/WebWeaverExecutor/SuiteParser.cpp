@@ -98,32 +98,33 @@ nlohmann::json SuiteParser::Normalise(nlohmann::json data) {
     return data;
 }
 
-jsoncons::json SuiteParser::ConvertFromNlohmann(const nlohmann::json& j) {
-    if (j.is_object()) {
+jsoncons::json SuiteParser::ConvertFromNlohmann(
+    const nlohmann::json& jsonInstance) {
+    if (jsonInstance.is_object()) {
         jsoncons::json result = jsoncons::json::object();
-        for (auto& el : j.items()) {
+        for (auto& el : jsonInstance.items()) {
             result[el.key()] = ConvertFromNlohmann(el.value());
         }
 
         return result;
-    } else if (j.is_array()) {
+    } else if (jsonInstance.is_array()) {
         jsoncons::json result = jsoncons::json::array();
-        for (auto& el : j) {
-            result.push_back(ConvertFromNlohmann(el));
+        for (auto& element : jsonInstance) {
+            result.push_back(ConvertFromNlohmann(element));
         }
 
         return result;
-    } else if (j.is_string()) {
-        return j.get<std::string>();
-    } else if (j.is_boolean()) {
-        return j.get<bool>();
-    } else if (j.is_number_integer()) {
-        return j.get<int64_t>();
-    } else if (j.is_number_unsigned()) {
-        return j.get<uint64_t>();
-    } else if (j.is_number_float()) {
-        return j.get<double>();
-    } else if (j.is_null()) {
+    } else if (jsonInstance.is_string()) {
+        return jsonInstance.get<std::string>();
+    } else if (jsonInstance.is_boolean()) {
+        return jsonInstance.get<bool>();
+    } else if (jsonInstance.is_number_integer()) {
+        return jsonInstance.get<int64_t>();
+    } else if (jsonInstance.is_number_unsigned()) {
+        return jsonInstance.get<uint64_t>();
+    } else if (jsonInstance.is_number_float()) {
+        return jsonInstance.get<double>();
+    } else if (jsonInstance.is_null()) {
         return jsoncons::null_type();
     }
 
