@@ -17,29 +17,19 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef SUITEPARSER_H_
-#define SUITEPARSER_H_
+#ifndef WEBWEAVEREXCEPTIONS_H_
+#define WEBWEAVEREXCEPTIONS_H_
+#include <stdexcept>
 #include <string>
-#include "json.hpp"
 
-namespace WebWeaver { namespace Executor {
-
-class SuiteParser {
+class TestSuiteSchemaFileNotFound : public std::runtime_error {
  public:
-    static constexpr int DEFAULT_SUITE_THREAD_COUNT = 10;
-    static constexpr int DEFAULT_TEST_THREAD_COUNT = 10;
-
-    explicit SuiteParser(const std::string& suiteFile);
-
-    nlohmann::json loadSuite(const std::string& filePath);
-
- private:
-    nlohmann::json schema_;
-
-    nlohmann::json Normalise(nlohmann::json data);
+    using std::runtime_error::runtime_error;
 };
 
-}   // namespace Executor
-}   // namespace WebWeaver
+class TestSuiteSchemaParseFailed : public std::runtime_error {
+ public:
+    using std::runtime_error::runtime_error;
+};
 
-#endif  // SUITEPARSER_H_
+#endif  // WEBWEAVEREXCEPTIONS_H_
