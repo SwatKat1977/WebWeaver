@@ -20,6 +20,7 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 #ifndef SUITEPARSER_H_
 #define SUITEPARSER_H_
 #include <string>
+#include <jsoncons/json.hpp>
 #include "nlohmann/json.hpp"
 
 namespace WebWeaver { namespace Executor {
@@ -37,6 +38,7 @@ class SuiteParser {
     nlohmann::json suiteSchema_;
 
     nlohmann::json Normalise(nlohmann::json data);
+    jsoncons::json ConvertFromNlohmann(const nlohmann::json& j);
 };
 
 }   // namespace Executor

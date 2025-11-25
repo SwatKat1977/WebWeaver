@@ -95,17 +95,15 @@ nlohmann::json SuiteParser::LoadSuite(const std::string& filePath) {
     // --------------------------------------------------------------
    
     // Convert both schema and suite to jsoncons::json via dump/parse
-    jsoncons::json schemaJson = jsoncons::json::parse(suiteSchema_.dump());
-    jsoncons::json dataJson = jsoncons::json::parse(data.dump());
-
-    // Build validator
+    jsoncons::json schemaJson = ConvertFromNlohmann(suiteSchema_);
+    jsoncons::json dataJson = ConvertFromNlohmann(data);
 
     // Build schema + validator (exactly like the docs)
     auto compiledSchema = jsoncons::jsonschema::make_schema(schemaJson);
     jsoncons::jsonschema::json_validator<jsoncons::json> validator(compiledSchema);
 
     try {
-        validator.validate(data);   // jsoncons::json_validator
+        validator.validate(dataJson);
     }
     catch (const std::exception& ex) {
         throw std::runtime_error(
@@ -121,6 +119,32 @@ nlohmann::json SuiteParser::LoadSuite(const std::string& filePath) {
 
 nlohmann::json SuiteParser::Normalise(nlohmann::json data) {
     return data;
+}
+
+jsoncons::json SuiteParser::ConvertFromNlohmann(const nlohmann::json& j)
+{
+    if (j.is_object()) {
+        jsoncons::json result = jsoncons::json::object();
+        for (auto& el : j.items()) {
+            result[el.key()] = ConvertFromNlohmann(el.value());
+        }
+        return result;
+    }
+    else if (j.is_array()) {
+        jsoncons::json result = jsoncons::json::array();
+        for (auto& el : j) {
+            result.push_back(ConvertFromNlohmann(el));
+        }
+        return result;
+    }
+    else if (j.is_string()) return j.get<std::string>();
+    else if (j.is_boolean()) return j.get<bool>();
+    else if (j.is_number_integer()) return j.get<long long>();
+    else if (j.is_number_unsigned()) return j.get<unsigned long long>();
+    else if (j.is_number_float()) return j.get<double>();
+    else if (j.is_null()) return jsoncons::null_type();
+
+    throw std::runtime_error("Unsupported JSON type");
 }
 
 }   // namespace Executor

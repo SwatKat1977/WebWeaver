@@ -17,7 +17,26 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
+#include <iostream>
+#include "SuiteParser.h"
+#include "WebWeaverExceptions.h"
 
 int main(int argc, char* argv[]) {
+	try
+	{
+		auto parser = WebWeaver::Executor::SuiteParser("schema.json");
+		auto suite = parser.LoadSuite("testsuite.json");
+        std::cout << "Test suite loaded successfully." << std::endl;
+        std::cout << suite.dump(4) << std::endl;
+	}
+	catch (const WebWeaver::Executor::WebWeaverException &except)
+	{
+        std::cout << "[EXCEPTION] " << except.what() << std::endl;
+	}
+	catch (const std::runtime_error& ex)
+	{
+		std::cout << "[EXCEPTION] " << ex.what() << std::endl;
+	}
+
     return 0;
 }

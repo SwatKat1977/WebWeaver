@@ -24,24 +24,29 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 
 namespace WebWeaver { namespace Executor {
 
-class TestSuiteSchemaFileNotFound : public std::runtime_error {
+class WebWeaverException : public std::runtime_error {
  public:
     using std::runtime_error::runtime_error;
 };
 
-class TestSuiteSchemaParseFailed : public std::runtime_error {
+class TestSuiteSchemaFileNotFound : public WebWeaverException {
  public:
-    using std::runtime_error::runtime_error;
+    using WebWeaverException::WebWeaverException;
 };
 
-class TestSuiteFileNotFound : public std::runtime_error {
-public:
-    using std::runtime_error::runtime_error;
+class TestSuiteSchemaParseFailed : public WebWeaverException {
+ public:
+     using WebWeaverException::WebWeaverException;
 };
 
-class TestSuiteParseFailed : public std::runtime_error {
+class TestSuiteFileNotFound : public WebWeaverException {
 public:
-    using std::runtime_error::runtime_error;
+    using WebWeaverException::WebWeaverException;
+};
+
+class TestSuiteParseFailed : public WebWeaverException {
+public:
+    using WebWeaverException::WebWeaverException;
 };
 
 }   // namespace Executor
