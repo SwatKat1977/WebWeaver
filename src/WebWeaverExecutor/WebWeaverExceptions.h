@@ -22,6 +22,8 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 #include <stdexcept>
 #include <string>
 
+namespace WebWeaver { namespace Executor {
+
 class TestSuiteSchemaFileNotFound : public std::runtime_error {
  public:
     using std::runtime_error::runtime_error;
@@ -31,5 +33,18 @@ class TestSuiteSchemaParseFailed : public std::runtime_error {
  public:
     using std::runtime_error::runtime_error;
 };
+
+class TestSuiteFileNotFound : public std::runtime_error {
+public:
+    using std::runtime_error::runtime_error;
+};
+
+class TestSuiteParseFailed : public std::runtime_error {
+public:
+    using std::runtime_error::runtime_error;
+};
+
+}   // namespace Executor
+}   // namespace WebWeaver
 
 #endif  // WEBWEAVEREXCEPTIONS_H_

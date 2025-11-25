@@ -20,7 +20,7 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 #ifndef SUITEPARSER_H_
 #define SUITEPARSER_H_
 #include <string>
-#include "json.hpp"
+#include "nlohmann/json.hpp"
 
 namespace WebWeaver { namespace Executor {
 
@@ -29,12 +29,12 @@ class SuiteParser {
     static constexpr int DEFAULT_SUITE_THREAD_COUNT = 10;
     static constexpr int DEFAULT_TEST_THREAD_COUNT = 10;
 
-    explicit SuiteParser(const std::string& suiteFile);
+    explicit SuiteParser(const std::string& schemaFile);
 
-    nlohmann::json loadSuite(const std::string& filePath);
+    nlohmann::json LoadSuite(const std::string& filePath);
 
  private:
-    nlohmann::json schema_;
+    nlohmann::json suiteSchema_;
 
     nlohmann::json Normalise(nlohmann::json data);
 };
