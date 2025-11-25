@@ -19,9 +19,100 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
 #include <iostream>
 #include <string>
-#include <CLI/CLI.hpp>
+#include <vector>
+#include "pybind11/embed.h"
+#include "pybind11/stl.h"
+#include "CLI/CLI.hpp"
 #include "SuiteParser.h"
 #include "WebWeaverExceptions.h"
+
+// py::scoped_interpreter guard{};
+
+std::vector<pybind11::object> discover_listeners(const std::string& search_path) {
+    std::vector<pybind11::object> found_listeners;
+
+    std::filesystem::path root = std::filesystem::absolute(search_path);
+
+    std::cout << "[DEBUG] Scanning for listeners in: " << root << "\n";
+
+    // Import necessary Python modules
+    pybind11::object importlib = pybind11::module_::import("importlib.util");
+    pybind11::object inspect = pybind11::module_::import("inspect");
+
+    // Import TestListener base class
+    pybind11::object testlistener_mod = pybind11::module_::import("yourmodule.TestListener");
+    pybind11::object TestListener = testlistener_mod.attr("TestListener");
+
+    // Walk files
+    for (auto& entry : std::filesystem::recursive_directory_iterator(root))
+    {
+        if (!entry.is_regular_file())
+            continue;
+
+        auto path = entry.path();
+        if (path.filename().string().rfind("listener_", 0) != 0) continue;
+        if (path.extension() != ".py") continue;
+
+        std::cout << "[DEBUG] Importing: " << path << "\n";
+
+        try {
+            // module name (no .py)
+            std::string mod_name = path.stem().string();
+
+            // spec = importlib.util.spec_from_file_location(...)
+            pybind11::object spec = importlib.attr("spec_from_file_location")(
+                mod_name,
+                path.string()
+                );
+
+            // module = importlib.util.module_from_spec(spec)
+            pybind11::object module = importlib.attr("module_from_spec")(spec);
+
+            // spec.loader.exec_module(module)
+            spec.attr("loader").attr("exec_module")(module);
+
+            // Loop members in module
+            for (auto item : module.attr("__dict__"))
+            {
+                auto value = item.second;
+
+                if (pybind11::isinstance(value, pybind11::type::of(TestListener)))
+                {
+                    // Exclude base TestListener itself
+                    if (value.is(TestListener))
+                        continue;
+
+                    std::cout << "[FOUND] Listener: "
+                        << std::string(pybind11::str(value.attr("__name__"))) << "\n";
+
+                    // Instantiate class -> listener instance
+                    found_listeners.push_back(value());
+                }
+            }
+        }
+        catch (std::exception& e)
+        {
+            std::cout << "[WARN] Could not import " << path << ": " << e.what() << "\n";
+        }
+    }
+
+    // Deduplicate by class name
+    std::map<std::string, pybind11::object> unique;
+    for (auto& l : found_listeners) {
+        unique[(std::string)pybind11::str(l.get_type().attr("__name__"))] = l;
+    }
+
+    std::cout << "[DEBUG] Discovered: \n";
+    for (auto& p : unique) {
+        std::cout << "  -> " << p.first << "\n";
+    }
+
+    std::vector<pybind11::object> result;
+    for (auto& p : unique)
+        result.push_back(p.second);
+
+    return result;
+}
 
 int main(int argc, char* argv[]) {
 

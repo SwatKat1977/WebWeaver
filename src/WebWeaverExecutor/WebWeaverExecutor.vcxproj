@@ -71,7 +71,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ExternalIncludePath>..\ThirdPartyIncludes;$(ExternalIncludePath)</ExternalIncludePath>
+    <ExternalIncludePath>..\ThirdPartyIncludes;$(WEBWEAVER_PYTHON_BASE_PATH)include;$(ExternalIncludePath)</ExternalIncludePath>
+    <LibraryPath>$(WEBWEAVER_PYTHON_BASE_PATH)libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
