@@ -18,10 +18,34 @@ You should have received a copy of the GNU General Public License
 along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
 #include <iostream>
+#include <string>
+#include <CLI/CLI.hpp>
 #include "SuiteParser.h"
 #include "WebWeaverExceptions.h"
 
 int main(int argc, char* argv[]) {
+
+    CLI::App app{ "Web Weaver Test Executor" };
+
+    std::string suite_json;
+    std::string search = ".";
+    std::string version = "Webweaver Test Executor 0.0.0";
+
+    app.add_option("suite_json", suite_json, "Path to test suite JSON file")
+        ->required();
+
+    app.add_option("--search", search,
+        "Path to discover listeners (default: current dir)");
+
+    app.set_version_flag("--version", version);
+
+    CLI11_PARSE(app, argc, argv);
+
+    // --- USE the values directly ---
+    std::cout << "Suite JSON path: " << suite_json << "\n";
+    std::cout << "Search path:     " << search << "\n";
+    std::cout << "Version:         " << version << "\n";
+
     try {
         auto parser = WebWeaver::Executor::SuiteParser("schema.json");
         auto suite = parser.LoadSuite("testsuite.json");
