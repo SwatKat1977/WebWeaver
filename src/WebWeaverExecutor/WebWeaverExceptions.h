@@ -1,6 +1,6 @@
 /*
 This source file is part of Web Weaver
-For the latest info, see https ://github.com/SwatKat1977/WebWeaver
+For the latest info, see https://github.com/SwatKat1977/WebWeaver
 
 Copyright 2025 SwatKat1977
 
@@ -40,12 +40,12 @@ class TestSuiteSchemaParseFailed : public WebWeaverException {
 };
 
 class TestSuiteFileNotFound : public WebWeaverException {
-public:
+ public:
     using WebWeaverException::WebWeaverException;
 };
 
 class TestSuiteParseFailed : public WebWeaverException {
-public:
+ public:
     using WebWeaverException::WebWeaverException;
 };
 
