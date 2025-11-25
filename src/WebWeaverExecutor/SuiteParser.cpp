@@ -3,7 +3,11 @@
 // https://github.com/SwatKat1977/WebWeaver
 #include <filesystem>                                   // NOLINT(build/c++17)
 #include <fstream>
+#include <map>
+#include <set>
 #include <string>
+#include <utility>
+#include <vector>
 #include <jsoncons/json.hpp>
 #include <jsoncons_ext/jsonschema/jsonschema.hpp>
 #include "SuiteParser.h"
@@ -95,6 +99,118 @@ nlohmann::json SuiteParser::LoadSuite(const std::string& filePath) {
 }
 
 nlohmann::json SuiteParser::Normalise(nlohmann::json data) {
+    auto& suite = data["suite"];
+
+    // Suite-level defaults
+    if (!suite.contains("parallel")) {
+        suite["parallel"] = "none";
+    }
+
+    if (!suite.contains("thread_count")) {
+        suite["thread_count"] = DEFAULT_SUITE_THREAD_COUNT;
+    }
+
+    for (auto& test : data["tests"]) {
+        // parallel inherits from suite if missing
+        if (!test.contains("parallel"))
+            test["parallel"] = suite["parallel"];
+
+        // Compute thread_count
+        if (test["parallel"] == "none") {
+            // Default to 1 only if user did not specify
+            if (!test.contains("thread_count"))
+                test["thread_count"] = 1;
+        } else {
+            if (!test.contains("thread_count")) {
+                if (suite.contains("thread_count")) {
+                    test["thread_count"] = suite["thread_count"];
+                } else {
+                    test["thread_count"] = DEFAULT_TEST_THREAD_COUNT;
+                }
+            }
+        }
+
+        // ---------- Merge classes by name ----------
+
+        std::map<std::string, nlohmann::json> merged;
+        std::vector<std::string> order;
+
+        for (auto& cls : test["classes"]) {
+            std::string name;
+            nlohmann::json methods;
+
+            if (cls.is_string()) {
+                name = cls.get<std::string>();
+                methods = { {"include", nlohmann::json::array()},
+                            {"exclude", nlohmann::json::array()} };
+            } else {
+                name = cls["name"];
+
+                auto include = cls.value("methods", nlohmann::json::object())
+                    .value("include", nlohmann::json::array());
+                auto exclude = cls.value("methods", nlohmann::json::object())
+                    .value("exclude", nlohmann::json::array());
+
+                // Convert string → list
+                if (include.is_string()) {
+                    include = nlohmann::json::array({ include });
+                }
+
+                if (exclude.is_string()) {
+                    exclude = nlohmann::json::array({ exclude });
+                }
+
+                methods = {
+                    {"include", include},
+                    {"exclude", exclude}
+                };
+            }
+
+            // First encounter of this class
+            if (merged.find(name) == merged.end()) {
+                merged[name] = {
+                    {"name", name},
+                    {"methods", {
+                        {"include", nlohmann::json::array()},
+                        {"exclude", nlohmann::json::array()}
+                    }}
+                };
+                order.push_back(name);
+            }
+
+            // Merge include/exclude with dedupe
+            auto& dstInclude = merged[name]["methods"]["include"];
+            auto& dstExclude = merged[name]["methods"]["exclude"];
+
+            auto extend_unique = [](nlohmann::json& dst,
+                                    const nlohmann::json& src) {
+                    std::set<std::string> seen;
+                    for (const auto& s : dst) {
+                        seen.insert(s.get<std::string>());
+                    }
+
+                    for (const auto& s : src) {
+                        std::string str = s.get<std::string>();
+                        if (!seen.count(str)) {
+                            dst.push_back(str);
+                            seen.insert(str);
+                        }
+                    }
+                };
+
+            extend_unique(dstInclude, methods["include"]);
+            extend_unique(dstExclude, methods["exclude"]);
+        }
+
+        // Rebuild classes in order
+        nlohmann::json newClasses = nlohmann::json::array();
+        for (const auto& name : order) {
+            newClasses.push_back(merged[name]);
+        }
+
+        test["classes"] = std::move(newClasses);
+    }
+
     return data;
 }
 
