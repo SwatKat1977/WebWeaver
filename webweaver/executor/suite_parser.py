@@ -138,11 +138,13 @@ class SuiteParser:
             # Inherit parallel from suite if not specified
             test["parallel"] = test.get("parallel", suite.get("parallel", "none"))
 
-            # Compute thread_count with sensible defaults
+            # Compute thread_count
             if test["parallel"] == "none":
-                # If user explicitly set a non-1 value while parallel is none, coerce to 1
-                test["thread_count"] = 1
+                # Default to 1 only if the user did NOT specify thread_count
+                if "thread_count" not in test:
+                    test["thread_count"] = 1
             else:
+                # Normal behaviour when parallel != none
                 test.setdefault(
                     "thread_count",
                     suite.get("thread_count", self.DEFAULT_TEST_THREAD_COUNT)
