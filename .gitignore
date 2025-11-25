@@ -5,3 +5,5 @@ __pycache__
 
 # C++
 *.user
+x64
+.vs
