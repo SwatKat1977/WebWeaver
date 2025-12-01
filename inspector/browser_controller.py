@@ -20,6 +20,7 @@ Copyright 2025 SwatKat1977
 import os
 import time
 import json
+import threading
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import (
@@ -28,6 +29,7 @@ from selenium.common.exceptions import (
     NoSuchWindowException,
     NoSuchFrameException,
 )
+from selenium.webdriver.support.ui import WebDriverWait
 
 
 class BrowserController:
@@ -103,6 +105,31 @@ class BrowserController:
                 NoSuchWindowException) as ex:
             print("[ERROR] Reinjection failed:", ex)
 
+    from selenium.webdriver.support.ui import WebDriverWait
+
+    def activate_inspector(self):
+        print("[INFO] Activating inspector...")
+
+        # 1️⃣ Wait for the true current page to be fully loaded
+        try:
+            WebDriverWait(self.driver, 10).until(
+                lambda d: d.execute_script("return document.readyState") == "complete"
+            )
+            print("[INFO] Page fully loaded.")
+        except:
+            print("[WARN] Page load wait timed out. Continuing anyway.")
+
+        # 2️⃣ Inject inspector.js into the CURRENT page, not the previous one
+        self.inject_inspector_js()
+        print("[INFO] Inspector JS injected.")
+
+        # 3️⃣ Enable inspect mode
+        self.enable_inspect_mode()
+        print("[INFO] Inspect mode enabled.")
+
+        # 4️⃣ Start listener
+        threading.Thread(target=self.listen_for_click, daemon=True).start()
+
     def enable_inspect_mode(self):
         """Enable element inspect mode inside the webpage."""
         self.driver.execute_script("window.__INSPECT_MODE = true;")
@@ -112,22 +139,44 @@ class BrowserController:
         self.driver.execute_script("window.__INSPECT_MODE = false;")
 
     def listen_for_click(self):
-        """Checks every 100ms if JS stored an element selection."""
+        last_url = None
+
         while True:
             try:
+                current_url = self.driver.current_url
+
+                # Detect real navigation (Windows auth redirect, login, etc)
+                if current_url != last_url:
+                    print(f"[INFO] Navigation detected: {last_url} -> {current_url}")
+                    last_url = current_url
+
+                    # Wait for new page to finish loading
+                    try:
+                        WebDriverWait(self.driver, 10).until(
+                            lambda d: d.execute_script("return document.readyState") == "complete"
+                        )
+                    except Exception:
+                        pass
+
+                    # VERY IMPORTANT: always reinject on every URL change
+                    print("[INFO] Reinjecting inspector into new page...")
+                    self.inject_inspector_js()
+
+                    # Re-enable inspect mode
+                    self.enable_inspect_mode()
+
+                # --- Check for element click ---
                 result = self.driver.execute_script(
                     "return window.__selenium_clicked_element || null;"
                 )
+
                 if result:
-                    # Clear it to allow new selections
                     self.driver.execute_script(
                         "window.__selenium_clicked_element = null;"
                     )
-                    # Send to wxPython callback
                     self.callback(json.dumps(result, indent=2))
+
                 time.sleep(0.1)
 
-            except (WebDriverException, JavascriptException,
-                    NoSuchWindowException, NoSuchFrameException):
-                # Browser closed or invalid context
+            except Exception:
                 break
