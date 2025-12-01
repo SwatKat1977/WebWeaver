@@ -22,6 +22,12 @@ import time
 import json
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.common.exceptions import (
+    WebDriverException,
+    JavascriptException,
+    NoSuchWindowException,
+    NoSuchFrameException,
+)
 
 
 class BrowserController:
@@ -91,8 +97,11 @@ class BrowserController:
             print("[INFO] Forcing inspector reinjection...")
             self.inject_inspector_js()
             print("[INFO] Inspector reinjected successfully.")
-        except Exception as e:
-            print("[ERROR] Reinjection failed:", e)
+
+        except (WebDriverException,
+                JavascriptException,
+                NoSuchWindowException) as ex:
+            print("[ERROR] Reinjection failed:", ex)
 
     def enable_inspect_mode(self):
         """Enable element inspect mode inside the webpage."""
@@ -117,6 +126,8 @@ class BrowserController:
                     # Send to wxPython callback
                     self.callback(json.dumps(result, indent=2))
                 time.sleep(0.1)
-            except Exception:
-                # Example: browser closed
+
+            except (WebDriverException, JavascriptException,
+                    NoSuchWindowException, NoSuchFrameException):
+                # Browser closed or invalid context
                 break
