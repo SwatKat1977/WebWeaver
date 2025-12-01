@@ -88,21 +88,6 @@ class BrowserController:
         self.driver.execute_script(inspector_js)
         print("Inspector injected.")
 
-    def force_reinject_inspector(self):
-        """
-        Re-inject the inspector script, printing errors if something fails.
-        """
-
-        try:
-            print("[INFO] Forcing inspector reinjection...")
-            self.inject_inspector_js()
-            print("[INFO] Inspector reinjected successfully.")
-
-        except (WebDriverException,
-                JavascriptException,
-                NoSuchWindowException) as ex:
-            print("[ERROR] Reinjection failed:", ex)
-
     def enable_inspect_mode(self):
         """Enable element inspect mode inside the webpage."""
         self.driver.execute_script("window.__INSPECT_MODE = true;")
@@ -113,21 +98,44 @@ class BrowserController:
 
     def listen_for_click(self):
         """Checks every 100ms if JS stored an element selection."""
+        last_url = None
+
         while True:
             try:
+                current_url = self.driver.current_url
+
+                # Detect real navigation (Windows auth redirect, login, etc)
+                if current_url != last_url:
+                    print(f"[INFO] Navigation detected: {last_url} -> {current_url}")
+                    last_url = current_url
+
+                    # Wait for new page to finish loading
+                    try:
+                        WebDriverWait(self.driver, 10).until(
+                            lambda d: d.execute_script("return document.readyState") == "complete"
+                        )
+                    except Exception:
+                        pass
+
+                    # VERY IMPORTANT: always reinject on every URL change
+                    print("[INFO] Reinjecting inspector into new page...")
+                    self.inject_inspector_js()
+
+                    # Re-enable inspect mode
+                    self.enable_inspect_mode()
+
+                # --- Check for element click ---
                 result = self.driver.execute_script(
                     "return window.__selenium_clicked_element || null;"
                 )
+
                 if result:
-                    # Clear it to allow new selections
                     self.driver.execute_script(
                         "window.__selenium_clicked_element = null;"
                     )
-                    # Send to wxPython callback
                     self.callback(json.dumps(result, indent=2))
+
                 time.sleep(0.1)
 
-            except (WebDriverException, JavascriptException,
-                    NoSuchWindowException, NoSuchFrameException):
-                # Browser closed or invalid context
+            except Exception:
                 break

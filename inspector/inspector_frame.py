@@ -83,22 +83,11 @@ class InspectorFrame(wx.Frame):
         self.browser.open_page(url)
 
     def __on_start_inspect(self, _event):
-        """Start inspect mode in the browser.
-
-        This will:
-        - Force reinjection of inspector.js
-        - Enable inspect mode in the page
-        - Start a background thread that listens for Selenium click events
-        """
-        # Force reinjection of inspector.js BEFORE enabling inspect mode
-        self.browser.force_reinject_inspector()
-
-        # Turn on inspect mode
-        self.browser.enable_inspect_mode()
-
-        # Start listener fresh every time
-        threading.Thread(target=self.browser.listen_for_click,
-                         daemon=True).start()
+        thread = threading.Thread(
+            target=self.browser.listen_for_click,
+            daemon=True
+        )
+        thread.start()
 
     def __on_stop_inspect(self, _event):
         """Stop inspect mode by telling the browser controller to disable it."""
