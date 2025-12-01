@@ -25,7 +25,25 @@ from selenium.webdriver.chrome.options import Options
 
 
 class BrowserController:
+    """Controls a Chrome WebDriver instance and injects the custom
+    ``inspector.js`` script into loaded pages.
+
+    This class manages browser automation for the Inspector tool:
+    - Launches Chrome with custom options
+    - Loads pages
+    - Injects the Inspector JavaScript
+    - Communicates selection events back to wxPython via callback
+    """
+
     def __init__(self, callback):
+        """Initialize the BrowserController.
+
+        Parameters
+        ----------
+        callback : callable
+            Function that receives JSON data whenever the user selects
+            an element inside the browser window. Typically a wxPython handler.
+        """
         self.callback = callback
 
         # Find inspector.js based on this file's directory
@@ -43,10 +61,18 @@ class BrowserController:
         self.driver = webdriver.Chrome(options=options)
 
     def open_page(self, url):
+        """Open the given URL and inject the inspector script.
+
+        Parameters
+        ----------
+        url : str
+            The webpage URL to navigate to.
+        """
         self.driver.get(url)
         self.inject_inspector_js()
 
     def inject_inspector_js(self):
+        """Load and inject the inspector.js script into the active webpage."""
         print("Loading inspector.js from:", self.js_path)
 
         with open(self.js_path, "r", encoding="utf8") as f:
@@ -57,6 +83,10 @@ class BrowserController:
         print("Inspector injected.")
 
     def force_reinject_inspector(self):
+        """
+        Re-inject the inspector script, printing errors if something fails.
+        """
+
         try:
             print("[INFO] Forcing inspector reinjection...")
             self.inject_inspector_js()
@@ -65,9 +95,11 @@ class BrowserController:
             print("[ERROR] Reinjection failed:", e)
 
     def enable_inspect_mode(self):
+        """Enable element inspect mode inside the webpage."""
         self.driver.execute_script("window.__INSPECT_MODE = true;")
 
     def disable_inspect_mode(self):
+        """Disable element inspect mode inside the webpage."""
         self.driver.execute_script("window.__INSPECT_MODE = false;")
 
     def listen_for_click(self):

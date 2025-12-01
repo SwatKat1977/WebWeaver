@@ -17,8 +17,8 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
-import wx
 import threading
+import wx
 from browser_controller import BrowserController
 
 
@@ -58,11 +58,11 @@ class InspectorFrame(wx.Frame):
         # Browser controller
         self.browser = BrowserController(self.on_element_selected)
 
-    def on_open(self, event):
+    def on_open(self, _event):
         url = self.url_input.GetValue()
         self.browser.open_page(url)
 
-    def on_start_inspect(self, event):
+    def on_start_inspect(self, _event):
         """ Start Inspect Mode """
         # Force reinjection of inspector.js BEFORE enabling inspect mode
         self.browser.force_reinject_inspector()
@@ -73,7 +73,7 @@ class InspectorFrame(wx.Frame):
         # Start listener fresh every time
         threading.Thread(target=self.browser.listen_for_click, daemon=True).start()
 
-    def on_stop_inspect(self, event):
+    def on_stop_inspect(self, _event):
         """ Stop Inspect Mode """
         self.browser.disable_inspect_mode()
 
