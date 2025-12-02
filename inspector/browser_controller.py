@@ -67,6 +67,9 @@ class BrowserController:
 
         self.driver = webdriver.Chrome(options=options)
 
+        self.inspect_active = False
+        self.record_active = False
+
     def open_page(self, url):
         """Open the given URL and inject the inspector script.
 
@@ -99,12 +102,17 @@ class BrowserController:
         print("Inspector injected.")
 
     def enable_inspect_mode(self):
-        """Enable element inspect mode inside the webpage."""
+        self.inspect_active = True
+        self.record_active = False  # <-- ADD THIS
+
         self.driver.execute_script("window.__INSPECT_MODE = true;")
+        self.driver.execute_script("window.__RECORD_MODE = false;")
+        self.driver.execute_script("window.__FORCE_INSPECT_MODE = true;")
 
     def disable_inspect_mode(self):
-        """Disable element inspect mode inside the webpage."""
+        self.inspect_active = False
         self.driver.execute_script("window.__INSPECT_MODE = false;")
+        self.driver.execute_script("window.__FORCE_INSPECT_MODE = false;")
 
     def listen_for_click(self):
         """Checks every 100ms if JS stored an element selection."""
@@ -131,11 +139,19 @@ class BrowserController:
                     print("[INFO] Reinjecting inspector into new page...")
                     self.inject_inspector_js()
 
-                    # ONLY re-enable inspect mode if FORCE mode is active
-                    force_mode = self.driver.execute_script("return window.__FORCE_INSPECT_MODE === true;")
-                    if force_mode:
+                    # Restore proper mode after navigation
+                    if self.inspect_active:
+                        print("[INFO] Inspect Active → enabling inspect mode")
                         self.enable_inspect_mode()
+                        self.disable_record_mode()
+
+                    elif self.record_active:
+                        print("[INFO] Record Active -> enabling record mode")
+                        self.enable_record_mode()
+
                     else:
+                        print("[INFO] No mode active -> disabling inspect + record")
+                        self.disable_record_mode()
                         self.disable_inspect_mode()
 
                 # --- Check for element click ---
@@ -153,3 +169,14 @@ class BrowserController:
 
             except Exception:
                 break
+
+    def enable_record_mode(self):
+        self.record_active = True
+        self.inspect_active = False  # CANNOT inspect while recording
+        self.driver.execute_script("window.__RECORD_MODE = true;")
+        self.driver.execute_script("window.__INSPECT_MODE = false;")
+        self.driver.execute_script("window.__FORCE_INSPECT_MODE = false;")
+
+    def disable_record_mode(self):
+        self.record_active = False
+        self.driver.execute_script("window.__RECORD_MODE = false;")

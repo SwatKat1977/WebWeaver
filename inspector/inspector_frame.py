@@ -63,6 +63,16 @@ class InspectorFrame(wx.Frame):
         stop_btn.Bind(wx.EVT_BUTTON, self.__on_stop_inspect)
         sizer.Add(stop_btn, 0, wx.ALL, 5)
 
+        # Start record mode
+        record_btn = wx.Button(panel, label="Start Record Mode")
+        record_btn.Bind(wx.EVT_BUTTON, self.__on_start_record)
+        sizer.Add(record_btn, 0, wx.ALL, 5)
+
+        # Stop record mode
+        stop_record_btn = wx.Button(panel, label="Stop Record Mode")
+        stop_record_btn.Bind(wx.EVT_BUTTON, self.__on_stop_record)
+        sizer.Add(stop_record_btn, 0, wx.ALL, 5)
+
         # Output box
         self.output = wx.TextCtrl(panel,
                                   style=wx.TE_MULTILINE | wx.TE_READONLY)
@@ -111,3 +121,18 @@ class InspectorFrame(wx.Frame):
             JSON-formatted string describing the clicked element.
         """
         self.output.SetValue(data)
+
+    def __on_start_record(self, _event):
+        print(">>> Record mode enabled")
+        self.browser.enable_record_mode()
+
+        # Start listening thread (same as inspect)
+        thread = threading.Thread(
+            target=self.browser.listen_for_click,
+            daemon=True
+        )
+        thread.start()
+
+    def __on_stop_record(self, _event):
+        print(">>> Record mode disabled")
+        self.browser.disable_record_mode()

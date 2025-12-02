@@ -59,38 +59,49 @@ function outListener(e) {
 // Click recording
 // --------------------
 document.addEventListener("click", function(e) {
-    if (!window.__INSPECT_MODE) return;
 
-    e.preventDefault();
-    e.stopPropagation();
+    // INSPECT MODE → capture & stop page
+    if (window.__INSPECT_MODE === true) {
 
-    const el = e.target;
+        e.preventDefault();
+        e.stopPropagation();
 
-    window.__selenium_clicked_element = {
-        tag: el.tagName.toLowerCase(),
-        id: el.id,
-        class: el.className,
-        text: el.innerText,
-        css: getCssSelector(el),
-        xpath: getXPath(el)
-    };
+        const el = e.target;
 
-    window.__recorded_actions.push({
-        type: "click",
-        selector: getCssSelector(el),
-        xpath: getXPath(el),
-        x: e.clientX,
-        y: e.clientY,
-        time: now()
-    });
+        window.__selenium_clicked_element = {
+            tag: el.tagName.toLowerCase(),
+            id: el.id,
+            class: el.className,
+            text: el.innerText,
+            css: getCssSelector(el),
+            xpath: getXPath(el)
+        };
+    }
 
-    console.log("Click recorded:", window.__recorded_actions.at(-1));
+    // RECORD MODE → record but DO NOT block
+    if (window.__RECORD_MODE === true) {
+        const el = e.target;
+        const ev = {
+            type: "click",
+            selector: getCssSelector(el),
+            xpath: getXPath(el),
+            x: e.clientX,
+            y: e.clientY,
+            time: now()
+        };
+
+        window.__recorded_actions.push(ev);
+        window.__recorded_outgoing.push(ev);
+    }
+
 }, true);
 
 // --------------------
 // Text input recording
 // --------------------
 document.addEventListener("input", function(e) {
+    if (!window.__RECORD_MODE) return;
+
     const el = e.target;
     if (!el) return;
 
