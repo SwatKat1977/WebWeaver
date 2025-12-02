@@ -1,2 +1,7 @@
 __pycache__
 .coverage
+.idea
+
+# Build
+dist
+build
