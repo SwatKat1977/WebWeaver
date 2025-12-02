@@ -5,10 +5,10 @@ class MainFrame(wx.Frame):
     def __init__(self):
         super().__init__(None, title="Webweaver Automation Studio", size=(1400, 900))
 
-        TOOLBAR_ID_NEW_PROJECT: int = 1
-        TOOLBAR_ID_OPEN_PROJECT: int = 2
-        TOOLBAR_ID_SAVE_PROJECT: int = 3
-        TOOLBAR_ID_INSPECTOR_MODE: int = 4
+        toolbar_id_new_project: int = 1
+        toolbar_id_open_project: int = 2
+        toolbar_id_save_project: int = 3
+        toolbar_id_inspector_mode: int = 4
 
         # AUI Manager
         self._mgr = aui.AuiManager(self)
@@ -31,19 +31,19 @@ class MainFrame(wx.Frame):
         toolbar.SetToolSeparation(5)
 
         # Add some standard tools
-        toolbar.AddTool(TOOLBAR_ID_NEW_PROJECT,
+        toolbar.AddTool(toolbar_id_new_project,
                         "",
                         wx.ArtProvider.GetBitmap(wx.ART_NEW,
                                                  wx.ART_TOOLBAR,
                                                  (16,16)),
                         short_help_string="New Project")
-        toolbar.AddTool(TOOLBAR_ID_OPEN_PROJECT,
+        toolbar.AddTool(toolbar_id_open_project,
                         "",
                         wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN,
                                                  wx.ART_TOOLBAR,
                                                  (16,16)),
                         short_help_string="Open Project")
-        toolbar.AddTool(TOOLBAR_ID_SAVE_PROJECT,
+        toolbar.AddTool(toolbar_id_save_project,
                         "",
                         wx.ArtProvider.GetBitmap(wx.ART_FILE_SAVE,
                                                  wx.ART_TOOLBAR,
@@ -52,7 +52,7 @@ class MainFrame(wx.Frame):
 
         toolbar.AddSeparator()
 
-        toolbar.AddTool(TOOLBAR_ID_INSPECTOR_MODE,
+        toolbar.AddTool(toolbar_id_inspector_mode,
                         "",
                         wx.ArtProvider.GetBitmap(wx.ART_FIND,
                                                  wx.ART_TOOLBAR,
@@ -106,8 +106,33 @@ class MainFrame(wx.Frame):
         project_panel = wx.Panel(self)
         project_sizer = wx.BoxSizer(wx.VERTICAL)
         project_sizer.Add(wx.StaticText(project_panel, label="Projects"), 0, wx.ALL, 5)
+
         project_tree = wx.TreeCtrl(project_panel, style=wx.TR_HAS_BUTTONS)
         project_sizer.Add(project_tree, 1, wx.EXPAND | wx.ALL, 5)
+
+        # --- IMAGE LIST ---
+        image_list = wx.ImageList(16, 16)
+        folder_icon = image_list.Add(wx.ArtProvider.GetBitmap(wx.ART_FOLDER, wx.ART_OTHER, (16, 16)))
+        file_icon = image_list.Add(wx.ArtProvider.GetBitmap(wx.ART_NORMAL_FILE, wx.ART_OTHER, (16, 16)))
+        project_tree.AssignImageList(image_list)
+
+        # --- POPULATE THE TREE ---
+        root = project_tree.AddRoot("Solution WebWeaver", image=folder_icon)
+        solution_items = project_tree.AppendItem(root, "Solution Items", image=folder_icon)
+        android_lib = project_tree.AppendItem(root, "AndroidWebLibrary", image=folder_icon)
+        crossplatform = project_tree.AppendItem(root, "CrossPlatform", image=folder_icon)
+
+        project_tree.AppendItem(crossplatform, "References", image=folder_icon)
+        project_tree.AppendItem(crossplatform, "Reports", image=folder_icon)
+        project_tree.AppendItem(crossplatform, "Instructions", image=folder_icon)
+
+        project_tree.AppendItem(crossplatform, "app.config", image=file_icon)
+        project_tree.AppendItem(crossplatform, "CrossPlatform.rxtmg", image=file_icon)
+        project_tree.AppendItem(crossplatform, "CrossPlatform.rxtst", image=file_icon)
+        project_tree.AppendItem(crossplatform, "CrossPlatformRepository.rxrep", image=file_icon)
+
+        project_tree.ExpandAll()
+
         project_panel.SetSizer(project_sizer)
 
         self._mgr.AddPane(
