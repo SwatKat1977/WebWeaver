@@ -77,6 +77,8 @@ class BrowserController:
         self.driver.get(url)
         self.inject_inspector_js()
 
+        print(self.driver.execute_script("return window.__INSPECT_MODE;"))
+
     def inject_inspector_js(self):
         """Load and inject the inspector.js script into the active webpage."""
         print("Loading inspector.js from:", self.js_path)

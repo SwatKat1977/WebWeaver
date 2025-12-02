@@ -1,93 +1,81 @@
-(function() {
+console.log("Inspector script injected.");
 
-    console.log("Inspector JS loaded (SPA-safe).");
+window.__INSPECT_MODE = window.__INSPECT_MODE || false;
+window.__selenium_clicked_element = null;
+window.__recorded_actions = window.__recorded_actions || [];
 
-    // Global flags
-    window.__INSPECT_MODE = false;
-    window.__selenium_clicked_element = null;
+if (window.__FORCE_INSPECT_MODE === true) {
+    console.log("Re-enabling inspect mode after page load");
+    window.__INSPECT_MODE = true;
+}
 
-    function getXPath(el) {
-        if (el.id) return '//*[@id="' + el.id + '"]';
-        const parts = [];
-        while (el && el.nodeType === Node.ELEMENT_NODE) {
-            let index = 1, sibling = el.previousSibling;
-            while (sibling) {
-                if (sibling.nodeType === Node.ELEMENT_NODE &&
-                    sibling.nodeName === el.nodeName) {
-                    index++;
-                }
-                sibling = sibling.previousSibling;
-            }
-            parts.unshift(el.nodeName + "[" + index + "]");
-            el = el.parentNode;
+function now() { return Date.now(); }
+
+function getCssSelector(el) {
+    if (el.id) return "#" + el.id;
+    if (el.className)
+        return el.tagName.toLowerCase() + "." + el.className.trim().replace(/\s+/g, ".");
+    return el.tagName.toLowerCase();
+}
+
+function getXPath(el) {
+    if (el.id) return `//*[@id="${el.id}"]`;
+    const parts = [];
+    while (el && el.nodeType === 1) {
+        let index = 1;
+        let sib = el.previousSibling;
+        while (sib) {
+            if (sib.nodeType === 1 && sib.nodeName === el.nodeName) index++;
+            sib = sib.previousSibling;
         }
-        return "/" + parts.join("/");
+        parts.unshift(el.nodeName + "[" + index + "]");
+        el = el.parentNode;
     }
+    return "/" + parts.join("/");
+}
 
-    function getCssSelector(el) {
-        if (el.id) return "#" + el.id;
-        if (el.className) {
-            return el.tagName.toLowerCase() + "." +
-                el.className.trim().replace(/\s+/g, ".");
-        }
-        return el.tagName.toLowerCase();
-    }
+document.addEventListener("click", function(e) {
+    if (!window.__INSPECT_MODE) return;
 
-    // Remove old listeners before re-attaching (important for SPA reloads)
-    function clearListeners() {
-        document.removeEventListener("mouseover", hoverListener, true);
-        document.removeEventListener("mouseout", outListener, true);
-        document.removeEventListener("click", clickListener, true);
-    }
+    e.preventDefault();
+    e.stopPropagation();
 
-    function hoverListener(e) {
-        if (!window.__INSPECT_MODE) return;
-        e.target.style.outline = "2px solid red";
-    }
+    const el = e.target;
 
-    function outListener(e) {
-        if (!window.__INSPECT_MODE) return;
-        e.target.style.outline = "";
-    }
+    window.__selenium_clicked_element = {
+        tag: el.tagName.toLowerCase(),
+        id: el.id,
+        class: el.className,
+        text: el.innerText,
+        css: getCssSelector(el),
+        xpath: getXPath(el)
+    };
 
-    function clickListener(e) {
-        if (!window.__INSPECT_MODE) return;
-
-        e.preventDefault();
-        e.stopPropagation();
-
-        const el = e.target;
-
-        window.__selenium_clicked_element = {
-            tag: el.tagName.toLowerCase(),
-            id: el.id,
-            class: el.className,
-            text: el.innerText,
-            css: getCssSelector(el),
-            xpath: getXPath(el)
-        };
-    }
-
-    function attachListeners() {
-        clearListeners(); // Important for SPA route changes
-        document.addEventListener("mouseover", hoverListener, true);
-        document.addEventListener("mouseout", outListener, true);
-        document.addEventListener("click", clickListener, true);
-        console.log("Inspector listeners attached.");
-    }
-
-    // Initial attach
-    attachListeners();
-
-    // SPA-safe automatic reattachment
-    const observer = new MutationObserver((mutations) => {
-        // Reattach listeners whenever the DOM changes significantly
-        attachListeners();
+    window.__recorded_actions.push({
+        type: "click",
+        selector: getCssSelector(el),
+        xpath: getXPath(el),
+        x: e.clientX,
+        y: e.clientY,
+        time: now()
     });
 
-    observer.observe(document.documentElement, {
-        childList: true,
-        subtree: true
-    });
+    console.log("Click recorded:", window.__recorded_actions.at(-1));
+}, true);
 
-})();
+document.addEventListener("input", function(e) {
+    const el = e.target;
+    if (!el) return;
+
+    if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
+        window.__recorded_actions.push({
+            type: "input",
+            selector: getCssSelector(el),
+            xpath: getXPath(el),
+            value: el.value,
+            time: now()
+        });
+
+        console.log("Input recorded:", window.__recorded_actions.at(-1));
+    }
+}, true);

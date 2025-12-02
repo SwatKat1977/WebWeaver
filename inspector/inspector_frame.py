@@ -83,6 +83,14 @@ class InspectorFrame(wx.Frame):
         self.browser.open_page(url)
 
     def __on_start_inspect(self, _event):
+        self.browser.driver.execute_script("window.__FORCE_INSPECT_MODE = true;")
+        self.browser.enable_inspect_mode()
+
+        # Debug print - tell us if JS is working
+        print("INSPECT MODE FLAG =", self.browser.driver.execute_script(
+            "return window.__INSPECT_MODE;"
+        ))
+
         thread = threading.Thread(
             target=self.browser.listen_for_click,
             daemon=True
@@ -91,6 +99,7 @@ class InspectorFrame(wx.Frame):
 
     def __on_stop_inspect(self, _event):
         """Stop inspect mode by telling the browser controller to disable it."""
+        self.browser.driver.execute_script("window.__FORCE_INSPECT_MODE = false;")
         self.browser.disable_inspect_mode()
 
     def on_element_selected(self, data):
