@@ -163,9 +163,27 @@ class BrowserController:
                     "return window.__recorded_outgoing || [];")
 
                 if events:
-                    self.driver.execute_script(
-                        "window.__recorded_outgoing = [];")
+                    self.driver.execute_script("window.__recorded_outgoing = [];")
+
+                    deduped = []
+                    seen = set()
+
                     for ev in events:
+                        # create a signature that identifies identical events
+                        sig = (
+                            ev.get("type"),
+                            ev.get("selector"),
+                            ev.get("xpath"),
+                            ev.get("x"),
+                            ev.get("y")
+                        )
+
+                        if sig not in seen:
+                            seen.add(sig)
+                            deduped.append(ev)
+
+                    # send deduped events to callback
+                    for ev in deduped:
                         self.callback(json.dumps(ev, indent=2))
 
                 time.sleep(0.1)
