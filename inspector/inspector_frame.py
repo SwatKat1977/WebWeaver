@@ -17,10 +17,11 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
+import json
 import threading
 import wx
 from browser_controller import BrowserController
-import json
+
 
 class InspectorFrame(wx.Frame):
     """Main wxPython UI frame for the WebWeaver Inspector tool.
