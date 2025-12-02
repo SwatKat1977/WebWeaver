@@ -58,11 +58,11 @@ class BrowserController:
 
         # Chrome Options
         options = Options()
-        options.add_argument("--disable-infobars")
-        options.add_argument("--disable-extensions")
-        options.add_argument("--log-level=3")
-        options.add_experimental_option("excludeSwitches",
-                                        ["enable-logging"])
+        options.add_argument("--disable-web-security")
+        options.add_argument("--disable-site-isolation-trials")
+        options.add_argument("--disable-features=IsolateOrigins,site-per-process")
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        options.add_experimental_option("useAutomationExtension", True)
 
         self.driver = webdriver.Chrome(options=options)
 
