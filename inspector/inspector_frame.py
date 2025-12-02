@@ -72,6 +72,10 @@ class InspectorFrame(wx.Frame):
         stop_record_btn.Bind(wx.EVT_BUTTON, self.__on_stop_record)
         sizer.Add(stop_record_btn, 0, wx.ALL, 5)
 
+        save_json_btn = wx.Button(panel, label="Save Recording to JSON")
+        save_json_btn.Bind(wx.EVT_BUTTON, self.__on_save_json)
+        sizer.Add(save_json_btn, 0, wx.ALL, 5)
+
         # Output
         self.output = wx.TextCtrl(panel, style=wx.TE_MULTILINE | wx.TE_READONLY)
         sizer.Add(self.output, 1, wx.EXPAND | wx.ALL, 5)
@@ -105,6 +109,14 @@ class InspectorFrame(wx.Frame):
         self.browser.disable_inspect_mode()
 
     def __on_start_record(self, _event):
+        # Reset display + session
+        self.output.Clear()  # Clear output text field
+        self.recorded_session = []  # Reset stored events
+
+        # Reset JS recorder buffer
+        self.browser.driver.execute_script("window.__recorded_actions = [];")
+        self.browser.driver.execute_script("window.__recorded_outgoing = [];")
+
         self.browser.disable_inspect_mode()
         self.browser.enable_record_mode()
 
@@ -120,3 +132,26 @@ class InspectorFrame(wx.Frame):
     def on_event_received(self, data):
         self.output.AppendText(data + "\n\n")
         self.recorded_session.append(json.loads(data))
+
+    def __on_save_json(self, _event):
+        if not self.recorded_session:
+            wx.MessageBox("No recorded events to save.", "Info")
+            return
+
+        with wx.FileDialog(
+            self,
+            "Save JSON",
+            wildcard="JSON files (*.json)|*.json",
+            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT
+        ) as dlg:
+
+            if dlg.ShowModal() == wx.ID_CANCEL:
+                return  # User cancelled
+
+            path = dlg.GetPath()
+            try:
+                with open(path, "w", encoding="utf-8") as f:
+                    json.dump(self.recorded_session, f, indent=2)
+                wx.MessageBox("Recording saved successfully!", "Saved")
+            except Exception as e:
+                wx.MessageBox(f"Error saving file:\n{e}", "Error")
