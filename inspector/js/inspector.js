@@ -1,12 +1,18 @@
 console.log("Inspector script injected.");
 
 window.__INSPECT_MODE = window.__INSPECT_MODE || false;
-window.__selenium_clicked_element = null;
+window.__FORCE_INSPECT_MODE = window.__FORCE_INSPECT_MODE || false;
 window.__recorded_actions = window.__recorded_actions || [];
 
+// Persist inspect mode only if FORCE MODE is active
 if (window.__FORCE_INSPECT_MODE === true) {
     console.log("Re-enabling inspect mode after page load");
     window.__INSPECT_MODE = true;
+}
+
+// If the user has stopped inspect mode, ensure it STAYS OFF
+if (window.__FORCE_INSPECT_MODE === false) {
+    window.__INSPECT_MODE = false;
 }
 
 function now() { return Date.now(); }
@@ -34,6 +40,24 @@ function getXPath(el) {
     return "/" + parts.join("/");
 }
 
+// --------------------
+// Hover highlight
+// --------------------
+function hoverListener(e) {
+    if (!window.__INSPECT_MODE) return;
+    e.target.__old_outline = e.target.style.outline;
+    e.target.style.outline = "2px solid red";
+}
+
+function outListener(e) {
+    if (!window.__INSPECT_MODE) return;
+    e.target.style.outline = e.target.__old_outline || "";
+    delete e.target.__old_outline;
+}
+
+// --------------------
+// Click recording
+// --------------------
 document.addEventListener("click", function(e) {
     if (!window.__INSPECT_MODE) return;
 
@@ -63,6 +87,9 @@ document.addEventListener("click", function(e) {
     console.log("Click recorded:", window.__recorded_actions.at(-1));
 }, true);
 
+// --------------------
+// Text input recording
+// --------------------
 document.addEventListener("input", function(e) {
     const el = e.target;
     if (!el) return;
@@ -79,3 +106,9 @@ document.addEventListener("input", function(e) {
         console.log("Input recorded:", window.__recorded_actions.at(-1));
     }
 }, true);
+
+// --------------------
+// Attach hover listeners
+// --------------------
+document.addEventListener("mouseover", hoverListener, true);
+document.addEventListener("mouseout", outListener, true);

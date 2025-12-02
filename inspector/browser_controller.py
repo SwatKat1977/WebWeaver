@@ -28,6 +28,7 @@ from selenium.common.exceptions import (
     NoSuchWindowException,
     NoSuchFrameException,
 )
+from selenium.webdriver.support.wait import WebDriverWait
 
 
 class BrowserController:
@@ -123,8 +124,12 @@ class BrowserController:
                     print("[INFO] Reinjecting inspector into new page...")
                     self.inject_inspector_js()
 
-                    # Re-enable inspect mode
-                    self.enable_inspect_mode()
+                    # ONLY re-enable inspect mode if FORCE mode is active
+                    force_mode = self.driver.execute_script("return window.__FORCE_INSPECT_MODE === true;")
+                    if force_mode:
+                        self.enable_inspect_mode()
+                    else:
+                        self.disable_inspect_mode()
 
                 # --- Check for element click ---
                 result = self.driver.execute_script(
