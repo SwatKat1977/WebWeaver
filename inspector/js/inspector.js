@@ -62,6 +62,9 @@ function outListener(e) {
 // --------------------
 // CLICK listener
 // --------------------
+// --------------------
+// CLICK listener
+// --------------------
 document.addEventListener("click", function(e) {
 
     // INSPECT MODE → block click + send element info
@@ -81,7 +84,7 @@ document.addEventListener("click", function(e) {
         };
     }
 
-    // RECORD MODE → DO NOT stop click, just record it
+    // RECORD MODE → record, and for links delay navigation slightly
     if (window.__RECORD_MODE === true) {
         const el = e.target;
         const ev = {
@@ -92,11 +95,28 @@ document.addEventListener("click", function(e) {
             y: e.clientY,
             time: now()
         };
+
         window.__recorded_actions.push(ev);
         window.__recorded_outgoing.push(ev);
+
+        // If the click was on (or inside) a link, delay navigation
+        const link = el.closest ? el.closest("a[href]") : null;
+        if (link && link.href) {
+            // Stop the browser from navigating *right now*
+            e.preventDefault();
+            const url = link.href;
+
+            console.log("Recorded link click, delaying navigation to:", url);
+
+            // Give Python's 100ms poll loop time to read __recorded_outgoing
+            setTimeout(() => {
+                window.location.href = url;
+            }, 200);
+        }
     }
 
 }, true);
+
 
 // --------------------
 // INPUT listener (RECORD MODE ONLY)
