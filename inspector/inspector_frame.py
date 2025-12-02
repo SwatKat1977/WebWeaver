@@ -84,7 +84,7 @@ class InspectorFrame(wx.Frame):
         panel.SetSizer(sizer)
 
         # Browser controller
-        self.browser = BrowserController(self.on_event_received)
+        self.browser = BrowserController(self.__on_event_received)
         self.recorded_session = []
 
     # -------------------------
@@ -134,7 +134,7 @@ class InspectorFrame(wx.Frame):
     # -------------------------
     # Event callback
     # -------------------------
-    def on_event_received(self, data):
+    def __on_event_received(self, data):
         self.output.AppendText(data + "\n\n")
         self.recorded_session.append(json.loads(data))
 
@@ -158,5 +158,6 @@ class InspectorFrame(wx.Frame):
                 with open(path, "w", encoding="utf-8") as f:
                     json.dump(self.recorded_session, f, indent=2)
                 wx.MessageBox("Recording saved successfully!", "Saved")
-            except Exception as e:
+
+            except (OSError, TypeError) as e:
                 wx.MessageBox(f"Error saving file:\n{e}", "Error")
