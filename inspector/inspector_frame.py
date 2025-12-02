@@ -20,11 +20,10 @@ Copyright 2025 SwatKat1977
 import threading
 import wx
 from browser_controller import BrowserController
-
+import json
 
 class InspectorFrame(wx.Frame):
     """Main wxPython UI frame for the WebWeaver Inspector tool.
-
     This frame provides:
     - A text box for entering a URL
     - Buttons for opening the page, starting inspect mode, and stopping inspect mode
@@ -39,7 +38,7 @@ class InspectorFrame(wx.Frame):
     def __init__(self):
         """Initialize the inspector frame and build the wxPython UI."""
         super().__init__(None, title="WebWeaver Inspector (Selenium)",
-                         size=(500, 500))
+                         size=(600, 600))
 
         panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -48,20 +47,20 @@ class InspectorFrame(wx.Frame):
         self.url_input = wx.TextCtrl(panel)
         sizer.Add(self.url_input, 0, wx.EXPAND | wx.ALL, 5)
 
-        # Open Page button
+        # Buttons
         open_btn = wx.Button(panel, label="Open Page")
         open_btn.Bind(wx.EVT_BUTTON, self.__on_open)
         sizer.Add(open_btn, 0, wx.ALL, 5)
 
         # Start inspection mode button
-        start_btn = wx.Button(panel, label="Start Inspect Mode")
-        start_btn.Bind(wx.EVT_BUTTON, self.__on_start_inspect)
-        sizer.Add(start_btn, 0, wx.ALL, 5)
+        inspect_btn = wx.Button(panel, label="Start Inspect Mode")
+        inspect_btn.Bind(wx.EVT_BUTTON, self.__on_start_inspect)
+        sizer.Add(inspect_btn, 0, wx.ALL, 5)
 
         # Stop inspection mode button
-        stop_btn = wx.Button(panel, label="Stop Inspect Mode")
-        stop_btn.Bind(wx.EVT_BUTTON, self.__on_stop_inspect)
-        sizer.Add(stop_btn, 0, wx.ALL, 5)
+        stop_inspect = wx.Button(panel, label="Stop Inspect Mode")
+        stop_inspect.Bind(wx.EVT_BUTTON, self.__on_stop_inspect)
+        sizer.Add(stop_inspect, 0, wx.ALL, 5)
 
         # Start record mode
         record_btn = wx.Button(panel, label="Start Record Mode")
@@ -73,66 +72,51 @@ class InspectorFrame(wx.Frame):
         stop_record_btn.Bind(wx.EVT_BUTTON, self.__on_stop_record)
         sizer.Add(stop_record_btn, 0, wx.ALL, 5)
 
-        # Output box
-        self.output = wx.TextCtrl(panel,
-                                  style=wx.TE_MULTILINE | wx.TE_READONLY)
+        # Output
+        self.output = wx.TextCtrl(panel, style=wx.TE_MULTILINE | wx.TE_READONLY)
         sizer.Add(self.output, 1, wx.EXPAND | wx.ALL, 5)
 
         panel.SetSizer(sizer)
 
         # Browser controller
-        self.browser = BrowserController(self.on_element_selected)
+        self.browser = BrowserController(self.on_event_received)
+        self.recorded_session = []
 
+    # -------------------------
+    # Button handlers
+    # -------------------------
     def __on_open(self, _event):
         """Handle the Open Page button press.
 
         Retrieves the URL from the text input and instructs the browser
         controller to load the page.
         """
-        url = self.url_input.GetValue()
-        self.browser.open_page(url)
+        self.browser.open_page(self.url_input.GetValue())
 
     def __on_start_inspect(self, _event):
-        self.browser.driver.execute_script("window.__FORCE_INSPECT_MODE = true;")
+        self.browser.disable_record_mode()
         self.browser.enable_inspect_mode()
 
-        # Debug print - tell us if JS is working
-        print("INSPECT MODE FLAG =", self.browser.driver.execute_script(
-            "return window.__INSPECT_MODE;"
-        ))
-
-        thread = threading.Thread(
-            target=self.browser.listen_for_click,
-            daemon=True
-        )
-        thread.start()
+        t = threading.Thread(target=self.browser.listen_for_click, daemon=True)
+        t.start()
 
     def __on_stop_inspect(self, _event):
         """Stop inspect mode by telling the browser controller to disable it."""
-        self.browser.driver.execute_script("window.__FORCE_INSPECT_MODE = false;")
         self.browser.disable_inspect_mode()
 
-    def on_element_selected(self, data):
-        """Callback invoked by BrowserController when an element is selected.
-
-        Parameters
-        ----------
-        data : str
-            JSON-formatted string describing the clicked element.
-        """
-        self.output.SetValue(data)
-
     def __on_start_record(self, _event):
-        print(">>> Record mode enabled")
+        self.browser.disable_inspect_mode()
         self.browser.enable_record_mode()
 
-        # Start listening thread (same as inspect)
-        thread = threading.Thread(
-            target=self.browser.listen_for_click,
-            daemon=True
-        )
-        thread.start()
+        t = threading.Thread(target=self.browser.listen_for_click, daemon=True)
+        t.start()
 
     def __on_stop_record(self, _event):
-        print(">>> Record mode disabled")
         self.browser.disable_record_mode()
+
+    # -------------------------
+    # Event callback
+    # -------------------------
+    def on_event_received(self, data):
+        self.output.AppendText(data + "\n\n")
+        self.recorded_session.append(json.loads(data))

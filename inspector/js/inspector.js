@@ -1,26 +1,30 @@
 console.log("Inspector script injected.");
 
+// Global buffered state
 window.__INSPECT_MODE = window.__INSPECT_MODE || false;
 window.__FORCE_INSPECT_MODE = window.__FORCE_INSPECT_MODE || false;
-window.__recorded_actions = window.__recorded_actions || [];
+window.__RECORD_MODE = window.__RECORD_MODE || false;
 
-// Persist inspect mode only if FORCE MODE is active
+window.__recorded_actions = window.__recorded_actions || [];
+window.__recorded_outgoing = window.__recorded_outgoing || [];
+
+function now() { return Date.now(); }
+
+// Restore Inspect Mode after navigation only if requested
 if (window.__FORCE_INSPECT_MODE === true) {
-    console.log("Re-enabling inspect mode after page load");
     window.__INSPECT_MODE = true;
 }
 
-// If the user has stopped inspect mode, ensure it STAYS OFF
+// Disable inspect mode if not used
 if (window.__FORCE_INSPECT_MODE === false) {
     window.__INSPECT_MODE = false;
 }
 
-function now() { return Date.now(); }
-
 function getCssSelector(el) {
     if (el.id) return "#" + el.id;
     if (el.className)
-        return el.tagName.toLowerCase() + "." + el.className.trim().replace(/\s+/g, ".");
+        return el.tagName.toLowerCase() + "." +
+               el.className.trim().replace(/\s+/g, ".");
     return el.tagName.toLowerCase();
 }
 
@@ -29,10 +33,10 @@ function getXPath(el) {
     const parts = [];
     while (el && el.nodeType === 1) {
         let index = 1;
-        let sib = el.previousSibling;
-        while (sib) {
-            if (sib.nodeType === 1 && sib.nodeName === el.nodeName) index++;
-            sib = sib.previousSibling;
+        let sibling = el.previousSibling;
+        while (sibling) {
+            if (sibling.nodeType === 1 && sibling.nodeName === el.nodeName) index++;
+            sibling = sibling.previousSibling;
         }
         parts.unshift(el.nodeName + "[" + index + "]");
         el = el.parentNode;
@@ -41,7 +45,7 @@ function getXPath(el) {
 }
 
 // --------------------
-// Hover highlight
+// Hover highlight (INSPECT MODE ONLY)
 // --------------------
 function hoverListener(e) {
     if (!window.__INSPECT_MODE) return;
@@ -56,13 +60,12 @@ function outListener(e) {
 }
 
 // --------------------
-// Click recording
+// CLICK listener
 // --------------------
 document.addEventListener("click", function(e) {
 
-    // INSPECT MODE → capture & stop page
+    // INSPECT MODE → block click + send element info
     if (window.__INSPECT_MODE === true) {
-
         e.preventDefault();
         e.stopPropagation();
 
@@ -78,7 +81,7 @@ document.addEventListener("click", function(e) {
         };
     }
 
-    // RECORD MODE → record but DO NOT block
+    // RECORD MODE → DO NOT stop click, just record it
     if (window.__RECORD_MODE === true) {
         const el = e.target;
         const ev = {
@@ -89,7 +92,6 @@ document.addEventListener("click", function(e) {
             y: e.clientY,
             time: now()
         };
-
         window.__recorded_actions.push(ev);
         window.__recorded_outgoing.push(ev);
     }
@@ -97,7 +99,7 @@ document.addEventListener("click", function(e) {
 }, true);
 
 // --------------------
-// Text input recording
+// INPUT listener (RECORD MODE ONLY)
 // --------------------
 document.addEventListener("input", function(e) {
     if (!window.__RECORD_MODE) return;
@@ -106,20 +108,20 @@ document.addEventListener("input", function(e) {
     if (!el) return;
 
     if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
-        window.__recorded_actions.push({
+        const ev = {
             type: "input",
             selector: getCssSelector(el),
             xpath: getXPath(el),
             value: el.value,
             time: now()
-        });
-
-        console.log("Input recorded:", window.__recorded_actions.at(-1));
+        };
+        window.__recorded_actions.push(ev);
+        window.__recorded_outgoing.push(ev);
     }
 }, true);
 
 // --------------------
-// Attach hover listeners
+// Hover listeners
 // --------------------
 document.addEventListener("mouseover", hoverListener, true);
 document.addEventListener("mouseout", outListener, true);

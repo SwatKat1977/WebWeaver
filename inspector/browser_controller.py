@@ -20,44 +20,22 @@ Copyright 2025 SwatKat1977
 import os
 import time
 import json
+from selenium.webdriver.support.ui import WebDriverWait
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import (
-    WebDriverException,
-    JavascriptException,
-    NoSuchWindowException,
-    NoSuchFrameException,
-)
-from selenium.webdriver.support.wait import WebDriverWait
-
 
 class BrowserController:
-    """Controls a Chrome WebDriver instance and injects the custom
-    ``inspector.js`` script into loaded pages.
-
-    This class manages browser automation for the Inspector tool:
-    - Launches Chrome with custom options
-    - Loads pages
-    - Injects the Inspector JavaScript
-    - Communicates selection events back to wxPython via callback
-    """
 
     def __init__(self, callback):
-        """Initialize the BrowserController.
-
-        Parameters
-        ----------
-        callback : callable
-            Function that receives JSON data whenever the user selects
-            an element inside the browser window. Typically a wxPython handler.
-        """
         self.callback = callback
+        self.inspect_active = False
+        self.record_active = False
 
-        # Find inspector.js based on this file's directory
+        # Find inspector script
         base_dir = os.path.dirname(os.path.abspath(__file__))
         self.js_path = os.path.join(base_dir, "js", "inspector.js")
 
-        # Chrome Options
+        # Chrome launch options
         options = Options()
         options.add_argument("--disable-web-security")
         options.add_argument("--disable-site-isolation-trials")
@@ -67,24 +45,10 @@ class BrowserController:
 
         self.driver = webdriver.Chrome(options=options)
 
-        self.inspect_active = False
-        self.record_active = False
-
-    def open_page(self, url):
-        """Open the given URL and inject the inspector script.
-
-        Parameters
-        ----------
-        url : str
-            The webpage URL to navigate to.
-        """
-        self.driver.get(url)
-        self.inject_inspector_js()
-
-        print(self.driver.execute_script("return window.__INSPECT_MODE;"))
-
+    # ---------------------
+    # JS injection
+    # ---------------------
     def inject_inspector_js(self):
-        """Load and inject the inspector.js script into the active webpage."""
         print("Loading inspector.js from:", self.js_path)
 
         with open(self.js_path, "r", encoding="utf8") as f:
@@ -92,18 +56,27 @@ class BrowserController:
 
         print("Injecting inspector.js...")
 
-        # Inject so it loads into REAL page context on every navigation
+        # Ensure script is injected in REAL page context (critical)
         self.driver.execute_cdp_cmd(
             "Page.addScriptToEvaluateOnNewDocument",
             {"source": inspector_js}
         )
 
+        # Also execute immediately on the current page
         self.driver.execute_script(inspector_js)
+
         print("Inspector injected.")
 
+    def open_page(self, url):
+        self.driver.get(url)
+        self.inject_inspector_js()
+
+    # ---------------------
+    # Modes
+    # ---------------------
     def enable_inspect_mode(self):
         self.inspect_active = True
-        self.record_active = False  # <-- ADD THIS
+        self.record_active = False
 
         self.driver.execute_script("window.__INSPECT_MODE = true;")
         self.driver.execute_script("window.__RECORD_MODE = false;")
@@ -114,65 +87,10 @@ class BrowserController:
         self.driver.execute_script("window.__INSPECT_MODE = false;")
         self.driver.execute_script("window.__FORCE_INSPECT_MODE = false;")
 
-    def listen_for_click(self):
-        """Checks every 100ms if JS stored an element selection."""
-        last_url = None
-
-        while True:
-            try:
-                current_url = self.driver.current_url
-
-                # Detect real navigation (Windows auth redirect, login, etc)
-                if current_url != last_url:
-                    print(f"[INFO] Navigation detected: {last_url} -> {current_url}")
-                    last_url = current_url
-
-                    # Wait for new page to finish loading
-                    try:
-                        WebDriverWait(self.driver, 10).until(
-                            lambda d: d.execute_script("return document.readyState") == "complete"
-                        )
-                    except Exception:
-                        pass
-
-                    # VERY IMPORTANT: always reinject on every URL change
-                    print("[INFO] Reinjecting inspector into new page...")
-                    self.inject_inspector_js()
-
-                    # Restore proper mode after navigation
-                    if self.inspect_active:
-                        print("[INFO] Inspect Active → enabling inspect mode")
-                        self.enable_inspect_mode()
-                        self.disable_record_mode()
-
-                    elif self.record_active:
-                        print("[INFO] Record Active -> enabling record mode")
-                        self.enable_record_mode()
-
-                    else:
-                        print("[INFO] No mode active -> disabling inspect + record")
-                        self.disable_record_mode()
-                        self.disable_inspect_mode()
-
-                # --- Check for element click ---
-                result = self.driver.execute_script(
-                    "return window.__selenium_clicked_element || null;"
-                )
-
-                if result:
-                    self.driver.execute_script(
-                        "window.__selenium_clicked_element = null;"
-                    )
-                    self.callback(json.dumps(result, indent=2))
-
-                time.sleep(0.1)
-
-            except Exception:
-                break
-
     def enable_record_mode(self):
         self.record_active = True
-        self.inspect_active = False  # CANNOT inspect while recording
+        self.inspect_active = False
+
         self.driver.execute_script("window.__RECORD_MODE = true;")
         self.driver.execute_script("window.__INSPECT_MODE = false;")
         self.driver.execute_script("window.__FORCE_INSPECT_MODE = false;")
@@ -180,3 +98,65 @@ class BrowserController:
     def disable_record_mode(self):
         self.record_active = False
         self.driver.execute_script("window.__RECORD_MODE = false;")
+
+    # ---------------------
+    # Event listener loop
+    # ---------------------
+    def listen_for_click(self):
+        last_url = None
+
+        while True:
+            try:
+                current_url = self.driver.current_url
+
+                # Navigation detection
+                if current_url != last_url:
+                    print(f"[INFO] Navigation detected: {last_url} -> {current_url}")
+                    last_url = current_url
+
+                    try:
+                        WebDriverWait(self.driver, 10).until(
+                            lambda d: d.execute_script("return document.readyState") == "complete"
+                        )
+                    except:
+                        pass
+
+                    print("[INFO] Reinjecting inspector into new page...")
+                    self.inject_inspector_js()
+
+                    # Restore mode on navigation
+                    if self.inspect_active:
+                        print("[INFO] Inspect Active → enabling inspect mode")
+                        self.enable_inspect_mode()
+                        self.disable_record_mode()
+
+                    elif self.record_active:
+                        print("[INFO] Record Active → enabling record mode")
+                        self.enable_record_mode()
+
+                    else:
+                        print("[INFO] No mode active → disabling both modes")
+                        self.disable_inspect_mode()
+                        self.disable_record_mode()
+
+                # Inspector element selection
+                result = self.driver.execute_script(
+                    "return window.__selenium_clicked_element || null;"
+                )
+
+                if result:
+                    self.driver.execute_script("window.__selenium_clicked_element = null;")
+                    self.callback(json.dumps(result, indent=2))
+
+                # Recorder events
+                events = self.driver.execute_script("return window.__recorded_outgoing || [];")
+
+                if events:
+                    self.driver.execute_script("window.__recorded_outgoing = [];")
+                    for ev in events:
+                        self.callback(json.dumps(ev, indent=2))
+
+                time.sleep(0.1)
+
+            except Exception:
+                break
