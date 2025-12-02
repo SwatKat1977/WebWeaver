@@ -98,6 +98,10 @@ class InspectorFrame(wx.Frame):
         self.browser.open_page(self.url_input.GetValue())
 
     def __on_start_inspect(self, _event):
+        # Reset display + session
+        self.output.Clear()  # Clear output text field
+        self.recorded_session = []  # Reset stored events
+
         self.browser.disable_record_mode()
         self.browser.enable_inspect_mode()
 

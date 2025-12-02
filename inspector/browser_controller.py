@@ -24,6 +24,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
+
 class BrowserController:
 
     def __init__(self, callback):
@@ -48,7 +49,7 @@ class BrowserController:
     # ---------------------
     # JS injection
     # ---------------------
-    def inject_inspector_js(self):
+    def inject_inspector_js(self, initial=False):
         print("Loading inspector.js from:", self.js_path)
 
         with open(self.js_path, "r", encoding="utf8") as f:
@@ -56,20 +57,26 @@ class BrowserController:
 
         print("Injecting inspector.js...")
 
-        # Ensure script is injected in REAL page context (critical)
+        # Always register CDP script so it loads on EVERY navigation
         self.driver.execute_cdp_cmd(
             "Page.addScriptToEvaluateOnNewDocument",
             {"source": inspector_js}
         )
 
-        # Also execute immediately on the current page
-        self.driver.execute_script(inspector_js)
+        # Inject into CURRENT document ONLY during the initial load
+        if initial:
+            self.driver.execute_script(inspector_js)
 
         print("Inspector injected.")
 
+    # ---------------------
+    # Page load
+    # ---------------------
     def open_page(self, url):
+        """Loads a URL and injects the inspector script into the CURRENT page."""
         self.driver.get(url)
-        self.inject_inspector_js()
+        # inject immediately on first load
+        self.inject_inspector_js(initial=True)
 
     # ---------------------
     # Modes
@@ -114,6 +121,7 @@ class BrowserController:
                     print(f"[INFO] Navigation detected: {last_url} -> {current_url}")
                     last_url = current_url
 
+                    # Wait for new page to load
                     try:
                         WebDriverWait(self.driver, 10).until(
                             lambda d: d.execute_script("return document.readyState") == "complete"
@@ -122,9 +130,10 @@ class BrowserController:
                         pass
 
                     print("[INFO] Reinjecting inspector into new page...")
-                    self.inject_inspector_js()
+                    # Use initial=False to prevent double-injection
+                    self.inject_inspector_js(initial=False)
 
-                    # Restore mode on navigation
+                    # Restore whichever mode was active
                     if self.inspect_active:
                         print("[INFO] Inspect Active → enabling inspect mode")
                         self.enable_inspect_mode()
@@ -145,14 +154,17 @@ class BrowserController:
                 )
 
                 if result:
-                    self.driver.execute_script("window.__selenium_clicked_element = null;")
+                    self.driver.execute_script(
+                        "window.__selenium_clicked_element = null;")
                     self.callback(json.dumps(result, indent=2))
 
                 # Recorder events
-                events = self.driver.execute_script("return window.__recorded_outgoing || [];")
+                events = self.driver.execute_script(
+                    "return window.__recorded_outgoing || [];")
 
                 if events:
-                    self.driver.execute_script("window.__recorded_outgoing = [];")
+                    self.driver.execute_script(
+                        "window.__recorded_outgoing = [];")
                     for ev in events:
                         self.callback(json.dumps(ev, indent=2))
 
