@@ -88,6 +88,13 @@ class BrowserController:
             inspector_js = f.read()
 
         print("Injecting inspector.js...")
+
+        # Inject so it loads into REAL page context on every navigation
+        self.driver.execute_cdp_cmd(
+            "Page.addScriptToEvaluateOnNewDocument",
+            {"source": inspector_js}
+        )
+
         self.driver.execute_script(inspector_js)
         print("Inspector injected.")
 
