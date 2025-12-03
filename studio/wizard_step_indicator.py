@@ -72,9 +72,9 @@ class WizardStepIndicator(wx.Panel):
             self.labels.append(label)
 
         self.SetSizer(sizer)
-        self.__set_active(active_index)
+        self.set_active(active_index)
 
-    def __set_active(self, index: int):
+    def set_active(self, index: int):
         """
         Update the indicator to highlight the active step.
 
