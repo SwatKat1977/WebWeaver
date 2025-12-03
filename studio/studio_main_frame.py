@@ -6,17 +6,36 @@ class StudioMainFrame(wx.Frame):
     def __init__(self):
         super().__init__(None, title="Webweaver Automation Studio", size=(1400, 900))
 
+        # AUI Manager
+        self._mgr = aui.AuiManager(self)
+
+        # 1. TOOLBAR (top, dockable)
+        self.__create_toolbar()
+
+        # Apply layout
+        self._mgr.Update()
+        self.Centre()
+        self.Show()
+
+    def __on_record_toggle(self, _event):
+        toolbar = self._mgr.GetPane("MainToolbar").window
+        is_recording = toolbar.GetToolToggled(self.record_tool_id)
+
+        if is_recording:
+            toolbar.SetToolBitmap(self.record_tool_id, self.stop_icon)
+            toolbar.SetToolShortHelp(self.record_tool_id, "Stop Recording")
+        else:
+            toolbar.SetToolBitmap(self.record_tool_id, self.record_icon)
+            toolbar.SetToolShortHelp(self.record_tool_id, "Start Recording")
+
+        toolbar.Realize()
+
+    def __create_toolbar(self):
         toolbar_id_new_project: int = 1
         toolbar_id_open_project: int = 2
         toolbar_id_save_project: int = 3
         toolbar_id_inspector_mode: int = 4
 
-        # AUI Manager
-        self._mgr = aui.AuiManager(self)
-
-        # =============================
-        # 1. TOOLBAR (top, dockable)
-        # =============================
         toolbar = aui.AuiToolBar(
             self,
             -1,
@@ -100,21 +119,3 @@ class StudioMainFrame(wx.Frame):
             .Floatable(False)
             .Movable(False)
         )
-
-        # Apply layout
-        self._mgr.Update()
-        self.Centre()
-        self.Show()
-
-    def __on_record_toggle(self, _event):
-        toolbar = self._mgr.GetPane("MainToolbar").window
-        is_recording = toolbar.GetToolToggled(self.record_tool_id)
-
-        if is_recording:
-            toolbar.SetToolBitmap(self.record_tool_id, self.stop_icon)
-            toolbar.SetToolShortHelp(self.record_tool_id, "Stop Recording")
-        else:
-            toolbar.SetToolBitmap(self.record_tool_id, self.record_icon)
-            toolbar.SetToolShortHelp(self.record_tool_id, "Start Recording")
-
-        toolbar.Realize()
