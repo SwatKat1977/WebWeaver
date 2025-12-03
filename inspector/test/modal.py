@@ -106,11 +106,13 @@ class NewSolutionDialog(wx.Dialog):
         browse.Bind(wx.EVT_BUTTON, self.on_browse)
         form.Add(browse)
 
+        '''
         # Project name
         form.Add(wx.StaticText(form_panel, label="Project name:"), 0, wx.ALIGN_CENTER_VERTICAL)
         self.project_name = wx.TextCtrl(form_panel)
         form.Add(self.project_name, 1, wx.EXPAND)
         form.Add((0, 0))
+        '''
 
         form_panel.SetSizer(form)
         main.Add(form_panel, 0, wx.EXPAND | wx.ALL, 20)
@@ -129,20 +131,21 @@ class NewSolutionDialog(wx.Dialog):
         btns = wx.BoxSizer(wx.HORIZONTAL)
         btns.AddStretchSpacer()
 
-        btn_back = wx.Button(self, label="Back")
-        btn_back.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(wx.ID_CANCEL))
-        btns.Add(btn_back, 0, wx.RIGHT, 10)
+        btn_cancel = wx.Button(self, label="Cancel")
+        btn_cancel.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(wx.ID_CANCEL))
+        btns.Add(btn_cancel, 0, wx.RIGHT, 10)
 
-        btn_continue = wx.Button(self, label="Continue")
+        btn_continue = wx.Button(self, label="Next")
         btn_continue.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(wx.ID_OK))
         btns.Add(btn_continue, 0)
 
         main.Add(btns, 0, wx.EXPAND | wx.ALL, 15)
 
         self.SetSizerAndFit(main)
-        self.Centre()
+        self.Layout()
+        self.CentreOnScreen()
 
-    # -----------------------------------
+        # -----------------------------------
     def on_browse(self, event):
         dlg = wx.DirDialog(self, "Choose solution location")
         if dlg.ShowModal() == wx.ID_OK:
