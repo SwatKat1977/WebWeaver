@@ -20,7 +20,7 @@ Copyright 2025 SwatKat1977
 import wx
 from wizard_step_indicator import WizardStepIndicator
 from project_create_wizard.wizard_basic_info_page import WizardBasicInfoPage
-from project_create_wizard.wizard_web_select_application_dialog import WizardWebSelectBrowserPage
+from project_create_wizard.wizard_web_select_browser_page import WizardWebSelectBrowserPage
 
 
 class ProjectCreateWizardDialog(wx.Dialog):
