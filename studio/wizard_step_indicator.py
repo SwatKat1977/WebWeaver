@@ -42,6 +42,23 @@ class WizardStepIndicator(wx.Panel):
     """
 
     def __init__(self, parent, steps, active_index=0):
+        """
+        Initialize the step indicator.
+
+        This method creates one `wx.StaticText` label for each step name
+        provided in `steps`. Each label is initially blank; their final
+        text and appearance are set by calling `set_active()`.
+
+        Parameters
+        ----------
+        parent : wx.Window
+            Parent window.
+        steps : list[str]
+            List of step names to represent in the indicator.
+        active_index : int, optional
+            Index of the step that should appear active on initialization.
+            Defaults to 0.
+        """
         super().__init__(parent)
         self.steps = steps
         self.labels = []
@@ -49,7 +66,7 @@ class WizardStepIndicator(wx.Panel):
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        for _ in enumerate(steps):
+        for _ in steps:
             label = wx.StaticText(self, label="")
             sizer.Add(label, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 20)
             self.labels.append(label)
