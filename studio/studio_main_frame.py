@@ -1,5 +1,6 @@
 import wx
 import wx.aui as aui
+from project_create_wizard.project_create_wizard_dialog import ProjectCreateWizardDialog
 
 
 class StudioMainFrame(wx.Frame):
@@ -108,19 +109,6 @@ class StudioMainFrame(wx.Frame):
         self.Centre()
         self.Show()
 
-    def __on_record_toggle(self, _event):
-        toolbar = self._mgr.GetPane("MainToolbar").window
-        is_recording = toolbar.GetToolToggled(self.record_tool_id)
-
-        if is_recording:
-            toolbar.SetToolBitmap(self.record_tool_id, self.stop_icon)
-            toolbar.SetToolShortHelp(self.record_tool_id, "Stop Recording")
-        else:
-            toolbar.SetToolBitmap(self.record_tool_id, self.record_icon)
-            toolbar.SetToolShortHelp(self.record_tool_id, "Start Recording")
-
-        toolbar.Realize()
-
     def __create_toolbar(self):
         toolbar_id_new_project: int = 1
         toolbar_id_open_project: int = 2
@@ -192,7 +180,8 @@ class StudioMainFrame(wx.Frame):
 
         toolbar.Realize()
 
-        # --- Bind toggle event ---
+        # --- Bind toolbar events ---
+        self.Bind(wx.EVT_TOOL, self.__on_new_project, id=toolbar_id_new_project)
         self.Bind(wx.EVT_TOOL, self.__on_record_toggle, id=self.record_tool_id)
 
         self._mgr.AddPane(
@@ -210,3 +199,24 @@ class StudioMainFrame(wx.Frame):
             .Floatable(False)
             .Movable(False)
         )
+
+    def __on_new_project(self, _event):
+        dlg = ProjectCreateWizardDialog(self)
+        if dlg.ShowModal() == wx.ID_OK:
+            print("Wizard completed with data:")
+            for k, v in dlg.shared_data.items():
+                print(f"  {k}: {v}")
+        dlg.Destroy()
+
+    def __on_record_toggle(self, _event):
+        toolbar = self._mgr.GetPane("MainToolbar").window
+        is_recording = toolbar.GetToolToggled(self.record_tool_id)
+
+        if is_recording:
+            toolbar.SetToolBitmap(self.record_tool_id, self.stop_icon)
+            toolbar.SetToolShortHelp(self.record_tool_id, "Stop Recording")
+        else:
+            toolbar.SetToolBitmap(self.record_tool_id, self.record_icon)
+            toolbar.SetToolShortHelp(self.record_tool_id, "Start Recording")
+
+        toolbar.Realize()
