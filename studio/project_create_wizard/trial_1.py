@@ -1,5 +1,5 @@
 import wx
-from wizard_web_select_application_dialog import WizardWebSelectApplicationDialog
+from wizard_web_select_browser_page import WizardWebSelectApplicationDialog
 
 
 # Test harness
