@@ -19,6 +19,7 @@ Copyright 2025 SwatKat1977
 """
 import wx
 from wizard_step_indicator import WizardStepIndicator
+from project_create_wizard.wizard_basic_info_page import WizardBasicInfoPage
 
 
 class ProjectCreateWizardDialog(wx.Dialog):
@@ -112,8 +113,8 @@ class ProjectCreateWizardDialog(wx.Dialog):
 
     def create_pages(self):
         self.pages = [
-            BasicDataPage(self.page_container, self),
-            WebTestPage(self.page_container, self)
+            WizardBasicInfoPage(self.page_container, self),
+            #WebTestPage(self.page_container, self)
         ]
 
     def show_page(self, index: int):
@@ -129,9 +130,9 @@ class ProjectCreateWizardDialog(wx.Dialog):
         page = self.pages[index]
 
         # Update step indicator + header text
-        self.step_indicator.SetActive(index)
-        self.lbl_title.SetLabel(page.get_title())
-        self.lbl_subtitle.SetLabel(page.get_subtitle())
+        self.step_indicator.set_active(index)
+        self.lbl_title.SetLabel(page.title)
+        self.lbl_subtitle.SetLabel(page.subtitle)
 
         # Swap page in container
         self.page_sizer.Clear(delete_windows=False)
@@ -140,6 +141,9 @@ class ProjectCreateWizardDialog(wx.Dialog):
         page.Show()
         self.page_sizer.Add(page, 1, wx.EXPAND)
         self.page_container.Layout()
+
+        if index == 0:
+            self.btn_back.Hide()
 
         # Update buttons
         self.btn_back.Enable(index > 0)
