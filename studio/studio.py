@@ -17,3 +17,14 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
+import wx
+
+
+class WebweaverStudioApp(wx.App):
+    def OnInit(self):
+        MainFrame()
+        return True
+
+
+if __name__ == "__main__":
+    WebweaverStudioApp(False).MainLoop()
