@@ -20,92 +20,64 @@ Copyright 2025 SwatKat1977
 import wx
 
 
-class ProjectCreateWizardStepIndicator(wx.Panel):
+class WizardStepIndicator(wx.Panel):
     """
-    A visual step indicator used in the Project Creation wizard.
+    A horizontal step indicator widget for wizard dialogs.
 
-    This widget displays a horizontal sequence of steps—each represented
-    by a small colored circle and a text label—to indicate progress through
-    the wizard. The currently active step is highlighted with a green circle
-    and darker text, while inactive steps appear in grey.
+    This control displays a series of labeled steps such as:
+        ● Basic data     ○ Web application     ○ Configure     ○ Finish
+
+    The active step is shown with a filled circle (●), while inactive
+    steps use an open circle (○). Calling `set_active(index)` updates the
+    indicator and highlights the current step.
 
     Parameters
     ----------
     parent : wx.Window
-        The parent window or panel that this indicator belongs to.
+        The parent window.
+    steps : list[str]
+        A list of step names to display.
     active_index : int, optional
-        The zero-based index of the step that should be shown as active.
-        Defaults to 1.
-
-    Notes
-    -----
-    The indicator currently supports four predefined steps:
-    * "Basic data"
-    * "Web application"
-    * "Configure behavior"
-    * "Finish"
-
-    The circles are drawn manually using a paint event handler to allow for
-    custom coloring and sizing.
+        The index of the initially active step (default is 0).
     """
-    # pylint: disable=too-few-public-methods
 
-    def __init__(self, parent, active_index=1):
-        """
-        Initialise the step indicator widget.
-
-        This sets up the layout of step circles and labels, and highlights
-        the step specified by ``active_index``.
-
-        Args:
-            parent (wx.Window): The parent window or panel.
-            active_index (int, optional): Zero-based index of the step to
-                highlight as active. Defaults to 1.
-        """
+    def __init__(self, parent, steps, active_index=0):
         super().__init__(parent)
-        steps = ["Basic data", "Web application", "Configure behaviour", "Finish"]
+        self.steps = steps
+        self.labels = []
+        self._active_index = -1
+
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        for idx, label in enumerate(steps):
-            circle_colour = "#4CAF50" if idx == active_index else "#CCCCCC"
-            text_colour = "#000000" if idx == active_index else "#999999"
-
-            circle = wx.Panel(self, size=(12, 12))
-            circle.SetBackgroundColour(self.GetBackgroundColour())
-            circle.Bind(wx.EVT_PAINT,
-                        lambda evt, p=circle, c=circle_colour: self.draw_circle(
-                            evt, p, c))
-
-            sizer.Add(circle, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
-
-            text = wx.StaticText(self, label=label)
-            text.SetForegroundColour(text_colour)
-            sizer.Add(text, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 25)
+        for _ in enumerate(steps):
+            label = wx.StaticText(self, label="")
+            sizer.Add(label, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 20)
+            self.labels.append(label)
 
         self.SetSizer(sizer)
+        self.__set_active(active_index)
 
-    def draw_circle(self, _evt, panel, color):
+    def __set_active(self, index: int):
         """
-        Draws a filled circular indicator inside the given panel.
-
-        This method is bound to each circle panel's paint event and is
-        responsible for rendering the colored step indicator. The circle
-        automatically scales to fit the panel's dimensions.
+        Update the indicator to highlight the active step.
 
         Parameters
         ----------
-        _evt : wx.PaintEvent
-            The paint event triggered by wxPython.
-        panel : wx.Panel
-            The panel on which the circle should be drawn.
-        color : str or wx.Colour
-            The fill color of the circle, typically representing whether the
-            step is active or inactive.
+        index : int
+            The index of the step to mark as active.
+
+        Notes
+        -----
+        - The active step shows a filled circle (●).
+        - Inactive steps show an open circle (○).
+        - Colours are updated to visually distinguish the active step.
         """
-        device_context: wx.PaintDC = wx.PaintDC(panel)
-        device_context.SetBrush(wx.Brush(color))
-        device_context.SetPen(wx.Pen(color))
-        width, height = panel.GetSize()
-        device_context.DrawCircle(width // 2,
-                                  height // 2,
-                                  min(width, height) // 2)
+        self._active_index = index
+        for idx, label in enumerate(self.labels):
+            bullet = u"\u25CF" if idx == index else u"\u25CB"  # ● or ○
+
+            label.SetLabel(f"{bullet} {self.steps[idx]}")
+            if idx == index:
+                label.SetForegroundColour(wx.Colour(0, 0, 0))
+            else:
+                label.SetForegroundColour(wx.Colour(130, 130, 130))
