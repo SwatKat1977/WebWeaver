@@ -7,7 +7,7 @@ class StepIndicator(wx.Panel):
     def __init__(self, parent, active_index=0):
         super().__init__(parent)
 
-        steps = ["Basic data", "Select application", "Configure behavior", "Finish"]
+        steps = ["Basic data", "Select browser", "Configure behavior", "Finish"]
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
