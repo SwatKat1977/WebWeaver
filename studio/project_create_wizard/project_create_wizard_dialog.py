@@ -20,6 +20,7 @@ Copyright 2025 SwatKat1977
 import wx
 from wizard_step_indicator import WizardStepIndicator
 from project_create_wizard.wizard_basic_info_page import WizardBasicInfoPage
+from project_create_wizard.wizard_web_select_application_dialog import WizardWebSelectBrowserPage
 
 
 class ProjectCreateWizardDialog(wx.Dialog):
@@ -114,7 +115,7 @@ class ProjectCreateWizardDialog(wx.Dialog):
     def create_pages(self):
         self.pages = [
             WizardBasicInfoPage(self.page_container, self),
-            #WebTestPage(self.page_container, self)
+            WizardWebSelectBrowserPage(self.page_container, self)
         ]
 
     def show_page(self, index: int):
