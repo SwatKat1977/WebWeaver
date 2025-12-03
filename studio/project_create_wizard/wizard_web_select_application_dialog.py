@@ -23,7 +23,7 @@ from browser_icons import (bitmap_from_base64,
                            CHROME_BROWSER_ICON,
                            FIREFOX_BROWSER_ICON,
                            MICROSOFT_EDGE_BROWSER_ICON)
-from studio.project_create_wizard_step_indicator import ProjectCreateWizardStepIndicator
+from studio.wizard_step_indicator import ProjectCreateWizardStepIndicator
 
 
 class WizardWebSelectApplicationDialog(wx.Dialog):
