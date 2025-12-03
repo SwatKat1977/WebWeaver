@@ -29,47 +29,39 @@ from wizard_base_page import WizardBasePage
 
 class WizardWebSelectBrowserPage(WizardBasePage):
     """
-    A wizard step page for selecting the target web browser and URL.
+    Wizard page for selecting the target web browser and initial URL.
 
-    This page represents the second step of the project creation wizard,
-    allowing the user to choose which web browser to test their application on
-    and to specify the initial URL to load. The layout includes:
-    * an editable URL field
-    * a scrollable list of browser options (Firefox, Chrome, Chromium, Edge)
-    * a checkbox allowing automatic browser launch
+    This page represents the second step of the project creation wizard.
+    It allows the user to enter an initial URL and choose which web
+    browser the automation should run in. The layout includes:
 
-    The available browsers are displayed using toggleable bitmap buttons, and
-    only one browser may be selected at a time. An internal handler ensures
-    mutual exclusivity between the browser buttons.
+    * an editable URL text field
+    * a horizontally scrollable list of toggleable browser icon buttons
+      (Firefox, Chrome, Chromium, Edge)
+    * a checkbox for controlling automatic browser launch
+
+    Only one browser may be selected at a time. An internal event handler
+    ensures mutual exclusivity between browser toggle buttons.
 
     Parameters
     ----------
     parent : wx.Window
-        The parent window or panel that owns this dialog.
+        The parent window or container panel.
+    wizard : WizardDialog
+        The wizard controller that owns this page.
 
     Attributes
     ----------
     url : wx.TextCtrl
-        The text box containing the URL used for testing (defaults to
-        ``DEFAULT_URL``).
-    browser_buttons : list[wx.BitmapToggleButton]
-        A list of toggle buttons representing supported browsers.
+        Text control containing the URL to be tested. Defaults to
+        ``DEFAULT_URL``.
+    browser_buttons : list[tuple[str, wx.BitmapToggleButton]]
+        A list of (browser name, toggle button) pairs.
     chk_launch : wx.CheckBox
-        Checkbox determining whether the selected browser should be launched
+        Checkbox indicating whether the selected browser should be launched
         automatically.
-    DEFAULT_URL : str
-        Default value shown in the URL text field.
-    SUB_TEXT_FOREGROUND_COLOUR : str
-        Colour used for descriptive subtext.
-    HINT_FOREGROUND_COLOUR : str
-        Colour used for hint text.
-    LABEL_FOREGROUND_COLOUR : str
-        Colour used for browser labels.
     """
-    DEFAULT_URL: str = "https://www.example.com"
-    SUB_TEXT_FOREGROUND_COLOUR: str = "#777777"
-    HINT_FOREGROUND_COLOUR: str = "#777777"
-    LABEL_FOREGROUND_COLOUR: str = "#555555"
+    DEFAULT_URL = "https://www.example.com"
 
     def __init__(self, parent, wizard):
         super().__init__(
@@ -128,7 +120,7 @@ class WizardWebSelectBrowserPage(WizardBasePage):
             col.Add(label, 0, wx.ALIGN_CENTER)
             hsizer.Add(col, 0, wx.RIGHT, 20)
 
-            btn.Bind(wx.EVT_TOGGLEBUTTON, self.on_browser_toggled)
+            btn.Bind(wx.EVT_TOGGLEBUTTON, self._on_browser_toggled)
             self.browser_buttons.append((name, btn))
 
         scroll.SetSizer(hsizer)
@@ -143,19 +135,24 @@ class WizardWebSelectBrowserPage(WizardBasePage):
 
         self.SetSizer(main)
 
-    def on_browser_toggled(self, event):
-        """
-        Ensure that only one browser toggle button can be active at a time.
-
-        When a browser button is clicked, this handler deactivates all other
-        buttons in ``browser_buttons`` to enforce exclusive selection.
-        """
-        clicked = event.GetEventObject()
-        for name, btn in self.browser_buttons:
-            if btn is not clicked:
-                btn.SetValue(False)
-
     def validate(self) -> bool:
+        """
+        Validate the user's input before allowing the wizard to advance.
+
+        This method checks that:
+        * the URL field is not empty
+        * a browser has been selected from the available toggle buttons
+
+        If validation succeeds, the selected values are written to the
+        wizard's shared data dictionary. If validation fails, a warning
+        message is shown and the wizard remains on the current page.
+
+        Returns
+        -------
+        bool
+            True if the page is valid and the wizard may proceed; False if
+            validation fails and navigation should be blocked.
+        """
         url = self.url.GetValue().strip()
         if not url:
             wx.MessageBox("Please enter a URL.", "Missing information", wx.ICON_WARNING)
@@ -175,3 +172,15 @@ class WizardWebSelectBrowserPage(WizardBasePage):
         self.wizard.shared_data["browser"] = selected
         self.wizard.shared_data["launch_auto"] = self.chk_launch.GetValue()
         return True
+
+    def _on_browser_toggled(self, event):
+        """
+        Ensure that only one browser toggle button can be active at a time.
+
+        When a browser button is clicked, this handler deactivates all other
+        buttons in ``browser_buttons`` to enforce exclusive selection.
+        """
+        clicked = event.GetEventObject()
+        for name, btn in self.browser_buttons:
+            if btn is not clicked:
+                btn.SetValue(False)
