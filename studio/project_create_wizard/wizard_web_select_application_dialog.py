@@ -23,7 +23,7 @@ from browser_icons import (bitmap_from_base64,
                            CHROME_BROWSER_ICON,
                            FIREFOX_BROWSER_ICON,
                            MICROSOFT_EDGE_BROWSER_ICON)
-from studio.wizard_step_indicator import ProjectCreateWizardStepIndicator
+from studio.wizard_step_indicator import WizardStepIndicator
 
 
 class WizardWebSelectApplicationDialog(wx.Dialog):
@@ -85,7 +85,7 @@ class WizardWebSelectApplicationDialog(wx.Dialog):
         main = wx.BoxSizer(wx.VERTICAL)
 
         # --- Step Header ---
-        main.Add(ProjectCreateWizardStepIndicator(self, active_index=1),
+        main.Add(WizardStepIndicator(self, active_index=1),
                  0, wx.EXPAND | wx.ALL, 10)
 
         # --- Header text ---
