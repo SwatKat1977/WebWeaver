@@ -12,6 +12,97 @@ class StudioMainFrame(wx.Frame):
         # 1. TOOLBAR (top, dockable)
         self.__create_toolbar()
 
+
+
+
+        # 2. Projects panel (left top)
+
+        project_panel = wx.Panel(self)
+        project_sizer = wx.BoxSizer(wx.VERTICAL)
+        project_sizer.Add(wx.StaticText(project_panel, label="Projects"), 0, wx.ALL, 5)
+
+        project_tree = wx.TreeCtrl(project_panel, style=wx.TR_HAS_BUTTONS)
+        project_sizer.Add(project_tree, 1, wx.EXPAND | wx.ALL, 5)
+
+        # --- IMAGE LIST ---
+        image_list = wx.ImageList(16, 16)
+        folder_icon = image_list.Add(wx.ArtProvider.GetBitmap(wx.ART_FOLDER, wx.ART_OTHER, (16, 16)))
+        file_icon = image_list.Add(wx.ArtProvider.GetBitmap(wx.ART_NORMAL_FILE, wx.ART_OTHER, (16, 16)))
+        project_tree.AssignImageList(image_list)
+
+        # --- POPULATE THE TREE ---
+        root = project_tree.AddRoot("Solution WebWeaver", image=folder_icon)
+        project_tree.AppendItem(root, "Solution Items", image=folder_icon)
+        project_tree.AppendItem(root, "AndroidWebLibrary", image=folder_icon)
+        crossplatform = project_tree.AppendItem(root, "CrossPlatform", image=folder_icon)
+
+        project_tree.AppendItem(crossplatform, "References", image=folder_icon)
+        project_tree.AppendItem(crossplatform, "Reports", image=folder_icon)
+        project_tree.AppendItem(crossplatform, "Instructions", image=folder_icon)
+
+        project_tree.AppendItem(crossplatform, "app.config", image=file_icon)
+        project_tree.AppendItem(crossplatform, "Sample.wwA", image=file_icon)
+        project_tree.AppendItem(crossplatform, "Sample.wwB", image=file_icon)
+        project_tree.AppendItem(crossplatform, "Repository.repo", image=file_icon)
+
+        project_tree.ExpandAll()
+
+        project_panel.SetSizer(project_sizer)
+
+        self._mgr.AddPane(
+            project_panel,
+            aui.AuiPaneInfo()
+            .Left()                 # dock on the left side
+            .Caption("Projects")
+            .CloseButton(True)
+            .MaximizeButton(True)
+            .MinimizeButton(True)
+            .BestSize(300, 300)
+        )
+
+        # -------------------------
+        # Modules panel (left bottom)
+        # -------------------------
+        modules_panel = wx.Panel(self)
+        modules_sizer = wx.BoxSizer(wx.VERTICAL)
+        modules_sizer.Add(wx.StaticText(modules_panel, label="Modules"), 0, wx.ALL, 5)
+        modules_tree = wx.TreeCtrl(modules_panel, style=wx.TR_HAS_BUTTONS)
+        modules_sizer.Add(modules_tree, 1, wx.EXPAND | wx.ALL, 5)
+        modules_panel.SetSizer(modules_sizer)
+
+        self._mgr.AddPane(
+            modules_panel,
+            aui.AuiPaneInfo()
+            .Left()
+            .Caption("Modules")
+            .CloseButton(True)
+            .MaximizeButton(True)
+            .MinimizeButton(True)
+            .BestSize(300, 300)
+            .Position(1)  # below the Projects panel
+        )
+
+        # -------------------------
+        # Main workspace (center)
+        # -------------------------
+        main_panel = wx.Panel(self)
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(wx.StaticText(main_panel, label="Main Project Area"), 0, wx.ALL, 5)
+
+        text_box = wx.TextCtrl(main_panel, style=wx.TE_MULTILINE)
+        main_sizer.Add(text_box, 1, wx.EXPAND | wx.ALL, 5)
+        main_panel.SetSizer(main_sizer)
+
+        self._mgr.AddPane(
+            main_panel,
+            aui.AuiPaneInfo()
+            .CenterPane()          # main central area
+            .Caption("Workspace")
+        )
+
+
+
+
         # Apply layout
         self._mgr.Update()
         self.Centre()
