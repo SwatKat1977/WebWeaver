@@ -63,23 +63,24 @@ class ProjectCreateWizardStepIndicator(wx.Panel):
                 highlight as active. Defaults to 1.
         """
         super().__init__(parent)
-        steps = ["Basic data", "Web application", "Configure behavior", "Finish"]
+        steps = ["Basic data", "Web application", "Configure behaviour", "Finish"]
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        for i, label in enumerate(steps):
-            circle_color = "#4CAF50" if i == active_index else "#CCCCCC"
-            text_color = "#000000" if i == active_index else "#999999"
+        for idx, label in enumerate(steps):
+            circle_colour = "#4CAF50" if idx == active_index else "#CCCCCC"
+            text_colour = "#000000" if idx == active_index else "#999999"
 
             circle = wx.Panel(self, size=(12, 12))
             circle.SetBackgroundColour(self.GetBackgroundColour())
             circle.Bind(wx.EVT_PAINT,
-                        lambda evt, p=circle, c=circle_color: self.draw_circle(evt, p, c))
+                        lambda evt, p=circle, c=circle_colour: self.draw_circle(
+                            evt, p, c))
 
             sizer.Add(circle, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
 
-            t = wx.StaticText(self, label=label)
-            t.SetForegroundColour(text_color)
-            sizer.Add(t, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 25)
+            text = wx.StaticText(self, label=label)
+            text.SetForegroundColour(text_colour)
+            sizer.Add(text, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 25)
 
         self.SetSizer(sizer)
 
