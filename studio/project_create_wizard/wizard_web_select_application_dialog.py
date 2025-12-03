@@ -18,28 +18,25 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
 import wx
-from browser_icons import (bitmap_from_base64,
-                           CHROMIUM_BROWSER_ICON,
-                           CHROME_BROWSER_ICON,
-                           FIREFOX_BROWSER_ICON,
-                           MICROSOFT_EDGE_BROWSER_ICON)
-from studio.wizard_step_indicator import WizardStepIndicator
+from project_create_wizard.browser_icons import (
+    bitmap_from_base64,
+    CHROMIUM_BROWSER_ICON,
+    CHROME_BROWSER_ICON,
+    FIREFOX_BROWSER_ICON,
+    MICROSOFT_EDGE_BROWSER_ICON)
+from wizard_base_page import WizardBasePage
 
 
-class WizardWebSelectApplicationDialog(wx.Dialog):
+class WizardWebSelectBrowserPage(WizardBasePage):
     """
-    A wizard step dialog for selecting the target web browser and URL.
+    A wizard step page for selecting the target web browser and URL.
 
-    This dialog represents the second step of the project creation wizard,
+    This page represents the second step of the project creation wizard,
     allowing the user to choose which web browser to test their application on
     and to specify the initial URL to load. The layout includes:
-
-    * a visual step indicator
-    * a header with title and description
     * an editable URL field
     * a scrollable list of browser options (Firefox, Chrome, Chromium, Edge)
     * a checkbox allowing automatic browser launch
-    * Back / Continue buttons to control wizard navigation
 
     The available browsers are displayed using toggleable bitmap buttons, and
     only one browser may be selected at a time. An internal handler ensures
@@ -69,69 +66,43 @@ class WizardWebSelectApplicationDialog(wx.Dialog):
     LABEL_FOREGROUND_COLOUR : str
         Colour used for browser labels.
     """
-
-    DEFAULT_URL: str = "https://webweaverautomation.com/"
+    DEFAULT_URL: str = "https://www.example.com"
     SUB_TEXT_FOREGROUND_COLOUR: str = "#777777"
     HINT_FOREGROUND_COLOUR: str = "#777777"
     LABEL_FOREGROUND_COLOUR: str = "#555555"
 
-    def __init__(self, parent):
+    def __init__(self, parent, wizard):
         super().__init__(
             parent,
-            title="Create your new solution | Select web browser",
-            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER
+            wizard,
+            title="Set up your web test",
+            subtitle="Which web browser do you want to test on?"
         )
 
         main = wx.BoxSizer(wx.VERTICAL)
 
-        # --- Step Header ---
-        main.Add(WizardStepIndicator(self, active_index=1),
-                 0, wx.EXPAND | wx.ALL, 10)
-
-        # --- Header text ---
-        header = wx.BoxSizer(wx.HORIZONTAL)
-        icon = wx.ArtProvider.GetBitmap(wx.ART_TIP, wx.ART_OTHER, (48, 48))
-        header.Add(wx.StaticBitmap(self, bitmap=icon), 0, wx.ALL, 10)
-
-        text = wx.BoxSizer(wx.VERTICAL)
-        title = wx.StaticText(self, label="Set up your web browser")
-        title.SetFont(wx.Font(15, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        sub = wx.StaticText(
-            self,
-            label="Which web browser do you want to test on?"
-        )
-        sub.SetForegroundColour(self.SUB_TEXT_FOREGROUND_COLOUR)
-
-        text.Add(title)
-        text.Add(sub, 0, wx.TOP, 4)
-        header.Add(text, 1, wx.ALIGN_CENTER_VERTICAL)
-
-        main.Add(header, 0, wx.LEFT | wx.RIGHT, 10)
-
-        # --- URL area ---
-        url_section = wx.BoxSizer(wx.VERTICAL)
-        url_section.Add(wx.StaticText(self, label="URL"), 0, wx.BOTTOM, 4)
+        # URL field
+        url_sizer = wx.BoxSizer(wx.VERTICAL)
+        url_sizer.Add(wx.StaticText(self, label="URL"), 0, wx.BOTTOM, 4)
         self.url = wx.TextCtrl(self, value=self.DEFAULT_URL)
-        url_section.Add(self.url, 0, wx.EXPAND)
-        main.Add(url_section, 0, wx.EXPAND | wx.ALL, 15)
+        url_sizer.Add(self.url, 0, wx.EXPAND)
+        main.Add(url_sizer, 0, wx.EXPAND | wx.ALL, 10)
 
-        # --- Browser label ---
+        # Browser selection label
         lbl_browser = wx.StaticText(self, label="Select browser")
-        lbl_browser.SetFont(wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        main.Add(lbl_browser, 0, wx.LEFT | wx.RIGHT, 15)
+        lbl_browser.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
+        main.Add(lbl_browser, 0, wx.LEFT | wx.RIGHT, 10)
 
-        hint = wx.StaticText(self,
-                             label="The selected browser must be installed on this system.")
-        hint.SetForegroundColour(self.HINT_FOREGROUND_COLOUR)
-        main.Add(hint, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 15)
+        hint = wx.StaticText(self, label="The selected browser must be installed on this system.")
+        hint.SetForegroundColour(wx.Colour(120, 120, 120))
+        main.Add(hint, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
-        # ---------------------------------------------------------------
-        #   SCROLLABLE BROWSER LIST (just like Ranorex)
-        # ---------------------------------------------------------------
-        scroll = wx.ScrolledWindow(self, style=wx.HSCROLL | wx.VSCROLL)
-        scroll.SetScrollRate(10, 10)
+        # Scrollable browser icons (simplified, using ArtProvider)
+        scroll = wx.ScrolledWindow(self, style=wx.HSCROLL | wx.BORDER_NONE)
+        scroll.SetScrollRate(10, 0)
+        scroll.SetMinSize((-1, 90))
 
-        browser_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        hsizer = wx.BoxSizer(wx.HORIZONTAL)
 
         chromium_bmp = bitmap_from_base64(CHROMIUM_BROWSER_ICON)
         chrome_bmp = bitmap_from_base64(CHROME_BROWSER_ICON)
@@ -147,55 +118,32 @@ class WizardWebSelectApplicationDialog(wx.Dialog):
         ]
 
         self.browser_buttons = []
-
-        for name, bitmap_entry in browsers:
-            column = wx.BoxSizer(wx.VERTICAL)
-
-            btn = wx.BitmapToggleButton(
-                scroll,
-                -1,
-                bitmap_entry
-            )
-
+        for name, bmp in browsers:
+            col = wx.BoxSizer(wx.VERTICAL)
+            btn = wx.BitmapToggleButton(scroll, -1, bmp)
             label = wx.StaticText(scroll, label=name)
-            label.SetForegroundColour(self.LABEL_FOREGROUND_COLOUR)
+            label.SetForegroundColour(wx.Colour(80, 80, 80))
 
-            column.Add(btn, 0, wx.ALIGN_CENTER | wx.BOTTOM, 4)
-            column.Add(label, 0, wx.ALIGN_CENTER)
+            col.Add(btn, 0, wx.ALIGN_CENTER | wx.BOTTOM, 4)
+            col.Add(label, 0, wx.ALIGN_CENTER)
+            hsizer.Add(col, 0, wx.RIGHT, 20)
 
-            browser_sizer.Add(column, 0, wx.RIGHT, 25)
+            btn.Bind(wx.EVT_TOGGLEBUTTON, self.on_browser_toggled)
+            self.browser_buttons.append((name, btn))
 
-            btn.Bind(wx.EVT_TOGGLEBUTTON, self.__on_browser_toggle)
-            self.browser_buttons.append(btn)
+        scroll.SetSizer(hsizer)
+        main.Add(scroll, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
-        scroll.SetSizer(browser_sizer)
-        scroll.SetMinSize((-1, 85))  # good height for icon + label
-        main.Add(scroll, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 15)
-
-        # --- Checkbox ---
+        # Checkbox
         self.chk_launch = wx.CheckBox(
             self,
-            label="Launch browser automatically. Uncheck if browser is already running."
+            label="Launch browser automatically. Uncheck if browser is already running.",
         )
-        main.Add(self.chk_launch, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 15)
+        main.Add(self.chk_launch, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
-        # --- Buttons ---
-        buttons = wx.BoxSizer(wx.HORIZONTAL)
-        buttons.AddStretchSpacer()
-        back = wx.Button(self, label="Back")
-        cont = wx.Button(self, label="Continue")
-        back.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(wx.ID_CANCEL))
-        cont.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(wx.ID_OK))
+        self.SetSizer(main)
 
-        buttons.Add(back, 0, wx.RIGHT, 10)
-        buttons.Add(cont)
-        main.Add(buttons, 0, wx.EXPAND | wx.ALL, 15)
-
-        self.SetSizerAndFit(main)
-        self.Centre()
-
-    # --- Make selection exclusive ---
-    def __on_browser_toggle(self, event):
+    def on_browser_toggled(self, event):
         """
         Ensure that only one browser toggle button can be active at a time.
 
@@ -203,6 +151,27 @@ class WizardWebSelectApplicationDialog(wx.Dialog):
         buttons in ``browser_buttons`` to enforce exclusive selection.
         """
         clicked = event.GetEventObject()
-        for b in self.browser_buttons:
-            if b != clicked:
-                b.SetValue(False)
+        for name, btn in self.browser_buttons:
+            if btn is not clicked:
+                btn.SetValue(False)
+
+    def validate(self) -> bool:
+        url = self.url.GetValue().strip()
+        if not url:
+            wx.MessageBox("Please enter a URL.", "Missing information", wx.ICON_WARNING)
+            return False
+
+        selected = None
+        for name, btn in self.browser_buttons:
+            if btn.GetValue():
+                selected = name
+                break
+
+        if not selected:
+            wx.MessageBox("Please select a browser.", "Missing information", wx.ICON_WARNING)
+            return False
+
+        self.wizard.shared_data["url"] = url
+        self.wizard.shared_data["browser"] = selected
+        self.wizard.shared_data["launch_auto"] = self.chk_launch.GetValue()
+        return True

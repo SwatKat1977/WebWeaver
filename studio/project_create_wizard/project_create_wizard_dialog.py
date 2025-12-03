@@ -140,17 +140,30 @@ class ProjectCreateWizardDialog(wx.Dialog):
             p.Hide()
         page.Show()
         self.page_sizer.Add(page, 1, wx.EXPAND)
+
+        # Re-layout container and dialog
         self.page_container.Layout()
+        self.Layout()
 
-        if index == 0:
-            self.btn_back.Hide()
+        # Calculate the size needed for the current page + chrome
+        needed = self.GetSizer().CalcMin()
+        current = self.GetSize()
 
-        # Update buttons
+        new_width = max(current.width, needed.width)
+        new_height = max(current.height, needed.height)
+
+        self.SetSize((new_width, new_height))
+        self.CentreOnScreen()
+
+        # Update next/finish button
         self.btn_back.Enable(index > 0)
         if index == len(self.pages) - 1:
             self.btn_next.SetLabel("Finish")
         else:
             self.btn_next.SetLabel("Next")
+
+        if index == 0:
+            self.btn_back.Hide()
 
         page.on_enter()
 
