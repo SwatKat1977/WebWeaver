@@ -63,7 +63,6 @@ with open("Microsoft_Edge.png", "rb") as f:
     edge_img = base64.b64encode(f.read()).decode("ascii")
 
 with open("browser_icons.py", "w", encoding="utf-8") as output_py:
-    '''
     output_py.write(chrome_header)
     output_py.write(chrome_variable)
     output_py.write("\n".join(textwrap.wrap(chrome_img, width=80)))
@@ -78,7 +77,6 @@ with open("browser_icons.py", "w", encoding="utf-8") as output_py:
     output_py.write(ms_edge_variable)
     output_py.write("\n".join(textwrap.wrap(edge_img, width=80)))
     output_py.write(variable_close)
-    '''
 
     output_py.write(chromium_header)
     output_py.write(chromium_variable)
