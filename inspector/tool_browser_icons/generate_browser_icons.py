@@ -27,6 +27,13 @@ chrome_header: str = """
 """
 chrome_variable = 'CHROME_BROWSER_ICON = b"""\n'
 
+chromium_header: str = """
+# -----------------------
+# Chromium Browser Icon (Base64)
+# -----------------------
+"""
+chromium_variable = 'CHROMIUM_BROWSER_ICON = b"""\n'
+
 ms_edge_header: str = """
 # -----------------------
 # Microsoft Edge Browser Icon (Base64)
@@ -46,6 +53,9 @@ variable_close = '\n"""\n\n'
 with open("Google_Chrome.png", "rb") as f:
     chrome_img = base64.b64encode(f.read()).decode("ascii")
 
+with open("Chromium_Logo.png", "rb") as f:
+    chromium_img = base64.b64encode(f.read()).decode("ascii")
+
 with open("Firefox_logo.png", "rb") as f:
     firefox_img = base64.b64encode(f.read()).decode("ascii")
 
@@ -53,6 +63,7 @@ with open("Microsoft_Edge.png", "rb") as f:
     edge_img = base64.b64encode(f.read()).decode("ascii")
 
 with open("browser_icons.py", "w", encoding="utf-8") as output_py:
+    '''
     output_py.write(chrome_header)
     output_py.write(chrome_variable)
     output_py.write("\n".join(textwrap.wrap(chrome_img, width=80)))
@@ -66,4 +77,10 @@ with open("browser_icons.py", "w", encoding="utf-8") as output_py:
     output_py.write(ms_edge_header)
     output_py.write(ms_edge_variable)
     output_py.write("\n".join(textwrap.wrap(edge_img, width=80)))
+    output_py.write(variable_close)
+    '''
+
+    output_py.write(chromium_header)
+    output_py.write(chromium_variable)
+    output_py.write("\n".join(textwrap.wrap(chromium_img, width=80)))
     output_py.write(variable_close)
