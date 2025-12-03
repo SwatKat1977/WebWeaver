@@ -1,5 +1,5 @@
 import wx
-from modal2 import WizardWebSelectApplicationDialog
+from wizard_web_select_application_dialog import WizardWebSelectApplicationDialog
 
 
 # Test harness
