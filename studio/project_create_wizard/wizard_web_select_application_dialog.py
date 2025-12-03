@@ -26,8 +26,50 @@ from browser_icons import (bitmap_from_base64,
 from project_create_wizard_step_indicator import ProjectCreateWizardStepIndicator
 
 
-
 class WizardWebSelectApplicationDialog(wx.Dialog):
+    """
+    A wizard step dialog for selecting the target web browser and URL.
+
+    This dialog represents the second step of the project creation wizard,
+    allowing the user to choose which web browser to test their application on
+    and to specify the initial URL to load. The layout includes:
+
+    * a visual step indicator
+    * a header with title and description
+    * an editable URL field
+    * a scrollable list of browser options (Firefox, Chrome, Chromium, Edge)
+    * a checkbox allowing automatic browser launch
+    * Back / Continue buttons to control wizard navigation
+
+    The available browsers are displayed using toggleable bitmap buttons, and
+    only one browser may be selected at a time. An internal handler ensures
+    mutual exclusivity between the browser buttons.
+
+    Parameters
+    ----------
+    parent : wx.Window
+        The parent window or panel that owns this dialog.
+
+    Attributes
+    ----------
+    url : wx.TextCtrl
+        The text box containing the URL used for testing (defaults to
+        ``DEFAULT_URL``).
+    browser_buttons : list[wx.BitmapToggleButton]
+        A list of toggle buttons representing supported browsers.
+    chk_launch : wx.CheckBox
+        Checkbox determining whether the selected browser should be launched
+        automatically.
+    DEFAULT_URL : str
+        Default value shown in the URL text field.
+    SUB_TEXT_FOREGROUND_COLOUR : str
+        Colour used for descriptive subtext.
+    HINT_FOREGROUND_COLOUR : str
+        Colour used for hint text.
+    LABEL_FOREGROUND_COLOUR : str
+        Colour used for browser labels.
+    """
+
     DEFAULT_URL: str = "https://webweaverautomation.com/"
     SUB_TEXT_FOREGROUND_COLOUR: str = "#777777"
     HINT_FOREGROUND_COLOUR: str = "#777777"
@@ -123,7 +165,7 @@ class WizardWebSelectApplicationDialog(wx.Dialog):
 
             browser_sizer.Add(column, 0, wx.RIGHT, 25)
 
-            btn.Bind(wx.EVT_TOGGLEBUTTON, self.on_browser_toggle)
+            btn.Bind(wx.EVT_TOGGLEBUTTON, self.__on_browser_toggle)
             self.browser_buttons.append(btn)
 
         scroll.SetSizer(browser_sizer)
@@ -153,7 +195,13 @@ class WizardWebSelectApplicationDialog(wx.Dialog):
         self.Centre()
 
     # --- Make selection exclusive ---
-    def on_browser_toggle(self, event):
+    def __on_browser_toggle(self, event):
+        """
+        Ensure that only one browser toggle button can be active at a time.
+
+        When a browser button is clicked, this handler deactivates all other
+        buttons in ``browser_buttons`` to enforce exclusive selection.
+        """
         clicked = event.GetEventObject()
         for b in self.browser_buttons:
             if b != clicked:
