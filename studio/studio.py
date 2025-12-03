@@ -18,11 +18,12 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
 import wx
+from studio_main_frame import StudioMainFrame
 
 
 class WebweaverStudioApp(wx.App):
     def OnInit(self):
-        MainFrame()
+        StudioMainFrame()
         return True
 
 
