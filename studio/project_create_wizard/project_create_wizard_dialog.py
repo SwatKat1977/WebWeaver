@@ -26,14 +26,15 @@ class ProjectCreateWizardDialog(wx.Dialog):
         super().__init__(
             parent,
             title="Create your new solution",
-            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
+            style=wx.DEFAULT_DIALOG_STYLE
         )
 
-        self.shared_data = {}  # place to store data between pages
+        # Place to store data between pages
+        self.shared_data = {}
 
         self.steps = [
-            "Basic data",
-            "Web application",
+            "Basic solution info",
+            "Browser selection",
             "Configure behaviour",
             "Finish",
         ]
@@ -112,8 +113,7 @@ class ProjectCreateWizardDialog(wx.Dialog):
     def create_pages(self):
         self.pages = [
             BasicDataPage(self.page_container, self),
-            WebTestPage(self.page_container, self),
-            # You can add more pages here later...
+            WebTestPage(self.page_container, self)
         ]
 
     def show_page(self, index: int):
