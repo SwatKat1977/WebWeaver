@@ -106,7 +106,7 @@ class WizardBasicInfoPage(wx.Dialog):
         self.SetSizerAndFit(main)
         self.CentreOnParent()
 
-    def on_browse(self, _evt):
+    def __on_browse(self, _evt):
         with wx.DirDialog(self, "Choose solution location") as dlg:
             if dlg.ShowModal() == wx.ID_OK:
                 self.txt_location.SetValue(dlg.GetPath())
@@ -124,14 +124,14 @@ class WizardBasicInfoPage(wx.Dialog):
                           "Validation error", wx.ICON_WARNING)
             return False
 
+        self.data["solution_name"] = self.txt_solution_name.GetValue().strip()
+        self.data["solution_dir"] = self.txt_solution_dir.GetValue().strip()
+        self.data["create_solution_dir"] = self.chk_dir.GetValue()
+
         return True
 
     def __on_next(self, _event):
         if not self.__validate():
             return
-
-        self.data["solution_name"] = self.txt_solution_name.GetValue().strip()
-        self.data["solution_dir"] = self.txt_solution_dir.GetValue().strip()
-        self.data["create_solution_dir"] = self.chk_dir.GetValue()
 
         self.EndModal(wx.ID_OK)

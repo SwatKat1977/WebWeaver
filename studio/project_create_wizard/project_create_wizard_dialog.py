@@ -42,32 +42,30 @@ class ProjectCreateWizardDialog(wx.Dialog):
         ]
 
         self.current_index = 0
-        self.pages = []
+        self.pages: list[WizardBasePage] = []
 
         main = wx.BoxSizer(wx.VERTICAL)
 
         # Step indicator
-        self.step_indicator = WizardStepIndicator(self,
-                                                  self.steps,
-                                                  active_index=0)
+        self.step_indicator = WizardStepIndicator(self, self.steps, active_index=0)
         main.Add(self.step_indicator, 0, wx.EXPAND | wx.ALL, 10)
 
         # Header (icon + title + subtitle)
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.header_icon = wx.StaticBitmap(
             self,
-            bitmap=wx.ArtProvider.GetBitmap(wx.ART_TIP,
-                                            wx.ART_OTHER,
-                                            (48, 48)),
+            bitmap=wx.ArtProvider.GetBitmap(wx.ART_TIP, wx.ART_OTHER, (48, 48)),
         )
         header_sizer.Add(self.header_icon, 0, wx.ALL, 10)
 
         title_box = wx.BoxSizer(wx.VERTICAL)
         self.lbl_title = wx.StaticText(self, label="")
-        self.lbl_title.SetFont(wx.Font(15,
-                                       wx.FONTFAMILY_DEFAULT,
-                                       wx.FONTSTYLE_NORMAL,
-                                       wx.FONTWEIGHT_BOLD))
+        self.lbl_title.SetFont(wx.Font(
+            15,
+            wx.FONTFAMILY_DEFAULT,
+            wx.FONTSTYLE_NORMAL,
+            wx.FONTWEIGHT_BOLD,
+        ))
 
         self.lbl_subtitle = wx.StaticText(self, label="")
         self.lbl_subtitle.SetForegroundColour(wx.Colour(100, 100, 100))
@@ -82,7 +80,7 @@ class ProjectCreateWizardDialog(wx.Dialog):
         self.page_container = wx.Panel(self)
         self.page_sizer = wx.BoxSizer(wx.VERTICAL)
         self.page_container.SetSizer(self.page_sizer)
-        main.Add(self.page_container, 1, wx.EXPAND | wx.ALL, 10)
+        main.Add(self.page_container, 0, wx.EXPAND | wx.ALL, 10)
 
         # Button bar
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -104,12 +102,45 @@ class ProjectCreateWizardDialog(wx.Dialog):
 
         self.SetSizer(main)
 
-        # Create pages
-        self.create_pages()
-        self.show_page(0)
+        # ---- Create all pages, compute max size, then show first page ----
+        self.pages = [
+            WizardBasicInfoPage(self.page_container, self),
+            WizardWebSelectBrowserPage(self.page_container, self),
+        ]
 
-        self.SetSizerAndFit(main)
+        # Compute max required size for the page container
+        max_w = 0
+        max_h = 0
+        for page in self.pages:
+            page.Layout()
+            sizer = page.GetSizer()
+            if sizer:
+                size = sizer.CalcMin()
+            else:
+                size = page.GetEffectiveMinSize()
+            max_w = max(max_w, size.width)
+            max_h = max(max_h, size.height)
+
+        # Fix the page_container so it’s always big enough for any page
+        self.page_container.SetMinSize((max_w, max_h))
+
+        # Show page 0 in the container
+        for p in self.pages:
+            p.Hide()
+        self.page_sizer.Add(self.pages[0], 1, wx.EXPAND)
+        self.pages[0].Show()
+
+        # Set header text for page 0
+        self.step_indicator.set_active(0)
+        self.lbl_title.SetLabel(self.pages[0].title)
+        self.lbl_subtitle.SetLabel(self.pages[0].subtitle)
+
+        # Back button hidden on first page
+        self.btn_back.Hide()
+
+        # Now size the whole dialog once, based on the largest page
         self.Layout()
+        self.Fit()
         self.CentreOnScreen()
 
     def create_pages(self):
@@ -122,10 +153,8 @@ class ProjectCreateWizardDialog(wx.Dialog):
         if index < 0 or index >= len(self.pages):
             return
 
-        # Leave old page
         if 0 <= self.current_index < len(self.pages):
-            old_page = self.pages[self.current_index]
-            old_page.on_leave()
+            self.pages[self.current_index].on_leave()
 
         self.current_index = index
         page = self.pages[index]
@@ -135,36 +164,22 @@ class ProjectCreateWizardDialog(wx.Dialog):
         self.lbl_title.SetLabel(page.title)
         self.lbl_subtitle.SetLabel(page.subtitle)
 
-        # Swap page in container
+        # Swap page in container (size is already guaranteed big enough)
         self.page_sizer.Clear(delete_windows=False)
         for p in self.pages:
             p.Hide()
         page.Show()
         self.page_sizer.Add(page, 1, wx.EXPAND)
 
-        # Re-layout container and dialog
         self.page_container.Layout()
         self.Layout()
 
-        # Calculate the size needed for the current page + chrome
-        needed = self.GetSizer().CalcMin()
-        current = self.GetSize()
-
-        new_width = max(current.width, needed.width)
-        new_height = max(current.height, needed.height)
-
-        self.SetSize((new_width, new_height))
-        self.CentreOnScreen()
-
-        # Update next/finish button
-        self.btn_back.Enable(index > 0)
+        # Update next/back labels & visibility
+        self.btn_back.Show(index > 0)
         if index == len(self.pages) - 1:
             self.btn_next.SetLabel("Finish")
         else:
             self.btn_next.SetLabel("Next")
-
-        if index == 0:
-            self.btn_back.Hide()
 
         page.on_enter()
 
