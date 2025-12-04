@@ -1,6 +1,27 @@
+"""
+This source file is part of Web Weaver
+For the latest info, see https://github.com/SwatKat1977/WebWeaver
+
+Copyright 2025 SwatKat1977
+
+    This program is free software : you can redistribute it and /or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.If not, see < https://www.gnu.org/licenses/>.
+"""
 import wx
 import wx.aui as aui
-from project_create_wizard.project_create_wizard_dialog import ProjectCreateWizardDialog
+from project_create_wizard.wizard_ids import ID_BACK_BUTTON
+from project_create_wizard.wizard_basic_info_page import WizardBasicInfoPage
+from project_create_wizard.wizard_web_select_browser_page import WizardWebSelectBrowserPage
 
 
 class StudioMainFrame(wx.Frame):
@@ -13,11 +34,7 @@ class StudioMainFrame(wx.Frame):
         # 1. TOOLBAR (top, dockable)
         self.__create_toolbar()
 
-
-
-
         # 2. Projects panel (left top)
-
         project_panel = wx.Panel(self)
         project_sizer = wx.BoxSizer(wx.VERTICAL)
         project_sizer.Add(wx.StaticText(project_panel, label="Projects"), 0, wx.ALL, 5)
@@ -58,8 +75,7 @@ class StudioMainFrame(wx.Frame):
             .CloseButton(True)
             .MaximizeButton(True)
             .MinimizeButton(True)
-            .BestSize(300, 300)
-        )
+            .BestSize(300, 300))
 
         # -------------------------
         # Modules panel (left bottom)
@@ -71,6 +87,7 @@ class StudioMainFrame(wx.Frame):
         modules_sizer.Add(modules_tree, 1, wx.EXPAND | wx.ALL, 5)
         modules_panel.SetSizer(modules_sizer)
 
+        # Add below the Projects panel
         self._mgr.AddPane(
             modules_panel,
             aui.AuiPaneInfo()
@@ -80,8 +97,7 @@ class StudioMainFrame(wx.Frame):
             .MaximizeButton(True)
             .MinimizeButton(True)
             .BestSize(300, 300)
-            .Position(1)  # below the Projects panel
-        )
+            .Position(1))
 
         # -------------------------
         # Main workspace (center)
@@ -94,15 +110,12 @@ class StudioMainFrame(wx.Frame):
         main_sizer.Add(text_box, 1, wx.EXPAND | wx.ALL, 5)
         main_panel.SetSizer(main_sizer)
 
+        # Add main central area
         self._mgr.AddPane(
             main_panel,
             aui.AuiPaneInfo()
-            .CenterPane()          # main central area
-            .Caption("Workspace")
-        )
-
-
-
+            .CenterPane()
+            .Caption("Workspace"))
 
         # Apply layout
         self._mgr.Update()
@@ -123,8 +136,7 @@ class StudioMainFrame(wx.Frame):
             style=wx.NO_BORDER
                   | aui.AUI_TB_DEFAULT_STYLE
                   | aui.AUI_TB_TEXT
-                  | aui.AUI_TB_HORZ_LAYOUT
-        )
+                  | aui.AUI_TB_HORZ_LAYOUT)
         toolbar.SetToolBitmapSize((32, 32))
         toolbar.SetToolPacking(5)
         toolbar.SetToolSeparation(5)
@@ -181,8 +193,12 @@ class StudioMainFrame(wx.Frame):
         toolbar.Realize()
 
         # --- Bind toolbar events ---
-        self.Bind(wx.EVT_TOOL, self.__on_new_project, id=toolbar_id_new_project)
-        self.Bind(wx.EVT_TOOL, self.__on_record_toggle, id=self.record_tool_id)
+        self.Bind(wx.EVT_TOOL,
+                  self.__on_new_project,
+                  id=toolbar_id_new_project)
+        self.Bind(wx.EVT_TOOL,
+                  self.__on_record_toggle,
+                  id=self.record_tool_id)
 
         self._mgr.AddPane(
             toolbar,
@@ -197,16 +213,34 @@ class StudioMainFrame(wx.Frame):
             .BottomDockable(False)
             .Gripper(False)
             .Floatable(False)
-            .Movable(False)
-        )
+            .Movable(False))
 
     def __on_new_project(self, _event):
-        dlg = ProjectCreateWizardDialog(self)
-        if dlg.ShowModal() == wx.ID_OK:
-            print("Wizard completed with data:")
-            for k, v in dlg.shared_data.items():
-                print(f"  {k}: {v}")
-        dlg.Destroy()
+        data = {}
+
+        page = 1
+        while True:
+            if page == 1:
+                dlg = WizardBasicInfoPage(self, data)
+            elif page == 2:
+                dlg = WizardWebSelectBrowserPage(self, data)
+            else:
+                break
+
+            rc = dlg.ShowModal()
+
+            if rc == wx.ID_CANCEL:
+                return  # wizard cancelled
+
+            if rc == ID_BACK_BUTTON:
+                page -= 1
+                continue
+
+            if rc == wx.ID_OK:
+                page += 1
+                continue
+
+        print("DATA:", data)
 
     def __on_record_toggle(self, _event):
         toolbar = self._mgr.GetPane("MainToolbar").window
