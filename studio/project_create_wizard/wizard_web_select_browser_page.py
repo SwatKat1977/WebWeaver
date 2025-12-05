@@ -24,10 +24,8 @@ from project_create_wizard.browser_icons import (
     CHROME_BROWSER_ICON,
     FIREFOX_BROWSER_ICON,
     MICROSOFT_EDGE_BROWSER_ICON)
-from wizard_base_page import WizardBasePage
 from wizard_step_indicator import WizardStepIndicator
 from project_create_wizard.wizard_ids import ID_BACK_BUTTON
-
 
 
 class WizardWebSelectBrowserPage(wx.Dialog):
