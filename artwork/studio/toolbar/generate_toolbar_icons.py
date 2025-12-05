@@ -35,19 +35,36 @@ pause_button_header: str = """
 """
 pause_button_variable = 'PAUSE_BUTTON_ICON = b"""\n'
 
+stop_button_header: str = """
+# -----------------------
+# Stop Button Icon (Base64)
+# -----------------------
+"""
+stop_button_variable = 'STOP_BUTTON_ICON = b"""\n'
+
 variable_close = '\n"""\n\n'
 
 print("Reading 'Record button'")
 with open("rec-button.png", "rb") as f:
     rec_button_img = base64.b64encode(f.read()).decode("ascii")
 
+print("Reading 'Pause button'")
 with open("pause-button.png", "rb") as f:
     pause_button_img = base64.b64encode(f.read()).decode("ascii")
+
+print("Reading 'Stop button'")
+with open("stop-button.png", "rb") as f:
+    stop_button_img = base64.b64encode(f.read()).decode("ascii")
 
 with open("toolbar_icons.py", "w", encoding="utf-8") as output_py:
     output_py.write(rec_button_header)
     output_py.write(record_button_variable)
     output_py.write("\n".join(textwrap.wrap(rec_button_img, width=80)))
+    output_py.write(variable_close)
+
+    output_py.write(pause_button_header)
+    output_py.write(pause_button_variable)
+    output_py.write("\n".join(textwrap.wrap(pause_button_img, width=80)))
     output_py.write(variable_close)
 
     output_py.write(pause_button_header)
