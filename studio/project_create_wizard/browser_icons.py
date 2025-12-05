@@ -17,9 +17,6 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
-import base64
-import io
-import wx
 
 
 # -----------------------
@@ -8612,16 +8609,3 @@ ACEALQBaAQQhaNKWblUi9Vp0vbakXqDrtKh6EavO0Gp3BOHdrUsDuzhNT+Rs/x81i+fASXvfowAAACV0
 RVh0ZGF0ZTpjcmVhdGUAMjAyNS0wNy0yMFQwNDo0Nzo1NyswMDowMMbsuDkAAAAldEVYdGRhdGU6bW9k
 aWZ5ADIwMjUtMDctMjBUMDQ6NDc6NTcrMDA6MDC3sQCFAAAAAElFTkSuQmCC
 """
-
-
-def bitmap_from_base64(data, size=(32, 32)):
-    raw = base64.b64decode(data)
-
-    stream = io.BytesIO(raw)
-    image = wx.Image(stream, wx.BITMAP_TYPE_ANY)
-
-    # Resize if needed
-    if size is not None:
-        image = image.Scale(size[0], size[1], wx.IMAGE_QUALITY_HIGH)
-
-    return wx.Bitmap(image)
