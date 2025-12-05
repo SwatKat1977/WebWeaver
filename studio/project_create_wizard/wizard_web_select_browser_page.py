@@ -19,11 +19,11 @@ Copyright 2025 SwatKat1977
 """
 import wx
 from project_create_wizard.browser_icons import (
-    bitmap_from_base64,
     CHROMIUM_BROWSER_ICON,
     CHROME_BROWSER_ICON,
     FIREFOX_BROWSER_ICON,
     MICROSOFT_EDGE_BROWSER_ICON)
+from bitmap_utils import BitmapUtils
 from wizard_step_indicator import WizardStepIndicator
 from project_create_wizard.wizard_ids import ID_BACK_BUTTON
 
@@ -93,10 +93,10 @@ class WizardWebSelectBrowserPage(wx.Dialog):
 
         hsizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        chromium_bmp = bitmap_from_base64(CHROMIUM_BROWSER_ICON)
-        chrome_bmp = bitmap_from_base64(CHROME_BROWSER_ICON)
-        firefox_bmp = bitmap_from_base64(FIREFOX_BROWSER_ICON)
-        ms_edge_bmp = bitmap_from_base64(MICROSOFT_EDGE_BROWSER_ICON)
+        chromium_bmp = BitmapUtils.bitmap_from_base64(CHROMIUM_BROWSER_ICON)
+        chrome_bmp = BitmapUtils.bitmap_from_base64(CHROME_BROWSER_ICON)
+        firefox_bmp = BitmapUtils.bitmap_from_base64(FIREFOX_BROWSER_ICON)
+        ms_edge_bmp = BitmapUtils.bitmap_from_base64(MICROSOFT_EDGE_BROWSER_ICON)
 
         # List of browsers
         browsers = [
