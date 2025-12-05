@@ -37,6 +37,7 @@ pause_button_variable = 'PAUSE_BUTTON_ICON = b"""\n'
 
 variable_close = '\n"""\n\n'
 
+print("Reading 'Record button'")
 with open("rec-button.png", "rb") as f:
     rec_button_img = base64.b64encode(f.read()).decode("ascii")
 
