@@ -22,6 +22,8 @@ import wx.aui as aui
 from project_create_wizard.wizard_ids import ID_BACK_BUTTON
 from project_create_wizard.wizard_basic_info_page import WizardBasicInfoPage
 from project_create_wizard.wizard_web_select_browser_page import WizardWebSelectBrowserPage
+from project_create_wizard.wizard_web_behaviour_page import WizardWebBehaviourPage
+from project_create_wizard.wizard_finish_page import WizardFinishPage
 
 
 class StudioMainFrame(wx.Frame):
@@ -224,6 +226,13 @@ class StudioMainFrame(wx.Frame):
                 dlg = WizardBasicInfoPage(self, data)
             elif page == 2:
                 dlg = WizardWebSelectBrowserPage(self, data)
+
+            elif page == 3:
+                dlg = WizardWebBehaviourPage(self, data)
+
+            elif page == 4:
+                dlg = WizardFinishPage(self, data)
+
             else:
                 break
 
