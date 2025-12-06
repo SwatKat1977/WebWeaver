@@ -42,6 +42,13 @@ stop_button_header: str = """
 """
 stop_button_variable = 'STOP_BUTTON_ICON = b"""\n'
 
+inspect_button_header: str = """
+# -----------------------
+# Inspect Button Icon (Base64)
+# -----------------------
+"""
+inspect_button_variable = 'INSPECT_BUTTON_ICON = b"""\n'
+
 variable_close = '\n"""\n\n'
 
 print("Reading 'Record button'")
@@ -56,6 +63,10 @@ print("Reading 'Stop button'")
 with open("stop-button.png", "rb") as f:
     stop_button_img = base64.b64encode(f.read()).decode("ascii")
 
+print("Reading 'Inspect button'")
+with open("inspect-button.png", "rb") as f:
+    inspect_button_img = base64.b64encode(f.read()).decode("ascii")
+
 with open("toolbar_icons.py", "w", encoding="utf-8") as output_py:
     output_py.write(rec_button_header)
     output_py.write(record_button_variable)
@@ -67,7 +78,7 @@ with open("toolbar_icons.py", "w", encoding="utf-8") as output_py:
     output_py.write("\n".join(textwrap.wrap(pause_button_img, width=80)))
     output_py.write(variable_close)
 
-    output_py.write(pause_button_header)
-    output_py.write(pause_button_variable)
-    output_py.write("\n".join(textwrap.wrap(pause_button_img, width=80)))
+    output_py.write(inspect_button_header)
+    output_py.write(inspect_button_variable)
+    output_py.write("\n".join(textwrap.wrap(inspect_button_img, width=80)))
     output_py.write(variable_close)
