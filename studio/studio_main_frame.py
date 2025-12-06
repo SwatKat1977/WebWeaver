@@ -181,12 +181,12 @@ class StudioMainFrame(wx.Frame):
             toolbar_icons.RECORD_BUTTON_ICON)
 
         self.stop_record_icon = BitmapUtils.bitmap_from_base64(
-            toolbar_icons.PAUSE_BUTTON_ICON)
+            toolbar_icons.STOP_BUTTON_ICON)
 
         self.record_tool_id = 100
 
-        record_icon_bmp = BitmapUtils.bitmap_from_base64(
-            toolbar_icons.RECORD_BUTTON_ICON)
+        pause_icon_bmp = BitmapUtils.bitmap_from_base64(
+            toolbar_icons.PAUSE_BUTTON_ICON)
 
         toolbar.AddTool(self.record_tool_id,
                         "",
@@ -194,11 +194,10 @@ class StudioMainFrame(wx.Frame):
                         short_help_string="Record",
                         kind=wx.ITEM_CHECK)
 
+
         toolbar.AddTool(5,
                         "",
-                        wx.ArtProvider.GetBitmap(wx.ART_GO_FORWARD,
-                                                 wx.ART_TOOLBAR,
-                                                 (16,16)))
+                        pause_icon_bmp)
 
         toolbar.Realize()
 
