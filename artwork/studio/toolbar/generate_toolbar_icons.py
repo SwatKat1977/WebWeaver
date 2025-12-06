@@ -49,6 +49,20 @@ inspect_button_header: str = """
 """
 inspect_button_variable = 'INSPECT_BUTTON_ICON = b"""\n'
 
+open_button_header: str = """
+# -----------------------
+# Open Button Icon (Base64)
+# -----------------------
+"""
+open_button_variable = 'OPEN_BUTTON_ICON = b"""\n'
+
+new_project_button_header: str = """
+# -----------------------
+# New Project Button Icon (Base64)
+# -----------------------
+"""
+new_project_button_variable = 'NEW_PROJECT_BUTTON_ICON = b"""\n'
+
 variable_close = '\n"""\n\n'
 
 print("Reading 'Record button'")
@@ -67,6 +81,14 @@ print("Reading 'Inspect button'")
 with open("inspect-button.png", "rb") as f:
     inspect_button_img = base64.b64encode(f.read()).decode("ascii")
 
+print("Reading 'Open button'")
+with open("open-button.png", "rb") as f:
+    open_button_img = base64.b64encode(f.read()).decode("ascii")
+
+print("Reading 'New Project button'")
+with open("new-project-button.png", "rb") as f:
+    new_project_button_img = base64.b64encode(f.read()).decode("ascii")
+
 with open("toolbar_icons.py", "w", encoding="utf-8") as output_py:
     output_py.write(rec_button_header)
     output_py.write(record_button_variable)
@@ -81,4 +103,19 @@ with open("toolbar_icons.py", "w", encoding="utf-8") as output_py:
     output_py.write(inspect_button_header)
     output_py.write(inspect_button_variable)
     output_py.write("\n".join(textwrap.wrap(inspect_button_img, width=80)))
+    output_py.write(variable_close)
+
+    output_py.write(open_button_header)
+    output_py.write(open_button_variable)
+    output_py.write("\n".join(textwrap.wrap(open_button_img, width=80)))
+    output_py.write(variable_close)
+
+    output_py.write(new_project_button_header)
+    output_py.write(new_project_button_variable)
+    output_py.write("\n".join(textwrap.wrap(new_project_button_img, width=80)))
+    output_py.write(variable_close)
+
+    output_py.write(stop_button_header)
+    output_py.write(stop_button_variable)
+    output_py.write("\n".join(textwrap.wrap(stop_button_img, width=80)))
     output_py.write(variable_close)
