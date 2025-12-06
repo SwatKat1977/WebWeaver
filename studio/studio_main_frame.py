@@ -24,6 +24,8 @@ from project_create_wizard.wizard_basic_info_page import WizardBasicInfoPage
 from project_create_wizard.wizard_web_select_browser_page import WizardWebSelectBrowserPage
 from project_create_wizard.wizard_web_behaviour_page import WizardWebBehaviourPage
 from project_create_wizard.wizard_finish_page import WizardFinishPage
+from bitmap_utils import BitmapUtils
+import toolbar_icons
 
 
 class StudioMainFrame(wx.Frame):
@@ -143,19 +145,21 @@ class StudioMainFrame(wx.Frame):
         toolbar.SetToolPacking(5)
         toolbar.SetToolSeparation(5)
 
+        neww_project_icon_bmp = BitmapUtils.bitmap_from_base64(
+            toolbar_icons.NEW_PROJECT_BUTTON_ICON)
         # Add some standard tools
         toolbar.AddTool(toolbar_id_new_project,
                         "",
-                        wx.ArtProvider.GetBitmap(wx.ART_NEW,
-                                                 wx.ART_TOOLBAR,
-                                                 (16,16)),
+                        neww_project_icon_bmp,
                         short_help_string="New Project")
+
+        open_icon_bmp = BitmapUtils.bitmap_from_base64(
+            toolbar_icons.OPEN_BUTTON_ICON)
         toolbar.AddTool(toolbar_id_open_project,
                         "",
-                        wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN,
-                                                 wx.ART_TOOLBAR,
-                                                 (16,16)),
+                        open_icon_bmp,
                         short_help_string="Open Project")
+
         toolbar.AddTool(toolbar_id_save_project,
                         "",
                         wx.ArtProvider.GetBitmap(wx.ART_FILE_SAVE,
@@ -165,24 +169,28 @@ class StudioMainFrame(wx.Frame):
 
         toolbar.AddSeparator()
 
+        inspect_icon_bmp = BitmapUtils.bitmap_from_base64(
+            toolbar_icons.INSPECT_BUTTON_ICON)
+
         toolbar.AddTool(toolbar_id_inspector_mode,
                         "",
-                        wx.ArtProvider.GetBitmap(wx.ART_FIND,
-                                                 wx.ART_TOOLBAR,
-                                                 (16, 16)),
+                        inspect_icon_bmp,
                         short_help_string="Inspector Mode")
 
-        self.record_icon = wx.ArtProvider.GetBitmap(wx.ART_ERROR,
-                                                    wx.ART_TOOLBAR,
-                                                    (24, 24))  # red circle
-        self.stop_icon = wx.ArtProvider.GetBitmap(wx.ART_CROSS_MARK,
-                                                  wx.ART_TOOLBAR,
-                                                  (24, 24))  # stop square
+        self.record_icon_bmp = BitmapUtils.bitmap_from_base64(
+            toolbar_icons.RECORD_BUTTON_ICON)
+
+        self.stop_record_icon = BitmapUtils.bitmap_from_base64(
+            toolbar_icons.PAUSE_BUTTON_ICON)
+
         self.record_tool_id = 100
+
+        record_icon_bmp = BitmapUtils.bitmap_from_base64(
+            toolbar_icons.RECORD_BUTTON_ICON)
 
         toolbar.AddTool(self.record_tool_id,
                         "",
-                        self.record_icon,
+                        self.record_icon_bmp,
                         short_help_string="Record",
                         kind=wx.ITEM_CHECK)
 
@@ -256,10 +264,10 @@ class StudioMainFrame(wx.Frame):
         is_recording = toolbar.GetToolToggled(self.record_tool_id)
 
         if is_recording:
-            toolbar.SetToolBitmap(self.record_tool_id, self.stop_icon)
+            toolbar.SetToolBitmap(self.record_tool_id, self.stop_record_icon)
             toolbar.SetToolShortHelp(self.record_tool_id, "Stop Recording")
         else:
-            toolbar.SetToolBitmap(self.record_tool_id, self.record_icon)
+            toolbar.SetToolBitmap(self.record_tool_id, self.record_icon_bmp)
             toolbar.SetToolShortHelp(self.record_tool_id, "Start Recording")
 
         toolbar.Realize()
