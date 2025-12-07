@@ -20,5 +20,8 @@ Copyright 2025 SwatKat1977
 #ifndef MAINWINDOW_H_
 #define MAINWINDOW_H_
 
+namespace webweaver::studio {
+
+}
 
 #endif  // MAINWINDOW_H_

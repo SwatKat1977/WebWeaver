@@ -18,3 +18,7 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
 #include "MainWindow.h"
+
+namespace webweaver::studio {
+
+}
