@@ -23,13 +23,36 @@ Copyright 2025 SwatKat1977
 
 namespace webweaver::studio {
 
-wxBitmap BitmapFromBase64(const wxString& base64Data,
+std::string CleanBase64(const char* data) {
+    std::string out;
+    out.reserve(strlen(data));
+
+    for (const char* p = data; *p; ++p) {
+        unsigned char c = static_cast<unsigned char>(*p);
+
+        // Keep only valid base64 characters: A-Z a-z 0-9 + / =
+        if ((c >= 'A' && c <= 'Z') ||
+            (c >= 'a' && c <= 'z') ||
+            (c >= '0' && c <= '9') ||
+            c == '+' || c == '/' || c == '=')
+        {
+            out.push_back(c);
+        }
+    }
+
+    return out;
+}
+
+wxBitmap BitmapFromBase64(const char *base64Data,
                           const wxSize& size) {
-    // Decode base64 into a wxMemoryBuffer
-    wxMemoryBuffer buffer = wxBase64Decode(base64Data);
+    // ---- Clean the base64 (removes newlines, spaces, tabs) ----
+    std::string clean = CleanBase64(base64Data);
+
+    // ---- Decode ----
+    wxMemoryBuffer buffer = wxBase64Decode(clean.c_str());
     if (buffer.IsEmpty()) {
         wxLogError("Failed to decode base64 image data.");
-        return wxBitmap();  // return invalid bitmap
+        return wxBitmap();
     }
 
     // Create input stream from buffer
