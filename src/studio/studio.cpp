@@ -18,7 +18,7 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
 #include <wx/wx.h>
-#include "MainWindow.h"
+#include "StudioMainFrame.h"
 
 
 class WebweaverStudioApp : public wxApp {
