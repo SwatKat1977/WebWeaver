@@ -29,6 +29,9 @@ class WebweaverStudioApp : public wxApp {
 wxIMPLEMENT_APP(WebweaverStudioApp);
 
 bool WebweaverStudioApp::OnInit() {
+    // Required for PNG/JPEG/etc.
+    wxInitAllImageHandlers();
+
     auto* frame = new webweaver::studio::StudioMainFrame(nullptr);
     frame->Show(true);
     SetTopWindow(frame);

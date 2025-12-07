@@ -34,7 +34,16 @@ class StudioMainFrame : public wxFrame {
     void InitAui();
 
  private:
-    wxAuiManager m_mgr;
+    wxAuiManager _aui_mgr;
+
+    wxBitmap toolbar_new_project_icon_;
+    wxBitmap toolbar_open_icon_;
+    wxBitmap toolbar_inspect_icon_;
+    wxBitmap toolbar_start_record_icon_;
+    wxBitmap toolbar_stop_record_icon_;
+    wxBitmap toolbar_pause_icon_;
+
+    void CreateMainToolbar();
 };
 
 }
