@@ -18,12 +18,29 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
 import wx
+import wx.lib.newevent
 from studio_main_frame import StudioMainFrame
+
+try:
+    import AppKit
+except ImportError:
+    AppKit = None
 
 
 class WebweaverStudioApp(wx.App):
     def OnInit(self):
-        StudioMainFrame()
+        self.frame = StudioMainFrame()
+        self.frame.Show()
+
+        if AppKit:
+            AppKit.NSApp.activateIgnoringOtherApps_(True)
+            self.frame.RequestUserAttention(wx.USER_ATTENTION_INFO)
+            wx.CallAfter(self.frame.Raise)
+
+        # Raise AFTER activation
+        wx.CallAfter(self.frame.Raise)
+
+        self.SetTopWindow(self.frame)
         return True
 
 

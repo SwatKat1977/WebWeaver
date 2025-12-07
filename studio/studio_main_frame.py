@@ -30,10 +30,19 @@ import toolbar_icons
 
 class StudioMainFrame(wx.Frame):
     def __init__(self):
-        super().__init__(None, title="Webweaver Automation Studio", size=(1400, 900))
+        super().__init__(None,
+                         title="Webweaver Automation Studio",
+                         size=(1400, 900),
+                         style=wx.DEFAULT_FRAME_STYLE)
 
         # AUI Manager
         self._mgr = aui.AuiManager(self)
+
+        menubar = wx.MenuBar()
+        menu = wx.Menu()
+        menu.Append(wx.ID_EXIT, "Quit")
+        menubar.Append(menu, "File")
+        self.SetMenuBar(menubar)
 
         # 1. TOOLBAR (top, dockable)
         self.__create_toolbar()
