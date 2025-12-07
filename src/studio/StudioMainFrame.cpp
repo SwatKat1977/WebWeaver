@@ -22,8 +22,30 @@ Copyright 2025 SwatKat1977
 namespace webweaver::studio {
 
 StudioMainFrame::StudioMainFrame(wxWindow* parent)
-    : wxFrame(parent, wxID_ANY, "Studio") {
-    // init UI here
+    : wxFrame(nullptr, wxID_ANY,
+              "Webweaver Automation Studio",
+              wxDefaultPosition,
+              wxSize(1400, 900),
+              wxDEFAULT_FRAME_STYLE)
+{
+#ifdef __APPLE__
+    EnableFullScreenView(false);
+#endif
+}
+
+void StudioMainFrame::InitAui()
+{
+    m_mgr.SetManagedWindow(this);
+
+    // Add panes here later...
+    // m_mgr.AddPane(...);
+
+    m_mgr.Update();
+}
+
+StudioMainFrame::~StudioMainFrame()
+{
+    m_mgr.UnInit();
 }
 
 }

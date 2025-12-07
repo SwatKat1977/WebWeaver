@@ -33,5 +33,10 @@ bool WebweaverStudioApp::OnInit() {
     frame->Show(true);
     SetTopWindow(frame);
 
+    // IMPORTANT: delay AUI initialisation until AFTER the window is shown
+    frame->CallAfter([frame]{
+        frame->InitAui();
+    });
+
     return true;
 }
