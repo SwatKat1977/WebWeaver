@@ -18,17 +18,8 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
 #include <wx/wx.h>
-#include <wx/frame.h>
+#include "MainWindow.h"
 
-class StudioMainFrame : public wxFrame {
- public:
-    explicit StudioMainFrame(wxWindow* parent = nullptr);
-};
-
-StudioMainFrame::StudioMainFrame(wxWindow* parent)
-    : wxFrame(parent, wxID_ANY, "Studio") {
-    // init UI here
-}
 
 class WebweaverStudioApp : public wxApp {
  public:
@@ -38,7 +29,7 @@ class WebweaverStudioApp : public wxApp {
 wxIMPLEMENT_APP(WebweaverStudioApp);
 
 bool WebweaverStudioApp::OnInit() {
-    auto* frame = new StudioMainFrame(nullptr);
+    auto* frame = new webweaver::studio::StudioMainFrame(nullptr);
     frame->Show(true);
     SetTopWindow(frame);
 

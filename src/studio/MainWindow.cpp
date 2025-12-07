@@ -21,4 +21,9 @@ Copyright 2025 SwatKat1977
 
 namespace webweaver::studio {
 
+StudioMainFrame::StudioMainFrame(wxWindow* parent)
+    : wxFrame(parent, wxID_ANY, "Studio") {
+    // init UI here
+}
+
 }

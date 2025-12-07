@@ -19,8 +19,16 @@ Copyright 2025 SwatKat1977
 */
 #ifndef MAINWINDOW_H_
 #define MAINWINDOW_H_
+//#include <wx/wx.h>
+#include <wx/frame.h>
+
 
 namespace webweaver::studio {
+
+class StudioMainFrame : public wxFrame {
+ public:
+    explicit StudioMainFrame(wxWindow* parent = nullptr);
+};
 
 }
 
