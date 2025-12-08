@@ -128,7 +128,8 @@ void StudioMainFrame::CreateMainToolbar() {
 
     toolbar->AddTool(5,
                      "",
-                     toolbar_pause_icon_);
+                     toolbar_pause_icon_,
+                     "Pause Recording");
 
     toolbar->Realize();
 
