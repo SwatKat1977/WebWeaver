@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="ProjectCreateWizard">
+      <UniqueIdentifier>{f58e3c32-63fd-4f34-94b1-6556b78b51c4}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ProjectCreateWizard\ProjectCreateWizardBasePage.h">
+      <Filter>ProjectCreateWizard</Filter>
+    </ClInclude>
+    <ClInclude Include="ProjectCreateWizard\WizardBasicInfoPage.h">
+      <Filter>ProjectCreateWizard</Filter>
+    </ClInclude>
+    <ClInclude Include="ProjectCreateWizard\WizardSelectBrowserPage.h">
+      <Filter>ProjectCreateWizard</Filter>
+    </ClInclude>
+    <ClInclude Include="BitmapUtils.h" />
+    <ClInclude Include="StudioMainFrame.h" />
+    <ClInclude Include="imgResources\toolbar\toolbar_start_record.h" />
+    <ClInclude Include="ToolbarIcons.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ProjectCreateWizard\WizardBasicInfoPage.cpp">
+      <Filter>ProjectCreateWizard</Filter>
+    </ClCompile>
+    <ClCompile Include="ProjectCreateWizard\WizardSelectBrowserPage.cpp">
+      <Filter>ProjectCreateWizard</Filter>
+    </ClCompile>
+    <ClCompile Include="BitmapUtils.cpp" />
+    <ClCompile Include="studio.cpp" />
+    <ClCompile Include="StudioMainFrame.cpp" />
+    <ClCompile Include="ToolbarIcons.cpp" />
+  </ItemGroup>
+</Project>
