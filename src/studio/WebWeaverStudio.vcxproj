@@ -141,7 +141,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BitmapUtils.h" />
+    <ClInclude Include="imgResources\toolbar\toolbar_inspect.h" />
+    <ClInclude Include="imgResources\toolbar\toolbar_new_project.h" />
+    <ClInclude Include="imgResources\toolbar\toolbar_open_project.h" />
+    <ClInclude Include="imgResources\toolbar\toolbar_pause_record.h" />
+    <ClInclude Include="imgResources\toolbar\toolbar_save_project.h" />
     <ClInclude Include="imgResources\toolbar\toolbar_start_record.h" />
+    <ClInclude Include="imgResources\toolbar\toolbar_stop_record.h" />
     <ClInclude Include="ProjectCreateWizard\ProjectCreateWizardBasePage.h" />
     <ClInclude Include="ProjectCreateWizard\WizardBasicInfoPage.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">

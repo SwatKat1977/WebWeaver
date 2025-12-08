@@ -4,6 +4,12 @@
     <Filter Include="ProjectCreateWizard">
       <UniqueIdentifier>{f58e3c32-63fd-4f34-94b1-6556b78b51c4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ImgResources">
+      <UniqueIdentifier>{3d7314da-d18f-48b6-aabf-91d37816878e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ImgResources\Toolbar">
+      <UniqueIdentifier>{ecba96e9-01e2-41ad-8122-532f43299a30}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ProjectCreateWizard\ProjectCreateWizardBasePage.h">
@@ -17,8 +23,28 @@
     </ClInclude>
     <ClInclude Include="BitmapUtils.h" />
     <ClInclude Include="StudioMainFrame.h" />
-    <ClInclude Include="imgResources\toolbar\toolbar_start_record.h" />
     <ClInclude Include="ToolbarIcons.h" />
+    <ClInclude Include="imgResources\toolbar\toolbar_inspect.h">
+      <Filter>ImgResources\Toolbar</Filter>
+    </ClInclude>
+    <ClInclude Include="imgResources\toolbar\toolbar_new_project.h">
+      <Filter>ImgResources\Toolbar</Filter>
+    </ClInclude>
+    <ClInclude Include="imgResources\toolbar\toolbar_open_project.h">
+      <Filter>ImgResources\Toolbar</Filter>
+    </ClInclude>
+    <ClInclude Include="imgResources\toolbar\toolbar_pause_record.h">
+      <Filter>ImgResources\Toolbar</Filter>
+    </ClInclude>
+    <ClInclude Include="imgResources\toolbar\toolbar_save_project.h">
+      <Filter>ImgResources\Toolbar</Filter>
+    </ClInclude>
+    <ClInclude Include="imgResources\toolbar\toolbar_stop_record.h">
+      <Filter>ImgResources\Toolbar</Filter>
+    </ClInclude>
+    <ClInclude Include="imgResources\toolbar\toolbar_start_record.h">
+      <Filter>ImgResources\Toolbar</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ProjectCreateWizard\WizardBasicInfoPage.cpp">
