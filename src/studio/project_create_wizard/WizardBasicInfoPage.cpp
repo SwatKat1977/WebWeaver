@@ -1,4 +1,4 @@
-"""
+/*
 This source file is part of Web Weaver
 For the latest info, see https://github.com/SwatKat1977/WebWeaver
 
@@ -16,7 +16,7 @@ Copyright 2025 SwatKat1977
 
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
-"""
+*/
 import wx
 from wizard_step_indicator import WizardStepIndicator
 
