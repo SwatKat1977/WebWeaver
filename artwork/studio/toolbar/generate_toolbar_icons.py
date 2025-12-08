@@ -63,6 +63,13 @@ new_project_button_header: str = """
 """
 new_project_button_variable = 'NEW_PROJECT_BUTTON_ICON = b"""\n'
 
+save_project_button_header: str = """
+# -----------------------
+# Save Project Button Icon (Base64)
+# -----------------------
+"""
+save_project_button_variable = 'SAVE_PROJECT_BUTTON_ICON = b"""\n'
+
 variable_close = '\n"""\n\n'
 
 print("Reading 'Record button'")
@@ -88,6 +95,10 @@ with open("open-button.png", "rb") as f:
 print("Reading 'New Project button'")
 with open("new-project-button.png", "rb") as f:
     new_project_button_img = base64.b64encode(f.read()).decode("ascii")
+
+print("Reading 'Save Project button'")
+with open("save-button.png", "rb") as f:
+    save_project_button_img = base64.b64encode(f.read()).decode("ascii")
 
 with open("toolbar_icons.py", "w", encoding="utf-8") as output_py:
     output_py.write(rec_button_header)
@@ -118,4 +129,9 @@ with open("toolbar_icons.py", "w", encoding="utf-8") as output_py:
     output_py.write(stop_button_header)
     output_py.write(stop_button_variable)
     output_py.write("\n".join(textwrap.wrap(stop_button_img, width=80)))
+    output_py.write(variable_close)
+
+    output_py.write(save_project_button_header)
+    output_py.write(save_project_button_variable)
+    output_py.write("\n".join(textwrap.wrap(save_project_button_img, width=80)))
     output_py.write(variable_close)
