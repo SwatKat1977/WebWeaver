@@ -17,8 +17,8 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef PROJECTCREATEWIZARDBASEPAGE_H_
-#define PROJECTCREATEWIZARDBASEPAGE_H_
+#ifndef PROJECTCREATEWIZARD_PROJECTCREATEWIZARDBASEPAGE_H_
+#define PROJECTCREATEWIZARD_PROJECTCREATEWIZARDBASEPAGE_H_
 #include <string>
 #include <vector>
 
@@ -27,7 +27,7 @@ struct ProjectCreateWizardData {
 
 class ProjectCreateWizardBasePage {
  public:
-    ProjectCreateWizardBasePage(ProjectCreateWizardData data)
+    explicit ProjectCreateWizardBasePage(ProjectCreateWizardData data)
         : data_(data) {
         std::vector<std::string> steps = {
             "Basic solution info",
@@ -47,4 +47,4 @@ class ProjectCreateWizardBasePage {
     std::vector<std::string> steps_;
 };
 
-#endif
+#endif  // PROJECTCREATEWIZARD_PROJECTCREATEWIZARDBASEPAGE_H_"
