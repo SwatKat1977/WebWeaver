@@ -26,11 +26,18 @@ namespace webweaver::studio {
 
 constexpr int RECORD_TOOLBAR_ICON_ID = 100;
 
+#ifdef __APPLE__
+    // macOS draws menu bar differently and pulls windows upward slightly
+    wxPoint InitialWindowPosition = wxPoint(0, 30);
+#else
+    wxPoint InitialWindowPosition = wxDefaultPosition;
+#endif
+
 StudioMainFrame::StudioMainFrame(wxWindow* parent)
     : wxFrame(nullptr, wxID_ANY,
               "Webweaver Automation Studio",
-              wxDefaultPosition,
-              wxSize(1400, 900),
+              InitialWindowPosition,
+              wxSize(1024, 768),
               wxDEFAULT_FRAME_STYLE)
 {
 #ifdef __APPLE__
@@ -38,6 +45,7 @@ StudioMainFrame::StudioMainFrame(wxWindow* parent)
 #endif
 
     toolbar_new_project_icon_ = BitmapFromBase64(NEW_PROJECT_BUTTON_ICON.data());
+    toolbar_save_project_icon_ = BitmapFromBase64(SAVE_PROJECT_BUTTON_ICON.data());
     toolbar_open_icon_ = BitmapFromBase64(OPEN_BUTTON_ICON.data());
     toolbar_inspect_icon_ = BitmapFromBase64(INSPECT_BUTTON_ICON.data());
     toolbar_start_record_icon_ = BitmapFromBase64(RECORD_BUTTON_ICON.data());
@@ -64,6 +72,8 @@ void StudioMainFrame::InitAui()
     CreateMainToolbar();
 
     _aui_mgr.Update();
+
+    //CentreOnScreen();
 }
 
 StudioMainFrame::~StudioMainFrame()
@@ -100,9 +110,7 @@ void StudioMainFrame::CreateMainToolbar() {
 
     toolbar->AddTool(toolbarId_SaveProject,
                     "",
-                    wxArtProvider::GetBitmap(wxART_FILE_SAVE,
-                                             wxART_TOOLBAR,
-                                            wxSize(16,16)),
+                    toolbar_save_project_icon_,
                     "Save Project");
 
     toolbar->AddSeparator();
