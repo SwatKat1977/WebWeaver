@@ -68,15 +68,15 @@ def png_to_header(png_path: str, header_path: str, var_name: str):
 
 png_to_header("inspect-button.png",
     "toolbar_inspect.h",
-    "inspect_button_icon")
+    "inspect_icon")
 
 png_to_header("new-project-button.png",
     "toolbar_new_project.h",
-    "inspect_new_project_icon")
+    "new_project_icon")
 
 png_to_header("open-button.png",
     "toolbar_open_project.h",
-    "inspect_open_project_icon")
+    "open_project_icon")
 
 png_to_header("pause-button.png",
     "toolbar_pause_record.h",
