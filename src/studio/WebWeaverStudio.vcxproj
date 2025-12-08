@@ -71,7 +71,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ExternalIncludePath>$(WEBWEAVER_WXWIDGETS_INCLUDE);$(WEBWEAVER_WXWIDGETS_LIB)\mswud;$(ExternalIncludePath)</ExternalIncludePath>
+    <ExternalIncludePath>$(WEBWEAVER_WXWIDGETS_INCLUDE);$(WEBWEAVER_WXWIDGETS_LIB)\mswud</ExternalIncludePath>
     <LibraryPath>$(WEBWEAVER_WXWIDGETS_LIB);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

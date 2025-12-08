@@ -35,13 +35,13 @@ constexpr int RECORD_TOOLBAR_ICON_ID = 100;
 
 StudioMainFrame::StudioMainFrame(wxWindow* parent)
     : wxFrame(nullptr, wxID_ANY,
-              "Webweaver Automation Studio",
-              InitialWindowPosition,
-              wxSize(1024, 768),
-              wxDEFAULT_FRAME_STYLE)
+    "Webweaver Automation Studio",
+    InitialWindowPosition,
+    wxSize(1024, 768),
+    wxDEFAULT_FRAME_STYLE)
 {
 #ifdef __APPLE__
-    EnableFullScreenView(false);
+        EnableFullScreenView(false);
 #endif
 
     // --------------------------------------------------------------
@@ -91,53 +91,55 @@ void StudioMainFrame::CreateMainToolbar() {
     toolbar->SetToolSeparation(5);
 
     toolbar->AddTool(toolbarId_NewProject,
-                     "",
-                     LoadToolbarNewProjectIcon(),
-                    "New Project");
+        "",
+        LoadToolbarNewProjectIcon(),
+        "New Project");
 
     toolbar->AddTool(toolbarId_OpenProject,
-                    "",
-                    LoadToolbarOpenProjectIcon(),
-                    "Open Project");
+        "",
+        LoadToolbarOpenProjectIcon(),
+        "Open Project");
 
     toolbar->AddTool(toolbarId_SaveProject,
-                    "",
-                    LoadToolbarSaveProjectIcon(),
-                    "Save Project");
+        "",
+        LoadToolbarSaveProjectIcon(),
+        "Save Project");
 
     toolbar->AddSeparator();
 
-    /*
-wxBitmap LoadToolbarStopRecordIcon();
-    */
-
     toolbar->AddTool(toolbarId_InspectorMode,
-                    "",
-                    LoadToolbarInspectIcon(),
-                    "Inspector Mode");
+        "",
+        LoadToolbarInspectIcon(),
+        "Inspector Mode");
 
     toolbar->AddTool(RECORD_TOOLBAR_ICON_ID,
-                     "",
-                     LoadToolbarStartRecordIcon(),
-                     "Record",
-                     wxITEM_CHECK);
+        "",
+        LoadToolbarStartRecordIcon(),
+        "Record",
+        wxITEM_CHECK);
 
     toolbar->AddTool(5,
-                     "",
-                     LoadToolbarPauseRecordIcon(),
-                     "Pause Recording");
+        "",
+        LoadToolbarPauseRecordIcon(),
+        "Pause Recording");
 
     toolbar->Realize();
 
     /*
+    *     void OnNewProjectEvent(wxEvent event);
+
+void OnRecordToggleEvent(wxEvent event);
+    */
+
     // --- Bind toolbar events ---
     Bind(wxEVT_TOOL,
-         on_new_project,
-         toolbarId_NewProject);
+        &StudioMainFrame::OnNewProjectEvent,
+        this,
+        toolbarId_NewProject);
     Bind(wxEVT_TOOL,
-         on_record_toggle,
-         START_RECORD_ICON_BMP);
-    */
+        &StudioMainFrame::OnRecordToggleEvent,
+        this,
+        RECORD_TOOLBAR_ICON_ID);
 
     _aui_mgr.AddPane(
         toolbar,
@@ -155,6 +157,72 @@ wxBitmap LoadToolbarStopRecordIcon();
         .Movable(false));
 
     _aui_mgr.Update();
+}
+
+void StudioMainFrame::OnNewProjectEvent(wxCommandEvent& event) {
+    //data = {};
+
+    int page = 1;
+        /*
+        while True :
+            if page == 1 :
+                dlg = WizardBasicInfoPage(self, data)
+                elif page == 2 :
+                dlg = WizardWebSelectBrowserPage(self, data)
+
+                elif page == 3 :
+                dlg = WizardWebBehaviourPage(self, data)
+
+                elif page == 4 :
+                dlg = WizardFinishPage(self, data)
+
+            else:
+    break
+
+        rc = dlg.ShowModal()
+
+        if rc == wx.ID_CANCEL :
+            return  # wizard cancelled
+
+            if rc == ID_BACK_BUTTON:
+    page -= 1
+        continue
+
+        if rc == wx.ID_OK :
+            page += 1
+            continue
+
+            print("DATA:", data)
+*/
+}
+
+void StudioMainFrame::OnRecordToggleEvent(wxCommandEvent& event) {
+    // Retrieve the toolbar from the AUI manager
+    wxAuiPaneInfo& pane = _aui_mgr.GetPane("MainToolbar");
+    if (!pane.IsOk()) {
+        return;
+    }
+
+    wxAuiToolBar* toolbar = wxDynamicCast(pane.window, wxAuiToolBar);
+
+    wxWindow* win = pane.window;
+    if (!toolbar) {
+        return;
+    }
+
+    bool isRecording = toolbar->GetToolToggled(RECORD_TOOLBAR_ICON_ID);
+    if (isRecording)
+    {
+        toolbar->SetToolBitmap(RECORD_TOOLBAR_ICON_ID, LoadToolbarStopRecordIcon());
+        toolbar->SetToolShortHelp(RECORD_TOOLBAR_ICON_ID, "Stop Recording");
+    }
+    else
+    {
+        toolbar->SetToolBitmap(RECORD_TOOLBAR_ICON_ID, LoadToolbarStartRecordIcon());
+        toolbar->SetToolShortHelp(RECORD_TOOLBAR_ICON_ID, "Start Recording");
+    }
+
+    toolbar->Realize();
 }
 
 }
