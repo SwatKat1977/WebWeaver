@@ -24,42 +24,19 @@ Copyright 2025 SwatKat1977
 
 namespace webweaver::studio {
 
+wxBitmap LoadToolbarInspectIcon();
+
+wxBitmap LoadToolbarNewProjectIcon();
+
+wxBitmap LoadToolbarOpenProjectIcon();
+
+wxBitmap LoadToolbarPauseRecordIcon();
+
+wxBitmap LoadToolbarSaveProjectIcon();
+
 wxBitmap LoadToolbarStartRecordIcon();
 
-// -----------------------
-// Record Button Icon (Base64)
-// -----------------------
-extern const char RECORD_BUTTON_ICON[];
-
-// -----------------------
-// Pause Button Icon (Base64)
-// -----------------------
-extern const char PAUSE_BUTTON_ICON[];
-
-// -----------------------
-// Inspect Button Icon (Base64)
-// -----------------------
-extern const char INSPECT_BUTTON_ICON[];
-
-// -----------------------
-// Open Button Icon (Base64)
-// -----------------------
-extern const char OPEN_BUTTON_ICON[];
-
-// -----------------------
-// New Project Button Icon (Base64)
-// -----------------------
-extern const char NEW_PROJECT_BUTTON_ICON[];
-
-// -----------------------
-// Stop Button Icon (Base64)
-// -----------------------
-extern const char STOP_BUTTON_ICON[];
-
-// -----------------------
-// Save Project Button Icon (Base64)
-// -----------------------
-extern const char SAVE_PROJECT_BUTTON_ICON[];
+wxBitmap LoadToolbarStopRecordIcon();
 
 }
 

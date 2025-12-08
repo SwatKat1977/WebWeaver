@@ -11,7 +11,7 @@ Copyright 2025 SwatKat1977
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
+    MERCHimgANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
@@ -43,14 +43,6 @@ StudioMainFrame::StudioMainFrame(wxWindow* parent)
 #ifdef __APPLE__
     EnableFullScreenView(false);
 #endif
-
-    toolbar_new_project_icon_ = BitmapFromBase64(NEW_PROJECT_BUTTON_ICON.data());
-    toolbar_save_project_icon_ = BitmapFromBase64(SAVE_PROJECT_BUTTON_ICON.data());
-    toolbar_open_icon_ = BitmapFromBase64(OPEN_BUTTON_ICON.data());
-    toolbar_inspect_icon_ = BitmapFromBase64(INSPECT_BUTTON_ICON.data());
-    toolbar_start_record_icon_ = BitmapFromBase64(RECORD_BUTTON_ICON.data());
-    toolbar_stop_record_icon_ = BitmapFromBase64(STOP_BUTTON_ICON.data());
-    toolbar_pause_icon_ = BitmapFromBase64(PAUSE_BUTTON_ICON.data());
 
     // --------------------------------------------------------------
     // Menu Bar
@@ -100,35 +92,39 @@ void StudioMainFrame::CreateMainToolbar() {
 
     toolbar->AddTool(toolbarId_NewProject,
                      "",
-                    toolbar_new_project_icon_,
+                     LoadToolbarNewProjectIcon(),
                     "New Project");
 
     toolbar->AddTool(toolbarId_OpenProject,
                     "",
-                    toolbar_open_icon_,
+                    LoadToolbarOpenProjectIcon(),
                     "Open Project");
 
     toolbar->AddTool(toolbarId_SaveProject,
                     "",
-                    toolbar_save_project_icon_,
+                    LoadToolbarSaveProjectIcon(),
                     "Save Project");
 
     toolbar->AddSeparator();
 
+    /*
+wxBitmap LoadToolbarStopRecordIcon();
+    */
+
     toolbar->AddTool(toolbarId_InspectorMode,
                     "",
-                    toolbar_inspect_icon_,
+                    LoadToolbarInspectIcon(),
                     "Inspector Mode");
 
     toolbar->AddTool(RECORD_TOOLBAR_ICON_ID,
                      "",
-                     toolbar_start_record_icon_,
+                     LoadToolbarStartRecordIcon(),
                      "Record",
                      wxITEM_CHECK);
 
     toolbar->AddTool(5,
                      "",
-                     toolbar_pause_icon_,
+                     LoadToolbarPauseRecordIcon(),
                      "Pause Recording");
 
     toolbar->Realize();
