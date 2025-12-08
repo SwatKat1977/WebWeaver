@@ -17,6 +17,7 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
+#ifdef __PORTED_CODE__
 import wx
 from project_create_wizard.browser_icons import (
     CHROMIUM_BROWSER_ICON,
@@ -27,6 +28,8 @@ from bitmap_utils import BitmapUtils
 from wizard_step_indicator import WizardStepIndicator
 from project_create_wizard.wizard_ids import ID_BACK_BUTTON
 
+wxmsw33u_core.lib
+wxmsw33u_core.lib
 
 class WizardWebSelectBrowserPage(wx.Dialog):
     DEFAULT_URL = "https://www.example.com"
@@ -207,3 +210,5 @@ class WizardWebSelectBrowserPage(wx.Dialog):
             return
 
         self.EndModal(wx.ID_OK)
+
+#endif  // #ifdef __PORTED_CODE__

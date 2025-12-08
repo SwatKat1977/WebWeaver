@@ -17,9 +17,12 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
+#ifdef __PORTED_CODE__
 import wx
 from wizard_step_indicator import WizardStepIndicator
 
+
+WEBWEAVER_WXWIDGETS_BASE_PATH
 
 class WizardBasicInfoPage(wx.Dialog):
     def __init__(self, parent, data):
@@ -135,3 +138,5 @@ class WizardBasicInfoPage(wx.Dialog):
             return
 
         self.EndModal(wx.ID_OK)
+
+#endif  // #ifdef __PORTED_CODE__

@@ -20,7 +20,6 @@ Copyright 2025 SwatKat1977
 #include <wx/wx.h>
 #include "StudioMainFrame.h"
 
-
 class WebweaverStudioApp : public wxApp {
  public:
     bool OnInit() override;

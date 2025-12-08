@@ -23,54 +23,17 @@ Copyright 2025 SwatKat1977
 
 namespace webweaver::studio {
 
-std::string CleanBase64(const char* data) {
-    std::string out;
-    out.reserve(strlen(data));
+wxImage LoadPngFromMemory(const unsigned char* data, size_t size)
+{
+    wxMemoryInputStream stream(data, size);
+    wxImage img;
 
-    for (const char* p = data; *p; ++p) {
-        unsigned char c = static_cast<unsigned char>(*p);
+    img.LoadFile(stream, wxBITMAP_TYPE_PNG);
 
-        // Keep only valid base64 characters: A-Z a-z 0-9 + / =
-        if ((c >= 'A' && c <= 'Z') ||
-            (c >= 'a' && c <= 'z') ||
-            (c >= '0' && c <= '9') ||
-            c == '+' || c == '/' || c == '=')
-        {
-            out.push_back(c);
-        }
-    }
+    if (!img.IsOk())
+        throw std::runtime_error("Failed to load PNG from memory");
 
-    return out;
-}
-
-wxBitmap BitmapFromBase64(const char *base64Data,
-                          const wxSize& size) {
-    // ---- Clean the base64 (removes newlines, spaces, tabs) ----
-    std::string clean = CleanBase64(base64Data);
-
-    // ---- Decode ----
-    wxMemoryBuffer buffer = wxBase64Decode(clean.c_str());
-    if (buffer.IsEmpty()) {
-        wxLogError("Failed to decode base64 image data.");
-        return wxBitmap();
-    }
-
-    // Create input stream from buffer
-    wxMemoryInputStream stream(buffer.GetData(), buffer.GetDataLen());
-
-    // Load image from stream
-    wxImage image(stream, wxBITMAP_TYPE_ANY);
-    if (!image.IsOk()) {
-        wxLogError("Failed to load wxImage from decoded data.");
-        return wxBitmap();
-    }
-
-    // Resize if needed
-    if (size != wxDefaultSize) {
-        image = image.Scale(size.x, size.y, wxIMAGE_QUALITY_HIGH);
-    }
-
-    return wxBitmap(image);
+    return img;
 }
 
 }

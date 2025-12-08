@@ -23,8 +23,7 @@ Copyright 2025 SwatKat1977
 
 namespace webweaver::studio {
 
-wxBitmap BitmapFromBase64(const char *base64Data,
-                          const wxSize& size = wxSize(32, 32));
+wxImage LoadPngFromMemory(const unsigned char* data, size_t size);
 
 }
 
