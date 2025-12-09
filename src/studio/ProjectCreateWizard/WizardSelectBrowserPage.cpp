@@ -17,6 +17,8 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
+#include "WizardSelectBrowserPage.h"
+
 #ifdef __PORTED_CODE__
 import wx
 from project_create_wizard.browser_icons import (
@@ -29,7 +31,12 @@ from wizard_step_indicator import WizardStepIndicator
 from project_create_wizard.wizard_ids import ID_BACK_BUTTON
 
 wxmsw33u_core.lib
-wxmsw33u_core.lib
+wxmsw3
+
+/*
+
+*
+*/
 
 class WizardWebSelectBrowserPage(wx.Dialog):
     DEFAULT_URL = "https://www.example.com"
