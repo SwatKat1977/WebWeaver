@@ -17,6 +17,7 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
+// #include "WizardBasicInfoPage.h"
 #ifdef __PORTED_CODE__
 import wx
 from wizard_step_indicator import WizardStepIndicator

@@ -45,6 +45,7 @@
     <ClInclude Include="imgResources\toolbar\toolbar_start_record.h">
       <Filter>ImgResources\Toolbar</Filter>
     </ClInclude>
+    <ClInclude Include="WizardStepIndicator.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ProjectCreateWizard\WizardBasicInfoPage.cpp">
@@ -57,5 +58,6 @@
     <ClCompile Include="studio.cpp" />
     <ClCompile Include="StudioMainFrame.cpp" />
     <ClCompile Include="ToolbarIcons.cpp" />
+    <ClCompile Include="WizardStepIndicator.cpp" />
   </ItemGroup>
 </Project>

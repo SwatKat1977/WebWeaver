@@ -104,7 +104,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;__WXDEBUG__;WXUSINGDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;__WXDEBUG__;WXUSINGDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -138,6 +138,7 @@
     <ClCompile Include="studio.cpp" />
     <ClCompile Include="StudioMainFrame.cpp" />
     <ClCompile Include="ToolbarIcons.cpp" />
+    <ClCompile Include="WizardStepIndicator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BitmapUtils.h" />
@@ -156,6 +157,7 @@
     <ClInclude Include="ProjectCreateWizard\WizardSelectBrowserPage.h" />
     <ClInclude Include="StudioMainFrame.h" />
     <ClInclude Include="ToolbarIcons.h" />
+    <ClInclude Include="WizardStepIndicator.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
