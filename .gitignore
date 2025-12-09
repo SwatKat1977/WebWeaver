@@ -1,3 +1,4 @@
+########### PYTHON ###########
 __pycache__
 .coverage
 .idea
@@ -5,3 +6,8 @@ __pycache__
 # Build
 dist
 build
+
+########### C++ ###########
+.vs
+x64
+*.user
