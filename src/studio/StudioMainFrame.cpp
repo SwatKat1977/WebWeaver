@@ -21,6 +21,8 @@ Copyright 2025 SwatKat1977
 #include "StudioMainFrame.h"
 #include "BitmapUtils.h"
 #include "ToolbarIcons.h"
+#include "ProjectCreateWizard/WizardBasicInfoPage.h"
+#include "ProjectWizardControlIDs.h"
 
 namespace webweaver::studio {
 
@@ -120,12 +122,6 @@ void StudioMainFrame::CreateMainToolbar() {
 
     toolbar->Realize();
 
-    /*
-    *     void OnNewProjectEvent(wxEvent event);
-
-void OnRecordToggleEvent(wxEvent event);
-    */
-
     // --- Bind toolbar events ---
     Bind(wxEVT_TOOL,
         &StudioMainFrame::OnNewProjectEvent,
@@ -155,40 +151,68 @@ void OnRecordToggleEvent(wxEvent event);
 }
 
 void StudioMainFrame::OnNewProjectEvent(wxCommandEvent& event) {
-    //  data = {};
+    ProjectCreateWizardData data;
+    std::vector<std::string> steps = {
+    "Basic solution info",
+    "Browser selection",
+    "Configure behaviour",
+    "Finish"
+    };
 
-    int page = 1;
-        /*
-        while True :
-            if page == 1 :
-                dlg = WizardBasicInfoPage(self, data)
-                elif page == 2 :
-                dlg = WizardWebSelectBrowserPage(self, data)
+    int pageNumber = 1;
 
-                elif page == 3 :
-                dlg = WizardWebBehaviourPage(self, data)
+    while (true) {
+        wxDialog* wizardDialog = nullptr;
 
-                elif page == 4 :
-                dlg = WizardFinishPage(self, data)
+        switch (pageNumber) {
+        case 1:
+            wizardDialog = new WizardBasicInfoPage(this, &data, steps);
+            break;
 
-            else:
-    break
+        case 2:
+            return;
+            // wizardDialog = WizardWebSelectBrowserPage(self, data);
+            break;
 
-        rc = dlg.ShowModal()
+        case 3:
+            // wizardDialog = WizardWebBehaviourPage(self, data)
+            break;
 
-        if rc == wx.ID_CANCEL :
-            return  # wizard cancelled
+        case 4:
+            // wizardDialog = WizardFinishPage(self, data)
 
-            if rc == ID_BACK_BUTTON:
-    page -= 1
-        continue
+        default:
+            // No more pages .. end wizard and create solution
 
-        if rc == wx.ID_OK :
-            page += 1
-            continue
+            /*
+            // Wizard has finished normally:
+            for (auto& [key, val] : data) {
+                std::cout << key << ": " << val << std::endl;
+            }
+            */
+            return;
+        }
 
-            print("DATA:", data)
-*/
+        int rc = wizardDialog->ShowModal();
+        wizardDialog->Destroy();
+
+        if (rc == wxID_CANCEL) {
+            // Wizard cancelled, abort
+            return;
+        }
+
+        if (rc == PROJECT_WIZARD_BACK_BUTTON_ID) {
+            pageNumber -= 1;
+            continue;
+        }
+        else if (rc == wxID_OK) {
+            pageNumber += 1;
+            continue;
+        }
+
+        // Unknown return code, exit cleanly.
+        return;
+    }
 }
 
 void StudioMainFrame::OnRecordToggleEvent(wxCommandEvent& event) {

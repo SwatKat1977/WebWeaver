@@ -46,6 +46,9 @@
       <Filter>ImgResources\Toolbar</Filter>
     </ClInclude>
     <ClInclude Include="WizardStepIndicator.h" />
+    <ClInclude Include="ProjectWizardControlIDs.h">
+      <Filter>ProjectCreateWizard</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ProjectCreateWizard\WizardBasicInfoPage.cpp">

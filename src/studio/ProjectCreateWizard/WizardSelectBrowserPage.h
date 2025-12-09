@@ -38,10 +38,9 @@ class WizardWebSelectBrowserPage : public wxDialog {
 
     WizardWebSelectBrowserPage(wxWindow* parent, int data);
 
-    void OnBrowserToggleEvent(wxCommandEvent& event);
-
     bool ValidateFields();
 
+    void OnBrowserToggleEvent(wxCommandEvent& event);
     void OnNextEvent(wxCommandEvent& event);
 };
 

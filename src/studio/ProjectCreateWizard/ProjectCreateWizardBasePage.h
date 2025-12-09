@@ -20,31 +20,15 @@ Copyright 2025 SwatKat1977
 #ifndef PROJECTCREATEWIZARD_PROJECTCREATEWIZARDBASEPAGE_H_
 #define PROJECTCREATEWIZARD_PROJECTCREATEWIZARDBASEPAGE_H_
 #include <string>
-#include <vector>
+
+namespace webweaver::studio {
 
 struct ProjectCreateWizardData {
+    std::string solutionName;
+    std::string solutionDirectory;
+    bool createSolutionDir = true;
 };
 
-class ProjectCreateWizardBasePage {
- public:
-    explicit ProjectCreateWizardBasePage(ProjectCreateWizardData data)
-        : data_(data) {
-        std::vector<std::string> steps = {
-            "Basic solution info",
-            "Browser selection",
-            "Configure behaviour",
-            "Finish"
-        };
-    }
-
-    ProjectCreateWizardData& GetData() { return data_; }
-    const ProjectCreateWizardData& GetData() const { return data_; }
-
-    std::vector<std::string> GetSteps() const { return steps_; }
-
- private:
-    ProjectCreateWizardData data_;
-    std::vector<std::string> steps_;
-};
+}   // namespace webweaver::studio
 
 #endif  // PROJECTCREATEWIZARD_PROJECTCREATEWIZARDBASEPAGE_H_"
