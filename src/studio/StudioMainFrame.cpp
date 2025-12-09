@@ -18,6 +18,7 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
 #include <wx/artprov.h>
+#include <wx/treectrl.h>
 #include "StudioMainFrame.h"
 #include "BitmapUtils.h"
 #include "ToolbarIcons.h"
@@ -58,10 +59,43 @@ StudioMainFrame::StudioMainFrame(wxWindow* parent)
 void StudioMainFrame::InitAui() {
     _aui_mgr.SetManagedWindow(this);
 
+    // Reset any previously stored layout
+    _aui_mgr.LoadPerspective("", true);
+
     // --------------------------------------------------------------
     // TOOLBAR (top, dockable)
     // --------------------------------------------------------------
     CreateMainToolbar();
+
+#ifndef __PROJECT_PANEL__
+    // Projects panel (left top)
+    wxPanel *projectPanel = new wxPanel(this);
+    wxBoxSizer *projectSizer = new wxBoxSizer(wxVERTICAL);
+    projectSizer->Add(new wxStaticText(projectPanel,
+                                       wxID_ANY,
+                                       "Projects"), 0, wxALL, 5);
+
+    wxTreeCtrl* projectTree = new wxTreeCtrl(projectPanel,
+                                             wxID_ANY,
+                                             wxDefaultPosition,
+                                             wxDefaultSize,
+                                             wxTR_HAS_BUTTONS | wxTR_DEFAULT_STYLE);
+    projectSizer->Add(projectTree, 1, wxEXPAND | wxALL, 5);
+
+    projectTree->ExpandAll();
+
+    projectPanel->SetSizer(projectSizer);
+
+    _aui_mgr.AddPane(
+        projectPanel,
+        wxAuiPaneInfo()
+        .Left()
+        .Caption("Projects")
+        .CloseButton(true)
+        .MaximizeButton(true)
+        .MinimizeButton(true)
+        .BestSize(300, 300));
+#endif
 
     _aui_mgr.Update();
 }
