@@ -23,8 +23,7 @@ Copyright 2025 SwatKat1977
 
 namespace webweaver::studio {
 
-wxImage LoadPngFromMemory(const unsigned char* data, size_t size)
-{
+wxImage LoadPngFromMemory(const unsigned char* data, size_t size) {
     wxMemoryInputStream stream(data, size);
     wxImage img;
 
@@ -36,4 +35,4 @@ wxImage LoadPngFromMemory(const unsigned char* data, size_t size)
     return img;
 }
 
-}
+}   // // namespace webweaver::studio

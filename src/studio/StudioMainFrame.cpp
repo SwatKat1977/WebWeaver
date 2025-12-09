@@ -38,8 +38,7 @@ StudioMainFrame::StudioMainFrame(wxWindow* parent)
     "Webweaver Automation Studio",
     InitialWindowPosition,
     wxSize(1024, 768),
-    wxDEFAULT_FRAME_STYLE)
-{
+    wxDEFAULT_FRAME_STYLE) {
 #ifdef __APPLE__
         EnableFullScreenView(false);
 #endif
@@ -54,8 +53,7 @@ StudioMainFrame::StudioMainFrame(wxWindow* parent)
     SetMenuBar(menubar);
 }
 
-void StudioMainFrame::InitAui()
-{
+void StudioMainFrame::InitAui() {
     _aui_mgr.SetManagedWindow(this);
 
     // --------------------------------------------------------------
@@ -64,12 +62,9 @@ void StudioMainFrame::InitAui()
     CreateMainToolbar();
 
     _aui_mgr.Update();
-
-    //CentreOnScreen();
 }
 
-StudioMainFrame::~StudioMainFrame()
-{
+StudioMainFrame::~StudioMainFrame() {
     _aui_mgr.UnInit();
 }
 
@@ -160,7 +155,7 @@ void OnRecordToggleEvent(wxEvent event);
 }
 
 void StudioMainFrame::OnNewProjectEvent(wxCommandEvent& event) {
-    //data = {};
+    //  data = {};
 
     int page = 1;
         /*
@@ -211,18 +206,17 @@ void StudioMainFrame::OnRecordToggleEvent(wxCommandEvent& event) {
     }
 
     bool isRecording = toolbar->GetToolToggled(RECORD_TOOLBAR_ICON_ID);
-    if (isRecording)
-    {
-        toolbar->SetToolBitmap(RECORD_TOOLBAR_ICON_ID, LoadToolbarStopRecordIcon());
+    if (isRecording) {
+        toolbar->SetToolBitmap(RECORD_TOOLBAR_ICON_ID,
+                               LoadToolbarStopRecordIcon());
         toolbar->SetToolShortHelp(RECORD_TOOLBAR_ICON_ID, "Stop Recording");
-    }
-    else
-    {
-        toolbar->SetToolBitmap(RECORD_TOOLBAR_ICON_ID, LoadToolbarStartRecordIcon());
+    } else {
+        toolbar->SetToolBitmap(RECORD_TOOLBAR_ICON_ID,
+                               LoadToolbarStartRecordIcon());
         toolbar->SetToolShortHelp(RECORD_TOOLBAR_ICON_ID, "Start Recording");
     }
 
     toolbar->Realize();
 }
 
-}
+}   // namespace webweaver::studio

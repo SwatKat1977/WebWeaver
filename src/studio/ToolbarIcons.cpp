@@ -17,7 +17,6 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-//#include "imgResources/toolbar/toolbar_start_record.h"
 #include "ToolbarIcons.h"
 #include "BitmapUtils.h"
 #include "imgResources/toolbar/toolbar_inspect.h"
@@ -29,12 +28,12 @@ Copyright 2025 SwatKat1977
 #include "imgResources/toolbar/toolbar_stop_record.h"
 
 namespace webweaver::studio {
-    
+
 static wxBitmap LoadToolbarIcon(const unsigned char *png,
                                 const unsigned int size) {
     wxImage img = LoadPngFromMemory(png, size);
 
-    // Force 32×32
+    // Force 32 x 32
     img = img.Scale(32, 32, wxIMAGE_QUALITY_HIGH);
 
     return wxBitmap(img);
@@ -75,4 +74,4 @@ wxBitmap LoadToolbarStopRecordIcon() {
                            STOP_RECORD_ICON_SIZE);
 }
 
-}
+}   // namespace webweaver::studio
