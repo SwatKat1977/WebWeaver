@@ -124,6 +124,7 @@
     </Manifest>
     <PostBuildEvent>
       <Command>mt.exe -manifest "$(ProjectDir)WebWeaverStudio.manifest" -outputresource:"$(TargetPath)";#1</Command>
+      <Message>Generating Manifest [Debug]</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -141,6 +142,10 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>wxbase33u.lib;wxmsw33u_core.lib;wxmsw33u_aui.lib;wxmsw33u_adv.lib;wxmsw33u_html.lib;wxpngd.lib;wxzlib.lib;wxjpeg.lib;wxtiff.lib;wxregexu.lib;wxexpat.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Message>Generating Manifest [Release]</Message>
+      <Command>mt.exe -manifest "$(ProjectDir)WebWeaverStudio.manifest" -outputresource:"$(TargetPath)";#1</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BitmapUtils.cpp" />
