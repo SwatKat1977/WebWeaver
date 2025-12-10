@@ -49,6 +49,7 @@
     <ClInclude Include="ProjectWizardControlIDs.h">
       <Filter>ProjectCreateWizard</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ProjectCreateWizard\WizardBasicInfoPage.cpp">
@@ -62,5 +63,8 @@
     <ClCompile Include="StudioMainFrame.cpp" />
     <ClCompile Include="ToolbarIcons.cpp" />
     <ClCompile Include="WizardStepIndicator.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="VersionInfo.rc" />
   </ItemGroup>
 </Project>
