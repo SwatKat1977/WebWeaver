@@ -69,6 +69,8 @@ void StudioMainFrame::InitAui() {
 
     CreateProjectPanel();
 
+    CreateWorkspacePanel();
+
     _aui_mgr.Update();
 }
 
@@ -181,6 +183,9 @@ void StudioMainFrame::CreateProjectPanel() {
         .MaximizeButton(true)
         .MinimizeButton(true)
         .BestSize(300, 300));
+}
+
+void StudioMainFrame::CreateWorkspacePanel() {
 }
 
 void StudioMainFrame::OnNewProjectEvent(wxCommandEvent& event) {

@@ -38,6 +38,7 @@ class StudioMainFrame : public wxFrame {
 
     void CreateMainToolbar();
     void CreateProjectPanel();
+    void CreateWorkspacePanel();
 
     void OnNewProjectEvent(wxCommandEvent &event);
 
