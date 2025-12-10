@@ -165,7 +165,7 @@ WizardSelectBrowserPage::WizardSelectBrowserPage(wxWindow* parent,
     buttonBarSizer->Add(btnBack, 0, wxRIGHT, 10);
 
     wxButton *btnNext = new wxButton(this, wxID_OK, "Next");
-    //self.btn_next.Bind(wx.EVT_BUTTON, self.__on_next);
+    btnNext->Bind(wxEVT_BUTTON, &WizardSelectBrowserPage::OnNextClickEvent, this);
     buttonBarSizer->Add(btnNext, 0);
 
     mainSizer->Add(buttonBarSizer, 0, wxEXPAND | wxALL, 10);
