@@ -17,205 +17,239 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
+#include <vector>
+#include <wx/wx.h>
+#include <wx/artprov.h>
 #include "WizardSelectBrowserPage.h"
+#include "ProjectCreateWizard/BrowserIcons.h"
+#include "WizardStepIndicator.h"
+#include "ProjectWizardControlIDs.h"
 
-#ifdef __PORTED_CODE__
-import wx
-from project_create_wizard.browser_icons import (
-    CHROMIUM_BROWSER_ICON,
-    CHROME_BROWSER_ICON,
-    FIREFOX_BROWSER_ICON,
-    MICROSOFT_EDGE_BROWSER_ICON)
-from bitmap_utils import BitmapUtils
-from wizard_step_indicator import WizardStepIndicator
-from project_create_wizard.wizard_ids import ID_BACK_BUTTON
+namespace webweaver::studio {
 
-wxmsw33u_core.lib
-wxmsw3
+WizardSelectBrowserPage::WizardSelectBrowserPage(wxWindow* parent,
+                                                 ProjectCreateWizardData* data,
+                                                 std::vector<std::string> steps)
+    : wxDialog(parent,
+        wxID_ANY,
+        "Set up your web test",
+        wxDefaultPosition,
+        wxDefaultSize,
+        wxDEFAULT_DIALOG_STYLE), data_(data), steps_(steps) {
+    wxBoxSizer *mainSizer = new wxBoxSizer(wxVERTICAL);
 
-/*
+    // --- Step indicator ---
+    WizardStepIndicator* stepIndicator = new WizardStepIndicator(this,
+                                                                 steps_,
+                                                                 1);
+    mainSizer->Add(stepIndicator, 0, wxEXPAND | wxALL, 10);
 
-*
-*/
+    // --- Header ---
+    wxBoxSizer *headerSizer = new wxBoxSizer(wxHORIZONTAL);
 
-class WizardWebSelectBrowserPage(wx.Dialog):
-    DEFAULT_URL = "https://www.example.com"
+    // --- Wizard page icon ---
+    wxBitmap iconBitmap = wxArtProvider::GetBitmap(
+        wxART_TIP, wxART_OTHER, wxSize(32, 32));
+    wxStaticBitmap* icon = new wxStaticBitmap(this, wxID_ANY, iconBitmap);
+    headerSizer->Add(icon, 0, wxALL, 10);
 
-    def __init__(self, parent, data):
-        super().__init__(parent, title="Set up your web test",
-                         style=wx.DEFAULT_DIALOG_STYLE)
+    wxBoxSizer *textBox = new wxBoxSizer(wxVERTICAL);
+    wxStaticText *title = new wxStaticText(this,
+                                           wxID_ANY,
+                                           "Set up your web test");
+    title->SetFont(wxFont(13, wxFONTFAMILY_DEFAULT,
+        wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+    wxStaticText *subtitle = new wxStaticText(
+        this, wxID_ANY, "Which web browser do you want to test on?");
+    subtitle->SetForegroundColour(wxColour(100, 100, 100));
+    textBox->Add(title, 0);
+    textBox->Add(subtitle, 0, wxTOP, 4);
 
-        self.data = data
-        main = wx.BoxSizer(wx.VERTICAL)
+    headerSizer->Add(textBox, 1, wxALIGN_CENTER_VERTICAL);
+    mainSizer->Add(headerSizer, 0, wxLEFT | wxRIGHT, 10);
 
-        self.steps = [
-            "Basic solution info",
-            "Browser selection",
-            "Configure behaviour",
-            "Finish",
-        ]
+    // URL
+    wxBoxSizer *urlSizer = new wxBoxSizer(wxVERTICAL);
+    urlSizer->Add(new wxStaticText(this, wxID_ANY, "URL"), 0, wxBOTTOM, 4);
+    _txtBaseUrl = new wxTextCtrl(this, wxID_ANY, DEFAULT_URL);
+    urlSizer->Add(_txtBaseUrl, 0, wxEXPAND);
+    mainSizer->Add(urlSizer, 0, wxEXPAND | wxALL, 10);
 
-        self.current_index = 0
-        step_indicator = WizardStepIndicator(self, self.steps, active_index=1)
-        main.Add(step_indicator, 0, wx.EXPAND | wx.ALL, 10)
+    // Browser label + hint
+    wxStaticText *lblBrowser = new wxStaticText(
+        this, wxID_ANY, "Select browser");
+    lblBrowser->SetFont(wxFont(10, wxFONTFAMILY_DEFAULT,
+        wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+    mainSizer->Add(lblBrowser, 0, wxLEFT | wxRIGHT, 10);
 
-        # Header
-        header = wx.BoxSizer(wx.HORIZONTAL)
-        icon = wx.StaticBitmap(self, bitmap=wx.ArtProvider.GetBitmap(
-            wx.ART_TIP, wx.ART_OTHER, (32, 32)))
-        header.Add(icon, 0, wx.ALL, 10)
+    wxStaticText *hint = new wxStaticText(
+        this, wxID_ANY,
+        "The selected browser must be installed on this system.");
+    hint->SetForegroundColour(wxColour(120, 120, 120));
+    mainSizer->Add(hint, 0, wxLEFT | wxRIGHT | wxBOTTOM, 10);
 
-        text_box = wx.BoxSizer(wx.VERTICAL)
-        title = wx.StaticText(self, label="Set up your web test")
-        title.SetFont(wx.Font(13, wx.FONTFAMILY_DEFAULT,
-                              wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
-        subtitle = wx.StaticText(
-            self, label="Which web browser do you want to test on?")
-        subtitle.SetForegroundColour(wx.Colour(100, 100, 100))
-        text_box.Add(title, 0)
-        text_box.Add(subtitle, 0, wx.TOP, 4)
+    // Scrollable browser icons(simplified)
+    wxScrolledWindow *scroll = new wxScrolledWindow(
+        this,
+        wxID_ANY,
+        wxDefaultPosition,
+        wxDefaultSize,
+        wxHSCROLL | wxBORDER_NONE);
+    scroll->SetScrollRate(10, 0);
+    scroll->SetMinSize(wxSize(-1, 110));
 
-        header.Add(text_box, 1, wx.ALIGN_CENTER_VERTICAL)
-        main.Add(header, 0, wx.LEFT | wx.RIGHT, 10)
+    wxBoxSizer *hsizer = new wxBoxSizer(wxHORIZONTAL);
 
-        # URL
-        url_box = wx.BoxSizer(wx.VERTICAL)
-        url_box.Add(wx.StaticText(self, label="URL"), 0, wx.BOTTOM, 4)
-        self.txt_url = wx.TextCtrl(self, value=self.DEFAULT_URL)
-        url_box.Add(self.txt_url, 0, wx.EXPAND)
-        main.Add(url_box, 0, wx.EXPAND | wx.ALL, 10)
+    // List of browsers
+    std::vector<std::pair<wxString, wxBitmap>> browsers = {
+    { "Firefox",          LoadBrowserIconFirefox() },
+    { "Chrome",           LoadBrowserIconGoogleChromium() },
+    { "Chromium",         LoadBrowserIconChromium() },
+    { "Edge (Chromium)",  LoadBrowserIconMicrosoftEdge() }
+    };
 
-        # Browser label + hint
-        lbl_browser = wx.StaticText(self, label="Select browser")
-        lbl_browser.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT,
-                                    wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
-        main.Add(lbl_browser, 0, wx.LEFT | wx.RIGHT, 10)
+    _browserButtons.clear();
 
-        hint = wx.StaticText(
-            self, label="The selected browser must be installed on this system.")
-        hint.SetForegroundColour(wx.Colour(120, 120, 120))
-        main.Add(hint, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+    for (const auto& entry : browsers)
+    {
+        const wxString& name = entry.first;
+        const wxBitmap& bmp = entry.second;
 
-        # Scrollable browser icons (simplified)
-        scroll = wx.ScrolledWindow(self, style=wx.HSCROLL | wx.BORDER_NONE)
-        scroll.SetScrollRate(10, 0)
-        scroll.SetMinSize((-1, 110))
+        wxBoxSizer* col = new wxBoxSizer(wxVERTICAL);
 
-        hsizer = wx.BoxSizer(wx.HORIZONTAL)
+        wxBitmapToggleButton* btn =
+            new wxBitmapToggleButton(scroll, wxID_ANY, bmp);
 
-        chromium_bmp = BitmapUtils.bitmap_from_base64(CHROMIUM_BROWSER_ICON)
-        chrome_bmp = BitmapUtils.bitmap_from_base64(CHROME_BROWSER_ICON)
-        firefox_bmp = BitmapUtils.bitmap_from_base64(FIREFOX_BROWSER_ICON)
-        ms_edge_bmp = BitmapUtils.bitmap_from_base64(MICROSOFT_EDGE_BROWSER_ICON)
+        wxStaticText* label = new wxStaticText(
+            scroll, wxID_ANY, name);
+        label->SetForegroundColour(wxColour(80, 80, 80));
 
-        # List of browsers
-        browsers = [
-            ("Firefox", firefox_bmp),
-            ("Chrome", chrome_bmp),
-            ("Chromium", chromium_bmp),
-            ("Edge (Chromium)", ms_edge_bmp),
-        ]
+        col->Add(btn, 0, wxALIGN_CENTER | wxBOTTOM, 4);
+        col->Add(label, 0, wxALIGN_CENTER);
+        hsizer->Add(col, 0, wxRIGHT, 20);
 
-        self.browser_buttons = []
-        for name, bmp in browsers:
-            col = wx.BoxSizer(wx.VERTICAL)
-            btn = wx.BitmapToggleButton(scroll, -1, bmp)
-            label = wx.StaticText(scroll, label=name)
-            label.SetForegroundColour(wx.Colour(80, 80, 80))
+        btn->Bind(wxEVT_TOGGLEBUTTON,
+                  &WizardSelectBrowserPage::OnBrowserToggleEvent,
+                  this);
+        _browserButtons.push_back({ name, btn });
+    }
 
-            col.Add(btn, 0, wx.ALIGN_CENTER | wx.BOTTOM, 4)
-            col.Add(label, 0, wx.ALIGN_CENTER)
-            hsizer.Add(col, 0, wx.RIGHT, 20)
+    scroll->SetSizer(hsizer);
+    mainSizer->Add(scroll,
+                    0,
+                    wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM,
+                    10);
 
-            btn.Bind(wx.EVT_TOGGLEBUTTON, self.on_browser_toggle)
-            self.browser_buttons.append((name, btn))
+    // Checkbox
+    _chkLaunchBrowser = new wxCheckBox(
+        this,
+        wxID_ANY,
+        "Launch browser automatically. Uncheck if browser is already running.");
+    mainSizer->Add(_chkLaunchBrowser, 0, wxLEFT | wxRIGHT | wxBOTTOM, 10);
 
-        scroll.SetSizer(hsizer)
-        main.Add(scroll, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+    // Button bar
+    wxBoxSizer *buttonBarSizer = new wxBoxSizer(wxHORIZONTAL);
+    buttonBarSizer->AddStretchSpacer();
 
-        # Checkbox
-        self.chk_launch = wx.CheckBox(
-            self,
-            label="Launch browser automatically. Uncheck if browser is already running.",
-        )
-        main.Add(self.chk_launch, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+    wxButton *btnCancel = new wxButton(this, wxID_CANCEL, "Cancel");
+    btnCancel->Bind(wxEVT_BUTTON,
+        [this](wxCommandEvent&) { EndModal(wxID_CANCEL); });
+    buttonBarSizer->Add(btnCancel, 0, wxRIGHT, 10);
 
-        # Button bar
-        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        btn_sizer.AddStretchSpacer()
+    wxButton *btnBack = new wxButton(this,
+                                     PROJECT_WIZARD_BACK_BUTTON_ID,
+                                     "Back");
+    btnBack->Bind(wxEVT_BUTTON,
+                  [this](wxCommandEvent&) {
+            EndModal(PROJECT_WIZARD_BACK_BUTTON_ID); });
+    buttonBarSizer->Add(btnBack, 0, wxRIGHT, 10);
 
-        self.btn_cancel = wx.Button(self, wx.ID_CANCEL, "Cancel")
-        self.btn_cancel.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(wx.ID_CANCEL))
-        btn_sizer.Add(self.btn_cancel, 0, wx.RIGHT, 10)
+    wxButton *btnNext = new wxButton(this, wxID_OK, "Next");
+    //self.btn_next.Bind(wx.EVT_BUTTON, self.__on_next);
+    buttonBarSizer->Add(btnNext, 0);
 
-        btn_back = wx.Button(self, ID_BACK_BUTTON, "Back")
-        btn_back.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(ID_BACK_BUTTON))
-        btn_sizer.Add(btn_back, 0, wx.RIGHT, 10)
+    mainSizer->Add(buttonBarSizer, 0, wxEXPAND | wxALL, 10);
 
-        self.btn_next = wx.Button(self, wx.ID_OK, "Next")
-        self.btn_next.Bind(wx.EVT_BUTTON, self.__on_next)
-        btn_sizer.Add(self.btn_next, 0)
+    SetSizerAndFit(mainSizer);
+    CentreOnParent();
+}
 
-        main.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 10)
-
-        self.SetSizerAndFit(main)
-        self.CentreOnParent()
-
-    def on_browser_toggle(self, event):
-        """
+void WizardSelectBrowserPage::OnBrowserToggleEvent(wxCommandEvent& event) {
+    /*
         Ensure that only one browser toggle button can be active at a time.
 
         When a browser button is clicked, this handler deactivates all other
         buttons in ``browser_buttons`` to enforce exclusive selection.
-        """
-        clicked = event.GetEventObject()
-        for _name, btn in self.browser_buttons:
-            if btn is not clicked:
-                btn.SetValue(False)
+    */
+    wxWindow* clicked = dynamic_cast<wxWindow*>(event.GetEventObject());
+    
+    for (auto& pair : _browserButtons) {
+        wxToggleButton* btn = pair.second;
 
-    def __validate(self) -> bool:
-        """
-        Validate the user's input before allowing the wizard to advance.
+        if (btn != clicked)
+            btn->SetValue(false);
+    }
 
-        This method checks that:
-        * the URL field is not empty
-        * a browser has been selected from the available toggle buttons
+    event.Skip();
+}
 
-        If validation succeeds, the selected values are written to the
-        wizard's shared data dictionary. If validation fails, a warning
-        message is shown and the wizard remains on the current page.
+bool WizardSelectBrowserPage::ValidateFields() {
+    /*
+    Validate the user's input before allowing the wizard to advance.
 
-        Returns
-        -------
-        bool
-            True if the page is valid and the wizard may proceed; False if
-            validation fails and navigation should be blocked.
-        """
-        url = self.txt_url.GetValue().strip()
-        if not url:
-            wx.MessageBox("Please enter a URL.", "Missing information", wx.ICON_WARNING)
-            return False
+    This method checks that:
+    * the URL field is not empty
+    * a browser has been selected from the available toggle buttons
 
-        selected_browser = None
-        for name, btn in self.browser_buttons:
-            if btn.GetValue():
-                selected_browser = name
-                break
+    If validation succeeds, the selected values are written to the
+    wizard's shared data dictionary. If validation fails, a warning
+    message is shown and the wizard remains on the current page.
 
-        if not selected_browser:
-            wx.MessageBox("Please select a browser.", "Missing information", wx.ICON_WARNING)
-            return False
+    Returns
+    -------
+    bool
+        True if the page is valid and the wizard may proceed; False if
+        validation fails and navigation should be blocked.
+    */
+    wxString baseUrl = _txtBaseUrl->GetValue().Strip(wxString::both);
+    if (baseUrl.IsEmpty()) {
+        wxMessageBox("Please enter a base URL.",
+            "Validation error",
+            wxICON_WARNING);
+        return false;
+    }
 
-        self.data["base_url"] = self.txt_url.GetValue().strip()
-        self.data["browser"] = selected_browser
-        self.data["launch_browser_automatically"] = self.chk_launch.GetValue()
+    wxString selectedBrowser;
+    for (const auto& pair : _browserButtons) {
+        const wxString& name = pair.first;
+        wxToggleButton* btn = pair.second;
 
-        return True
+        if (btn->GetValue()) {
+            selectedBrowser = name;
+            break;
+        }
+    }
 
-    def __on_next(self, _event):
-        if not self.__validate():
-            return
+    if (selectedBrowser.IsEmpty()) {
+        wxMessageBox("Please select a browser.",
+                     "Missing information",
+                     wxICON_WARNING);
+        return false;
+    }
 
-        self.EndModal(wx.ID_OK)
+    data_->baseUrl = baseUrl;
+    data_->browser = selectedBrowser;
+    data_->launchBrowserAutomatically = _chkLaunchBrowser->GetValue();
 
-#endif  // #ifdef __PORTED_CODE__
+    return true;
+}
+
+void WizardSelectBrowserPage::OnNextClickEvent(wxCommandEvent& event) {
+    if (!ValidateFields()) {
+        return;
+    }
+
+    EndModal(wxID_OK);
+}
+
+}   // namespace webweaver::studio

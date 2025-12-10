@@ -23,6 +23,7 @@ Copyright 2025 SwatKat1977
 #include "BitmapUtils.h"
 #include "ToolbarIcons.h"
 #include "ProjectCreateWizard/WizardBasicInfoPage.h"
+#include "ProjectCreateWizard/WizardSelectBrowserPage.h"
 #include "ProjectWizardControlIDs.h"
 
 namespace webweaver::studio {
@@ -186,6 +187,30 @@ void StudioMainFrame::CreateProjectPanel() {
 }
 
 void StudioMainFrame::CreateWorkspacePanel() {
+    // -------------------------
+    // Workspace
+    // -------------------------
+    wxPanel *workspacePanel = new wxPanel(this);
+    wxBoxSizer *workspaceSizer = new wxBoxSizer(wxVERTICAL);
+    workspaceSizer->Add(new wxStaticText(workspacePanel,
+                        wxID_ANY,
+                        "Workspace"), 0, wxALL, 5);
+
+    wxTextCtrl *text_box = new wxTextCtrl(workspacePanel,
+                                          wxID_ANY,
+                                          "",
+                                          wxDefaultPosition,
+                                          wxDefaultSize,
+                                          wxTE_MULTILINE);
+    workspaceSizer->Add(text_box, 1, wxEXPAND | wxALL, 5);
+    workspacePanel->SetSizer(workspaceSizer);
+
+    // Add main central area
+    _aui_mgr.AddPane(
+        workspacePanel,
+        wxAuiPaneInfo()
+        .CenterPane()
+        .Caption("Workspace"));
 }
 
 void StudioMainFrame::OnNewProjectEvent(wxCommandEvent& event) {
@@ -208,17 +233,18 @@ void StudioMainFrame::OnNewProjectEvent(wxCommandEvent& event) {
             break;
 
         case 2:
-            return;
-            // wizardDialog = WizardWebSelectBrowserPage(self, data);
+            wizardDialog = new WizardSelectBrowserPage(this, &data, steps);
             break;
 
+            /*
         case 3:
+            return;
             // wizardDialog = WizardWebBehaviourPage(self, data)
             break;
 
         case 4:
             // wizardDialog = WizardFinishPage(self, data)
-
+            */
         default:
             // No more pages .. end wizard and create solution
 

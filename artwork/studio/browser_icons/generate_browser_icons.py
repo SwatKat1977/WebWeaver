@@ -17,68 +17,67 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
-import base64
-import textwrap
+from pathlib import Path
+from datetime import datetime
 
-chrome_header: str = """
-# -----------------------
-# Google Chrome Browser Icon (Base64)
-# -----------------------
+header_block = f"""\
+/*
+This source file is part of Web Weaver
+For the latest info, see https://github.com/SwatKat1977/WebWeaver
+
+Copyright 2025 SwatKat1977
+
+    This program is free software : you can redistribute it and /or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.If not, see < https://www.gnu.org/licenses/>.
+*/
 """
-chrome_variable = 'CHROME_BROWSER_ICON = b"""\n'
 
-chromium_header: str = """
-# -----------------------
-# Chromium Browser Icon (Base64)
-# -----------------------
-"""
-chromium_variable = 'CHROMIUM_BROWSER_ICON = b"""\n'
+def png_to_header(png_path: str, header_path: str, var_name: str):
+    input_png = Path(png_path)
+    data = input_png.read_bytes()
 
-ms_edge_header: str = """
-# -----------------------
-# Microsoft Edge Browser Icon (Base64)
-# -----------------------
-"""
-ms_edge_variable = 'MICROSOFT_EDGE_BROWSER_ICON = b"""\n'
+    out_path = Path(header_path)
+    var_upper = var_name.upper()
 
-firefox_header: str = """
-# -----------------------
-# Firefox Browser Icon (Base64)
-# -----------------------
-"""
-firefox_variable = 'FIREFOX_BROWSER_ICON = b"""\n'
+    with out_path.open("w", encoding="ascii") as out:
+        # Write header block
+        out.write(header_block)
+        out.write("\n")
 
-variable_close = '\n"""\n\n'
+        # Write array
+        out.write(f"static const unsigned char {var_upper}[] = {{\n    ")
 
-with open("Google_Chrome.png", "rb") as f:
-    chrome_img = base64.b64encode(f.read()).decode("ascii")
+        for i, b in enumerate(data):
+            out.write(f"0x{b:02X}, ")
+            if (i + 1) % 12 == 0:
+                out.write("\n    ")
 
-with open("Chromium_Logo.png", "rb") as f:
-    chromium_img = base64.b64encode(f.read()).decode("ascii")
+        out.write("\n};\n")
+        out.write(f"static const unsigned int {var_upper}_SIZE = {len(data)};\n")
 
-with open("Firefox_logo.png", "rb") as f:
-    firefox_img = base64.b64encode(f.read()).decode("ascii")
 
-with open("Microsoft_Edge.png", "rb") as f:
-    edge_img = base64.b64encode(f.read()).decode("ascii")
+png_to_header("Chromium_Logo.png",
+    "browser_chromium_icon.h",
+    "browser_chromium_icon")
 
-with open("browser_icons.py", "w", encoding="utf-8") as output_py:
-    output_py.write(chrome_header)
-    output_py.write(chrome_variable)
-    output_py.write("\n".join(textwrap.wrap(chrome_img, width=80)))
-    output_py.write(variable_close)
+png_to_header("Firefox_Logo.png",
+    "browser_firefox_icon.h",
+    "browser_firefox_icon")
 
-    output_py.write(firefox_header)
-    output_py.write(firefox_variable)
-    output_py.write("\n".join(textwrap.wrap(firefox_img, width=80)))
-    output_py.write(variable_close)
+png_to_header("Google_Chrome.png",
+    "browser_google_chrome_icon.h",
+    "browser_google_chrome_icon")
 
-    output_py.write(ms_edge_header)
-    output_py.write(ms_edge_variable)
-    output_py.write("\n".join(textwrap.wrap(edge_img, width=80)))
-    output_py.write(variable_close)
-
-    output_py.write(chromium_header)
-    output_py.write(chromium_variable)
-    output_py.write("\n".join(textwrap.wrap(chromium_img, width=80)))
-    output_py.write(variable_close)
+png_to_header("Microsoft_Edge.png",
+    "browser_microsoft_edge_icon.h",
+    "browser_microsoft_edge_icon")

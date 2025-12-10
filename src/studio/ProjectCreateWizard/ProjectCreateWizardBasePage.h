@@ -24,9 +24,15 @@ Copyright 2025 SwatKat1977
 namespace webweaver::studio {
 
 struct ProjectCreateWizardData {
+    // -- PAGE 1 [Basic Info] --
     std::string solutionName;
     std::string solutionDirectory;
     bool createSolutionDir = true;
+
+    // -- PAGE 2 [Select Browser] --
+    std::string baseUrl;
+    std::string browser;
+    bool launchBrowserAutomatically;
 };
 
 }   // namespace webweaver::studio

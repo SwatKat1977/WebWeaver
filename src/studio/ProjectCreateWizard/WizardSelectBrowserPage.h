@@ -17,31 +17,38 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef WIZARDSELECTBROWSERPAGE_H_
-#define WIZARDSELECTBROWSERPAGE_H_
+#ifndef PROJECTCREATEWIZARD_WIZARDSELECTBROWSERPAGE_H_
+#define PROJECTCREATEWIZARD_WIZARDSELECTBROWSERPAGE_H_
 #include <string>
+#include <vector>
 #include <wx/wx.h>
+#include <wx/tglbtn.h>
+#include "ProjectCreateWizard/ProjectCreateWizardBasePage.h"
 
-/*
-from project_create_wizard.browser_icons import (
-    CHROMIUM_BROWSER_ICON,
-    CHROME_BROWSER_ICON,
-    FIREFOX_BROWSER_ICON,
-    MICROSOFT_EDGE_BROWSER_ICON)
-from bitmap_utils import BitmapUtils
-from wizard_step_indicator import WizardStepIndicator
-from project_create_wizard.wizard_ids import ID_BACK_BUTTON
-*/
+namespace webweaver::studio {
 
-class WizardWebSelectBrowserPage : public wxDialog {
+class WizardSelectBrowserPage : public wxDialog {
+ public:
     const std::string DEFAULT_URL = "https://www.example.com";
 
-    WizardWebSelectBrowserPage(wxWindow* parent, int data);
+    WizardSelectBrowserPage(wxWindow* parent,
+                            ProjectCreateWizardData* data,
+                            std::vector<std::string> steps);
+
+private:
+    ProjectCreateWizardData* data_;
+    std::vector<std::string> steps_;
+    std::vector<std::pair<wxString, wxToggleButton*>> _browserButtons;
+
+    wxTextCtrl *_txtBaseUrl;
+    wxCheckBox *_chkLaunchBrowser;
 
     bool ValidateFields();
 
     void OnBrowserToggleEvent(wxCommandEvent& event);
-    void OnNextEvent(wxCommandEvent& event);
+    void OnNextClickEvent(wxCommandEvent& event);
 };
 
-#endif  // WIZARDSELECTBROWSERPAGE_H_
+}   // namespace webweaver::studio
+
+#endif  // PROJECTCREATEWIZARD_WIZARDSELECTBROWSERPAGE_H_
