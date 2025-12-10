@@ -67,35 +67,7 @@ void StudioMainFrame::InitAui() {
     // --------------------------------------------------------------
     CreateMainToolbar();
 
-#ifndef __PROJECT_PANEL__
-    // Projects panel (left top)
-    wxPanel *projectPanel = new wxPanel(this);
-    wxBoxSizer *projectSizer = new wxBoxSizer(wxVERTICAL);
-    projectSizer->Add(new wxStaticText(projectPanel,
-                                       wxID_ANY,
-                                       "Projects"), 0, wxALL, 5);
-
-    wxTreeCtrl* projectTree = new wxTreeCtrl(projectPanel,
-                                             wxID_ANY,
-                                             wxDefaultPosition,
-                                             wxDefaultSize,
-                                             wxTR_HAS_BUTTONS | wxTR_DEFAULT_STYLE);
-    projectSizer->Add(projectTree, 1, wxEXPAND | wxALL, 5);
-
-    projectTree->ExpandAll();
-
-    projectPanel->SetSizer(projectSizer);
-
-    _aui_mgr.AddPane(
-        projectPanel,
-        wxAuiPaneInfo()
-        .Left()
-        .Caption("Projects")
-        .CloseButton(true)
-        .MaximizeButton(true)
-        .MinimizeButton(true)
-        .BestSize(300, 300));
-#endif
+    CreateProjectPanel();
 
     _aui_mgr.Update();
 }
@@ -182,6 +154,33 @@ void StudioMainFrame::CreateMainToolbar() {
         .Movable(false));
 
     _aui_mgr.Update();
+}
+
+void StudioMainFrame::CreateProjectPanel() {
+    // Projects panel (left top)
+    wxPanel* projectPanel = new wxPanel(this);
+    wxBoxSizer* projectSizer = new wxBoxSizer(wxVERTICAL);
+
+    wxTreeCtrl* projectTree = new wxTreeCtrl(
+        projectPanel,
+        wxID_ANY,
+        wxDefaultPosition,
+        wxDefaultSize,
+        wxTR_HAS_BUTTONS | wxTR_DEFAULT_STYLE);
+    projectSizer->Add(projectTree, 1, wxEXPAND | wxALL, 5);
+
+    projectTree->ExpandAll();
+
+    projectPanel->SetSizer(projectSizer);
+
+    _aui_mgr.AddPane(projectPanel,
+                     wxAuiPaneInfo()
+        .Left()
+        .Caption("Project Explorer")
+        .CloseButton(true)
+        .MaximizeButton(true)
+        .MinimizeButton(true)
+        .BestSize(300, 300));
 }
 
 void StudioMainFrame::OnNewProjectEvent(wxCommandEvent& event) {

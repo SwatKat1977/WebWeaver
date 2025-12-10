@@ -37,6 +37,7 @@ class StudioMainFrame : public wxFrame {
     wxAuiManager _aui_mgr;
 
     void CreateMainToolbar();
+    void CreateProjectPanel();
 
     void OnNewProjectEvent(wxCommandEvent &event);
 
