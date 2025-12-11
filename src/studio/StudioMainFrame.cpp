@@ -53,9 +53,19 @@ StudioMainFrame::StudioMainFrame(wxWindow* parent)
     // Menu Bar
     // --------------------------------------------------------------
     wxMenuBar *menubar = new wxMenuBar();
-    wxMenu *menu = new wxMenu();
-    menu->Append(wxID_EXIT, "Quit");
-    menubar->Append(menu, "File");
+
+    // -- File Menu --
+    wxMenu *fileMenu = new wxMenu();
+    fileMenu->Append(wxID_EXIT, "New Project");
+    fileMenu->Append(wxID_EXIT, "Open Project");
+    fileMenu->Append(wxID_EXIT, "Save Project");
+    fileMenu->Append(wxID_EXIT, "Exit");
+    menubar->Append(fileMenu, "File");
+    SetMenuBar(menubar);
+
+    wxMenu* helpMenu = new wxMenu();
+    helpMenu->Append(wxID_EXIT, "About");
+    menubar->Append(helpMenu, "Help");
     SetMenuBar(menubar);
 }
 
@@ -64,6 +74,8 @@ void StudioMainFrame::InitAui() {
 
     // Reset any previously stored layout
     _aui_mgr.LoadPerspective("", true);
+
+    _aui_mgr.GetArtProvider()->SetMetric(wxAUI_DOCKART_SASH_SIZE, 2);
 
     // --------------------------------------------------------------
     // TOOLBAR (top, dockable)
@@ -181,6 +193,8 @@ void StudioMainFrame::CreateProjectPanel() {
     _aui_mgr.AddPane(projectPanel,
                      wxAuiPaneInfo()
         .Left()
+        .Row(1)
+        .PaneBorder(false)
         .Caption("Project Explorer")
         .CloseButton(true)
         .MaximizeButton(true)
@@ -198,13 +212,6 @@ void StudioMainFrame::CreateWorkspacePanel() {
                         wxID_ANY,
                         "Workspace"), 0, wxALL, 5);
 
-    wxTextCtrl *text_box = new wxTextCtrl(workspacePanel,
-                                          wxID_ANY,
-                                          "",
-                                          wxDefaultPosition,
-                                          wxDefaultSize,
-                                          wxTE_MULTILINE);
-    workspaceSizer->Add(text_box, 1, wxEXPAND | wxALL, 5);
     workspacePanel->SetSizer(workspaceSizer);
 
     // Add main central area
@@ -212,6 +219,8 @@ void StudioMainFrame::CreateWorkspacePanel() {
         workspacePanel,
         wxAuiPaneInfo()
         .CenterPane()
+        .Row(1)
+        .PaneBorder(false)
         .Caption("Workspace"));
 }
 
