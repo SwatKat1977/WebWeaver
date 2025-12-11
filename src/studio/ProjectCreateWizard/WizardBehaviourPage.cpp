@@ -1,4 +1,4 @@
-"""
+/*
 This source file is part of Web Weaver
 For the latest info, see https://github.com/SwatKat1977/WebWeaver
 
@@ -16,71 +16,86 @@ Copyright 2025 SwatKat1977
 
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
-"""
-import wx
-from wizard_step_indicator import WizardStepIndicator
-from project_create_wizard.wizard_ids import ID_BACK_BUTTON
+*/
+#include <wx/artprov.h>
+#include "ProjectCreateWizard/WizardBehaviourPage.h"
+#include "WizardStepIndicator.h"
+#include "ProjectCreateWizard/BrowserIcons.h"
+#include "ProjectWizardControlIDs.h"
 
 
-class WizardWebBehaviourPage(wx.Dialog):
+namespace webweaver::studio {
 
-    def __init__(self, parent, data):
-        super().__init__(parent, title="Set up your web test",
-                         style=wx.DEFAULT_DIALOG_STYLE)
+WizardBehaviourPage::WizardBehaviourPage(wxWindow* parent,
+                                         ProjectCreateWizardData* data,
+                                         StepsList steps) :
+    wxDialog(parent,
+             wxID_ANY,
+             "Create your new solution",
+             wxDefaultPosition,
+             wxDefaultSize,
+             wxDEFAULT_DIALOG_STYLE), data_(data), steps_(steps) {
+    wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
 
-        self.data = data
-        main = wx.BoxSizer(wx.VERTICAL)
+    WizardStepIndicator* stepIndicator = new WizardStepIndicator(this,
+                                                                 steps_,
+                                                                 3);
+    mainSizer->Add(stepIndicator, 0, wxEXPAND | wxALL, 10);
 
-        self.steps = [
-            "Basic solution info",
-            "Browser selection",
-            "Configure behaviour",
-            "Finish",
-        ]
+    // Header
+    wxBoxSizer *headerSizer = new wxBoxSizer(wxHORIZONTAL);
+    wxStaticBitmap *icon = new wxStaticBitmap(
+        this,
+        wxID_ANY,
+        wxArtProvider::GetBitmap(wxART_TIP,
+                                 wxART_OTHER,
+                                 wxSize(32, 32)));
+    headerSizer->Add(icon, 0, wxALL, 10);
 
-        self.current_index = 0
-        step_indicator = WizardStepIndicator(self, self.steps, active_index=1)
-        main.Add(step_indicator, 0, wx.EXPAND | wx.ALL, 10)
+    wxBoxSizer *textBoxSizer = new wxBoxSizer(wxVERTICAL);
+    wxStaticText *title = new wxStaticText(this,
+                                           wxID_ANY,
+                                           "Set up automation behaviour");
+    title->SetFont(wxFont(13,
+                          wxFONTFAMILY_DEFAULT,
+                          wxFONTSTYLE_NORMAL,
+                          wxFONTWEIGHT_BOLD));
+    wxStaticText *subtitle = new wxStaticText(
+        this, wxID_ANY, "How should the automation recording behave?");
+    subtitle->SetForegroundColour(wxColour(100, 100, 100));
+    textBoxSizer->Add(title, 0);
+    textBoxSizer->Add(subtitle, 0, wxTOP, 4);
 
-        # Header
-        header = wx.BoxSizer(wx.HORIZONTAL)
-        icon = wx.StaticBitmap(self, bitmap=wx.ArtProvider.GetBitmap(
-            wx.ART_TIP, wx.ART_OTHER, (32, 32)))
-        header.Add(icon, 0, wx.ALL, 10)
+    headerSizer->Add(textBoxSizer, 1, wxALIGN_CENTER_VERTICAL);
+    mainSizer->Add(headerSizer, 0, wxLEFT | wxRIGHT, 10);
 
-        text_box = wx.BoxSizer(wx.VERTICAL)
-        title = wx.StaticText(self, label="Set up automation behaviour")
-        title.SetFont(wx.Font(13, wx.FONTFAMILY_DEFAULT,
-                              wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
-        subtitle = wx.StaticText(
-            self, label="How should the automation recording behave?")
-        subtitle.SetForegroundColour(wx.Colour(100, 100, 100))
-        text_box.Add(title, 0)
-        text_box.Add(subtitle, 0, wx.TOP, 4)
+    // Button bar
+    wxBoxSizer *buttonSizer = new wxBoxSizer(wxHORIZONTAL);
+    buttonSizer->AddStretchSpacer();
 
-        header.Add(text_box, 1, wx.ALIGN_CENTER_VERTICAL)
-        main.Add(header, 0, wx.LEFT | wx.RIGHT, 10)
+    wxButton *btnCancel = new wxButton(this, wxID_CANCEL, "Cancel");
+    btnCancel->Bind(wxEVT_BUTTON,
+                    [this](wxCommandEvent&) { EndModal(wxID_CANCEL); });
+    buttonSizer->Add(btnCancel, 0, wxRIGHT, 10);
 
-        # Button bar
-        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        btn_sizer.AddStretchSpacer()
+    wxButton *btnBack = new wxButton(this, PROJECT_WIZARD_BACK_BUTTON_ID, "Back");
+    btnBack->Bind(wxEVT_BUTTON,
+                  [this](wxCommandEvent&) {
+            EndModal(PROJECT_WIZARD_BACK_BUTTON_ID); });
+    buttonSizer->Add(btnBack, 0, wxRIGHT, 10);
 
-        self.btn_cancel = wx.Button(self, wx.ID_CANCEL, "Cancel")
-        self.btn_cancel.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(wx.ID_CANCEL))
-        btn_sizer.Add(self.btn_cancel, 0, wx.RIGHT, 10)
+    wxButton *btnNext = new wxButton(this, wxID_OK, "Next");
+    btnNext->Bind(wxEVT_BUTTON, &WizardBehaviourPage::OnNextClickEvent, this);
+    buttonSizer->Add(btnNext, 0);
 
-        btn_back = wx.Button(self, ID_BACK_BUTTON, "Back")
-        btn_back.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(ID_BACK_BUTTON))
-        btn_sizer.Add(btn_back, 0, wx.RIGHT, 10)
+    mainSizer->Add(buttonSizer, 0, wxEXPAND | wxALL, 10);
 
-        self.btn_next = wx.Button(self, wx.ID_OK, "Next")
-        self.btn_next.Bind(wx.EVT_BUTTON, self.__on_next)
-        btn_sizer.Add(self.btn_next, 0)
+    SetSizerAndFit(mainSizer);
+    CentreOnParent();
+}
 
-        main.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 10)
+void WizardBehaviourPage::OnNextClickEvent(wxCommandEvent& event) {
+    EndModal(wxID_OK);
+}
 
-        self.SetSizerAndFit(main)
-        self.CentreOnParent()
-
-    def __on_next(self, _event):
-        self.EndModal(wx.ID_OK)
+}   // namespace webweaver::studio

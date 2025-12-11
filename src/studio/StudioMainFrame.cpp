@@ -24,6 +24,8 @@ Copyright 2025 SwatKat1977
 #include "ToolbarIcons.h"
 #include "ProjectCreateWizard/WizardBasicInfoPage.h"
 #include "ProjectCreateWizard/WizardSelectBrowserPage.h"
+#include "ProjectCreateWizard/WizardBehaviourPage.h"
+#include "ProjectCreateWizard/WizardFinishPage.h"
 #include "ProjectWizardControlIDs.h"
 
 namespace webweaver::studio {
@@ -236,15 +238,14 @@ void StudioMainFrame::OnNewProjectEvent(wxCommandEvent& event) {
             wizardDialog = new WizardSelectBrowserPage(this, &data, steps);
             break;
 
-            /*
         case 3:
-            return;
-            // wizardDialog = WizardWebBehaviourPage(self, data)
+            wizardDialog = new WizardBehaviourPage(this, &data, steps);
             break;
 
         case 4:
-            // wizardDialog = WizardFinishPage(self, data)
-            */
+            wizardDialog = new WizardFinishPage(this, &data, steps);
+            break;
+
         default:
             // No more pages .. end wizard and create solution
 

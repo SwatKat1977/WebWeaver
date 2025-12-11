@@ -17,23 +17,11 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#include <wx/wx.h>
-#include "ProjectCreateWizard/ProjectCreateWizardBasePage.h"
-#include "StudioDefinitions.h"
+#ifndef STUDIODEFINITIONS_H_
+#define STUDIODEFINITIONS_H_
+#include <string>
+#include <vector>
 
-namespace webweaver::studio {
+using StepsList = std::vector<std::string>;
 
-class WizardFinishPage : public wxDialog{
-public:
-    WizardFinishPage(wxWindow* parent,
-                     ProjectCreateWizardData* data,
-                     StepsList steps);
-
-private:
-    void OnNextClickEvent(wxCommandEvent& event);
-
-    ProjectCreateWizardData* data_;
-    StepsList steps_;
-};
-
-}   // namespace webweaver::studio
+#endif  // STUDIODEFINITIONS_H_

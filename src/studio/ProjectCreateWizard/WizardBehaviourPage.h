@@ -1,4 +1,4 @@
-"""
+/*
 This source file is part of Web Weaver
 For the latest info, see https://github.com/SwatKat1977/WebWeaver
 
@@ -16,71 +16,28 @@ Copyright 2025 SwatKat1977
 
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
-"""
-import wx
-from wizard_step_indicator import WizardStepIndicator
-from project_create_wizard.wizard_ids import ID_BACK_BUTTON
+*/
+#ifndef PROJECTCREATEWIZARD_WIZARDBEHAVIOURPAGE_H_
+#define PROJECTCREATEWIZARD_WIZARDBEHAVIOURPAGE_H_
+#include <wx/wx.h>
+#include "ProjectCreateWizard/ProjectCreateWizardBasePage.h"
+#include "StudioDefinitions.h"
 
+namespace webweaver::studio {
 
-class WizardWebBehaviourPage(wx.Dialog):
+class WizardBehaviourPage : public wxDialog {
+public:
+    WizardBehaviourPage(wxWindow* parent,
+                        ProjectCreateWizardData* data,
+                        StepsList steps);
 
-    def __init__(self, parent, data):
-        super().__init__(parent, title="Set up your web test",
-                         style=wx.DEFAULT_DIALOG_STYLE)
+private:
+    void OnNextClickEvent(wxCommandEvent& event);
 
-        self.data = data
-        main = wx.BoxSizer(wx.VERTICAL)
+    ProjectCreateWizardData *data_;
+    StepsList steps_;
+};
 
-        self.steps = [
-            "Basic solution info",
-            "Browser selection",
-            "Configure behaviour",
-            "Finish",
-        ]
+}   // namespace webweaver::studio
 
-        self.current_index = 0
-        step_indicator = WizardStepIndicator(self, self.steps, active_index=1)
-        main.Add(step_indicator, 0, wx.EXPAND | wx.ALL, 10)
-
-        # Header
-        header = wx.BoxSizer(wx.HORIZONTAL)
-        icon = wx.StaticBitmap(self, bitmap=wx.ArtProvider.GetBitmap(
-            wx.ART_TIP, wx.ART_OTHER, (32, 32)))
-        header.Add(icon, 0, wx.ALL, 10)
-
-        text_box = wx.BoxSizer(wx.VERTICAL)
-        title = wx.StaticText(self, label="Set up automation behaviour")
-        title.SetFont(wx.Font(13, wx.FONTFAMILY_DEFAULT,
-                              wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
-        subtitle = wx.StaticText(
-            self, label="How should the automation recording behave?")
-        subtitle.SetForegroundColour(wx.Colour(100, 100, 100))
-        text_box.Add(title, 0)
-        text_box.Add(subtitle, 0, wx.TOP, 4)
-
-        header.Add(text_box, 1, wx.ALIGN_CENTER_VERTICAL)
-        main.Add(header, 0, wx.LEFT | wx.RIGHT, 10)
-
-        # Button bar
-        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        btn_sizer.AddStretchSpacer()
-
-        self.btn_cancel = wx.Button(self, wx.ID_CANCEL, "Cancel")
-        self.btn_cancel.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(wx.ID_CANCEL))
-        btn_sizer.Add(self.btn_cancel, 0, wx.RIGHT, 10)
-
-        btn_back = wx.Button(self, ID_BACK_BUTTON, "Back")
-        btn_back.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(ID_BACK_BUTTON))
-        btn_sizer.Add(btn_back, 0, wx.RIGHT, 10)
-
-        self.btn_next = wx.Button(self, wx.ID_OK, "Next")
-        self.btn_next.Bind(wx.EVT_BUTTON, self.__on_next)
-        btn_sizer.Add(self.btn_next, 0)
-
-        main.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 10)
-
-        self.SetSizerAndFit(main)
-        self.CentreOnParent()
-
-    def __on_next(self, _event):
-        self.EndModal(wx.ID_OK)
+#endif  // PROJECTCREATEWIZARD_WIZARDBEHAVIOURPAGE_H_
