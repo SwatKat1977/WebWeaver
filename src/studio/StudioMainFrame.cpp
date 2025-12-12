@@ -86,6 +86,8 @@ void StudioMainFrame::InitAui() {
 
     CreateWorkspacePanel();
 
+    CreateInspectorPanel();
+
     _aui_mgr.Update();
 }
 
@@ -130,7 +132,8 @@ void StudioMainFrame::CreateMainToolbar() {
     toolbar->AddTool(toolbarId_InspectorMode,
         "",
         LoadToolbarInspectIcon(),
-        "Inspector Mode");
+        "Inspector Mode",
+        wxITEM_CHECK);
 
     toolbar->AddTool(RECORD_TOOLBAR_ICON_ID,
         "",
@@ -154,6 +157,11 @@ void StudioMainFrame::CreateMainToolbar() {
         &StudioMainFrame::OnRecordToggleEvent,
         this,
         RECORD_TOOLBAR_ICON_ID);
+
+    Bind(wxEVT_TOOL,
+        &StudioMainFrame::OnInspectorToggle,
+        this,
+        toolbarId_InspectorMode);
 
     _aui_mgr.AddPane(
         toolbar,
@@ -222,6 +230,155 @@ void StudioMainFrame::CreateWorkspacePanel() {
         .Row(1)
         .PaneBorder(false)
         .Caption("Workspace"));
+}
+
+void StudioMainFrame::CreateInspectorPanel()
+{
+    // Parent is the main frame (it will be managed as an AUI pane)
+    wxPanel* inspectorPanel = new wxPanel(this);
+
+    // Vertical layout: buttons at top, log below
+    wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
+
+    // --- Button column ---
+    wxBoxSizer* buttonSizer = new wxBoxSizer(wxVERTICAL);
+
+    wxButton* btnOpenPage = new wxButton(
+        inspectorPanel,
+        ID_INSPECTOR_OPEN_PAGE,
+        "Open Page");
+
+    wxButton* btnStartInspect = new wxButton(
+        inspectorPanel,
+        ID_INSPECTOR_START_INSPECT,
+        "Start Inspect Mode");
+
+    wxButton* btnStopInspect = new wxButton(
+        inspectorPanel,
+        ID_INSPECTOR_STOP_INSPECT,
+        "Stop Inspect Mode");
+
+    wxButton* btnStartRecord = new wxButton(
+        inspectorPanel,
+        ID_INSPECTOR_START_RECORD,
+        "Start Record Mode");
+
+    wxButton* btnStopRecord = new wxButton(
+        inspectorPanel,
+        ID_INSPECTOR_STOP_RECORD,
+        "Stop Record Mode");
+
+    wxButton* btnSaveJson = new wxButton(
+        inspectorPanel,
+        ID_INSPECTOR_SAVE_JSON,
+        "Save Recording to JSON");
+
+    // Pack buttons with a little spacing
+    buttonSizer->Add(btnOpenPage, 0, wxALL | wxEXPAND, 5);
+    buttonSizer->Add(btnStartInspect, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
+    buttonSizer->Add(btnStopInspect, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
+    buttonSizer->Add(btnStartRecord, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
+    buttonSizer->Add(btnStopRecord, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
+    buttonSizer->Add(btnSaveJson, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
+
+    mainSizer->Add(buttonSizer, 0, wxEXPAND | wxALL, 5);
+
+    // --- Log area (multiline text) ---
+    _inspectorLog = new wxTextCtrl(
+        inspectorPanel,
+        wxID_ANY,
+        "",
+        wxDefaultPosition,
+        wxDefaultSize,
+        wxTE_MULTILINE | wxTE_READONLY);
+
+    mainSizer->Add(_inspectorLog, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
+
+    inspectorPanel->SetSizer(mainSizer);
+
+    // Register as a dockable pane on the right
+    _aui_mgr.AddPane(
+        inspectorPanel,
+        wxAuiPaneInfo()
+        .Name("InspectorPanel")
+        .Caption("WebWeaver Inspector")
+        .Right()
+        .Row(1)
+        .BestSize(350, 600)
+        .CloseButton(true)
+        .MaximizeButton(true)
+        .MinimizeButton(true)
+        .Floatable(true)
+        .Movable(true)
+        .Dockable(true)
+        .Hide());
+
+    // Bind button events
+    inspectorPanel->Bind(wxEVT_BUTTON,
+        &StudioMainFrame::OnInspectorOpenPage,
+        this,
+        ID_INSPECTOR_OPEN_PAGE);
+
+    inspectorPanel->Bind(wxEVT_BUTTON,
+        &StudioMainFrame::OnInspectorStartInspect,
+        this,
+        ID_INSPECTOR_START_INSPECT);
+
+    inspectorPanel->Bind(wxEVT_BUTTON,
+        &StudioMainFrame::OnInspectorStopInspect,
+        this,
+        ID_INSPECTOR_STOP_INSPECT);
+
+    inspectorPanel->Bind(wxEVT_BUTTON,
+        &StudioMainFrame::OnInspectorStartRecord,
+        this,
+        ID_INSPECTOR_START_RECORD);
+
+    inspectorPanel->Bind(wxEVT_BUTTON,
+        &StudioMainFrame::OnInspectorStopRecord,
+        this,
+        ID_INSPECTOR_STOP_RECORD);
+
+    inspectorPanel->Bind(wxEVT_BUTTON,
+        &StudioMainFrame::OnInspectorSaveJson,
+        this,
+        ID_INSPECTOR_SAVE_JSON);
+}
+
+void StudioMainFrame::OnInspectorOpenPage(wxCommandEvent& event)
+{
+    if (_inspectorLog)
+        _inspectorLog->AppendText("Open Page clicked\n");
+}
+
+void StudioMainFrame::OnInspectorStartInspect(wxCommandEvent& event)
+{
+    if (_inspectorLog)
+        _inspectorLog->AppendText("Start Inspect Mode\n");
+}
+
+void StudioMainFrame::OnInspectorStopInspect(wxCommandEvent& event)
+{
+    if (_inspectorLog)
+        _inspectorLog->AppendText("Stop Inspect Mode\n");
+}
+
+void StudioMainFrame::OnInspectorStartRecord(wxCommandEvent& event)
+{
+    if (_inspectorLog)
+        _inspectorLog->AppendText("Start Record Mode\n");
+}
+
+void StudioMainFrame::OnInspectorStopRecord(wxCommandEvent& event)
+{
+    if (_inspectorLog)
+        _inspectorLog->AppendText("Stop Record Mode\n");
+}
+
+void StudioMainFrame::OnInspectorSaveJson(wxCommandEvent& event)
+{
+    if (_inspectorLog)
+        _inspectorLog->AppendText("Save Recording to JSON\n");
 }
 
 void StudioMainFrame::OnNewProjectEvent(wxCommandEvent& event) {
@@ -315,6 +472,30 @@ void StudioMainFrame::OnRecordToggleEvent(wxCommandEvent& event) {
     }
 
     toolbar->Realize();
+}
+
+void StudioMainFrame::OnInspectorToggle(wxCommandEvent& event)
+{
+    wxAuiPaneInfo& pane = _aui_mgr.GetPane("InspectorPanel");
+    if (!pane.IsOk())
+        return;
+
+    bool show = !pane.IsShown();
+    pane.Show(show);
+
+    // keep toolbar button state in sync
+    wxAuiPaneInfo& tbPane = _aui_mgr.GetPane("MainToolbar");
+    if (tbPane.IsOk())
+    {
+        wxAuiToolBar* toolbar = wxDynamicCast(tbPane.window, wxAuiToolBar);
+        if (toolbar)
+        {
+            toolbar->ToggleTool(event.GetId(), show);
+            toolbar->Refresh();
+        }
+    }
+
+    _aui_mgr.Update();
 }
 
 }   // namespace webweaver::studio

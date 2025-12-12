@@ -22,8 +22,17 @@ Copyright 2025 SwatKat1977
 #include <wx/aui/aui.h>
 #include <wx/frame.h>
 
-
 namespace webweaver::studio {
+
+enum
+{
+    ID_INSPECTOR_OPEN_PAGE = wxID_HIGHEST + 1,
+    ID_INSPECTOR_START_INSPECT,
+    ID_INSPECTOR_STOP_INSPECT,
+    ID_INSPECTOR_START_RECORD,
+    ID_INSPECTOR_STOP_RECORD,
+    ID_INSPECTOR_SAVE_JSON
+};
 
 class StudioMainFrame : public wxFrame {
  public:
@@ -36,13 +45,25 @@ class StudioMainFrame : public wxFrame {
  private:
     wxAuiManager _aui_mgr;
 
+    // Log area in inspector
+    wxTextCtrl* _inspectorLog = nullptr;
+
     void CreateMainToolbar();
     void CreateProjectPanel();
     void CreateWorkspacePanel();
+    void CreateInspectorPanel();
+
+    // Inspector event handlers
+    void OnInspectorOpenPage(wxCommandEvent &event);
+    void OnInspectorStartInspect(wxCommandEvent &event);
+    void OnInspectorStopInspect(wxCommandEvent &event);
+    void OnInspectorStartRecord(wxCommandEvent &event);
+    void OnInspectorStopRecord(wxCommandEvent &event);
+    void OnInspectorSaveJson(wxCommandEvent &event);
 
     void OnNewProjectEvent(wxCommandEvent &event);
-
     void OnRecordToggleEvent(wxCommandEvent &event);
+    void OnInspectorToggle(wxCommandEvent& event);
 };
 
 }
