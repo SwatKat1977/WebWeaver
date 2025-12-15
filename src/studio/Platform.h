@@ -30,6 +30,8 @@ enum class Platform {
     Unknown
 };
 
+Platform GetCurrentPlatform();
+
 std::string PlatformToString(Platform platform);
 
 }   // namespace webweaver::studio
