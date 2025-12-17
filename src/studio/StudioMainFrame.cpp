@@ -32,12 +32,22 @@ Copyright 2025 SwatKat1977
 
 namespace webweaver::studio {
 
-constexpr int RECORD_TOOLBAR_ICON_ID = 100;
+constexpr int TOOLBAR_ID_START_STOP_RECORD = wxID_HIGHEST + 1;
+constexpr int TOOLBAR_ICON_ID_RECORD_PAUSE = wxID_HIGHEST + 2;
 
 constexpr int PAGENO_BASICINFOPAGE = 0;
 constexpr int PAGENO_SELECTBROWSERPAGE = 1;
 constexpr int PAGENO_BEHAVIOURPAGE = 2;
 constexpr int PAGENO_FINISHPAGE = 3;
+
+enum {
+    ID_INSPECTOR_OPEN_PAGE = wxID_HIGHEST + 1001,
+    ID_INSPECTOR_START_INSPECT,
+    ID_INSPECTOR_STOP_INSPECT,
+    ID_INSPECTOR_START_RECORD,
+    ID_INSPECTOR_STOP_RECORD,
+    ID_INSPECTOR_SAVE_JSON
+};
 
 // macOS draws menu bar differently and pulls windows upward slightly
 #ifdef __APPLE__
@@ -88,6 +98,7 @@ void StudioMainFrame::InitAui() {
     // TOOLBAR (top, dockable)
     // --------------------------------------------------------------
     CreateMainToolbar();
+    //UpdateToolbarState();
 
     CreateProjectPanel();
 
@@ -142,13 +153,13 @@ void StudioMainFrame::CreateMainToolbar() {
         "Inspector Mode",
         wxITEM_CHECK);
 
-    toolbar->AddTool(RECORD_TOOLBAR_ICON_ID,
+    toolbar->AddTool(TOOLBAR_ID_START_STOP_RECORD,
         "",
         LoadToolbarStartRecordIcon(),
         "Record",
         wxITEM_CHECK);
 
-    toolbar->AddTool(5,
+    toolbar->AddTool(TOOLBAR_ICON_ID_RECORD_PAUSE,
         "",
         LoadToolbarPauseRecordIcon(),
         "Pause Recording");
@@ -163,7 +174,7 @@ void StudioMainFrame::CreateMainToolbar() {
     Bind(wxEVT_TOOL,
         &StudioMainFrame::OnRecordToggleEvent,
         this,
-        RECORD_TOOLBAR_ICON_ID);
+        TOOLBAR_ID_START_STOP_RECORD);
 
     Bind(wxEVT_TOOL,
         &StudioMainFrame::OnInspectorToggle,
@@ -470,15 +481,17 @@ void StudioMainFrame::OnRecordToggleEvent(wxCommandEvent& event) {
         return;
     }
 
-    bool isRecording = toolbar->GetToolToggled(RECORD_TOOLBAR_ICON_ID);
+    bool isRecording = toolbar->GetToolToggled(TOOLBAR_ID_START_STOP_RECORD);
     if (isRecording) {
-        toolbar->SetToolBitmap(RECORD_TOOLBAR_ICON_ID,
+        toolbar->SetToolBitmap(TOOLBAR_ID_START_STOP_RECORD,
                                LoadToolbarStopRecordIcon());
-        toolbar->SetToolShortHelp(RECORD_TOOLBAR_ICON_ID, "Stop Recording");
+        toolbar->SetToolShortHelp(TOOLBAR_ID_START_STOP_RECORD,
+                                  "Stop Recording");
     } else {
-        toolbar->SetToolBitmap(RECORD_TOOLBAR_ICON_ID,
+        toolbar->SetToolBitmap(TOOLBAR_ID_START_STOP_RECORD,
                                LoadToolbarStartRecordIcon());
-        toolbar->SetToolShortHelp(RECORD_TOOLBAR_ICON_ID, "Start Recording");
+        toolbar->SetToolShortHelp(TOOLBAR_ID_START_STOP_RECORD,
+                                  "Start Recording");
     }
 
     toolbar->Realize();

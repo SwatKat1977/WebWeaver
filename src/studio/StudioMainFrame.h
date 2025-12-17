@@ -24,13 +24,12 @@ Copyright 2025 SwatKat1977
 
 namespace webweaver::studio {
 
-enum {
-    ID_INSPECTOR_OPEN_PAGE = wxID_HIGHEST + 1,
-    ID_INSPECTOR_START_INSPECT,
-    ID_INSPECTOR_STOP_INSPECT,
-    ID_INSPECTOR_START_RECORD,
-    ID_INSPECTOR_STOP_RECORD,
-    ID_INSPECTOR_SAVE_JSON
+enum class StudioState {
+    NoProject,
+    ProjectLoaded,
+    RecordingRunning,
+    RecordingPaused,
+    Inspecting
 };
 
 class StudioMainFrame : public wxFrame {
@@ -41,8 +40,11 @@ class StudioMainFrame : public wxFrame {
 
     void InitAui();
 
+    void SetStudioState(StudioState state);
+
  private:
     wxAuiManager _aui_mgr;
+    StudioState _studioState = StudioState::NoProject;
 
     // Log area in inspector
     wxTextCtrl* _inspectorLog = nullptr;
@@ -51,6 +53,8 @@ class StudioMainFrame : public wxFrame {
     void CreateProjectPanel();
     void CreateWorkspacePanel();
     void CreateInspectorPanel();
+
+    void UpdateToolbarState();
 
     // Inspector event handlers
     void OnInspectorOpenPage(wxCommandEvent &event);
