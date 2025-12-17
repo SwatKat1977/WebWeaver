@@ -17,8 +17,8 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef TOOLBARICONS_H_
-#define TOOLBARICONS_H_
+#ifndef PROJECTCREATEWIZARD_BROWSERICONS_H_
+#define PROJECTCREATEWIZARD_BROWSERICONS_H_
 
 #include <wx/wx.h>
 
@@ -34,4 +34,4 @@ wxBitmap LoadBrowserIconMicrosoftEdge();
 
 }   // namespace webweaver::studio
 
-#endif  // TOOLBARICONS_H_
+#endif  // PROJECTCREATEWIZARD_BROWSERICONS_H_

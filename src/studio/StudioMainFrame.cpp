@@ -19,6 +19,8 @@ Copyright 2025 SwatKat1977
 */
 #include <wx/artprov.h>
 #include <wx/treectrl.h>
+#include <string>
+#include <vector>
 #include "StudioMainFrame.h"
 #include "BitmapUtils.h"
 #include "ToolbarIcons.h"
@@ -32,11 +34,11 @@ namespace webweaver::studio {
 
 constexpr int RECORD_TOOLBAR_ICON_ID = 100;
 
+// macOS draws menu bar differently and pulls windows upward slightly
 #ifdef __APPLE__
-    // macOS draws menu bar differently and pulls windows upward slightly
-    wxPoint InitialWindowPosition = wxPoint(0, 30);
+wxPoint InitialWindowPosition = wxPoint(0, 30);
 #else
-    wxPoint InitialWindowPosition = wxDefaultPosition;
+wxPoint InitialWindowPosition = wxDefaultPosition;
 #endif
 
 StudioMainFrame::StudioMainFrame(wxWindow* parent)
@@ -232,8 +234,7 @@ void StudioMainFrame::CreateWorkspacePanel() {
         .Caption("Workspace"));
 }
 
-void StudioMainFrame::CreateInspectorPanel()
-{
+void StudioMainFrame::CreateInspectorPanel() {
     // Parent is the main frame (it will be managed as an AUI pane)
     wxPanel* inspectorPanel = new wxPanel(this);
 
@@ -275,11 +276,21 @@ void StudioMainFrame::CreateInspectorPanel()
 
     // Pack buttons with a little spacing
     buttonSizer->Add(btnOpenPage, 0, wxALL | wxEXPAND, 5);
-    buttonSizer->Add(btnStartInspect, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
-    buttonSizer->Add(btnStopInspect, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
-    buttonSizer->Add(btnStartRecord, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
-    buttonSizer->Add(btnStopRecord, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
-    buttonSizer->Add(btnSaveJson, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
+    buttonSizer->Add(btnStartInspect,
+                     0,
+                     wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
+    buttonSizer->Add(btnStopInspect,
+                     0,
+                     wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
+    buttonSizer->Add(btnStartRecord,
+                     0,
+                     wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
+    buttonSizer->Add(btnStopRecord,
+                     0,
+                     wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
+    buttonSizer->Add(btnSaveJson,
+                     0,
+                     wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
 
     mainSizer->Add(buttonSizer, 0, wxEXPAND | wxALL, 5);
 
@@ -345,38 +356,32 @@ void StudioMainFrame::CreateInspectorPanel()
         ID_INSPECTOR_SAVE_JSON);
 }
 
-void StudioMainFrame::OnInspectorOpenPage(wxCommandEvent& event)
-{
+void StudioMainFrame::OnInspectorOpenPage(wxCommandEvent& event) {
     if (_inspectorLog)
         _inspectorLog->AppendText("Open Page clicked\n");
 }
 
-void StudioMainFrame::OnInspectorStartInspect(wxCommandEvent& event)
-{
+void StudioMainFrame::OnInspectorStartInspect(wxCommandEvent& event) {
     if (_inspectorLog)
         _inspectorLog->AppendText("Start Inspect Mode\n");
 }
 
-void StudioMainFrame::OnInspectorStopInspect(wxCommandEvent& event)
-{
+void StudioMainFrame::OnInspectorStopInspect(wxCommandEvent& event) {
     if (_inspectorLog)
         _inspectorLog->AppendText("Stop Inspect Mode\n");
 }
 
-void StudioMainFrame::OnInspectorStartRecord(wxCommandEvent& event)
-{
+void StudioMainFrame::OnInspectorStartRecord(wxCommandEvent& event) {
     if (_inspectorLog)
         _inspectorLog->AppendText("Start Record Mode\n");
 }
 
-void StudioMainFrame::OnInspectorStopRecord(wxCommandEvent& event)
-{
+void StudioMainFrame::OnInspectorStopRecord(wxCommandEvent& event) {
     if (_inspectorLog)
         _inspectorLog->AppendText("Stop Record Mode\n");
 }
 
-void StudioMainFrame::OnInspectorSaveJson(wxCommandEvent& event)
-{
+void StudioMainFrame::OnInspectorSaveJson(wxCommandEvent& event) {
     if (_inspectorLog)
         _inspectorLog->AppendText("Save Recording to JSON\n");
 }
@@ -435,8 +440,8 @@ void StudioMainFrame::OnNewProjectEvent(wxCommandEvent& event) {
         if (rc == PROJECT_WIZARD_BACK_BUTTON_ID) {
             pageNumber -= 1;
             continue;
-        }
-        else if (rc == wxID_OK) {
+
+        } else if (rc == wxID_OK) {
             pageNumber += 1;
             continue;
         }
@@ -474,8 +479,7 @@ void StudioMainFrame::OnRecordToggleEvent(wxCommandEvent& event) {
     toolbar->Realize();
 }
 
-void StudioMainFrame::OnInspectorToggle(wxCommandEvent& event)
-{
+void StudioMainFrame::OnInspectorToggle(wxCommandEvent& event) {
     wxAuiPaneInfo& pane = _aui_mgr.GetPane("InspectorPanel");
     if (!pane.IsOk())
         return;
@@ -485,11 +489,9 @@ void StudioMainFrame::OnInspectorToggle(wxCommandEvent& event)
 
     // keep toolbar button state in sync
     wxAuiPaneInfo& tbPane = _aui_mgr.GetPane("MainToolbar");
-    if (tbPane.IsOk())
-    {
+    if (tbPane.IsOk()) {
         wxAuiToolBar* toolbar = wxDynamicCast(tbPane.window, wxAuiToolBar);
-        if (toolbar)
-        {
+        if (toolbar) {
             toolbar->ToggleTool(event.GetId(), show);
             toolbar->Refresh();
         }

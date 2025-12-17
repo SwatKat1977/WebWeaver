@@ -17,12 +17,12 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
+#include <string>
 #include "Platform.h"
 
 namespace webweaver::studio {
 
-Platform GetCurrentPlatform()
-{
+Platform GetCurrentPlatform() {
 #ifdef WEBWEAVER_PLATFORM_WIN64
     return Platform::Win64;
 #elif defined(WEBWEAVER_PLATFORM_MACOS)

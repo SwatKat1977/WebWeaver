@@ -20,6 +20,8 @@ Copyright 2025 SwatKat1977
 #ifndef PROJECTCREATEWIZARD_WIZARDBASICINFOPAGE_H_
 #define PROJECTCREATEWIZARD_WIZARDBASICINFOPAGE_H_
 #include <wx/wx.h>
+#include <string>
+#include <vector>
 #include "WizardStepIndicator.h"
 #include "ProjectCreateWizard/ProjectCreateWizardBasePage.h"
 

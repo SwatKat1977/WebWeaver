@@ -17,15 +17,14 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef MAINWINDOW_H_
-#define MAINWINDOW_H_
+#ifndef STUDIOMAINFRAME_H_
+#define STUDIOMAINFRAME_H_
 #include <wx/aui/aui.h>
 #include <wx/frame.h>
 
 namespace webweaver::studio {
 
-enum
-{
+enum {
     ID_INSPECTOR_OPEN_PAGE = wxID_HIGHEST + 1,
     ID_INSPECTOR_START_INSPECT,
     ID_INSPECTOR_STOP_INSPECT,
@@ -66,6 +65,6 @@ class StudioMainFrame : public wxFrame {
     void OnInspectorToggle(wxCommandEvent& event);
 };
 
-}
+}   // namespace webweaver::studio
 
-#endif  // MAINWINDOW_H_
+#endif  // STUDIOMAINFRAME_H_

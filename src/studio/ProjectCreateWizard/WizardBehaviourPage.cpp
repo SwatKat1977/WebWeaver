@@ -78,7 +78,9 @@ WizardBehaviourPage::WizardBehaviourPage(wxWindow* parent,
                     [this](wxCommandEvent&) { EndModal(wxID_CANCEL); });
     buttonSizer->Add(btnCancel, 0, wxRIGHT, 10);
 
-    wxButton *btnBack = new wxButton(this, PROJECT_WIZARD_BACK_BUTTON_ID, "Back");
+    wxButton *btnBack = new wxButton(this,
+                                     PROJECT_WIZARD_BACK_BUTTON_ID,
+                                     "Back");
     btnBack->Bind(wxEVT_BUTTON,
                   [this](wxCommandEvent&) {
             EndModal(PROJECT_WIZARD_BACK_BUTTON_ID); });

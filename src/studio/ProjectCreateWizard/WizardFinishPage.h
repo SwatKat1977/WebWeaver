@@ -17,6 +17,8 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
+#ifndef PROJECTCREATEWIZARD_WIZARDFINISHPAGE_H_
+#define PROJECTCREATEWIZARD_WIZARDFINISHPAGE_H_
 #include <wx/wx.h>
 #include "ProjectCreateWizard/ProjectCreateWizardBasePage.h"
 #include "StudioDefinitions.h"
@@ -24,12 +26,12 @@ Copyright 2025 SwatKat1977
 namespace webweaver::studio {
 
 class WizardFinishPage : public wxDialog{
-public:
+ public:
     WizardFinishPage(wxWindow* parent,
                      ProjectCreateWizardData* data,
                      StepsList steps);
 
-private:
+ private:
     void OnNextClickEvent(wxCommandEvent& event);
 
     ProjectCreateWizardData* data_;
@@ -37,3 +39,5 @@ private:
 };
 
 }   // namespace webweaver::studio
+
+#endif  // PROJECTCREATEWIZARD_WIZARDFINISHPAGE_H_

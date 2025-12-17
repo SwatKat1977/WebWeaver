@@ -19,10 +19,11 @@ Copyright 2025 SwatKat1977
 */
 #ifndef PROJECTCREATEWIZARD_WIZARDSELECTBROWSERPAGE_H_
 #define PROJECTCREATEWIZARD_WIZARDSELECTBROWSERPAGE_H_
-#include <string>
-#include <vector>
+
 #include <wx/wx.h>
 #include <wx/tglbtn.h>
+#include <string>
+#include <vector>
 #include "ProjectCreateWizard/ProjectCreateWizardBasePage.h"
 
 namespace webweaver::studio {
@@ -35,7 +36,7 @@ class WizardSelectBrowserPage : public wxDialog {
                             ProjectCreateWizardData* data,
                             std::vector<std::string> steps);
 
-private:
+ private:
     ProjectCreateWizardData* data_;
     std::vector<std::string> steps_;
     std::vector<std::pair<wxString, wxToggleButton*>> _browserButtons;

@@ -27,4 +27,4 @@ const int PROJECT_WIZARD_BACK_BUTTON_ID = wxID_HIGHEST + 1;
 
 }   // namespace webweaver::studio
 
-#endif
+#endif  // PROJECTWIZARDCONTROLIDS_H_

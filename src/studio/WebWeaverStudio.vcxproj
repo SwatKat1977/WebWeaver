@@ -149,6 +149,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BitmapUtils.cpp" />
+    <ClCompile Include="Platform.cpp" />
     <ClCompile Include="ProjectCreateWizard\BrowserIcons.cpp" />
     <ClCompile Include="ProjectCreateWizard\WizardBasicInfoPage.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -175,6 +176,7 @@
     <ClInclude Include="imgResources\toolbar\toolbar_save_project.h" />
     <ClInclude Include="imgResources\toolbar\toolbar_start_record.h" />
     <ClInclude Include="imgResources\toolbar\toolbar_stop_record.h" />
+    <ClInclude Include="Platform.h" />
     <ClInclude Include="ProjectCreateWizard\BrowserIcons.h" />
     <ClInclude Include="ProjectCreateWizard\ProjectCreateWizardBasePage.h" />
     <ClInclude Include="ProjectCreateWizard\WizardBasicInfoPage.h">

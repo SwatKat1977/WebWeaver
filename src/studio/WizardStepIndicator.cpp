@@ -17,19 +17,20 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
+#include <string>
+#include <vector>
 #include "WizardStepIndicator.h"
 
 namespace webweaver::studio {
 
 WizardStepIndicator::WizardStepIndicator(wxWindow* parent,
                                          const std::vector<std::string> steps,
-                                         int activeIndex) 
+                                         int activeIndex)
     : wxPanel(parent), steps_(steps) {
 
     wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
 
-    for (size_t i = 0; i < steps.size(); ++i)
-    {
+    for (size_t i = 0; i < steps.size(); ++i) {
         wxStaticText* label = new wxStaticText(this, wxID_ANY, "");
         sizer->Add(label, 0, wxRIGHT | wxALIGN_CENTER_VERTICAL, 20);
         labels_.push_back(label);

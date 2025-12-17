@@ -19,9 +19,9 @@ Copyright 2025 SwatKat1977
 */
 #ifndef WIZARDSTEPINDICATOR_H_
 #define WIZARDSTEPINDICATOR_H_
+#include <wx/wx.h>
 #include <string>
 #include <vector>
-#include <wx/wx.h>
 
 namespace webweaver::studio {
 

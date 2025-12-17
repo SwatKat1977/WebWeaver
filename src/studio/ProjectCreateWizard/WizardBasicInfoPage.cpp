@@ -18,6 +18,8 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
 #include <wx/artprov.h>
+#include <string>
+#include <vector>
 #include "ProjectCreateWizard/WizardBasicInfoPage.h"
 #include "WizardStepIndicator.h"
 
@@ -33,7 +35,6 @@ WizardBasicInfoPage::WizardBasicInfoPage(wxWindow* parent,
                wxDefaultPosition,
                wxDefaultSize,
                wxDEFAULT_DIALOG_STYLE), data_(data), steps_(steps) {
-
     wxBoxSizer *main = new wxBoxSizer(wxVERTICAL);
 
     WizardStepIndicator*stepIndicator = new WizardStepIndicator(this,
@@ -136,7 +137,7 @@ WizardBasicInfoPage::WizardBasicInfoPage(wxWindow* parent,
 
     // Cancel button
     wxButton *btnCancel = new wxButton(this, wxID_CANCEL, "Cancel");
-    btnCancel->Bind(wxEVT_BUTTON, 
+    btnCancel->Bind(wxEVT_BUTTON,
                     [this](wxCommandEvent&) { EndModal(wxID_CANCEL); });
     btnButtonBarSizer->Add(btnCancel, 0, wxRIGHT, 10);
 

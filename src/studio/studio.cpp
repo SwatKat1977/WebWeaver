@@ -29,8 +29,6 @@ class WebweaverStudioApp : public wxApp {
 wxIMPLEMENT_APP(WebweaverStudioApp);
 
 bool WebweaverStudioApp::OnInit() {
-
-
 #ifdef __APPLE__
     SetAppearance(wxAppBase::Appearance::Light);
 #endif

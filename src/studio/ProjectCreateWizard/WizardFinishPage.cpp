@@ -26,7 +26,7 @@ namespace webweaver::studio {
 
 WizardFinishPage::WizardFinishPage(wxWindow* parent,
                                    ProjectCreateWizardData* data,
-                                   StepsList steps) : 
+                                   StepsList steps) :
     wxDialog(parent,
              wxID_ANY,
              "Set up your web test",
@@ -34,7 +34,6 @@ WizardFinishPage::WizardFinishPage(wxWindow* parent,
              wxDefaultSize,
              wxDEFAULT_DIALOG_STYLE),
     data_(data), steps_(steps) {
-
     wxBoxSizer *mainSizer = new wxBoxSizer(wxVERTICAL);
 
     WizardStepIndicator* stepIndicator = new WizardStepIndicator(this,
@@ -72,11 +71,15 @@ WizardFinishPage::WizardFinishPage(wxWindow* parent,
     buttonBarSizer->AddStretchSpacer();
 
     wxButton *btnCancel = new wxButton(this, wxID_CANCEL, "Cancel");
-    //self.btn_cancel.Bind(wx.EVT_BUTTON, lambda e : self.EndModal(wx.ID_CANCEL));
+    //self.btn_cancel.Bind(wx.EVT_BUTTON,
+    //                     lambda e : self.EndModal(wx.ID_CANCEL));
     buttonBarSizer->Add(btnCancel, 0, wxRIGHT, 10);
 
-    wxButton *btnBack = new wxButton(this, PROJECT_WIZARD_BACK_BUTTON_ID, "Back");
-    //btn_back.Bind(wx.EVT_BUTTON, lambda e : self.EndModal(ID_BACK_BUTTON));
+    wxButton *btnBack = new wxButton(this,
+                                     PROJECT_WIZARD_BACK_BUTTON_ID,
+                                     "Back");
+    //btn_back.Bind(wx.EVT_BUTTON,
+    //              lambda e : self.EndModal(ID_BACK_BUTTON));
     buttonBarSizer->Add(btnBack, 0, wxRIGHT, 10);
 
     wxButton *btnNext = new wxButton(this, wxID_OK, "Finish");

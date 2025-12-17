@@ -17,9 +17,10 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#include <vector>
 #include <wx/wx.h>
 #include <wx/artprov.h>
+#include <string>
+#include <vector>
 #include "WizardSelectBrowserPage.h"
 #include "ProjectCreateWizard/BrowserIcons.h"
 #include "WizardStepIndicator.h"
@@ -110,8 +111,7 @@ WizardSelectBrowserPage::WizardSelectBrowserPage(wxWindow* parent,
 
     _browserButtons.clear();
 
-    for (const auto& entry : browsers)
-    {
+    for (const auto& entry : browsers) {
         const wxString& name = entry.first;
         const wxBitmap& bmp = entry.second;
 
@@ -165,7 +165,9 @@ WizardSelectBrowserPage::WizardSelectBrowserPage(wxWindow* parent,
     buttonBarSizer->Add(btnBack, 0, wxRIGHT, 10);
 
     wxButton *btnNext = new wxButton(this, wxID_OK, "Next");
-    btnNext->Bind(wxEVT_BUTTON, &WizardSelectBrowserPage::OnNextClickEvent, this);
+    btnNext->Bind(wxEVT_BUTTON,
+                  &WizardSelectBrowserPage::OnNextClickEvent,
+                  this);
     buttonBarSizer->Add(btnNext, 0);
 
     mainSizer->Add(buttonBarSizer, 0, wxEXPAND | wxALL, 10);
@@ -182,7 +184,7 @@ void WizardSelectBrowserPage::OnBrowserToggleEvent(wxCommandEvent& event) {
         buttons in ``browser_buttons`` to enforce exclusive selection.
     */
     wxWindow* clicked = dynamic_cast<wxWindow*>(event.GetEventObject());
-    
+
     for (auto& pair : _browserButtons) {
         wxToggleButton* btn = pair.second;
 

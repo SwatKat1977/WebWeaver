@@ -26,12 +26,12 @@ Copyright 2025 SwatKat1977
 namespace webweaver::studio {
 
 class WizardBehaviourPage : public wxDialog {
-public:
+ public:
     WizardBehaviourPage(wxWindow* parent,
                         ProjectCreateWizardData* data,
                         StepsList steps);
 
-private:
+ private:
     void OnNextClickEvent(wxCommandEvent& event);
 
     ProjectCreateWizardData *data_;
