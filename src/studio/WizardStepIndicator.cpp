@@ -41,18 +41,19 @@ WizardStepIndicator::WizardStepIndicator(wxWindow* parent,
 }
 
 void WizardStepIndicator::SetActive(int index) {
-    if (index < 0 || index >= (int)steps_.size()) {
+    if (index < 0 || index >= static_cast<int>(steps_.size())) {
         return;
     }
 
     activeIndex_ = index;
 
     for (size_t i = 0; i < labels_.size(); ++i) {
-        wxString bullet = (i == (size_t)index) ? wxT("\u25CF") : wxT("\u25CB");
+        wxString bullet = (i == static_cast<int>(index))
+            ? wxT("\u25CF") : wxT("\u25CB");
 
         labels_[i]->SetLabel(bullet + " " + steps_[i]);
 
-        if (i == (size_t)index) {
+        if (i == static_cast<int>(index)) {
             // Active = black
             labels_[i]->SetForegroundColour(wxColour(0, 0, 0));
         } else {

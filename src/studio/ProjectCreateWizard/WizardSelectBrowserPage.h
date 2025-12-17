@@ -19,7 +19,6 @@ Copyright 2025 SwatKat1977
 */
 #ifndef PROJECTCREATEWIZARD_WIZARDSELECTBROWSERPAGE_H_
 #define PROJECTCREATEWIZARD_WIZARDSELECTBROWSERPAGE_H_
-
 #include <wx/wx.h>
 #include <wx/tglbtn.h>
 #include <string>
