@@ -39,7 +39,7 @@ WizardBehaviourPage::WizardBehaviourPage(wxWindow* parent,
 
     WizardStepIndicator* stepIndicator = new WizardStepIndicator(this,
                                                                  steps_,
-                                                                 3);
+                                                                 2);
     mainSizer->Add(stepIndicator, 0, wxEXPAND | wxALL, 10);
 
     // Header

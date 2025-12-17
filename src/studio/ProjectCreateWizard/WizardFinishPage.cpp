@@ -38,7 +38,7 @@ WizardFinishPage::WizardFinishPage(wxWindow* parent,
 
     WizardStepIndicator* stepIndicator = new WizardStepIndicator(this,
                                                                  steps_,
-                                                                 4);
+                                                                 3);
     mainSizer->Add(stepIndicator, 0, wxEXPAND | wxALL, 10);
 
     // Header

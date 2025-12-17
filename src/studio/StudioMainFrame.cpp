@@ -34,6 +34,11 @@ namespace webweaver::studio {
 
 constexpr int RECORD_TOOLBAR_ICON_ID = 100;
 
+constexpr int PAGENO_BASICINFOPAGE = 0;
+constexpr int PAGENO_SELECTBROWSERPAGE = 1;
+constexpr int PAGENO_BEHAVIOURPAGE = 2;
+constexpr int PAGENO_FINISHPAGE = 3;
+
 // macOS draws menu bar differently and pulls windows upward slightly
 #ifdef __APPLE__
 wxPoint InitialWindowPosition = wxPoint(0, 30);
@@ -395,25 +400,25 @@ void StudioMainFrame::OnNewProjectEvent(wxCommandEvent& event) {
     "Finish"
     };
 
-    int pageNumber = 1;
+    int pageNumber = PAGENO_BASICINFOPAGE;
 
     while (true) {
         wxDialog* wizardDialog = nullptr;
 
         switch (pageNumber) {
-        case 1:
+        case PAGENO_BASICINFOPAGE:
             wizardDialog = new WizardBasicInfoPage(this, &data, steps);
             break;
 
-        case 2:
+        case PAGENO_SELECTBROWSERPAGE:
             wizardDialog = new WizardSelectBrowserPage(this, &data, steps);
             break;
 
-        case 3:
+        case PAGENO_BEHAVIOURPAGE:
             wizardDialog = new WizardBehaviourPage(this, &data, steps);
             break;
 
-        case 4:
+        case PAGENO_FINISHPAGE:
             wizardDialog = new WizardFinishPage(this, &data, steps);
             break;
 

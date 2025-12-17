@@ -26,7 +26,7 @@ namespace webweaver::studio {
 WizardStepIndicator::WizardStepIndicator(wxWindow* parent,
                                          const std::vector<std::string> steps,
                                          int activeIndex)
-    : wxPanel(parent), steps_(steps) {
+    : wxPanel(parent), steps_(steps), activeIndex_(activeIndex) {
 
     wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
 
