@@ -17,36 +17,30 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef PROJECTCREATEWIZARD_WIZARDBASICINFOPAGE_H_
-#define PROJECTCREATEWIZARD_WIZARDBASICINFOPAGE_H_
-#include <wx/wx.h>
 #include <string>
-#include <vector>
-#include "WizardStepIndicator.h"
-#include "ProjectCreateWizard/ProjectCreateWizardBasePage.h"
+#include "Platform.h"
 
 namespace webweaver::studio {
 
-class WizardBasicInfoPage : public wxDialog {
- public:
-    WizardBasicInfoPage(wxWindow* parent,
-                        ProjectCreateWizardData *data,
-                        std::vector<std::string> steps);
+Platform GetCurrentPlatform() {
+#ifdef WEBWEAVER_PLATFORM_WIN64
+    return Platform::Win64;
+#elif defined(WEBWEAVER_PLATFORM_MACOS)
+    return Platform::MacOS;
+#elif defined(WEBWEAVER_PLATFORM_LINUX)
+    return Platform::Linux;
+#else
+    return Platform::Unknown;
+#endif
+}
 
- private:
-    ProjectCreateWizardData* data_;
-    std::vector<std::string> steps_;
-
-    wxTextCtrl *txtSolutionName_;
-    wxTextCtrl *txtSolutionDir_;
-    wxCheckBox* chkCreateSolutionDir_;
-
-    bool ValidateFields();
-
-    void OnBrowseSolutionLocation(wxCommandEvent& event);
-    void OnNextClickEvent(wxCommandEvent& event);
-};
+std::string PlatformToString(Platform platform) {
+    switch (platform) {
+        case Platform::Win64: return "WIN64";
+        case Platform::Linux: return "Linux";
+        case Platform::MacOS: return "MacOS";
+        default: return "Unknown";
+    }
+}
 
 }   // namespace webweaver::studio
-
-#endif // PROJECTCREATEWIZARD_WIZARDBASICINFOPAGE_H_

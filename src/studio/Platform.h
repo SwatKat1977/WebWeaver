@@ -17,36 +17,23 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef PROJECTCREATEWIZARD_WIZARDBASICINFOPAGE_H_
-#define PROJECTCREATEWIZARD_WIZARDBASICINFOPAGE_H_
-#include <wx/wx.h>
+#ifndef PLATFORM_H_
+#define PLATFORM_H_
 #include <string>
-#include <vector>
-#include "WizardStepIndicator.h"
-#include "ProjectCreateWizard/ProjectCreateWizardBasePage.h"
 
 namespace webweaver::studio {
 
-class WizardBasicInfoPage : public wxDialog {
- public:
-    WizardBasicInfoPage(wxWindow* parent,
-                        ProjectCreateWizardData *data,
-                        std::vector<std::string> steps);
-
- private:
-    ProjectCreateWizardData* data_;
-    std::vector<std::string> steps_;
-
-    wxTextCtrl *txtSolutionName_;
-    wxTextCtrl *txtSolutionDir_;
-    wxCheckBox* chkCreateSolutionDir_;
-
-    bool ValidateFields();
-
-    void OnBrowseSolutionLocation(wxCommandEvent& event);
-    void OnNextClickEvent(wxCommandEvent& event);
+enum class Platform {
+    Win64,
+    Linux,
+    MacOS,
+    Unknown
 };
+
+Platform GetCurrentPlatform();
+
+std::string PlatformToString(Platform platform);
 
 }   // namespace webweaver::studio
 
-#endif // PROJECTCREATEWIZARD_WIZARDBASICINFOPAGE_H_
+#endif  // PLATFORM_H_

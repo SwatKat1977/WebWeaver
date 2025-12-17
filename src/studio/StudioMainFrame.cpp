@@ -18,19 +18,27 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
 #include <wx/artprov.h>
+#include <wx/treectrl.h>
+#include <string>
+#include <vector>
 #include "StudioMainFrame.h"
 #include "BitmapUtils.h"
 #include "ToolbarIcons.h"
+#include "ProjectCreateWizard/WizardBasicInfoPage.h"
+#include "ProjectCreateWizard/WizardSelectBrowserPage.h"
+#include "ProjectCreateWizard/WizardBehaviourPage.h"
+#include "ProjectCreateWizard/WizardFinishPage.h"
+#include "ProjectWizardControlIDs.h"
 
 namespace webweaver::studio {
 
 constexpr int RECORD_TOOLBAR_ICON_ID = 100;
 
+// macOS draws menu bar differently and pulls windows upward slightly
 #ifdef __APPLE__
-    // macOS draws menu bar differently and pulls windows upward slightly
-    wxPoint InitialWindowPosition = wxPoint(0, 30);
+wxPoint InitialWindowPosition = wxPoint(0, 30);
 #else
-    wxPoint InitialWindowPosition = wxDefaultPosition;
+wxPoint InitialWindowPosition = wxDefaultPosition;
 #endif
 
 StudioMainFrame::StudioMainFrame(wxWindow* parent)
@@ -47,19 +55,40 @@ StudioMainFrame::StudioMainFrame(wxWindow* parent)
     // Menu Bar
     // --------------------------------------------------------------
     wxMenuBar *menubar = new wxMenuBar();
-    wxMenu *menu = new wxMenu();
-    menu->Append(wxID_EXIT, "Quit");
-    menubar->Append(menu, "File");
+
+    // -- File Menu --
+    wxMenu *fileMenu = new wxMenu();
+    fileMenu->Append(wxID_EXIT, "New Project");
+    fileMenu->Append(wxID_EXIT, "Open Project");
+    fileMenu->Append(wxID_EXIT, "Save Project");
+    fileMenu->Append(wxID_EXIT, "Exit");
+    menubar->Append(fileMenu, "File");
+    SetMenuBar(menubar);
+
+    wxMenu* helpMenu = new wxMenu();
+    helpMenu->Append(wxID_EXIT, "About");
+    menubar->Append(helpMenu, "Help");
     SetMenuBar(menubar);
 }
 
 void StudioMainFrame::InitAui() {
     _aui_mgr.SetManagedWindow(this);
 
+    // Reset any previously stored layout
+    _aui_mgr.LoadPerspective("", true);
+
+    _aui_mgr.GetArtProvider()->SetMetric(wxAUI_DOCKART_SASH_SIZE, 2);
+
     // --------------------------------------------------------------
     // TOOLBAR (top, dockable)
     // --------------------------------------------------------------
     CreateMainToolbar();
+
+    CreateProjectPanel();
+
+    CreateWorkspacePanel();
+
+    CreateInspectorPanel();
 
     _aui_mgr.Update();
 }
@@ -105,7 +134,8 @@ void StudioMainFrame::CreateMainToolbar() {
     toolbar->AddTool(toolbarId_InspectorMode,
         "",
         LoadToolbarInspectIcon(),
-        "Inspector Mode");
+        "Inspector Mode",
+        wxITEM_CHECK);
 
     toolbar->AddTool(RECORD_TOOLBAR_ICON_ID,
         "",
@@ -120,12 +150,6 @@ void StudioMainFrame::CreateMainToolbar() {
 
     toolbar->Realize();
 
-    /*
-    *     void OnNewProjectEvent(wxEvent event);
-
-void OnRecordToggleEvent(wxEvent event);
-    */
-
     // --- Bind toolbar events ---
     Bind(wxEVT_TOOL,
         &StudioMainFrame::OnNewProjectEvent,
@@ -135,6 +159,11 @@ void OnRecordToggleEvent(wxEvent event);
         &StudioMainFrame::OnRecordToggleEvent,
         this,
         RECORD_TOOLBAR_ICON_ID);
+
+    Bind(wxEVT_TOOL,
+        &StudioMainFrame::OnInspectorToggle,
+        this,
+        toolbarId_InspectorMode);
 
     _aui_mgr.AddPane(
         toolbar,
@@ -154,41 +183,272 @@ void OnRecordToggleEvent(wxEvent event);
     _aui_mgr.Update();
 }
 
+void StudioMainFrame::CreateProjectPanel() {
+    // Projects panel (left top)
+    wxPanel* projectPanel = new wxPanel(this);
+    wxBoxSizer* projectSizer = new wxBoxSizer(wxVERTICAL);
+
+    wxTreeCtrl* projectTree = new wxTreeCtrl(
+        projectPanel,
+        wxID_ANY,
+        wxDefaultPosition,
+        wxDefaultSize,
+        wxTR_HAS_BUTTONS | wxTR_DEFAULT_STYLE);
+    projectSizer->Add(projectTree, 1, wxEXPAND | wxALL, 5);
+
+    projectTree->ExpandAll();
+
+    projectPanel->SetSizer(projectSizer);
+
+    _aui_mgr.AddPane(projectPanel,
+                     wxAuiPaneInfo()
+        .Left()
+        .Row(1)
+        .PaneBorder(false)
+        .Caption("Project Explorer")
+        .CloseButton(true)
+        .MaximizeButton(true)
+        .MinimizeButton(true)
+        .BestSize(300, 300));
+}
+
+void StudioMainFrame::CreateWorkspacePanel() {
+    // -------------------------
+    // Workspace
+    // -------------------------
+    wxPanel *workspacePanel = new wxPanel(this);
+    wxBoxSizer *workspaceSizer = new wxBoxSizer(wxVERTICAL);
+    workspaceSizer->Add(new wxStaticText(workspacePanel,
+                        wxID_ANY,
+                        "Workspace"), 0, wxALL, 5);
+
+    workspacePanel->SetSizer(workspaceSizer);
+
+    // Add main central area
+    _aui_mgr.AddPane(
+        workspacePanel,
+        wxAuiPaneInfo()
+        .CenterPane()
+        .Row(1)
+        .PaneBorder(false)
+        .Caption("Workspace"));
+}
+
+void StudioMainFrame::CreateInspectorPanel() {
+    // Parent is the main frame (it will be managed as an AUI pane)
+    wxPanel* inspectorPanel = new wxPanel(this);
+
+    // Vertical layout: buttons at top, log below
+    wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
+
+    // --- Button column ---
+    wxBoxSizer* buttonSizer = new wxBoxSizer(wxVERTICAL);
+
+    wxButton* btnOpenPage = new wxButton(
+        inspectorPanel,
+        ID_INSPECTOR_OPEN_PAGE,
+        "Open Page");
+
+    wxButton* btnStartInspect = new wxButton(
+        inspectorPanel,
+        ID_INSPECTOR_START_INSPECT,
+        "Start Inspect Mode");
+
+    wxButton* btnStopInspect = new wxButton(
+        inspectorPanel,
+        ID_INSPECTOR_STOP_INSPECT,
+        "Stop Inspect Mode");
+
+    wxButton* btnStartRecord = new wxButton(
+        inspectorPanel,
+        ID_INSPECTOR_START_RECORD,
+        "Start Record Mode");
+
+    wxButton* btnStopRecord = new wxButton(
+        inspectorPanel,
+        ID_INSPECTOR_STOP_RECORD,
+        "Stop Record Mode");
+
+    wxButton* btnSaveJson = new wxButton(
+        inspectorPanel,
+        ID_INSPECTOR_SAVE_JSON,
+        "Save Recording to JSON");
+
+    // Pack buttons with a little spacing
+    buttonSizer->Add(btnOpenPage, 0, wxALL | wxEXPAND, 5);
+    buttonSizer->Add(btnStartInspect,
+                     0,
+                     wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
+    buttonSizer->Add(btnStopInspect,
+                     0,
+                     wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
+    buttonSizer->Add(btnStartRecord,
+                     0,
+                     wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
+    buttonSizer->Add(btnStopRecord,
+                     0,
+                     wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
+    buttonSizer->Add(btnSaveJson,
+                     0,
+                     wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
+
+    mainSizer->Add(buttonSizer, 0, wxEXPAND | wxALL, 5);
+
+    // --- Log area (multiline text) ---
+    _inspectorLog = new wxTextCtrl(
+        inspectorPanel,
+        wxID_ANY,
+        "",
+        wxDefaultPosition,
+        wxDefaultSize,
+        wxTE_MULTILINE | wxTE_READONLY);
+
+    mainSizer->Add(_inspectorLog, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
+
+    inspectorPanel->SetSizer(mainSizer);
+
+    // Register as a dockable pane on the right
+    _aui_mgr.AddPane(
+        inspectorPanel,
+        wxAuiPaneInfo()
+        .Name("InspectorPanel")
+        .Caption("WebWeaver Inspector")
+        .Right()
+        .Row(1)
+        .BestSize(350, 600)
+        .CloseButton(true)
+        .MaximizeButton(true)
+        .MinimizeButton(true)
+        .Floatable(true)
+        .Movable(true)
+        .Dockable(true)
+        .Hide());
+
+    // Bind button events
+    inspectorPanel->Bind(wxEVT_BUTTON,
+        &StudioMainFrame::OnInspectorOpenPage,
+        this,
+        ID_INSPECTOR_OPEN_PAGE);
+
+    inspectorPanel->Bind(wxEVT_BUTTON,
+        &StudioMainFrame::OnInspectorStartInspect,
+        this,
+        ID_INSPECTOR_START_INSPECT);
+
+    inspectorPanel->Bind(wxEVT_BUTTON,
+        &StudioMainFrame::OnInspectorStopInspect,
+        this,
+        ID_INSPECTOR_STOP_INSPECT);
+
+    inspectorPanel->Bind(wxEVT_BUTTON,
+        &StudioMainFrame::OnInspectorStartRecord,
+        this,
+        ID_INSPECTOR_START_RECORD);
+
+    inspectorPanel->Bind(wxEVT_BUTTON,
+        &StudioMainFrame::OnInspectorStopRecord,
+        this,
+        ID_INSPECTOR_STOP_RECORD);
+
+    inspectorPanel->Bind(wxEVT_BUTTON,
+        &StudioMainFrame::OnInspectorSaveJson,
+        this,
+        ID_INSPECTOR_SAVE_JSON);
+}
+
+void StudioMainFrame::OnInspectorOpenPage(wxCommandEvent& event) {
+    if (_inspectorLog)
+        _inspectorLog->AppendText("Open Page clicked\n");
+}
+
+void StudioMainFrame::OnInspectorStartInspect(wxCommandEvent& event) {
+    if (_inspectorLog)
+        _inspectorLog->AppendText("Start Inspect Mode\n");
+}
+
+void StudioMainFrame::OnInspectorStopInspect(wxCommandEvent& event) {
+    if (_inspectorLog)
+        _inspectorLog->AppendText("Stop Inspect Mode\n");
+}
+
+void StudioMainFrame::OnInspectorStartRecord(wxCommandEvent& event) {
+    if (_inspectorLog)
+        _inspectorLog->AppendText("Start Record Mode\n");
+}
+
+void StudioMainFrame::OnInspectorStopRecord(wxCommandEvent& event) {
+    if (_inspectorLog)
+        _inspectorLog->AppendText("Stop Record Mode\n");
+}
+
+void StudioMainFrame::OnInspectorSaveJson(wxCommandEvent& event) {
+    if (_inspectorLog)
+        _inspectorLog->AppendText("Save Recording to JSON\n");
+}
+
 void StudioMainFrame::OnNewProjectEvent(wxCommandEvent& event) {
-    //  data = {};
+    ProjectCreateWizardData data;
+    std::vector<std::string> steps = {
+    "Basic solution info",
+    "Browser selection",
+    "Configure behaviour",
+    "Finish"
+    };
 
-    int page = 1;
-        /*
-        while True :
-            if page == 1 :
-                dlg = WizardBasicInfoPage(self, data)
-                elif page == 2 :
-                dlg = WizardWebSelectBrowserPage(self, data)
+    int pageNumber = 1;
 
-                elif page == 3 :
-                dlg = WizardWebBehaviourPage(self, data)
+    while (true) {
+        wxDialog* wizardDialog = nullptr;
 
-                elif page == 4 :
-                dlg = WizardFinishPage(self, data)
+        switch (pageNumber) {
+        case 1:
+            wizardDialog = new WizardBasicInfoPage(this, &data, steps);
+            break;
 
-            else:
-    break
+        case 2:
+            wizardDialog = new WizardSelectBrowserPage(this, &data, steps);
+            break;
 
-        rc = dlg.ShowModal()
+        case 3:
+            wizardDialog = new WizardBehaviourPage(this, &data, steps);
+            break;
 
-        if rc == wx.ID_CANCEL :
-            return  # wizard cancelled
+        case 4:
+            wizardDialog = new WizardFinishPage(this, &data, steps);
+            break;
 
-            if rc == ID_BACK_BUTTON:
-    page -= 1
-        continue
+        default:
+            // No more pages .. end wizard and create solution
 
-        if rc == wx.ID_OK :
-            page += 1
-            continue
+            /*
+            // Wizard has finished normally:
+            for (auto& [key, val] : data) {
+                std::cout << key << ": " << val << std::endl;
+            }
+            */
+            return;
+        }
 
-            print("DATA:", data)
-*/
+        int rc = wizardDialog->ShowModal();
+        wizardDialog->Destroy();
+
+        if (rc == wxID_CANCEL) {
+            // Wizard cancelled, abort
+            return;
+        }
+
+        if (rc == PROJECT_WIZARD_BACK_BUTTON_ID) {
+            pageNumber -= 1;
+            continue;
+
+        } else if (rc == wxID_OK) {
+            pageNumber += 1;
+            continue;
+        }
+
+        // Unknown return code, exit cleanly.
+        return;
+    }
 }
 
 void StudioMainFrame::OnRecordToggleEvent(wxCommandEvent& event) {
@@ -217,6 +477,27 @@ void StudioMainFrame::OnRecordToggleEvent(wxCommandEvent& event) {
     }
 
     toolbar->Realize();
+}
+
+void StudioMainFrame::OnInspectorToggle(wxCommandEvent& event) {
+    wxAuiPaneInfo& pane = _aui_mgr.GetPane("InspectorPanel");
+    if (!pane.IsOk())
+        return;
+
+    bool show = !pane.IsShown();
+    pane.Show(show);
+
+    // keep toolbar button state in sync
+    wxAuiPaneInfo& tbPane = _aui_mgr.GetPane("MainToolbar");
+    if (tbPane.IsOk()) {
+        wxAuiToolBar* toolbar = wxDynamicCast(tbPane.window, wxAuiToolBar);
+        if (toolbar) {
+            toolbar->ToggleTool(event.GetId(), show);
+            toolbar->Refresh();
+        }
+    }
+
+    _aui_mgr.Update();
 }
 
 }   // namespace webweaver::studio

@@ -71,7 +71,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ExternalIncludePath>$(WEBWEAVER_WXWIDGETS_INCLUDE);$(WEBWEAVER_WXWIDGETS_LIB)\mswud</ExternalIncludePath>
+    <ExternalIncludePath>.;$(WEBWEAVER_WXWIDGETS_INCLUDE);$(WEBWEAVER_WXWIDGETS_LIB)\mswud</ExternalIncludePath>
+    <LibraryPath>$(WEBWEAVER_WXWIDGETS_LIB);$(LibraryPath)</LibraryPath>
+    <EmbedManifest>false</EmbedManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>.;$(WEBWEAVER_WXWIDGETS_INCLUDE);$(WEBWEAVER_WXWIDGETS_LIB)\mswu</IncludePath>
     <LibraryPath>$(WEBWEAVER_WXWIDGETS_LIB);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -104,7 +109,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;__WXDEBUG__;WXUSINGDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;__WXDEBUG__;WXUSINGDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -113,6 +118,14 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>wxbase33ud.lib;wxmsw33ud_core.lib;wxmsw33ud_aui.lib;wxmsw33ud_adv.lib;wxmsw33ud_html.lib;wxpngd.lib;wxzlibd.lib;wxjpegd.lib;wxtiffd.lib;wxregexud.lib;wxexpatd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Manifest>
+      <AdditionalManifestFiles>
+      </AdditionalManifestFiles>
+    </Manifest>
+    <PostBuildEvent>
+      <Command>mt.exe -manifest "$(ProjectDir)WebWeaverStudio.manifest" -outputresource:"$(TargetPath)";#1</Command>
+      <Message>Generating Manifest [Debug]</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -120,27 +133,42 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;WXUSINGDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <AdditionalDependencies>wxbase33u.lib;wxmsw33u_core.lib;wxmsw33u_aui.lib;wxmsw33u_adv.lib;wxmsw33u_html.lib;wxpng.lib;wxzlib.lib;wxjpeg.lib;wxtiff.lib;wxregexu.lib;wxexpat.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Message>Generating Manifest [Release]</Message>
+      <Command>mt.exe -manifest "$(ProjectDir)WebWeaverStudio.manifest" -outputresource:"$(TargetPath)";#1</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BitmapUtils.cpp" />
+    <ClCompile Include="Platform.cpp" />
+    <ClCompile Include="ProjectCreateWizard\BrowserIcons.cpp" />
     <ClCompile Include="ProjectCreateWizard\WizardBasicInfoPage.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="ProjectCreateWizard\WizardBehaviourPage.cpp" />
+    <ClCompile Include="ProjectCreateWizard\WizardFinishPage.cpp" />
     <ClCompile Include="ProjectCreateWizard\WizardSelectBrowserPage.cpp" />
     <ClCompile Include="studio.cpp" />
     <ClCompile Include="StudioMainFrame.cpp" />
     <ClCompile Include="ToolbarIcons.cpp" />
+    <ClCompile Include="WizardStepIndicator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BitmapUtils.h" />
+    <ClInclude Include="imgResources\BrowserLogos\browser_chromium_icon.h" />
+    <ClInclude Include="imgResources\BrowserLogos\browser_firefox_icon.h" />
+    <ClInclude Include="imgResources\BrowserLogos\browser_google_chrome_icon.h" />
+    <ClInclude Include="imgResources\BrowserLogos\browser_microsoft_edge_icon.h" />
     <ClInclude Include="imgResources\toolbar\toolbar_inspect.h" />
     <ClInclude Include="imgResources\toolbar\toolbar_new_project.h" />
     <ClInclude Include="imgResources\toolbar\toolbar_open_project.h" />
@@ -148,14 +176,25 @@
     <ClInclude Include="imgResources\toolbar\toolbar_save_project.h" />
     <ClInclude Include="imgResources\toolbar\toolbar_start_record.h" />
     <ClInclude Include="imgResources\toolbar\toolbar_stop_record.h" />
+    <ClInclude Include="Platform.h" />
+    <ClInclude Include="ProjectCreateWizard\BrowserIcons.h" />
     <ClInclude Include="ProjectCreateWizard\ProjectCreateWizardBasePage.h" />
     <ClInclude Include="ProjectCreateWizard\WizardBasicInfoPage.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="ProjectCreateWizard\WizardBehaviourPage.h" />
+    <ClInclude Include="ProjectCreateWizard\WizardFinishPage.h" />
     <ClInclude Include="ProjectCreateWizard\WizardSelectBrowserPage.h" />
+    <ClInclude Include="ProjectWizardControlIDs.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="StudioDefinitions.h" />
     <ClInclude Include="StudioMainFrame.h" />
     <ClInclude Include="ToolbarIcons.h" />
+    <ClInclude Include="WizardStepIndicator.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="VersionInfo.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

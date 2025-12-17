@@ -17,39 +17,28 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef PROJECTCREATEWIZARD_WIZARDSELECTBROWSERPAGE_H_
-#define PROJECTCREATEWIZARD_WIZARDSELECTBROWSERPAGE_H_
-
+#ifndef WIZARDSTEPINDICATOR_H_
+#define WIZARDSTEPINDICATOR_H_
 #include <wx/wx.h>
-#include <wx/tglbtn.h>
 #include <string>
 #include <vector>
-#include "ProjectCreateWizard/ProjectCreateWizardBasePage.h"
 
 namespace webweaver::studio {
 
-class WizardSelectBrowserPage : public wxDialog {
+class WizardStepIndicator : public wxPanel {
  public:
-    const std::string DEFAULT_URL = "https://www.example.com";
+    WizardStepIndicator(wxWindow* parent,
+                        const std::vector<std::string> steps,
+                        int activeIndex = 0);
 
-    WizardSelectBrowserPage(wxWindow* parent,
-                            ProjectCreateWizardData* data,
-                            std::vector<std::string> steps);
+    void SetActive(int index);
 
  private:
-    ProjectCreateWizardData* data_;
     std::vector<std::string> steps_;
-    std::vector<std::pair<wxString, wxToggleButton*>> _browserButtons;
-
-    wxTextCtrl *_txtBaseUrl;
-    wxCheckBox *_chkLaunchBrowser;
-
-    bool ValidateFields();
-
-    void OnBrowserToggleEvent(wxCommandEvent& event);
-    void OnNextClickEvent(wxCommandEvent& event);
+    std::vector<wxStaticText*> labels_;
+    int activeIndex_;
 };
 
 }   // namespace webweaver::studio
 
-#endif  // PROJECTCREATEWIZARD_WIZARDSELECTBROWSERPAGE_H_
+#endif  // WIZARDSTEPINDICATOR_H_

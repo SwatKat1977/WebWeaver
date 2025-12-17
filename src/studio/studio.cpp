@@ -18,6 +18,7 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
 #include <wx/wx.h>
+#include <wx/sysopt.h>
 #include "StudioMainFrame.h"
 
 class WebweaverStudioApp : public wxApp {
@@ -28,6 +29,10 @@ class WebweaverStudioApp : public wxApp {
 wxIMPLEMENT_APP(WebweaverStudioApp);
 
 bool WebweaverStudioApp::OnInit() {
+#ifdef __APPLE__
+    SetAppearance(wxAppBase::Appearance::Light);
+#endif
+
     // Required for PNG/JPEG/etc.
     wxInitAllImageHandlers();
 

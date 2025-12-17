@@ -17,36 +17,21 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef PROJECTCREATEWIZARD_WIZARDBASICINFOPAGE_H_
-#define PROJECTCREATEWIZARD_WIZARDBASICINFOPAGE_H_
+#ifndef PROJECTCREATEWIZARD_BROWSERICONS_H_
+#define PROJECTCREATEWIZARD_BROWSERICONS_H_
+
 #include <wx/wx.h>
-#include <string>
-#include <vector>
-#include "WizardStepIndicator.h"
-#include "ProjectCreateWizard/ProjectCreateWizardBasePage.h"
 
 namespace webweaver::studio {
 
-class WizardBasicInfoPage : public wxDialog {
- public:
-    WizardBasicInfoPage(wxWindow* parent,
-                        ProjectCreateWizardData *data,
-                        std::vector<std::string> steps);
+wxBitmap LoadBrowserIconChromium();
 
- private:
-    ProjectCreateWizardData* data_;
-    std::vector<std::string> steps_;
+wxBitmap LoadBrowserIconFirefox();
 
-    wxTextCtrl *txtSolutionName_;
-    wxTextCtrl *txtSolutionDir_;
-    wxCheckBox* chkCreateSolutionDir_;
+wxBitmap LoadBrowserIconGoogleChromium();
 
-    bool ValidateFields();
-
-    void OnBrowseSolutionLocation(wxCommandEvent& event);
-    void OnNextClickEvent(wxCommandEvent& event);
-};
+wxBitmap LoadBrowserIconMicrosoftEdge();
 
 }   // namespace webweaver::studio
 
-#endif // PROJECTCREATEWIZARD_WIZARDBASICINFOPAGE_H_
+#endif  // PROJECTCREATEWIZARD_BROWSERICONS_H_

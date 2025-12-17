@@ -17,126 +17,182 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifdef __PORTED_CODE__
-import wx
-from wizard_step_indicator import WizardStepIndicator
+#include <wx/artprov.h>
+#include <string>
+#include <vector>
+#include "ProjectCreateWizard/WizardBasicInfoPage.h"
+#include "WizardStepIndicator.h"
 
 
-WEBWEAVER_WXWIDGETS_BASE_PATH
+namespace webweaver::studio {
 
-class WizardBasicInfoPage(wx.Dialog):
-    def __init__(self, parent, data):
-        super().__init__(parent, title="Create your new solution",
-                         style=wx.DEFAULT_DIALOG_STYLE)
+WizardBasicInfoPage::WizardBasicInfoPage(wxWindow* parent,
+                                         ProjectCreateWizardData* data,
+                                         std::vector<std::string> steps)
+    : wxDialog(parent,
+               wxID_ANY,
+               "Create your new solution",
+               wxDefaultPosition,
+               wxDefaultSize,
+               wxDEFAULT_DIALOG_STYLE), data_(data), steps_(steps) {
+    wxBoxSizer *main = new wxBoxSizer(wxVERTICAL);
 
-        self.data = data  # shared dict
+    WizardStepIndicator*stepIndicator = new WizardStepIndicator(this,
+                                                                steps_,
+                                                                0);
+    main->Add(stepIndicator, 0, wxEXPAND | wxALL, 10);
 
-        main = wx.BoxSizer(wx.VERTICAL)
+    // --------------------------------------------------------------
+    // Header
+    // --------------------------------------------------------------
+    wxBoxSizer *header = new wxBoxSizer(wxHORIZONTAL);
+    wxStaticBitmap *icon = new wxStaticBitmap(
+        this,
+        wxID_ANY,
+        wxArtProvider::GetBitmap(wxART_TIP, wxART_OTHER, wxSize(32, 32)));
+    header->Add(icon, 0, wxALL, 10);
 
-        self.steps = [
-            "Basic solution info",
-            "Browser selection",
-            "Configure behaviour",
-            "Finish",
-        ]
+    // Text area (vertical sizer)
+    wxBoxSizer *headerArea = new wxBoxSizer(wxVERTICAL);
 
-        self.current_index = 0
-        step_indicator = WizardStepIndicator(self, self.steps, active_index=0)
-        main.Add(step_indicator, 0, wx.EXPAND | wx.ALL, 10)
+    // Title
+    wxStaticText* title = new wxStaticText(
+        this,
+        wxID_ANY,
+        "Create your new solution");
+    title->SetFont(wxFont(13, wxFONTFAMILY_DEFAULT,
+        wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
 
-        # Header
-        header = wx.BoxSizer(wx.HORIZONTAL)
-        icon = wx.StaticBitmap(self, bitmap=wx.ArtProvider.GetBitmap(
-            wx.ART_TIP, wx.ART_OTHER, (32, 32)))
-        header.Add(icon, 0, wx.ALL, 10)
+    // Subtitle
+    wxStaticText* subtitle = new wxStaticText(
+        this,
+        wxID_ANY,
+        "Define basic information for your first solution.");
+    subtitle->SetForegroundColour(wxColour(100, 100, 100));
+    headerArea->Add(title, 0);
+    headerArea->Add(subtitle, 0, wxTOP, 4);
 
-        text_box = wx.BoxSizer(wx.VERTICAL)
-        title = wx.StaticText(self, label="Create your new solution")
-        title.SetFont(wx.Font(13, wx.FONTFAMILY_DEFAULT,
-                              wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
-        subtitle = wx.StaticText(
-            self, label="Define basic information for your first solution.")
-        subtitle.SetForegroundColour(wx.Colour(100, 100, 100))
-        text_box.Add(title, 0)
-        text_box.Add(subtitle, 0, wx.TOP, 4)
+    // Add text area into header sizer
+    header->Add(headerArea, 1, wxALIGN_CENTER_VERTICAL);
 
-        header.Add(text_box, 1, wx.ALIGN_CENTER_VERTICAL)
-        main.Add(header, 0, wx.LEFT | wx.RIGHT, 10)
+    // Add the whole header to main sizer
+    main->Add(header, 0, wxLEFT | wxRIGHT, 10);
 
-        # Form
-        form_panel = wx.Panel(self)
-        form = wx.FlexGridSizer(0, 3, 8, 8)
-        form.AddGrowableCol(1, 1)
+    // --------------------------------------------------------------
+    // Input Area
+    // --------------------------------------------------------------
 
-        form.Add(wx.StaticText(form_panel, label="Solution name:"),
-                 0, wx.ALIGN_CENTER_VERTICAL)
-        self.txt_solution_name = wx.TextCtrl(form_panel)
-        form.Add(self.txt_solution_name, 1, wx.EXPAND)
-        form.Add((0, 0))
+    wxPanel* inputAreaPanel = new wxPanel(this);
+    wxFlexGridSizer *inputAreaSizer = new wxFlexGridSizer(0, 3, 8, 8);
+    inputAreaSizer->AddGrowableCol(1, 1);
 
-        form.Add(wx.StaticText(form_panel, label="Location:"),
-                 0, wx.ALIGN_CENTER_VERTICAL)
-        self.txt_solution_dir = wx.TextCtrl(form_panel)
-        form.Add(self.txt_solution_dir, 1, wx.EXPAND)
+    // -----
+    // Row 1 : Solution name
+    // -----
+    inputAreaSizer->Add(new wxStaticText(inputAreaPanel,
+                                         wxID_ANY,
+                                         "Solution name:"),
+                        0, wxALIGN_CENTER_VERTICAL);
+    txtSolutionName_ = new wxTextCtrl(inputAreaPanel, wxID_ANY);
+    inputAreaSizer->Add(txtSolutionName_, 1, wxEXPAND);
+    inputAreaSizer->AddSpacer(0);
 
-        btn_browse = wx.Button(form_panel, label="…")
-        btn_browse.SetMinSize((32, -1))
-        btn_browse.Bind(wx.EVT_BUTTON, self.__on_browse)
-        form.Add(btn_browse)
+    // -----
+    // Row 2 : Solution location
+    // -----
+    inputAreaSizer->Add(new wxStaticText(inputAreaPanel,
+                                         wxID_ANY,
+                                         "Location:"),
+                                         0, wxALIGN_CENTER_VERTICAL);
+    txtSolutionDir_ = new wxTextCtrl(inputAreaPanel, wxID_ANY);
+    inputAreaSizer->Add(txtSolutionDir_, 1, wxEXPAND);
 
-        form_panel.SetSizer(form)
-        main.Add(form_panel, 0, wx.EXPAND | wx.ALL, 10)
+    wxButton *btnBrowseLocation = new wxButton(inputAreaPanel,
+                                               wxID_ANY,
+                                               wxString::FromUTF8("…"));
+    btnBrowseLocation->SetMinSize(wxSize(32, -1));
+    btnBrowseLocation->Bind(wxEVT_BUTTON,
+                            &WizardBasicInfoPage::OnBrowseSolutionLocation,
+                            this);
+    inputAreaSizer->Add(btnBrowseLocation, 0);
 
-        # Checkbox
-        self.chk_dir = wx.CheckBox(self, label="Create directory for solution")
-        self.chk_dir.SetValue(True)
-        main.Add(self.chk_dir, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+    inputAreaPanel->SetSizer(inputAreaSizer);
+    main->Add(inputAreaPanel, 0, wxEXPAND | wxALL, 10);
 
-        # Button bar
-        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        btn_sizer.AddStretchSpacer()
+    // -----
+    // Row 3 : Create solution directory checkbox
+    // -----
+    chkCreateSolutionDir_ = new wxCheckBox(this,
+                                           wxID_ANY,
+                                           "Create directory for solution");
+    chkCreateSolutionDir_->SetValue(true);
+    main->Add(chkCreateSolutionDir_, 0, wxLEFT | wxRIGHT | wxBOTTOM, 10);
 
-        self.btn_cancel = wx.Button(self, wx.ID_CANCEL, "Cancel")
-        self.btn_cancel.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(wx.ID_CANCEL))
-        btn_sizer.Add(self.btn_cancel, 0, wx.RIGHT, 10)
+    // -----
+    // Row 4 : Button bar
+    // -----
+    wxBoxSizer* btnButtonBarSizer = new wxBoxSizer(wxHORIZONTAL);
+    // Spacer to push buttons to the right
+    btnButtonBarSizer->AddStretchSpacer();
 
-        self.btn_next = wx.Button(self, wx.ID_OK, "Next")
-        self.btn_next.Bind(wx.EVT_BUTTON, self.__on_next)
-        btn_sizer.Add(self.btn_next, 0)
+    // Cancel button
+    wxButton *btnCancel = new wxButton(this, wxID_CANCEL, "Cancel");
+    btnCancel->Bind(wxEVT_BUTTON,
+                    [this](wxCommandEvent&) { EndModal(wxID_CANCEL); });
+    btnButtonBarSizer->Add(btnCancel, 0, wxRIGHT, 10);
 
-        main.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 10)
+    // Next button
+    wxButton *btnNext = new wxButton(this, wxID_OK, "Next");
+    btnNext->Bind(wxEVT_BUTTON,
+                  &WizardBasicInfoPage::OnNextClickEvent,
+                  this);
+    btnButtonBarSizer->Add(btnNext, 0);
 
-        self.SetSizerAndFit(main)
-        self.CentreOnParent()
+    // Add to main layout
+    main->Add(btnButtonBarSizer, 0, wxEXPAND | wxALL, 10);
 
-    def __on_browse(self, _evt):
-        with wx.DirDialog(self, "Choose solution location") as dlg:
-            if dlg.ShowModal() == wx.ID_OK:
-                self.txt_location.SetValue(dlg.GetPath())
+    SetSizerAndFit(main);
+    CentreOnParent();
+}
 
-    def __validate(self) -> bool:
-        name = self.txt_solution_name.GetValue().strip()
-        if not name:
-            wx.MessageBox("Please enter a solution name.",
-                          "Validation error", wx.ICON_WARNING)
-            return False
+void WizardBasicInfoPage::OnBrowseSolutionLocation(wxCommandEvent& event) {
+    wxDirDialog dlg = wxDirDialog(this, "Choose solution location");
+    if (dlg.ShowModal() == wxID_OK) {
+        txtSolutionDir_->SetValue(dlg.GetPath());
+    }
+}
 
-        solution_dir = self.txt_solution_dir.GetValue().strip()
-        if not solution_dir:
-            wx.MessageBox("Please enter a solution location.",
-                          "Validation error", wx.ICON_WARNING)
-            return False
 
-        self.data["solution_name"] = self.txt_solution_name.GetValue().strip()
-        self.data["solution_dir"] = self.txt_solution_dir.GetValue().strip()
-        self.data["create_solution_dir"] = self.chk_dir.GetValue()
+bool WizardBasicInfoPage::ValidateFields() {
+    wxString SolutionName = txtSolutionName_->GetValue().Strip(wxString::both);
+    if (SolutionName.IsEmpty()) {
+        wxMessageBox("Please enter a solution name.",
+                     "Validation error",
+                     wxICON_WARNING);
+        return false;
+    }
 
-        return True
+    wxString solutionDir = txtSolutionDir_->GetValue().Strip(wxString::both);
+    if (solutionDir.IsEmpty()) {
+        wxMessageBox("Please enter a solution location.",
+                     "Validation error",
+                     wxICON_WARNING);
+        return false;
+    }
 
-    def __on_next(self, _event):
-        if not self.__validate():
-            return
+    data_->solutionName = SolutionName.ToStdString();
+    data_->solutionDirectory = solutionDir.ToStdString();
+    data_->createSolutionDir = chkCreateSolutionDir_->GetValue();
 
-        self.EndModal(wx.ID_OK)
+    return true;
+}
 
-#endif  // #ifdef __PORTED_CODE__
+void WizardBasicInfoPage::OnNextClickEvent(wxCommandEvent& event) {
+    if (!ValidateFields()) {
+        return;
+    }
+
+    EndModal(wxID_OK);
+}
+
+}   // namespace webweaver::studio

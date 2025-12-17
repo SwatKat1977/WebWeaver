@@ -17,24 +17,11 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef PROJECTCREATEWIZARD_PROJECTCREATEWIZARDBASEPAGE_H_
-#define PROJECTCREATEWIZARD_PROJECTCREATEWIZARDBASEPAGE_H_
+#ifndef STUDIODEFINITIONS_H_
+#define STUDIODEFINITIONS_H_
 #include <string>
+#include <vector>
 
-namespace webweaver::studio {
+using StepsList = std::vector<std::string>;
 
-struct ProjectCreateWizardData {
-    // -- PAGE 1 [Basic Info] --
-    std::string solutionName;
-    std::string solutionDirectory;
-    bool createSolutionDir = true;
-
-    // -- PAGE 2 [Select Browser] --
-    std::string baseUrl;
-    std::string browser;
-    bool launchBrowserAutomatically;
-};
-
-}   // namespace webweaver::studio
-
-#endif  // PROJECTCREATEWIZARD_PROJECTCREATEWIZARDBASEPAGE_H_"
+#endif  // STUDIODEFINITIONS_H_
