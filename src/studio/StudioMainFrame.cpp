@@ -32,8 +32,13 @@ Copyright 2025 SwatKat1977
 
 namespace webweaver::studio {
 
-constexpr int TOOLBAR_ID_START_STOP_RECORD = wxID_HIGHEST + 1;
-constexpr int TOOLBAR_ICON_ID_RECORD_PAUSE = wxID_HIGHEST + 2;
+
+constexpr int TOOLBAR_ID_NEW_PROJECT = wxID_HIGHEST + 1;
+constexpr int TOOLBAR_ID_OPEN_PROJECT = wxID_HIGHEST + 2;
+constexpr int TOOLBAR_ID_SAVE_PROJECT = wxID_HIGHEST + 3;
+constexpr int TOOLBAR_ID_INSPECTOR_MODE = wxID_HIGHEST + 4;
+constexpr int TOOLBAR_ID_START_STOP_RECORD = wxID_HIGHEST + 5;
+constexpr int TOOLBAR_ID_PAUSE_RECORD = wxID_HIGHEST + 6;
 
 constexpr int PAGENO_BASICINFOPAGE = 0;
 constexpr int PAGENO_SELECTBROWSERPAGE = 1;
@@ -87,18 +92,18 @@ StudioMainFrame::StudioMainFrame(wxWindow* parent)
 }
 
 void StudioMainFrame::InitAui() {
-    _aui_mgr.SetManagedWindow(this);
+    auiMgr_.SetManagedWindow(this);
 
     // Reset any previously stored layout
-    _aui_mgr.LoadPerspective("", true);
+    auiMgr_.LoadPerspective("", true);
 
-    _aui_mgr.GetArtProvider()->SetMetric(wxAUI_DOCKART_SASH_SIZE, 2);
+    auiMgr_.GetArtProvider()->SetMetric(wxAUI_DOCKART_SASH_SIZE, 2);
 
     // --------------------------------------------------------------
     // TOOLBAR (top, dockable)
     // --------------------------------------------------------------
     CreateMainToolbar();
-    //UpdateToolbarState();
+    UpdateToolbarState();
 
     CreateProjectPanel();
 
@@ -106,71 +111,75 @@ void StudioMainFrame::InitAui() {
 
     CreateInspectorPanel();
 
-    _aui_mgr.Update();
+    auiMgr_.Update();
 }
 
 StudioMainFrame::~StudioMainFrame() {
-    _aui_mgr.UnInit();
+    auiMgr_.UnInit();
+}
+
+void StudioMainFrame::SetStudioState(StudioState state) {
+    if (studioState_ == state) {
+        return;
+    }
+
+    studioState_ = state;
+    UpdateToolbarState();
 }
 
 void StudioMainFrame::CreateMainToolbar() {
-    const int toolbarId_NewProject = 1;
-    const int toolbarId_OpenProject = 2;
-    const int toolbarId_SaveProject = 3;
-    const int toolbarId_InspectorMode = 4;
-
-    wxAuiToolBar *toolbar = new wxAuiToolBar(
+    toolbar_ = new wxAuiToolBar(
         this,
         -1,
         wxDefaultPosition,
         wxDefaultSize,
         wxNO_BORDER | wxAUI_TB_DEFAULT_STYLE | wxAUI_TB_TEXT |
         wxAUI_TB_HORZ_LAYOUT);
-    toolbar->SetToolBitmapSize(wxSize(32, 32));
-    toolbar->SetToolPacking(5);
-    toolbar->SetToolSeparation(5);
+    toolbar_->SetToolBitmapSize(wxSize(32, 32));
+    toolbar_->SetToolPacking(5);
+    toolbar_->SetToolSeparation(5);
 
-    toolbar->AddTool(toolbarId_NewProject,
+    toolbar_->AddTool(TOOLBAR_ID_NEW_PROJECT,
         "",
         LoadToolbarNewProjectIcon(),
         "New Project");
 
-    toolbar->AddTool(toolbarId_OpenProject,
+    toolbar_->AddTool(TOOLBAR_ID_OPEN_PROJECT,
         "",
         LoadToolbarOpenProjectIcon(),
         "Open Project");
 
-    toolbar->AddTool(toolbarId_SaveProject,
+    toolbar_->AddTool(TOOLBAR_ID_SAVE_PROJECT,
         "",
         LoadToolbarSaveProjectIcon(),
         "Save Project");
 
-    toolbar->AddSeparator();
+    toolbar_->AddSeparator();
 
-    toolbar->AddTool(toolbarId_InspectorMode,
+    toolbar_->AddTool(TOOLBAR_ID_INSPECTOR_MODE,
         "",
         LoadToolbarInspectIcon(),
         "Inspector Mode",
         wxITEM_CHECK);
 
-    toolbar->AddTool(TOOLBAR_ID_START_STOP_RECORD,
+    toolbar_->AddTool(TOOLBAR_ID_START_STOP_RECORD,
         "",
         LoadToolbarStartRecordIcon(),
         "Record",
         wxITEM_CHECK);
 
-    toolbar->AddTool(TOOLBAR_ICON_ID_RECORD_PAUSE,
+    toolbar_->AddTool(TOOLBAR_ID_PAUSE_RECORD,
         "",
         LoadToolbarPauseRecordIcon(),
         "Pause Recording");
 
-    toolbar->Realize();
+    toolbar_->Realize();
 
     // --- Bind toolbar events ---
     Bind(wxEVT_TOOL,
         &StudioMainFrame::OnNewProjectEvent,
         this,
-        toolbarId_NewProject);
+        TOOLBAR_ID_NEW_PROJECT);
     Bind(wxEVT_TOOL,
         &StudioMainFrame::OnRecordToggleEvent,
         this,
@@ -179,10 +188,10 @@ void StudioMainFrame::CreateMainToolbar() {
     Bind(wxEVT_TOOL,
         &StudioMainFrame::OnInspectorToggle,
         this,
-        toolbarId_InspectorMode);
+        TOOLBAR_ID_INSPECTOR_MODE);
 
-    _aui_mgr.AddPane(
-        toolbar,
+    auiMgr_.AddPane(
+        toolbar_,
         wxAuiPaneInfo()
         .Name("MainToolbar")
         .ToolbarPane()
@@ -196,7 +205,7 @@ void StudioMainFrame::CreateMainToolbar() {
         .Floatable(false)
         .Movable(false));
 
-    _aui_mgr.Update();
+    auiMgr_.Update();
 }
 
 void StudioMainFrame::CreateProjectPanel() {
@@ -216,7 +225,7 @@ void StudioMainFrame::CreateProjectPanel() {
 
     projectPanel->SetSizer(projectSizer);
 
-    _aui_mgr.AddPane(projectPanel,
+    auiMgr_.AddPane(projectPanel,
                      wxAuiPaneInfo()
         .Left()
         .Row(1)
@@ -241,7 +250,7 @@ void StudioMainFrame::CreateWorkspacePanel() {
     workspacePanel->SetSizer(workspaceSizer);
 
     // Add main central area
-    _aui_mgr.AddPane(
+    auiMgr_.AddPane(
         workspacePanel,
         wxAuiPaneInfo()
         .CenterPane()
@@ -311,7 +320,7 @@ void StudioMainFrame::CreateInspectorPanel() {
     mainSizer->Add(buttonSizer, 0, wxEXPAND | wxALL, 5);
 
     // --- Log area (multiline text) ---
-    _inspectorLog = new wxTextCtrl(
+    inspectorLog_ = new wxTextCtrl(
         inspectorPanel,
         wxID_ANY,
         "",
@@ -319,12 +328,12 @@ void StudioMainFrame::CreateInspectorPanel() {
         wxDefaultSize,
         wxTE_MULTILINE | wxTE_READONLY);
 
-    mainSizer->Add(_inspectorLog, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
+    mainSizer->Add(inspectorLog_, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
 
     inspectorPanel->SetSizer(mainSizer);
 
     // Register as a dockable pane on the right
-    _aui_mgr.AddPane(
+    auiMgr_.AddPane(
         inspectorPanel,
         wxAuiPaneInfo()
         .Name("InspectorPanel")
@@ -373,33 +382,39 @@ void StudioMainFrame::CreateInspectorPanel() {
 }
 
 void StudioMainFrame::OnInspectorOpenPage(wxCommandEvent& event) {
-    if (_inspectorLog)
-        _inspectorLog->AppendText("Open Page clicked\n");
+    if (inspectorLog_) {
+        inspectorLog_->AppendText("Open Page clicked\n");
+    }
 }
 
 void StudioMainFrame::OnInspectorStartInspect(wxCommandEvent& event) {
-    if (_inspectorLog)
-        _inspectorLog->AppendText("Start Inspect Mode\n");
+    if (inspectorLog_) {
+        inspectorLog_->AppendText("Start Inspect Mode\n");
+    }
 }
 
 void StudioMainFrame::OnInspectorStopInspect(wxCommandEvent& event) {
-    if (_inspectorLog)
-        _inspectorLog->AppendText("Stop Inspect Mode\n");
+    if (inspectorLog_) {
+        inspectorLog_->AppendText("Stop Inspect Mode\n");
+    }
 }
 
 void StudioMainFrame::OnInspectorStartRecord(wxCommandEvent& event) {
-    if (_inspectorLog)
-        _inspectorLog->AppendText("Start Record Mode\n");
+    if (inspectorLog_) {
+        inspectorLog_->AppendText("Start Record Mode\n");
+    }
 }
 
 void StudioMainFrame::OnInspectorStopRecord(wxCommandEvent& event) {
-    if (_inspectorLog)
-        _inspectorLog->AppendText("Stop Record Mode\n");
+    if (inspectorLog_) {
+        inspectorLog_->AppendText("Stop Record Mode\n");
+    }
 }
 
 void StudioMainFrame::OnInspectorSaveJson(wxCommandEvent& event) {
-    if (_inspectorLog)
-        _inspectorLog->AppendText("Save Recording to JSON\n");
+    if (inspectorLog_) {
+        inspectorLog_->AppendText("Save Recording to JSON\n");
+    }
 }
 
 void StudioMainFrame::OnNewProjectEvent(wxCommandEvent& event) {
@@ -469,7 +484,7 @@ void StudioMainFrame::OnNewProjectEvent(wxCommandEvent& event) {
 
 void StudioMainFrame::OnRecordToggleEvent(wxCommandEvent& event) {
     // Retrieve the toolbar from the AUI manager
-    wxAuiPaneInfo& pane = _aui_mgr.GetPane("MainToolbar");
+    wxAuiPaneInfo& pane = auiMgr_.GetPane("MainToolbar");
     if (!pane.IsOk()) {
         return;
     }
@@ -498,7 +513,7 @@ void StudioMainFrame::OnRecordToggleEvent(wxCommandEvent& event) {
 }
 
 void StudioMainFrame::OnInspectorToggle(wxCommandEvent& event) {
-    wxAuiPaneInfo& pane = _aui_mgr.GetPane("InspectorPanel");
+    wxAuiPaneInfo& pane = auiMgr_.GetPane("InspectorPanel");
     if (!pane.IsOk())
         return;
 
@@ -506,7 +521,7 @@ void StudioMainFrame::OnInspectorToggle(wxCommandEvent& event) {
     pane.Show(show);
 
     // keep toolbar button state in sync
-    wxAuiPaneInfo& tbPane = _aui_mgr.GetPane("MainToolbar");
+    wxAuiPaneInfo& tbPane = auiMgr_.GetPane("MainToolbar");
     if (tbPane.IsOk()) {
         wxAuiToolBar* toolbar = wxDynamicCast(tbPane.window, wxAuiToolBar);
         if (toolbar) {
@@ -515,7 +530,19 @@ void StudioMainFrame::OnInspectorToggle(wxCommandEvent& event) {
         }
     }
 
-    _aui_mgr.Update();
+    auiMgr_.Update();
+}
+
+void StudioMainFrame::UpdateToolbarState() {
+    // First: disable everything that is state-dependent
+    toolbar_->EnableTool(TOOLBAR_ID_SAVE_PROJECT, false);
+    toolbar_->EnableTool(TOOLBAR_ID_INSPECTOR_MODE, false);
+    toolbar_->EnableTool(TOOLBAR_ID_START_STOP_RECORD, false);
+    toolbar_->EnableTool(TOOLBAR_ID_PAUSE_RECORD, false);
+
+    // Also reset toggle states to avoid stale UI
+    toolbar_->ToggleTool(TOOLBAR_ID_INSPECTOR_MODE, false);
+    toolbar_->ToggleTool(TOOLBAR_ID_START_STOP_RECORD, false);
 }
 
 }   // namespace webweaver::studio

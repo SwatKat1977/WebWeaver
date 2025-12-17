@@ -43,11 +43,12 @@ class StudioMainFrame : public wxFrame {
     void SetStudioState(StudioState state);
 
  private:
-    wxAuiManager _aui_mgr;
-    StudioState _studioState = StudioState::NoProject;
+    wxAuiManager auiMgr_;
+    wxAuiToolBar* toolbar_;
+    StudioState studioState_ = StudioState::NoProject;
 
     // Log area in inspector
-    wxTextCtrl* _inspectorLog = nullptr;
+    wxTextCtrl* inspectorLog_ = nullptr;
 
     void CreateMainToolbar();
     void CreateProjectPanel();
