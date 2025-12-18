@@ -17,29 +17,34 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef PROJECTCREATEWIZARD_WIZARDBEHAVIOURPAGE_H_
-#define PROJECTCREATEWIZARD_WIZARDBEHAVIOURPAGE_H_
-#include <wx/wx.h>
-#include "ProjectCreateWizard/ProjectCreateWizardBasePage.h"
-#include "StudioDefinitions.h"
+
+#ifndef STUDIOPROJECT_H_
+#define STUDIOPROJECT_H_
+#include <string>
+#include <utility>
 
 namespace webweaver::studio {
 
-class WizardBehaviourPage : public wxDialog {
- public:
-    WizardBehaviourPage(wxWindow* parent,
-                        ProjectCreateWizardData* data,
-                        StepsList steps);
+struct StudioSolution {
+    std::string solutionName;
+    std::string solutionDirectory;
+    bool createDirectoryForSolution;
+    std::string baseUrl;
+    std::string selectedBrowser;
 
- private:
-    // wxWidgets event handlers require non-const wxCommandEvent&
-    // NOLINTNEXTLINE(runtime/references)
-    void OnNextClickEvent(wxCommandEvent& event);
-
-    ProjectCreateWizardData *data_;
-    StepsList steps_;
+    StudioSolution(std::string name,
+                   std::string solutionDir,
+                   bool createSolutionDir,
+                   std::string url,
+                   std::string browser)
+        : solutionName(std::move(name)),
+          solutionDirectory(std::move(solutionDir)),
+          createDirectoryForSolution(createSolutionDir),
+          baseUrl(std::move(url)),
+          selectedBrowser(std::move(browser)) {
+    }
 };
 
 }   // namespace webweaver::studio
 
-#endif  // PROJECTCREATEWIZARD_WIZARDBEHAVIOURPAGE_H_
+#endif  // STUDIOPROJECT_H_

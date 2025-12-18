@@ -20,6 +20,7 @@ Copyright 2025 SwatKat1977
 #include <wx/wx.h>
 #include <wx/artprov.h>
 #include <string>
+#include <utility>
 #include <vector>
 #include "WizardSelectBrowserPage.h"
 #include "ProjectCreateWizard/BrowserIcons.h"

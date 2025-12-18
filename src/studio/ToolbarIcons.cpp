@@ -19,13 +19,14 @@ Copyright 2025 SwatKat1977
 */
 #include "ToolbarIcons.h"
 #include "BitmapUtils.h"
-#include "imgResources/toolbar/toolbar_inspect.h"
-#include "imgResources/toolbar/toolbar_new_project.h"
-#include "imgResources/toolbar/toolbar_open_project.h"
-#include "imgResources/toolbar/toolbar_pause_record.h"
-#include "imgResources/toolbar/toolbar_save_project.h"
-#include "imgResources/toolbar/toolbar_start_record.h"
-#include "imgResources/toolbar/toolbar_stop_record.h"
+#include "../artworkResources/studio/toolbar/toolbar_inspect.h"
+#include "../artworkResources/studio/toolbar/toolbar_new_project.h"
+#include "../artworkResources/studio/toolbar/toolbar_open_project.h"
+#include "../artworkResources/studio/toolbar/toolbar_pause_record.h"
+#include "../artworkResources/studio/toolbar/toolbar_save_project.h"
+#include "../artworkResources/studio/toolbar/toolbar_start_record.h"
+#include "../artworkResources/studio/toolbar/toolbar_stop_record.h"
+#include "../artworkResources/studio/toolbar/toolbar_resume_record.h"
 
 namespace webweaver::studio {
 
@@ -72,6 +73,11 @@ wxBitmap LoadToolbarStartRecordIcon() {
 wxBitmap LoadToolbarStopRecordIcon() {
     return LoadToolbarIcon(STOP_RECORD_ICON,
                            STOP_RECORD_ICON_SIZE);
+}
+
+wxBitmap LoadToolbarResumeRecordIcon() {
+    return LoadToolbarIcon(RESUME_RECORD_ICON,
+                           RESUME_RECORD_ICON_SIZE);
 }
 
 }   // namespace webweaver::studio

@@ -21,17 +21,12 @@ Copyright 2025 SwatKat1977
 #define STUDIOMAINFRAME_H_
 #include <wx/aui/aui.h>
 #include <wx/frame.h>
+#include <memory>
+#include <optional>
+#include "StudioStateController.h"
+#include "StudioSolution.h"
 
 namespace webweaver::studio {
-
-enum {
-    ID_INSPECTOR_OPEN_PAGE = wxID_HIGHEST + 1,
-    ID_INSPECTOR_START_INSPECT,
-    ID_INSPECTOR_STOP_INSPECT,
-    ID_INSPECTOR_START_RECORD,
-    ID_INSPECTOR_STOP_RECORD,
-    ID_INSPECTOR_SAVE_JSON
-};
 
 class StudioMainFrame : public wxFrame {
  public:
@@ -42,27 +37,55 @@ class StudioMainFrame : public wxFrame {
     void InitAui();
 
  private:
-    wxAuiManager _aui_mgr;
+    wxAuiManager auiMgr_;
+    wxAuiToolBar* toolbar_;
+
+    std::unique_ptr<StudioStateController> stateController_;
+    StudioState currentState_ = StudioState::NoProject;
+    std::optional<StudioSolution> currentSolution_;
 
     // Log area in inspector
-    wxTextCtrl* _inspectorLog = nullptr;
+    wxTextCtrl* inspectorLog_ = nullptr;
 
     void CreateMainToolbar();
-    void CreateProjectPanel();
+    void CreateSolutionPanel();
     void CreateWorkspacePanel();
     void CreateInspectorPanel();
 
+    void UpdateToolbarState();
+
     // Inspector event handlers
+    // wxWidgets event handlers require non-const wxCommandEvent&
+
+    // NOLINTNEXTLINE(runtime/references)
     void OnInspectorOpenPage(wxCommandEvent &event);
+
+    // NOLINTNEXTLINE(runtime/references)
     void OnInspectorStartInspect(wxCommandEvent &event);
+
+    // NOLINTNEXTLINE(runtime/references)
     void OnInspectorStopInspect(wxCommandEvent &event);
+
+    // NOLINTNEXTLINE(runtime/references)
     void OnInspectorStartRecord(wxCommandEvent &event);
+
+    // NOLINTNEXTLINE(runtime/references)
     void OnInspectorStopRecord(wxCommandEvent &event);
+
+    // NOLINTNEXTLINE(runtime/references)
     void OnInspectorSaveJson(wxCommandEvent &event);
 
-    void OnNewProjectEvent(wxCommandEvent &event);
-    void OnRecordToggleEvent(wxCommandEvent &event);
-    void OnInspectorToggle(wxCommandEvent& event);
+    // NOLINTNEXTLINE(runtime/references)
+    void OnNewSolutionEvent(wxCommandEvent &event);
+
+    // NOLINTNEXTLINE(runtime/references)
+    void OnRecordStartStopEvent(wxCommandEvent& event);
+
+    // NOLINTNEXTLINE(runtime/references)
+    void OnRecordPauseEvent(wxCommandEvent& event);
+
+    // NOLINTNEXTLINE(runtime/references)
+    void OnInspectorEvent(wxCommandEvent& event);
 };
 
 }   // namespace webweaver::studio

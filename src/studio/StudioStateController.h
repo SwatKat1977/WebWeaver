@@ -17,29 +17,45 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef PROJECTCREATEWIZARD_WIZARDBEHAVIOURPAGE_H_
-#define PROJECTCREATEWIZARD_WIZARDBEHAVIOURPAGE_H_
-#include <wx/wx.h>
-#include "ProjectCreateWizard/ProjectCreateWizardBasePage.h"
-#include "StudioDefinitions.h"
+
+#ifndef STUDIOSTATECONTROLLER_H_
+#define STUDIOSTATECONTROLLER_H_
+#include <functional>
 
 namespace webweaver::studio {
 
-class WizardBehaviourPage : public wxDialog {
+enum class StudioState {
+    NoProject,
+    ProjectLoaded,
+    RecordingRunning,
+    RecordingPaused,
+    Inspecting
+};
+
+class StudioStateController {
  public:
-    WizardBehaviourPage(wxWindow* parent,
-                        ProjectCreateWizardData* data,
-                        StepsList steps);
+    using StateChangedCallback = std::function<void(StudioState)>;
+
+    explicit StudioStateController(StateChangedCallback cb);
+
+    StudioState GetState() const;
+
+    void SetUiReady(bool ready) { uiReady_ = ready; }
+
+    // User intents
+    void OnProjectLoaded();
+    void OnRecordStartStop();
+    void OnRecordPause();
+    void OnInspectorToggle(bool shown);
 
  private:
-    // wxWidgets event handlers require non-const wxCommandEvent&
-    // NOLINTNEXTLINE(runtime/references)
-    void OnNextClickEvent(wxCommandEvent& event);
+    void SetState(StudioState newState);
 
-    ProjectCreateWizardData *data_;
-    StepsList steps_;
+    StudioState state_ = StudioState::NoProject;
+    StateChangedCallback onStateChanged_;
+    bool uiReady_ = false;
 };
 
 }   // namespace webweaver::studio
 
-#endif  // PROJECTCREATEWIZARD_WIZARDBEHAVIOURPAGE_H_
+#endif  // STUDIOSTATECONTROLLER_H_

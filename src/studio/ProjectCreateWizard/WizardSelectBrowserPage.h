@@ -19,10 +19,10 @@ Copyright 2025 SwatKat1977
 */
 #ifndef PROJECTCREATEWIZARD_WIZARDSELECTBROWSERPAGE_H_
 #define PROJECTCREATEWIZARD_WIZARDSELECTBROWSERPAGE_H_
-
 #include <wx/wx.h>
 #include <wx/tglbtn.h>
 #include <string>
+#include <utility>
 #include <vector>
 #include "ProjectCreateWizard/ProjectCreateWizardBasePage.h"
 
@@ -46,7 +46,12 @@ class WizardSelectBrowserPage : public wxDialog {
 
     bool ValidateFields();
 
+    // wxWidgets event handlers require non-const wxCommandEvent&
+    // NOLINTNEXTLINE(runtime/references)
     void OnBrowserToggleEvent(wxCommandEvent& event);
+
+    // wxWidgets event handlers require non-const wxCommandEvent&
+    // NOLINTNEXTLINE(runtime/references)
     void OnNextClickEvent(wxCommandEvent& event);
 };
 

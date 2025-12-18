@@ -24,32 +24,52 @@
     <ClInclude Include="BitmapUtils.h" />
     <ClInclude Include="StudioMainFrame.h" />
     <ClInclude Include="ToolbarIcons.h" />
-    <ClInclude Include="imgResources\toolbar\toolbar_inspect.h">
-      <Filter>ImgResources\Toolbar</Filter>
-    </ClInclude>
-    <ClInclude Include="imgResources\toolbar\toolbar_new_project.h">
-      <Filter>ImgResources\Toolbar</Filter>
-    </ClInclude>
-    <ClInclude Include="imgResources\toolbar\toolbar_open_project.h">
-      <Filter>ImgResources\Toolbar</Filter>
-    </ClInclude>
-    <ClInclude Include="imgResources\toolbar\toolbar_pause_record.h">
-      <Filter>ImgResources\Toolbar</Filter>
-    </ClInclude>
-    <ClInclude Include="imgResources\toolbar\toolbar_save_project.h">
-      <Filter>ImgResources\Toolbar</Filter>
-    </ClInclude>
-    <ClInclude Include="imgResources\toolbar\toolbar_stop_record.h">
-      <Filter>ImgResources\Toolbar</Filter>
-    </ClInclude>
-    <ClInclude Include="imgResources\toolbar\toolbar_start_record.h">
-      <Filter>ImgResources\Toolbar</Filter>
-    </ClInclude>
     <ClInclude Include="WizardStepIndicator.h" />
     <ClInclude Include="ProjectWizardControlIDs.h">
       <Filter>ProjectCreateWizard</Filter>
     </ClInclude>
     <ClInclude Include="resource.h" />
+    <ClInclude Include="imgResources\BrowserLogos\browser_chromium_icon.h" />
+    <ClInclude Include="imgResources\BrowserLogos\browser_firefox_icon.h" />
+    <ClInclude Include="imgResources\BrowserLogos\browser_google_chrome_icon.h" />
+    <ClInclude Include="imgResources\BrowserLogos\browser_microsoft_edge_icon.h" />
+    <ClInclude Include="Platform.h" />
+    <ClInclude Include="StudioDefinitions.h" />
+    <ClInclude Include="ProjectCreateWizard\BrowserIcons.h">
+      <Filter>ProjectCreateWizard</Filter>
+    </ClInclude>
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_inspect.h">
+      <Filter>ImgResources\Toolbar</Filter>
+    </ClInclude>
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_new_project.h">
+      <Filter>ImgResources\Toolbar</Filter>
+    </ClInclude>
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_open_project.h">
+      <Filter>ImgResources\Toolbar</Filter>
+    </ClInclude>
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_pause_record.h">
+      <Filter>ImgResources\Toolbar</Filter>
+    </ClInclude>
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_resume_record.h">
+      <Filter>ImgResources\Toolbar</Filter>
+    </ClInclude>
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_save_project.h">
+      <Filter>ImgResources\Toolbar</Filter>
+    </ClInclude>
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_start_record.h">
+      <Filter>ImgResources\Toolbar</Filter>
+    </ClInclude>
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_stop_record.h">
+      <Filter>ImgResources\Toolbar</Filter>
+    </ClInclude>
+    <ClInclude Include="ProjectCreateWizard\WizardBehaviourPage.h">
+      <Filter>ProjectCreateWizard</Filter>
+    </ClInclude>
+    <ClInclude Include="ProjectCreateWizard\WizardFinishPage.h">
+      <Filter>ProjectCreateWizard</Filter>
+    </ClInclude>
+    <ClInclude Include="StudioStateController.h" />
+    <ClInclude Include="StudioSolution.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ProjectCreateWizard\WizardBasicInfoPage.cpp">
@@ -63,6 +83,17 @@
     <ClCompile Include="StudioMainFrame.cpp" />
     <ClCompile Include="ToolbarIcons.cpp" />
     <ClCompile Include="WizardStepIndicator.cpp" />
+    <ClCompile Include="Platform.cpp" />
+    <ClCompile Include="ProjectCreateWizard\BrowserIcons.cpp">
+      <Filter>ProjectCreateWizard</Filter>
+    </ClCompile>
+    <ClCompile Include="ProjectCreateWizard\WizardBehaviourPage.cpp">
+      <Filter>ProjectCreateWizard</Filter>
+    </ClCompile>
+    <ClCompile Include="ProjectCreateWizard\WizardFinishPage.cpp">
+      <Filter>ProjectCreateWizard</Filter>
+    </ClCompile>
+    <ClCompile Include="StudioStateController.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VersionInfo.rc" />

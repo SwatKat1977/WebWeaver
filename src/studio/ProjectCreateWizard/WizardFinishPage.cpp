@@ -38,7 +38,7 @@ WizardFinishPage::WizardFinishPage(wxWindow* parent,
 
     WizardStepIndicator* stepIndicator = new WizardStepIndicator(this,
                                                                  steps_,
-                                                                 4);
+                                                                 3);
     mainSizer->Add(stepIndicator, 0, wxEXPAND | wxALL, 10);
 
     // Header
@@ -71,15 +71,16 @@ WizardFinishPage::WizardFinishPage(wxWindow* parent,
     buttonBarSizer->AddStretchSpacer();
 
     wxButton *btnCancel = new wxButton(this, wxID_CANCEL, "Cancel");
-    //self.btn_cancel.Bind(wx.EVT_BUTTON,
-    //                     lambda e : self.EndModal(wx.ID_CANCEL));
+    btnCancel->Bind(wxEVT_BUTTON,
+        [this](wxCommandEvent&) { EndModal(wxID_CANCEL); });
     buttonBarSizer->Add(btnCancel, 0, wxRIGHT, 10);
 
     wxButton *btnBack = new wxButton(this,
                                      PROJECT_WIZARD_BACK_BUTTON_ID,
                                      "Back");
-    //btn_back.Bind(wx.EVT_BUTTON,
-    //              lambda e : self.EndModal(ID_BACK_BUTTON));
+    btnBack->Bind(wxEVT_BUTTON,
+        [this](wxCommandEvent&) {
+            EndModal(PROJECT_WIZARD_BACK_BUTTON_ID); });
     buttonBarSizer->Add(btnBack, 0, wxRIGHT, 10);
 
     wxButton *btnNext = new wxButton(this, wxID_OK, "Finish");

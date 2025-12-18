@@ -43,10 +43,15 @@ class WizardBasicInfoPage : public wxDialog {
 
     bool ValidateFields();
 
+    // wxWidgets event handlers require non-const wxCommandEvent&
+    // NOLINTNEXTLINE(runtime/references)
     void OnBrowseSolutionLocation(wxCommandEvent& event);
+
+    // wxWidgets event handlers require non-const wxCommandEvent&
+    // NOLINTNEXTLINE(runtime/references)
     void OnNextClickEvent(wxCommandEvent& event);
 };
 
 }   // namespace webweaver::studio
 
-#endif // PROJECTCREATEWIZARD_WIZARDBASICINFOPAGE_H_
+#endif  // PROJECTCREATEWIZARD_WIZARDBASICINFOPAGE_H_
