@@ -40,6 +40,8 @@ class StudioStateController {
 
     StudioState GetState() const;
 
+    void SetUiReady(bool ready) { uiReady_ = ready; }
+
     // User intents
     void OnProjectLoaded();
     void OnRecordStartStop();
@@ -51,6 +53,7 @@ class StudioStateController {
 
     StudioState state_ = StudioState::NoProject;
     StateChangedCallback onStateChanged_;
+    bool uiReady_ = false;
 };
 
 }   // namespace webweaver::studio

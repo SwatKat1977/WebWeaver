@@ -34,7 +34,14 @@ void StudioStateController::SetState(StudioState newState) {
     if (state_ == newState) {
         return;
     }
+
     state_ = newState;
+
+    // Don't notify until UI is ready
+    if (!uiReady_) {
+        return;
+    }
+
     if (onStateChanged_) {
         onStateChanged_(state_);
     }

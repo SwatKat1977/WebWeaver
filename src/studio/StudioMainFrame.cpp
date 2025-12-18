@@ -110,6 +110,8 @@ void StudioMainFrame::InitAui() {
     // TOOLBAR (top, dockable)
     // --------------------------------------------------------------
     CreateMainToolbar();
+
+    stateController_->SetUiReady(true);
     UpdateToolbarState();
 
     CreateProjectPanel();
