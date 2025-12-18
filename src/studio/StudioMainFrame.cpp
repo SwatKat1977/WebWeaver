@@ -170,8 +170,7 @@ void StudioMainFrame::CreateMainToolbar() {
     toolbar_->AddTool(TOOLBAR_ID_PAUSE_RECORD,
         "",
         LoadToolbarPauseRecordIcon(),
-        "Pause Recording",
-        wxITEM_CHECK);
+        "Pause Recording");
 
     toolbar_->Realize();
 
@@ -531,9 +530,6 @@ void StudioMainFrame::UpdateToolbarState() {
     toolbar_->EnableTool(TOOLBAR_ID_START_STOP_RECORD, false);
     toolbar_->EnableTool(TOOLBAR_ID_PAUSE_RECORD, false);
 
-    // Also reset toggle states to avoid stale UI
-    toolbar_->ToggleTool(TOOLBAR_ID_INSPECTOR_MODE, false);
-
     bool hasActiveRecording = false;
     bool isInspecting = false;
     bool isPaused = false;
@@ -601,7 +597,6 @@ void StudioMainFrame::UpdateToolbarState() {
 
     // Handle Inspector Mode toggle button
     toolbar_->ToggleTool(TOOLBAR_ID_INSPECTOR_MODE, isInspecting);
-    toolbar_->ToggleTool(TOOLBAR_ID_PAUSE_RECORD, isPaused);
 
     toolbar_->Realize();
 }
