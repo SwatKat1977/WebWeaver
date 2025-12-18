@@ -585,6 +585,20 @@ void StudioMainFrame::UpdateToolbarState() {
             "Start Recording");
     }
 
+    // Handle active recording paused states
+    if (isPaused) {
+        toolbar_->SetToolBitmap(TOOLBAR_ID_PAUSE_RECORD,
+            LoadToolbarResumeRecordIcon());
+        toolbar_->SetToolShortHelp(TOOLBAR_ID_PAUSE_RECORD,
+            "Resume Recording");
+    }
+    else {
+        toolbar_->SetToolBitmap(TOOLBAR_ID_PAUSE_RECORD,
+            LoadToolbarPauseRecordIcon());
+        toolbar_->SetToolShortHelp(TOOLBAR_ID_PAUSE_RECORD,
+            "Pause Recording");
+    }
+
     // Handle Inspector Mode toggle button
     toolbar_->ToggleTool(TOOLBAR_ID_INSPECTOR_MODE, isInspecting);
     toolbar_->ToggleTool(TOOLBAR_ID_PAUSE_RECORD, isPaused);
