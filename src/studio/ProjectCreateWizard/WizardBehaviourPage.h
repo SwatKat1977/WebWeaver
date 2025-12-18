@@ -32,6 +32,8 @@ class WizardBehaviourPage : public wxDialog {
                         StepsList steps);
 
  private:
+    // wxWidgets event handlers require non-const wxCommandEvent&
+    // NOLINTNEXTLINE(runtime/references)
     void OnNextClickEvent(wxCommandEvent& event);
 
     ProjectCreateWizardData *data_;

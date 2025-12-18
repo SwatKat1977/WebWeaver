@@ -587,8 +587,7 @@ void StudioMainFrame::UpdateToolbarState() {
             LoadToolbarResumeRecordIcon());
         toolbar_->SetToolShortHelp(TOOLBAR_ID_PAUSE_RECORD,
             "Resume Recording");
-    }
-    else {
+    } else {
         toolbar_->SetToolBitmap(TOOLBAR_ID_PAUSE_RECORD,
             LoadToolbarPauseRecordIcon());
         toolbar_->SetToolShortHelp(TOOLBAR_ID_PAUSE_RECORD,

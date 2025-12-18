@@ -63,16 +63,36 @@ class StudioMainFrame : public wxFrame {
     void UpdateToolbarState();
 
     // Inspector event handlers
+    // wxWidgets event handlers require non-const wxCommandEvent&
+
+    // NOLINTNEXTLINE(runtime/references)
     void OnInspectorOpenPage(wxCommandEvent &event);
+
+    // NOLINTNEXTLINE(runtime/references)
     void OnInspectorStartInspect(wxCommandEvent &event);
+
+    // NOLINTNEXTLINE(runtime/references)
     void OnInspectorStopInspect(wxCommandEvent &event);
+
+    // NOLINTNEXTLINE(runtime/references)
     void OnInspectorStartRecord(wxCommandEvent &event);
+
+    // NOLINTNEXTLINE(runtime/references)
     void OnInspectorStopRecord(wxCommandEvent &event);
+
+    // NOLINTNEXTLINE(runtime/references)
     void OnInspectorSaveJson(wxCommandEvent &event);
 
+    // NOLINTNEXTLINE(runtime/references)
     void OnNewProjectEvent(wxCommandEvent &event);
+
+    // NOLINTNEXTLINE(runtime/references)
     void OnRecordStartStopEvent(wxCommandEvent& event);
+
+    // NOLINTNEXTLINE(runtime/references)
     void OnRecordPauseEvent(wxCommandEvent& event);
+
+    // NOLINTNEXTLINE(runtime/references)
     void OnInspectorEvent(wxCommandEvent& event);
 };
 
