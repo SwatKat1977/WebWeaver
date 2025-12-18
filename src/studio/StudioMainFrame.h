@@ -72,6 +72,7 @@ class StudioMainFrame : public wxFrame {
 
     void OnNewProjectEvent(wxCommandEvent &event);
     void OnRecordStartStopEvent(wxCommandEvent& event);
+    void OnRecordPauseEvent(wxCommandEvent& event);
     void OnInspectorEvent(wxCommandEvent& event);
 };
 

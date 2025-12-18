@@ -165,13 +165,13 @@ void StudioMainFrame::CreateMainToolbar() {
     toolbar_->AddTool(TOOLBAR_ID_START_STOP_RECORD,
         "",
         LoadToolbarStartRecordIcon(),
-        "Record",
-        wxITEM_CHECK);
+        "Record");
 
     toolbar_->AddTool(TOOLBAR_ID_PAUSE_RECORD,
         "",
         LoadToolbarPauseRecordIcon(),
-        "Pause Recording");
+        "Pause Recording",
+        wxITEM_CHECK);
 
     toolbar_->Realize();
 
@@ -185,6 +185,11 @@ void StudioMainFrame::CreateMainToolbar() {
         &StudioMainFrame::OnRecordStartStopEvent,
         this,
         TOOLBAR_ID_START_STOP_RECORD);
+
+    Bind(wxEVT_TOOL,
+        &StudioMainFrame::OnRecordPauseEvent,
+        this,
+        TOOLBAR_ID_PAUSE_RECORD);
 
     Bind(wxEVT_TOOL,
         &StudioMainFrame::OnInspectorEvent,
@@ -484,18 +489,27 @@ void StudioMainFrame::OnNewProjectEvent(wxCommandEvent& event) {
 }
 
 void StudioMainFrame::OnRecordStartStopEvent(wxCommandEvent& event) {
-    if (currentStateInfo_.state == StudioState::RecordingRunning) {
+    if ((currentStateInfo_.state == StudioState::RecordingRunning) ||
+        (currentStateInfo_.state == StudioState::RecordingPaused)) {
         SetStudioState(StudioState::ProjectLoaded);
     } else {
         SetStudioState(StudioState::RecordingRunning);
     }
 }
 
-void StudioMainFrame::OnInspectorEvent(wxCommandEvent& event) {
+void StudioMainFrame::OnRecordPauseEvent(wxCommandEvent& event) {
+    if (currentStateInfo_.state == StudioState::RecordingRunning) {
+        SetStudioState(StudioState::RecordingPaused);
+    } else if (currentStateInfo_.state == StudioState::RecordingPaused) {
+        SetStudioState(StudioState::RecordingRunning);
+    }
+}
 
+void StudioMainFrame::OnInspectorEvent(wxCommandEvent& event) {
     wxAuiPaneInfo& pane = auiMgr_.GetPane("InspectorPanel");
-    if (!pane.IsOk())
+    if (!pane.IsOk()) {
         return;
+    }
 
     bool currentState = pane.IsShown();
     bool show = !currentState;
@@ -520,8 +534,9 @@ void StudioMainFrame::UpdateToolbarState() {
     // Also reset toggle states to avoid stale UI
     toolbar_->ToggleTool(TOOLBAR_ID_INSPECTOR_MODE, false);
 
-    bool isRecording = false;
+    bool hasActiveRecording = false;
     bool isInspecting = false;
+    bool isPaused = false;
 
     switch (currentStateInfo_.state) {
     case StudioState::NoProject:
@@ -538,12 +553,15 @@ void StudioMainFrame::UpdateToolbarState() {
         toolbar_->EnableTool(TOOLBAR_ID_SAVE_PROJECT, true);
         toolbar_->EnableTool(TOOLBAR_ID_START_STOP_RECORD, true);
         toolbar_->EnableTool(TOOLBAR_ID_PAUSE_RECORD, true);
-        isRecording = true;
+        hasActiveRecording = true;
         break;
 
     case StudioState::RecordingPaused:
         toolbar_->EnableTool(TOOLBAR_ID_SAVE_PROJECT, true);
-        isRecording = true;
+        toolbar_->EnableTool(TOOLBAR_ID_START_STOP_RECORD, true);
+        toolbar_->EnableTool(TOOLBAR_ID_PAUSE_RECORD, true);
+        hasActiveRecording = true;
+        isPaused = true;
         break;
 
     case StudioState::Inspecting:
@@ -554,14 +572,13 @@ void StudioMainFrame::UpdateToolbarState() {
         break;
     }
 
-    // Handle Start/Stop Record button icon and tooltip
-    if (isRecording) {
+    // Handle active recording states
+    if (hasActiveRecording) {
         toolbar_->SetToolBitmap(TOOLBAR_ID_START_STOP_RECORD,
             LoadToolbarStopRecordIcon());
         toolbar_->SetToolShortHelp(TOOLBAR_ID_START_STOP_RECORD,
             "Stop Recording");
-    }
-    else {
+    } else {
         toolbar_->SetToolBitmap(TOOLBAR_ID_START_STOP_RECORD,
             LoadToolbarStartRecordIcon());
         toolbar_->SetToolShortHelp(TOOLBAR_ID_START_STOP_RECORD,
@@ -570,6 +587,7 @@ void StudioMainFrame::UpdateToolbarState() {
 
     // Handle Inspector Mode toggle button
     toolbar_->ToggleTool(TOOLBAR_ID_INSPECTOR_MODE, isInspecting);
+    toolbar_->ToggleTool(TOOLBAR_ID_PAUSE_RECORD, isPaused);
 
     toolbar_->Realize();
 }
