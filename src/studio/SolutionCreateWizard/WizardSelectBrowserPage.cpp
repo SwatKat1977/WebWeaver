@@ -23,7 +23,7 @@ Copyright 2025 SwatKat1977
 #include <utility>
 #include <vector>
 #include "WizardSelectBrowserPage.h"
-#include "ProjectCreateWizard/BrowserIcons.h"
+#include "SolutionCreateWizard/BrowserIcons.h"
 #include "WizardStepIndicator.h"
 #include "ProjectWizardControlIDs.h"
 

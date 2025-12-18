@@ -1,3 +1,9 @@
+########### DEV OPS ###########
+
+#### Virtual Environment ####
+.venv
+venv
+
 ########### PYTHON ###########
 __pycache__
 .coverage
@@ -8,6 +14,9 @@ dist
 build
 
 ########### C++ ###########
+
+#### Windows ####
 .vs
 x64
 *.user
+src/studio/VersionInfo.aps

@@ -150,14 +150,11 @@
   <ItemGroup>
     <ClCompile Include="BitmapUtils.cpp" />
     <ClCompile Include="Platform.cpp" />
-    <ClCompile Include="ProjectCreateWizard\BrowserIcons.cpp" />
-    <ClCompile Include="ProjectCreateWizard\WizardBasicInfoPage.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="ProjectCreateWizard\WizardBehaviourPage.cpp" />
-    <ClCompile Include="ProjectCreateWizard\WizardFinishPage.cpp" />
-    <ClCompile Include="ProjectCreateWizard\WizardSelectBrowserPage.cpp" />
+    <ClCompile Include="SolutionCreateWizard\BrowserIcons.cpp" />
+    <ClCompile Include="SolutionCreateWizard\WizardBasicInfoPage.cpp" />
+    <ClCompile Include="SolutionCreateWizard\WizardBehaviourPage.cpp" />
+    <ClCompile Include="SolutionCreateWizard\WizardFinishPage.cpp" />
+    <ClCompile Include="SolutionCreateWizard\WizardSelectBrowserPage.cpp" />
     <ClCompile Include="studio.cpp" />
     <ClCompile Include="StudioMainFrame.cpp" />
     <ClCompile Include="StudioStateController.cpp" />
@@ -165,6 +162,10 @@
     <ClCompile Include="WizardStepIndicator.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\artworkResources\studio\browserIcons\browser_chromium_icon.h" />
+    <ClInclude Include="..\artworkResources\studio\browserIcons\browser_firefox_icon.h" />
+    <ClInclude Include="..\artworkResources\studio\browserIcons\browser_google_chrome_icon.h" />
+    <ClInclude Include="..\artworkResources\studio\browserIcons\browser_microsoft_edge_icon.h" />
     <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_inspect.h" />
     <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_new_project.h" />
     <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_open_project.h" />
@@ -174,22 +175,14 @@
     <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_start_record.h" />
     <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_stop_record.h" />
     <ClInclude Include="BitmapUtils.h" />
-    <ClInclude Include="imgResources\BrowserLogos\browser_chromium_icon.h" />
-    <ClInclude Include="imgResources\BrowserLogos\browser_firefox_icon.h" />
-    <ClInclude Include="imgResources\BrowserLogos\browser_google_chrome_icon.h" />
-    <ClInclude Include="imgResources\BrowserLogos\browser_microsoft_edge_icon.h" />
     <ClInclude Include="Platform.h" />
-    <ClInclude Include="ProjectCreateWizard\BrowserIcons.h" />
-    <ClInclude Include="ProjectCreateWizard\ProjectCreateWizardBasePage.h" />
-    <ClInclude Include="ProjectCreateWizard\WizardBasicInfoPage.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="ProjectCreateWizard\WizardBehaviourPage.h" />
-    <ClInclude Include="ProjectCreateWizard\WizardFinishPage.h" />
-    <ClInclude Include="ProjectCreateWizard\WizardSelectBrowserPage.h" />
-    <ClInclude Include="ProjectWizardControlIDs.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="SolutionCreateWizard\BrowserIcons.h" />
+    <ClInclude Include="SolutionCreateWizard\SolutionCreateWizardBasePage.h" />
+    <ClInclude Include="SolutionCreateWizard\WizardBasicInfoPage.h" />
+    <ClInclude Include="SolutionCreateWizard\WizardBehaviourPage.h" />
+    <ClInclude Include="SolutionCreateWizard\WizardFinishPage.h" />
+    <ClInclude Include="SolutionCreateWizard\WizardSelectBrowserPage.h" />
     <ClInclude Include="StudioDefinitions.h" />
     <ClInclude Include="StudioMainFrame.h" />
     <ClInclude Include="StudioSolution.h" />

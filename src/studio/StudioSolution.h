@@ -17,9 +17,8 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-
-#ifndef STUDIOPROJECT_H_
-#define STUDIOPROJECT_H_
+#ifndef STUDIOSOLUTION_H_
+#define STUDIOSOLUTION_H_
 #include <string>
 #include <utility>
 
@@ -47,4 +46,4 @@ struct StudioSolution {
 
 }   // namespace webweaver::studio
 
-#endif  // STUDIOPROJECT_H_
+#endif  // STUDIOSOLUTION_H_

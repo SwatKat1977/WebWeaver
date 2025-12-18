@@ -18,27 +18,28 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
 #include <wx/artprov.h>
-#include "ProjectCreateWizard/WizardFinishPage.h"
+#include "SolutionCreateWizard/WizardBehaviourPage.h"
 #include "WizardStepIndicator.h"
+#include "SolutionCreateWizard/BrowserIcons.h"
 #include "ProjectWizardControlIDs.h"
+
 
 namespace webweaver::studio {
 
-WizardFinishPage::WizardFinishPage(wxWindow* parent,
-                                   ProjectCreateWizardData* data,
-                                   StepsList steps) :
+WizardBehaviourPage::WizardBehaviourPage(wxWindow* parent,
+                                         ProjectCreateWizardData* data,
+                                         StepsList steps) :
     wxDialog(parent,
              wxID_ANY,
-             "Set up your web test",
+             "Create your new solution",
              wxDefaultPosition,
              wxDefaultSize,
-             wxDEFAULT_DIALOG_STYLE),
-    data_(data), steps_(steps) {
-    wxBoxSizer *mainSizer = new wxBoxSizer(wxVERTICAL);
+             wxDEFAULT_DIALOG_STYLE), data_(data), steps_(steps) {
+    wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
 
     WizardStepIndicator* stepIndicator = new WizardStepIndicator(this,
                                                                  steps_,
-                                                                 3);
+                                                                 2);
     mainSizer->Add(stepIndicator, 0, wxEXPAND | wxALL, 10);
 
     // Header
@@ -46,54 +47,56 @@ WizardFinishPage::WizardFinishPage(wxWindow* parent,
     wxStaticBitmap *icon = new wxStaticBitmap(
         this,
         wxID_ANY,
-        wxArtProvider::GetBitmap(
-        wxART_TIP, wxART_OTHER, wxSize(32, 32)));
+        wxArtProvider::GetBitmap(wxART_TIP,
+                                 wxART_OTHER,
+                                 wxSize(32, 32)));
     headerSizer->Add(icon, 0, wxALL, 10);
 
-    wxBoxSizer *textSizer = new wxBoxSizer(wxVERTICAL);
-    wxStaticText *title = new wxStaticText(this, wxID_ANY, "Almost there");
-    title->SetFont(wxFont(13, wxFONTFAMILY_DEFAULT,
-        wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+    wxBoxSizer *textBoxSizer = new wxBoxSizer(wxVERTICAL);
+    wxStaticText *title = new wxStaticText(this,
+                                           wxID_ANY,
+                                           "Set up automation behaviour");
+    title->SetFont(wxFont(13,
+                          wxFONTFAMILY_DEFAULT,
+                          wxFONTSTYLE_NORMAL,
+                          wxFONTWEIGHT_BOLD));
     wxStaticText *subtitle = new wxStaticText(
-        this,
-        wxID_ANY,
-        "Read what's next and then click Finish to create "
-        "your solution and get started.");
+        this, wxID_ANY, "How should the automation recording behave?");
     subtitle->SetForegroundColour(wxColour(100, 100, 100));
-    textSizer->Add(title, 0);
-    textSizer->Add(subtitle, 0, wxTOP, 4);
+    textBoxSizer->Add(title, 0);
+    textBoxSizer->Add(subtitle, 0, wxTOP, 4);
 
-    headerSizer->Add(textSizer, 1, wxALIGN_CENTER_VERTICAL);
+    headerSizer->Add(textBoxSizer, 1, wxALIGN_CENTER_VERTICAL);
     mainSizer->Add(headerSizer, 0, wxLEFT | wxRIGHT, 10);
 
     // Button bar
-    wxBoxSizer *buttonBarSizer = new wxBoxSizer(wxHORIZONTAL);
-    buttonBarSizer->AddStretchSpacer();
+    wxBoxSizer *buttonSizer = new wxBoxSizer(wxHORIZONTAL);
+    buttonSizer->AddStretchSpacer();
 
     wxButton *btnCancel = new wxButton(this, wxID_CANCEL, "Cancel");
     btnCancel->Bind(wxEVT_BUTTON,
-        [this](wxCommandEvent&) { EndModal(wxID_CANCEL); });
-    buttonBarSizer->Add(btnCancel, 0, wxRIGHT, 10);
+                    [this](wxCommandEvent&) { EndModal(wxID_CANCEL); });
+    buttonSizer->Add(btnCancel, 0, wxRIGHT, 10);
 
     wxButton *btnBack = new wxButton(this,
                                      PROJECT_WIZARD_BACK_BUTTON_ID,
                                      "Back");
     btnBack->Bind(wxEVT_BUTTON,
-        [this](wxCommandEvent&) {
+                  [this](wxCommandEvent&) {
             EndModal(PROJECT_WIZARD_BACK_BUTTON_ID); });
-    buttonBarSizer->Add(btnBack, 0, wxRIGHT, 10);
+    buttonSizer->Add(btnBack, 0, wxRIGHT, 10);
 
-    wxButton *btnNext = new wxButton(this, wxID_OK, "Finish");
-    btnNext->Bind(wxEVT_BUTTON, &WizardFinishPage::OnNextClickEvent, this);
-    buttonBarSizer->Add(btnNext, 0);
+    wxButton *btnNext = new wxButton(this, wxID_OK, "Next");
+    btnNext->Bind(wxEVT_BUTTON, &WizardBehaviourPage::OnNextClickEvent, this);
+    buttonSizer->Add(btnNext, 0);
 
-    mainSizer->Add(buttonBarSizer, 0, wxEXPAND | wxALL, 10);
+    mainSizer->Add(buttonSizer, 0, wxEXPAND | wxALL, 10);
 
     SetSizerAndFit(mainSizer);
     CentreOnParent();
 }
 
-void WizardFinishPage::OnNextClickEvent(wxCommandEvent& event) {
+void WizardBehaviourPage::OnNextClickEvent(wxCommandEvent& event) {
     EndModal(wxID_OK);
 }
 

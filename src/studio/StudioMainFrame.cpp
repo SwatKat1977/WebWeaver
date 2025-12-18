@@ -24,10 +24,10 @@ Copyright 2025 SwatKat1977
 #include "StudioMainFrame.h"
 #include "BitmapUtils.h"
 #include "ToolbarIcons.h"
-#include "ProjectCreateWizard/WizardBasicInfoPage.h"
-#include "ProjectCreateWizard/WizardSelectBrowserPage.h"
-#include "ProjectCreateWizard/WizardBehaviourPage.h"
-#include "ProjectCreateWizard/WizardFinishPage.h"
+#include "SolutionCreateWizard/WizardBasicInfoPage.h"
+#include "SolutionCreateWizard/WizardSelectBrowserPage.h"
+#include "SolutionCreateWizard/WizardBehaviourPage.h"
+#include "SolutionCreateWizard/WizardFinishPage.h"
 #include "ProjectWizardControlIDs.h"
 
 namespace webweaver::studio {

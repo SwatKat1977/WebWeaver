@@ -17,29 +17,24 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef PROJECTCREATEWIZARD_WIZARDFINISHPAGE_H_
-#define PROJECTCREATEWIZARD_WIZARDFINISHPAGE_H_
-#include <wx/wx.h>
-#include "ProjectCreateWizard/ProjectCreateWizardBasePage.h"
-#include "StudioDefinitions.h"
+#ifndef SOLUTIONCREATEWIZARD_SOLUTIONCREATEWIZARDBASEPAGE_H_
+#define SOLUTIONCREATEWIZARD_SOLUTIONCREATEWIZARDBASEPAGE_H_
+#include <string>
 
 namespace webweaver::studio {
 
-class WizardFinishPage : public wxDialog{
- public:
-    WizardFinishPage(wxWindow* parent,
-                     ProjectCreateWizardData* data,
-                     StepsList steps);
+struct ProjectCreateWizardData {
+    // -- PAGE 1 [Basic Info] --
+    std::string solutionName;
+    std::string solutionDirectory;
+    bool createSolutionDir = true;
 
- private:
-    // wxWidgets event handlers require non-const wxCommandEvent&
-    // NOLINTNEXTLINE(runtime/references)
-    void OnNextClickEvent(wxCommandEvent& event);
-
-    ProjectCreateWizardData* data_;
-    StepsList steps_;
+    // -- PAGE 2 [Select Browser] --
+    std::string baseUrl;
+    std::string browser;
+    bool launchBrowserAutomatically;
 };
 
 }   // namespace webweaver::studio
 
-#endif  // PROJECTCREATEWIZARD_WIZARDFINISHPAGE_H_
+#endif  // SOLUTIONCREATEWIZARD_SOLUTIONCREATEWIZARDBASEPAGE_H_
