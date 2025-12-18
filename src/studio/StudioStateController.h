@@ -25,8 +25,8 @@ Copyright 2025 SwatKat1977
 namespace webweaver::studio {
 
 enum class StudioState {
-    NoProject,
-    ProjectLoaded,
+    NoSolution,
+    SolutionLoaded,
     RecordingRunning,
     RecordingPaused,
     Inspecting
@@ -52,7 +52,7 @@ class StudioStateController {
  private:
     void SetState(StudioState newState);
 
-    StudioState state_ = StudioState::NoProject;
+    StudioState state_ = StudioState::NoSolution;
     StateChangedCallback onStateChanged_;
     bool uiReady_ = false;
 };

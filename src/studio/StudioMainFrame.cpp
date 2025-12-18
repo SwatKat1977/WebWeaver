@@ -539,11 +539,11 @@ void StudioMainFrame::UpdateToolbarState() {
     bool isPaused = false;
 
     switch (currentState_) {
-    case StudioState::NoProject:
+    case StudioState::NoSolution:
         // Only New/Open make sense
         break;
 
-    case StudioState::ProjectLoaded:
+    case StudioState::SolutionLoaded:
         toolbar_->EnableTool(TOOLBAR_ID_SAVE_SOLUTION, true);
         toolbar_->EnableTool(TOOLBAR_ID_CLOSE_SOLUTION, true);
         toolbar_->EnableTool(TOOLBAR_ID_INSPECTOR_MODE, true);
@@ -552,14 +552,12 @@ void StudioMainFrame::UpdateToolbarState() {
         break;
 
     case StudioState::RecordingRunning:
-        toolbar_->EnableTool(TOOLBAR_ID_SAVE_SOLUTION, true);
         toolbar_->EnableTool(TOOLBAR_ID_START_STOP_RECORD, true);
         toolbar_->EnableTool(TOOLBAR_ID_PAUSE_RECORD, true);
         hasActiveRecording = true;
         break;
 
     case StudioState::RecordingPaused:
-        toolbar_->EnableTool(TOOLBAR_ID_SAVE_SOLUTION, true);
         toolbar_->EnableTool(TOOLBAR_ID_START_STOP_RECORD, true);
         toolbar_->EnableTool(TOOLBAR_ID_PAUSE_RECORD, true);
         hasActiveRecording = true;

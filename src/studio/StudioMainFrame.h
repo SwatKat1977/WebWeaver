@@ -41,7 +41,7 @@ class StudioMainFrame : public wxFrame {
     wxAuiToolBar* toolbar_;
 
     std::unique_ptr<StudioStateController> stateController_;
-    StudioState currentState_ = StudioState::NoProject;
+    StudioState currentState_ = StudioState::NoSolution;
     std::optional<StudioSolution> currentSolution_;
 
     // Log area in inspector

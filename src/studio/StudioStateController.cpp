@@ -48,18 +48,18 @@ void StudioStateController::SetState(StudioState newState) {
 }
 
 void StudioStateController::OnSolutionLoaded() {
-    SetState(StudioState::ProjectLoaded);
+    SetState(StudioState::SolutionLoaded);
 }
 
 void StudioStateController::OnSolutionClosed() {
-    SetState(StudioState::NoProject);
+    SetState(StudioState::NoSolution);
 }
 
 void StudioStateController::OnRecordStartStop() {
     if (state_ == StudioState::RecordingRunning ||
         state_ == StudioState::RecordingPaused) {
-        SetState(StudioState::ProjectLoaded);
-    } else if (state_ == StudioState::ProjectLoaded) {
+        SetState(StudioState::SolutionLoaded);
+    } else if (state_ == StudioState::SolutionLoaded) {
         SetState(StudioState::RecordingRunning);
     }
 }
@@ -76,7 +76,7 @@ void StudioStateController::OnInspectorToggle(bool shown) {
     if (shown) {
         SetState(StudioState::Inspecting);
     } else {
-        SetState(StudioState::ProjectLoaded);
+        SetState(StudioState::SolutionLoaded);
     }
 }
 
