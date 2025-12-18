@@ -226,19 +226,19 @@ void StudioMainFrame::CreateMainToolbar() {
 void StudioMainFrame::CreateSolutionPanel() {
     // Solution panel (left top)
     wxPanel *solutionPanel = new wxPanel(this);
-    wxBoxSizer* projectSizer = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer* solutionSizer = new wxBoxSizer(wxVERTICAL);
 
-    wxTreeCtrl* projectTree = new wxTreeCtrl(
+    wxTreeCtrl* solutionTree = new wxTreeCtrl(
         solutionPanel,
         wxID_ANY,
         wxDefaultPosition,
         wxDefaultSize,
         wxTR_HAS_BUTTONS | wxTR_DEFAULT_STYLE);
-    projectSizer->Add(projectTree, 1, wxEXPAND | wxALL, 5);
+    solutionSizer->Add(solutionTree, 1, wxEXPAND | wxALL, 5);
 
-    projectTree->ExpandAll();
+    solutionTree->ExpandAll();
 
-    solutionPanel->SetSizer(projectSizer);
+    solutionPanel->SetSizer(solutionSizer);
 
     auiMgr_.AddPane(solutionPanel,
                      wxAuiPaneInfo()
