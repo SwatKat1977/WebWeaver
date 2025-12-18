@@ -162,6 +162,10 @@
     <ClCompile Include="WizardStepIndicator.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\artworkResources\studio\browserIcons\browser_chromium_icon.h" />
+    <ClInclude Include="..\artworkResources\studio\browserIcons\browser_firefox_icon.h" />
+    <ClInclude Include="..\artworkResources\studio\browserIcons\browser_google_chrome_icon.h" />
+    <ClInclude Include="..\artworkResources\studio\browserIcons\browser_microsoft_edge_icon.h" />
     <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_inspect.h" />
     <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_new_project.h" />
     <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_open_project.h" />
@@ -171,10 +175,6 @@
     <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_start_record.h" />
     <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_stop_record.h" />
     <ClInclude Include="BitmapUtils.h" />
-    <ClInclude Include="imgResources\BrowserLogos\browser_chromium_icon.h" />
-    <ClInclude Include="imgResources\BrowserLogos\browser_firefox_icon.h" />
-    <ClInclude Include="imgResources\BrowserLogos\browser_google_chrome_icon.h" />
-    <ClInclude Include="imgResources\BrowserLogos\browser_microsoft_edge_icon.h" />
     <ClInclude Include="Platform.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SolutionCreateWizard\BrowserIcons.h" />

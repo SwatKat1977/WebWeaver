@@ -10,6 +10,9 @@
     <Filter Include="SolutionCreateWizard">
       <UniqueIdentifier>{f58e3c32-63fd-4f34-94b1-6556b78b51c4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ImgResources\BrowserIcons">
+      <UniqueIdentifier>{d7e99a7a-fb9c-4fac-b2b8-ba062cbe5cf2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BitmapUtils.h" />
@@ -17,10 +20,6 @@
     <ClInclude Include="ToolbarIcons.h" />
     <ClInclude Include="WizardStepIndicator.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="imgResources\BrowserLogos\browser_chromium_icon.h" />
-    <ClInclude Include="imgResources\BrowserLogos\browser_firefox_icon.h" />
-    <ClInclude Include="imgResources\BrowserLogos\browser_google_chrome_icon.h" />
-    <ClInclude Include="imgResources\BrowserLogos\browser_microsoft_edge_icon.h" />
     <ClInclude Include="Platform.h" />
     <ClInclude Include="StudioDefinitions.h" />
     <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_inspect.h">
@@ -66,6 +65,18 @@
     </ClInclude>
     <ClInclude Include="SolutionCreateWizard\SolutionCreateWizardBasePage.h">
       <Filter>SolutionCreateWizard</Filter>
+    </ClInclude>
+    <ClInclude Include="..\artworkResources\studio\browserIcons\browser_chromium_icon.h">
+      <Filter>ImgResources\BrowserIcons</Filter>
+    </ClInclude>
+    <ClInclude Include="..\artworkResources\studio\browserIcons\browser_firefox_icon.h">
+      <Filter>ImgResources\BrowserIcons</Filter>
+    </ClInclude>
+    <ClInclude Include="..\artworkResources\studio\browserIcons\browser_google_chrome_icon.h">
+      <Filter>ImgResources\BrowserIcons</Filter>
+    </ClInclude>
+    <ClInclude Include="..\artworkResources\studio\browserIcons\browser_microsoft_edge_icon.h">
+      <Filter>ImgResources\BrowserIcons</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

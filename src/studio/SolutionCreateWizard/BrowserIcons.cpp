@@ -20,10 +20,10 @@ Copyright 2025 SwatKat1977
 
 #include "BrowserIcons.h"
 #include "BitmapUtils.h"
-#include "imgResources/BrowserLogos/browser_chromium_icon.h"
-#include "imgResources/BrowserLogos/browser_firefox_icon.h"
-#include "imgResources/BrowserLogos/browser_google_chrome_icon.h"
-#include "imgResources/BrowserLogos/browser_microsoft_edge_icon.h"
+#include "../artworkResources/studio/browserIcons/browser_chromium_icon.h"
+#include "../artworkResources/studio/browserIcons/browser_firefox_icon.h"
+#include "../artworkResources/studio/browserIcons/browser_google_chrome_icon.h"
+#include "../artworkResources/studio/browserIcons/browser_microsoft_edge_icon.h"
 
 namespace webweaver::studio {
 
