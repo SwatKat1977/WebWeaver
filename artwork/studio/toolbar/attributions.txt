@@ -7,3 +7,6 @@ Stop Icon
 
 Save Icon
 <a href="https://www.flaticon.com/free-icons/save" title="save icons">Save icons created by Freepik - Flaticon</a>
+
+Resume Icon
+<a href="https://www.flaticon.com/free-icons/step" title="step icons">Step icons created by Pixelmeetup - Flaticon</a>

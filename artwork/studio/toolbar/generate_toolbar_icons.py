@@ -93,3 +93,7 @@ png_to_header("save-button.png",
 png_to_header("stop-button.png",
     "toolbar_stop_record.h",
     "stop_record_icon")
+
+png_to_header("resume-button.png",
+    "toolbar_resume_record.h",
+    "resume_record_icon")
