@@ -69,6 +69,7 @@
       <Filter>ProjectCreateWizard</Filter>
     </ClInclude>
     <ClInclude Include="StudioStateController.h" />
+    <ClInclude Include="StudioSolution.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ProjectCreateWizard\WizardBasicInfoPage.cpp">

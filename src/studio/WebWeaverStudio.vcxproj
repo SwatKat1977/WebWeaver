@@ -192,6 +192,7 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="StudioDefinitions.h" />
     <ClInclude Include="StudioMainFrame.h" />
+    <ClInclude Include="StudioSolution.h" />
     <ClInclude Include="StudioStateController.h" />
     <ClInclude Include="ToolbarIcons.h" />
     <ClInclude Include="WizardStepIndicator.h" />

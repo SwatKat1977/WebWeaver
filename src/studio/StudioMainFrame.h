@@ -21,7 +21,10 @@ Copyright 2025 SwatKat1977
 #define STUDIOMAINFRAME_H_
 #include <wx/aui/aui.h>
 #include <wx/frame.h>
+#include <memory>
+#include <optional>
 #include "StudioStateController.h"
+#include "StudioSolution.h"
 
 namespace webweaver::studio {
 
@@ -39,12 +42,13 @@ class StudioMainFrame : public wxFrame {
 
     std::unique_ptr<StudioStateController> stateController_;
     StudioState currentState_ = StudioState::NoProject;
+    std::optional<StudioSolution> currentSolution_;
 
     // Log area in inspector
     wxTextCtrl* inspectorLog_ = nullptr;
 
     void CreateMainToolbar();
-    void CreateProjectPanel();
+    void CreateSolutionPanel();
     void CreateWorkspacePanel();
     void CreateInspectorPanel();
 
@@ -72,7 +76,7 @@ class StudioMainFrame : public wxFrame {
     void OnInspectorSaveJson(wxCommandEvent &event);
 
     // NOLINTNEXTLINE(runtime/references)
-    void OnNewProjectEvent(wxCommandEvent &event);
+    void OnNewSolutionEvent(wxCommandEvent &event);
 
     // NOLINTNEXTLINE(runtime/references)
     void OnRecordStartStopEvent(wxCommandEvent& event);

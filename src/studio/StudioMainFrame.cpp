@@ -33,9 +33,9 @@ Copyright 2025 SwatKat1977
 namespace webweaver::studio {
 
 
-constexpr int TOOLBAR_ID_NEW_PROJECT = wxID_HIGHEST + 1;
-constexpr int TOOLBAR_ID_OPEN_PROJECT = wxID_HIGHEST + 2;
-constexpr int TOOLBAR_ID_SAVE_PROJECT = wxID_HIGHEST + 3;
+constexpr int TOOLBAR_ID_NEW_SOLUTION = wxID_HIGHEST + 1;
+constexpr int TOOLBAR_ID_OPEN_SOLUTION = wxID_HIGHEST + 2;
+constexpr int TOOLBAR_ID_SAVE_SOLUTION = wxID_HIGHEST + 3;
 constexpr int TOOLBAR_ID_INSPECTOR_MODE = wxID_HIGHEST + 4;
 constexpr int TOOLBAR_ID_START_STOP_RECORD = wxID_HIGHEST + 5;
 constexpr int TOOLBAR_ID_PAUSE_RECORD = wxID_HIGHEST + 6;
@@ -103,8 +103,7 @@ void StudioMainFrame::InitAui() {
         [this](StudioState newState) {
             currentState_ = newState;
             UpdateToolbarState();
-        }
-    );
+        });
 
     // --------------------------------------------------------------
     // TOOLBAR (top, dockable)
@@ -114,14 +113,11 @@ void StudioMainFrame::InitAui() {
     stateController_->SetUiReady(true);
     UpdateToolbarState();
 
-    CreateProjectPanel();
+    CreateSolutionPanel();
 
     CreateWorkspacePanel();
 
     CreateInspectorPanel();
-
-    // Temporary: simulate project load
-    stateController_->OnProjectLoaded();
 
     auiMgr_.Update();
 }
@@ -142,20 +138,20 @@ void StudioMainFrame::CreateMainToolbar() {
     toolbar_->SetToolPacking(5);
     toolbar_->SetToolSeparation(5);
 
-    toolbar_->AddTool(TOOLBAR_ID_NEW_PROJECT,
+    toolbar_->AddTool(TOOLBAR_ID_NEW_SOLUTION,
         "",
         LoadToolbarNewProjectIcon(),
-        "New Project");
+        "Create New Solution");
 
-    toolbar_->AddTool(TOOLBAR_ID_OPEN_PROJECT,
+    toolbar_->AddTool(TOOLBAR_ID_OPEN_SOLUTION,
         "",
         LoadToolbarOpenProjectIcon(),
-        "Open Project");
+        "Open Solution");
 
-    toolbar_->AddTool(TOOLBAR_ID_SAVE_PROJECT,
+    toolbar_->AddTool(TOOLBAR_ID_SAVE_SOLUTION,
         "",
         LoadToolbarSaveProjectIcon(),
-        "Save Project");
+        "Save Solution");
 
     toolbar_->AddSeparator();
 
@@ -179,9 +175,9 @@ void StudioMainFrame::CreateMainToolbar() {
 
     // --- Bind toolbar events ---
     toolbar_->Bind(wxEVT_TOOL,
-        &StudioMainFrame::OnNewProjectEvent,
+        &StudioMainFrame::OnNewSolutionEvent,
         this,
-        TOOLBAR_ID_NEW_PROJECT);
+        TOOLBAR_ID_NEW_SOLUTION);
 
     toolbar_->Bind(wxEVT_TOOL,
         &StudioMainFrame::OnRecordStartStopEvent,
@@ -216,13 +212,13 @@ void StudioMainFrame::CreateMainToolbar() {
     auiMgr_.Update();
 }
 
-void StudioMainFrame::CreateProjectPanel() {
-    // Projects panel (left top)
-    wxPanel* projectPanel = new wxPanel(this);
+void StudioMainFrame::CreateSolutionPanel() {
+    // Solution panel (left top)
+    wxPanel *solutionPanel = new wxPanel(this);
     wxBoxSizer* projectSizer = new wxBoxSizer(wxVERTICAL);
 
     wxTreeCtrl* projectTree = new wxTreeCtrl(
-        projectPanel,
+        solutionPanel,
         wxID_ANY,
         wxDefaultPosition,
         wxDefaultSize,
@@ -231,14 +227,14 @@ void StudioMainFrame::CreateProjectPanel() {
 
     projectTree->ExpandAll();
 
-    projectPanel->SetSizer(projectSizer);
+    solutionPanel->SetSizer(projectSizer);
 
-    auiMgr_.AddPane(projectPanel,
+    auiMgr_.AddPane(solutionPanel,
                      wxAuiPaneInfo()
         .Left()
         .Row(1)
         .PaneBorder(false)
-        .Caption("Project Explorer")
+        .Caption("Solution Explorer")
         .CloseButton(true)
         .MaximizeButton(true)
         .MinimizeButton(true)
@@ -425,7 +421,7 @@ void StudioMainFrame::OnInspectorSaveJson(wxCommandEvent& event) {
     }
 }
 
-void StudioMainFrame::OnNewProjectEvent(wxCommandEvent& event) {
+void StudioMainFrame::OnNewSolutionEvent(wxCommandEvent& event) {
     ProjectCreateWizardData data;
     std::vector<std::string> steps = {
     "Basic solution info",
@@ -459,12 +455,15 @@ void StudioMainFrame::OnNewProjectEvent(wxCommandEvent& event) {
         default:
             // No more pages .. end wizard and create solution
 
-            /*
-            // Wizard has finished normally:
-            for (auto& [key, val] : data) {
-                std::cout << key << ": " << val << std::endl;
-            }
-            */
+            currentSolution_.emplace(
+                data.solutionName,
+                data.solutionDirectory,
+                data.createSolutionDir,
+                data.baseUrl,
+                data.browser);
+
+            stateController_->OnProjectLoaded();
+
             return;
         }
 
@@ -513,7 +512,7 @@ void StudioMainFrame::OnInspectorEvent(wxCommandEvent& event) {
 
 void StudioMainFrame::UpdateToolbarState() {
     // First: disable everything that is state-dependent
-    toolbar_->EnableTool(TOOLBAR_ID_SAVE_PROJECT, false);
+    toolbar_->EnableTool(TOOLBAR_ID_SAVE_SOLUTION, false);
     toolbar_->EnableTool(TOOLBAR_ID_INSPECTOR_MODE, false);
     toolbar_->EnableTool(TOOLBAR_ID_START_STOP_RECORD, false);
     toolbar_->EnableTool(TOOLBAR_ID_PAUSE_RECORD, false);
@@ -528,20 +527,20 @@ void StudioMainFrame::UpdateToolbarState() {
         break;
 
     case StudioState::ProjectLoaded:
-        toolbar_->EnableTool(TOOLBAR_ID_SAVE_PROJECT, true);
+        toolbar_->EnableTool(TOOLBAR_ID_SAVE_SOLUTION, true);
         toolbar_->EnableTool(TOOLBAR_ID_INSPECTOR_MODE, true);
         toolbar_->EnableTool(TOOLBAR_ID_START_STOP_RECORD, true);
         break;
 
     case StudioState::RecordingRunning:
-        toolbar_->EnableTool(TOOLBAR_ID_SAVE_PROJECT, true);
+        toolbar_->EnableTool(TOOLBAR_ID_SAVE_SOLUTION, true);
         toolbar_->EnableTool(TOOLBAR_ID_START_STOP_RECORD, true);
         toolbar_->EnableTool(TOOLBAR_ID_PAUSE_RECORD, true);
         hasActiveRecording = true;
         break;
 
     case StudioState::RecordingPaused:
-        toolbar_->EnableTool(TOOLBAR_ID_SAVE_PROJECT, true);
+        toolbar_->EnableTool(TOOLBAR_ID_SAVE_SOLUTION, true);
         toolbar_->EnableTool(TOOLBAR_ID_START_STOP_RECORD, true);
         toolbar_->EnableTool(TOOLBAR_ID_PAUSE_RECORD, true);
         hasActiveRecording = true;
@@ -549,7 +548,7 @@ void StudioMainFrame::UpdateToolbarState() {
         break;
 
     case StudioState::Inspecting:
-        toolbar_->EnableTool(TOOLBAR_ID_SAVE_PROJECT, true);
+        toolbar_->EnableTool(TOOLBAR_ID_SAVE_SOLUTION, true);
         toolbar_->EnableTool(TOOLBAR_ID_START_STOP_RECORD, false);
         toolbar_->EnableTool(TOOLBAR_ID_INSPECTOR_MODE, true);
         isInspecting = true;
