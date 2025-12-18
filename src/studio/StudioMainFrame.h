@@ -21,20 +21,9 @@ Copyright 2025 SwatKat1977
 #define STUDIOMAINFRAME_H_
 #include <wx/aui/aui.h>
 #include <wx/frame.h>
+#include "StudioStateController.h"
 
 namespace webweaver::studio {
-
-enum class StudioState {
-    NoProject,
-    ProjectLoaded,
-    RecordingRunning,
-    RecordingPaused,
-    Inspecting
-};
-
-struct StudioStateInfo {
-    StudioState state = StudioState::ProjectLoaded;
-};
 
 class StudioMainFrame : public wxFrame {
  public:
@@ -44,13 +33,12 @@ class StudioMainFrame : public wxFrame {
 
     void InitAui();
 
-    void SetStudioState(StudioState state);
-
  private:
     wxAuiManager auiMgr_;
     wxAuiToolBar* toolbar_;
 
-    StudioStateInfo currentStateInfo_;
+    std::unique_ptr<StudioStateController> stateController_;
+    StudioState currentState_ = StudioState::NoProject;
 
     // Log area in inspector
     wxTextCtrl* inspectorLog_ = nullptr;

@@ -99,6 +99,13 @@ void StudioMainFrame::InitAui() {
 
     auiMgr_.GetArtProvider()->SetMetric(wxAUI_DOCKART_SASH_SIZE, 2);
 
+    stateController_ = std::make_unique<StudioStateController>(
+        [this](StudioState newState) {
+            currentState_ = newState;
+            UpdateToolbarState();
+        }
+    );
+
     // --------------------------------------------------------------
     // TOOLBAR (top, dockable)
     // --------------------------------------------------------------
@@ -111,20 +118,14 @@ void StudioMainFrame::InitAui() {
 
     CreateInspectorPanel();
 
+    // Temporary: simulate project load
+    stateController_->OnProjectLoaded();
+
     auiMgr_.Update();
 }
 
 StudioMainFrame::~StudioMainFrame() {
     auiMgr_.UnInit();
-}
-
-void StudioMainFrame::SetStudioState(StudioState state) {
-    if (currentStateInfo_.state == state) {
-        return;
-    }
-
-    currentStateInfo_.state = state;
-    UpdateToolbarState();
 }
 
 void StudioMainFrame::CreateMainToolbar() {
@@ -175,22 +176,22 @@ void StudioMainFrame::CreateMainToolbar() {
     toolbar_->Realize();
 
     // --- Bind toolbar events ---
-    Bind(wxEVT_TOOL,
+    toolbar_->Bind(wxEVT_TOOL,
         &StudioMainFrame::OnNewProjectEvent,
         this,
         TOOLBAR_ID_NEW_PROJECT);
 
-    Bind(wxEVT_TOOL,
+    toolbar_->Bind(wxEVT_TOOL,
         &StudioMainFrame::OnRecordStartStopEvent,
         this,
         TOOLBAR_ID_START_STOP_RECORD);
 
-    Bind(wxEVT_TOOL,
+    toolbar_->Bind(wxEVT_TOOL,
         &StudioMainFrame::OnRecordPauseEvent,
         this,
         TOOLBAR_ID_PAUSE_RECORD);
 
-    Bind(wxEVT_TOOL,
+    toolbar_->Bind(wxEVT_TOOL,
         &StudioMainFrame::OnInspectorEvent,
         this,
         TOOLBAR_ID_INSPECTOR_MODE);
@@ -488,20 +489,11 @@ void StudioMainFrame::OnNewProjectEvent(wxCommandEvent& event) {
 }
 
 void StudioMainFrame::OnRecordStartStopEvent(wxCommandEvent& event) {
-    if ((currentStateInfo_.state == StudioState::RecordingRunning) ||
-        (currentStateInfo_.state == StudioState::RecordingPaused)) {
-        SetStudioState(StudioState::ProjectLoaded);
-    } else {
-        SetStudioState(StudioState::RecordingRunning);
-    }
+    stateController_->OnRecordStartStop();
 }
 
 void StudioMainFrame::OnRecordPauseEvent(wxCommandEvent& event) {
-    if (currentStateInfo_.state == StudioState::RecordingRunning) {
-        SetStudioState(StudioState::RecordingPaused);
-    } else if (currentStateInfo_.state == StudioState::RecordingPaused) {
-        SetStudioState(StudioState::RecordingRunning);
-    }
+    stateController_->OnRecordPause();
 }
 
 void StudioMainFrame::OnInspectorEvent(wxCommandEvent& event) {
@@ -510,17 +502,11 @@ void StudioMainFrame::OnInspectorEvent(wxCommandEvent& event) {
         return;
     }
 
-    bool currentState = pane.IsShown();
-    bool show = !currentState;
+    bool show = !pane.IsShown();
     pane.Show(show);
-
-    if (currentState) {
-        SetStudioState(StudioState::ProjectLoaded);
-    } else {
-        SetStudioState(StudioState::Inspecting);
-    }
-
     auiMgr_.Update();
+
+    stateController_->OnInspectorToggle(show);
 }
 
 void StudioMainFrame::UpdateToolbarState() {
@@ -534,7 +520,7 @@ void StudioMainFrame::UpdateToolbarState() {
     bool isInspecting = false;
     bool isPaused = false;
 
-    switch (currentStateInfo_.state) {
+    switch (currentState_) {
     case StudioState::NoProject:
         // Only New/Open make sense
         break;
@@ -598,6 +584,7 @@ void StudioMainFrame::UpdateToolbarState() {
     toolbar_->ToggleTool(TOOLBAR_ID_INSPECTOR_MODE, isInspecting);
 
     toolbar_->Realize();
+    toolbar_->Refresh();
 }
 
 }   // namespace webweaver::studio
