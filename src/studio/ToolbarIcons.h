@@ -30,9 +30,11 @@ wxBitmap LoadToolbarNewProjectIcon();
 
 wxBitmap LoadToolbarOpenProjectIcon();
 
-wxBitmap LoadToolbarPauseRecordIcon();
-
 wxBitmap LoadToolbarSaveProjectIcon();
+
+wxBitmap LoadToolbarCloseSolutionIcon();
+
+wxBitmap LoadToolbarPauseRecordIcon();
 
 wxBitmap LoadToolbarStartRecordIcon();
 

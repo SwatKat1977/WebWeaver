@@ -36,9 +36,10 @@ namespace webweaver::studio {
 constexpr int TOOLBAR_ID_NEW_SOLUTION = wxID_HIGHEST + 1;
 constexpr int TOOLBAR_ID_OPEN_SOLUTION = wxID_HIGHEST + 2;
 constexpr int TOOLBAR_ID_SAVE_SOLUTION = wxID_HIGHEST + 3;
-constexpr int TOOLBAR_ID_INSPECTOR_MODE = wxID_HIGHEST + 4;
-constexpr int TOOLBAR_ID_START_STOP_RECORD = wxID_HIGHEST + 5;
-constexpr int TOOLBAR_ID_PAUSE_RECORD = wxID_HIGHEST + 6;
+constexpr int TOOLBAR_ID_CLOSE_SOLUTION = wxID_HIGHEST + 4;
+constexpr int TOOLBAR_ID_INSPECTOR_MODE = wxID_HIGHEST + 5;
+constexpr int TOOLBAR_ID_START_STOP_RECORD = wxID_HIGHEST + 6;
+constexpr int TOOLBAR_ID_PAUSE_RECORD = wxID_HIGHEST + 7;
 
 constexpr int PAGENO_BASICINFOPAGE = 0;
 constexpr int PAGENO_SELECTBROWSERPAGE = 1;
@@ -152,6 +153,11 @@ void StudioMainFrame::CreateMainToolbar() {
         "",
         LoadToolbarSaveProjectIcon(),
         "Save Solution");
+
+    toolbar_->AddTool(TOOLBAR_ID_CLOSE_SOLUTION,
+        "",
+        LoadToolbarCloseSolutionIcon(),
+        "Close Solution");
 
     toolbar_->AddSeparator();
 
@@ -513,6 +519,7 @@ void StudioMainFrame::OnInspectorEvent(wxCommandEvent& event) {
 void StudioMainFrame::UpdateToolbarState() {
     // First: disable everything that is state-dependent
     toolbar_->EnableTool(TOOLBAR_ID_SAVE_SOLUTION, false);
+    toolbar_->EnableTool(TOOLBAR_ID_CLOSE_SOLUTION, false);
     toolbar_->EnableTool(TOOLBAR_ID_INSPECTOR_MODE, false);
     toolbar_->EnableTool(TOOLBAR_ID_START_STOP_RECORD, false);
     toolbar_->EnableTool(TOOLBAR_ID_PAUSE_RECORD, false);
@@ -528,8 +535,10 @@ void StudioMainFrame::UpdateToolbarState() {
 
     case StudioState::ProjectLoaded:
         toolbar_->EnableTool(TOOLBAR_ID_SAVE_SOLUTION, true);
+        toolbar_->EnableTool(TOOLBAR_ID_CLOSE_SOLUTION, true);
         toolbar_->EnableTool(TOOLBAR_ID_INSPECTOR_MODE, true);
         toolbar_->EnableTool(TOOLBAR_ID_START_STOP_RECORD, true);
+
         break;
 
     case StudioState::RecordingRunning:
@@ -549,6 +558,7 @@ void StudioMainFrame::UpdateToolbarState() {
 
     case StudioState::Inspecting:
         toolbar_->EnableTool(TOOLBAR_ID_SAVE_SOLUTION, true);
+        toolbar_->EnableTool(TOOLBAR_ID_CLOSE_SOLUTION, true);
         toolbar_->EnableTool(TOOLBAR_ID_START_STOP_RECORD, false);
         toolbar_->EnableTool(TOOLBAR_ID_INSPECTOR_MODE, true);
         isInspecting = true;

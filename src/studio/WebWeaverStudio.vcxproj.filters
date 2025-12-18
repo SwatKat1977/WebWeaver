@@ -78,6 +78,9 @@
     <ClInclude Include="..\artworkResources\studio\browserIcons\browser_microsoft_edge_icon.h">
       <Filter>ImgResources\BrowserIcons</Filter>
     </ClInclude>
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_close_solution.h">
+      <Filter>ImgResources\Toolbar</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BitmapUtils.cpp" />

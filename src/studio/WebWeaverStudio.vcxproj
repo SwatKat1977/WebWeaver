@@ -166,6 +166,7 @@
     <ClInclude Include="..\artworkResources\studio\browserIcons\browser_firefox_icon.h" />
     <ClInclude Include="..\artworkResources\studio\browserIcons\browser_google_chrome_icon.h" />
     <ClInclude Include="..\artworkResources\studio\browserIcons\browser_microsoft_edge_icon.h" />
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_close_solution.h" />
     <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_inspect.h" />
     <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_new_project.h" />
     <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_open_project.h" />
