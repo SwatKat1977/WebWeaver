@@ -187,7 +187,7 @@ void StudioMainFrame::CreateMainToolbar() {
         TOOLBAR_ID_START_STOP_RECORD);
 
     Bind(wxEVT_TOOL,
-        &StudioMainFrame::OnInspectorToggle,
+        &StudioMainFrame::OnInspectorEvent,
         this,
         TOOLBAR_ID_INSPECTOR_MODE);
 
@@ -491,22 +491,20 @@ void StudioMainFrame::OnRecordStartStopEvent(wxCommandEvent& event) {
     }
 }
 
-void StudioMainFrame::OnInspectorToggle(wxCommandEvent& event) {
+void StudioMainFrame::OnInspectorEvent(wxCommandEvent& event) {
+
     wxAuiPaneInfo& pane = auiMgr_.GetPane("InspectorPanel");
     if (!pane.IsOk())
         return;
 
-    bool show = !pane.IsShown();
+    bool currentState = pane.IsShown();
+    bool show = !currentState;
     pane.Show(show);
 
-    // keep toolbar button state in sync
-    wxAuiPaneInfo& tbPane = auiMgr_.GetPane("MainToolbar");
-    if (tbPane.IsOk()) {
-        wxAuiToolBar* toolbar = wxDynamicCast(tbPane.window, wxAuiToolBar);
-        if (toolbar) {
-            toolbar->ToggleTool(event.GetId(), show);
-            toolbar->Refresh();
-        }
+    if (currentState) {
+        SetStudioState(StudioState::ProjectLoaded);
+    } else {
+        SetStudioState(StudioState::Inspecting);
     }
 
     auiMgr_.Update();
@@ -523,6 +521,7 @@ void StudioMainFrame::UpdateToolbarState() {
     toolbar_->ToggleTool(TOOLBAR_ID_INSPECTOR_MODE, false);
 
     bool isRecording = false;
+    bool isInspecting = false;
 
     switch (currentStateInfo_.state) {
     case StudioState::NoProject:
@@ -537,6 +536,7 @@ void StudioMainFrame::UpdateToolbarState() {
 
     case StudioState::RecordingRunning:
         toolbar_->EnableTool(TOOLBAR_ID_SAVE_PROJECT, true);
+        toolbar_->EnableTool(TOOLBAR_ID_START_STOP_RECORD, true);
         toolbar_->EnableTool(TOOLBAR_ID_PAUSE_RECORD, true);
         isRecording = true;
         break;
@@ -549,7 +549,8 @@ void StudioMainFrame::UpdateToolbarState() {
     case StudioState::Inspecting:
         toolbar_->EnableTool(TOOLBAR_ID_SAVE_PROJECT, true);
         toolbar_->EnableTool(TOOLBAR_ID_START_STOP_RECORD, false);
-        toolbar_->ToggleTool(TOOLBAR_ID_INSPECTOR_MODE, true);
+        toolbar_->EnableTool(TOOLBAR_ID_INSPECTOR_MODE, true);
+        isInspecting = true;
         break;
     }
 
@@ -566,6 +567,9 @@ void StudioMainFrame::UpdateToolbarState() {
         toolbar_->SetToolShortHelp(TOOLBAR_ID_START_STOP_RECORD,
             "Start Recording");
     }
+
+    // Handle Inspector Mode toggle button
+    toolbar_->ToggleTool(TOOLBAR_ID_INSPECTOR_MODE, isInspecting);
 
     toolbar_->Realize();
 }

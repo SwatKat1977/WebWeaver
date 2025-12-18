@@ -33,7 +33,7 @@ enum class StudioState {
 };
 
 struct StudioStateInfo {
-    StudioState state = StudioState::NoProject;
+    StudioState state = StudioState::ProjectLoaded;
 };
 
 class StudioMainFrame : public wxFrame {
@@ -72,7 +72,7 @@ class StudioMainFrame : public wxFrame {
 
     void OnNewProjectEvent(wxCommandEvent &event);
     void OnRecordStartStopEvent(wxCommandEvent& event);
-    void OnInspectorToggle(wxCommandEvent& event);
+    void OnInspectorEvent(wxCommandEvent& event);
 };
 
 }   // namespace webweaver::studio
