@@ -65,7 +65,6 @@ def png_to_header(png_path: str, header_path: str, var_name: str):
         out.write("\n};\n")
         out.write(f"static const unsigned int {var_upper}_SIZE = {len(data)};\n")
 
-
 png_to_header("inspect-button.png",
     "toolbar_inspect.h",
     "inspect_icon")
@@ -97,3 +96,7 @@ png_to_header("stop-button.png",
 png_to_header("resume-button.png",
     "toolbar_resume_record.h",
     "resume_record_icon")
+
+png_to_header("close-button.png",
+    "toolbar_close_solution.h",
+    "close_solution_icon")
