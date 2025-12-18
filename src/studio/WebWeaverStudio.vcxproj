@@ -160,6 +160,7 @@
     <ClCompile Include="ProjectCreateWizard\WizardSelectBrowserPage.cpp" />
     <ClCompile Include="studio.cpp" />
     <ClCompile Include="StudioMainFrame.cpp" />
+    <ClCompile Include="StudioStateController.cpp" />
     <ClCompile Include="ToolbarIcons.cpp" />
     <ClCompile Include="WizardStepIndicator.cpp" />
   </ItemGroup>
@@ -191,6 +192,7 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="StudioDefinitions.h" />
     <ClInclude Include="StudioMainFrame.h" />
+    <ClInclude Include="StudioStateController.h" />
     <ClInclude Include="ToolbarIcons.h" />
     <ClInclude Include="WizardStepIndicator.h" />
   </ItemGroup>

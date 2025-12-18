@@ -68,6 +68,7 @@
     <ClInclude Include="ProjectCreateWizard\WizardFinishPage.h">
       <Filter>ProjectCreateWizard</Filter>
     </ClInclude>
+    <ClInclude Include="StudioStateController.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ProjectCreateWizard\WizardBasicInfoPage.cpp">
@@ -91,6 +92,7 @@
     <ClCompile Include="ProjectCreateWizard\WizardFinishPage.cpp">
       <Filter>ProjectCreateWizard</Filter>
     </ClCompile>
+    <ClCompile Include="StudioStateController.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VersionInfo.rc" />
