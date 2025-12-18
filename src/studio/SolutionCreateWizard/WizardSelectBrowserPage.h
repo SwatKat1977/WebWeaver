@@ -17,8 +17,8 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef PROJECTCREATEWIZARD_WIZARDSELECTBROWSERPAGE_H_
-#define PROJECTCREATEWIZARD_WIZARDSELECTBROWSERPAGE_H_
+#ifndef SOLUTIONCREATEWIZARD_WIZARDSELECTBROWSERPAGE_H_
+#define SOLUTIONCREATEWIZARD_WIZARDSELECTBROWSERPAGE_H_
 #include <wx/wx.h>
 #include <wx/tglbtn.h>
 #include <string>
@@ -57,4 +57,4 @@ class WizardSelectBrowserPage : public wxDialog {
 
 }   // namespace webweaver::studio
 
-#endif  // PROJECTCREATEWIZARD_WIZARDSELECTBROWSERPAGE_H_
+#endif  // SOLUTIONCREATEWIZARD_WIZARDSELECTBROWSERPAGE_H_

@@ -17,8 +17,8 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef PROJECTCREATEWIZARD_WIZARDBEHAVIOURPAGE_H_
-#define PROJECTCREATEWIZARD_WIZARDBEHAVIOURPAGE_H_
+#ifndef SOLUTIONCREATEWIZARD_WIZARDBEHAVIOURPAGE_H_
+#define SOLUTIONCREATEWIZARD_WIZARDBEHAVIOURPAGE_H_
 #include <wx/wx.h>
 #include "SolutionCreateWizard/SolutionCreateWizardBasePage.h"
 #include "StudioDefinitions.h"
@@ -42,4 +42,4 @@ class WizardBehaviourPage : public wxDialog {
 
 }   // namespace webweaver::studio
 
-#endif  // PROJECTCREATEWIZARD_WIZARDBEHAVIOURPAGE_H_
+#endif  // SOLUTIONCREATEWIZARD_WIZARDBEHAVIOURPAGE_H_

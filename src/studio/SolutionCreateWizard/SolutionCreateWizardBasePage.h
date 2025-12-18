@@ -17,8 +17,8 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef PROJECTCREATEWIZARD_PROJECTCREATEWIZARDBASEPAGE_H_
-#define PROJECTCREATEWIZARD_PROJECTCREATEWIZARDBASEPAGE_H_
+#ifndef SOLUTIONCREATEWIZARD_SOLUTIONCREATEWIZARDBASEPAGE_H_
+#define SOLUTIONCREATEWIZARD_SOLUTIONCREATEWIZARDBASEPAGE_H_
 #include <string>
 
 namespace webweaver::studio {
@@ -37,4 +37,4 @@ struct ProjectCreateWizardData {
 
 }   // namespace webweaver::studio
 
-#endif  // PROJECTCREATEWIZARD_PROJECTCREATEWIZARDBASEPAGE_H_"
+#endif  // SOLUTIONCREATEWIZARD_SOLUTIONCREATEWIZARDBASEPAGE_H_

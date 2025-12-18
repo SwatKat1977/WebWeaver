@@ -17,8 +17,8 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef PROJECTCREATEWIZARD_WIZARDBASICINFOPAGE_H_
-#define PROJECTCREATEWIZARD_WIZARDBASICINFOPAGE_H_
+#ifndef SOLUTIONCREATEWIZARD_WIZARDBASICINFOPAGE_H_
+#define SOLUTIONCREATEWIZARD_WIZARDBASICINFOPAGE_H_
 #include <wx/wx.h>
 #include <string>
 #include <vector>
@@ -54,4 +54,4 @@ class WizardBasicInfoPage : public wxDialog {
 
 }   // namespace webweaver::studio
 
-#endif  // PROJECTCREATEWIZARD_WIZARDBASICINFOPAGE_H_
+#endif  // SOLUTIONCREATEWIZARD_WIZARDBASICINFOPAGE_H_
