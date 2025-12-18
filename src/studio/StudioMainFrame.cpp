@@ -119,11 +119,11 @@ StudioMainFrame::~StudioMainFrame() {
 }
 
 void StudioMainFrame::SetStudioState(StudioState state) {
-    if (studioState_ == state) {
+    if (currentStateInfo_.state == state) {
         return;
     }
 
-    studioState_ = state;
+    currentStateInfo_.state = state;
     UpdateToolbarState();
 }
 
@@ -180,8 +180,9 @@ void StudioMainFrame::CreateMainToolbar() {
         &StudioMainFrame::OnNewProjectEvent,
         this,
         TOOLBAR_ID_NEW_PROJECT);
+
     Bind(wxEVT_TOOL,
-        &StudioMainFrame::OnRecordToggleEvent,
+        &StudioMainFrame::OnRecordStartStopEvent,
         this,
         TOOLBAR_ID_START_STOP_RECORD);
 
@@ -482,34 +483,12 @@ void StudioMainFrame::OnNewProjectEvent(wxCommandEvent& event) {
     }
 }
 
-void StudioMainFrame::OnRecordToggleEvent(wxCommandEvent& event) {
-    // Retrieve the toolbar from the AUI manager
-    wxAuiPaneInfo& pane = auiMgr_.GetPane("MainToolbar");
-    if (!pane.IsOk()) {
-        return;
-    }
-
-    wxAuiToolBar* toolbar = wxDynamicCast(pane.window, wxAuiToolBar);
-
-    wxWindow* win = pane.window;
-    if (!toolbar) {
-        return;
-    }
-
-    bool isRecording = toolbar->GetToolToggled(TOOLBAR_ID_START_STOP_RECORD);
-    if (isRecording) {
-        toolbar->SetToolBitmap(TOOLBAR_ID_START_STOP_RECORD,
-                               LoadToolbarStopRecordIcon());
-        toolbar->SetToolShortHelp(TOOLBAR_ID_START_STOP_RECORD,
-                                  "Stop Recording");
+void StudioMainFrame::OnRecordStartStopEvent(wxCommandEvent& event) {
+    if (currentStateInfo_.state == StudioState::RecordingRunning) {
+        SetStudioState(StudioState::ProjectLoaded);
     } else {
-        toolbar->SetToolBitmap(TOOLBAR_ID_START_STOP_RECORD,
-                               LoadToolbarStartRecordIcon());
-        toolbar->SetToolShortHelp(TOOLBAR_ID_START_STOP_RECORD,
-                                  "Start Recording");
+        SetStudioState(StudioState::RecordingRunning);
     }
-
-    toolbar->Realize();
 }
 
 void StudioMainFrame::OnInspectorToggle(wxCommandEvent& event) {
@@ -542,7 +521,53 @@ void StudioMainFrame::UpdateToolbarState() {
 
     // Also reset toggle states to avoid stale UI
     toolbar_->ToggleTool(TOOLBAR_ID_INSPECTOR_MODE, false);
-    toolbar_->ToggleTool(TOOLBAR_ID_START_STOP_RECORD, false);
+
+    bool isRecording = false;
+
+    switch (currentStateInfo_.state) {
+    case StudioState::NoProject:
+        // Only New/Open make sense
+        break;
+
+    case StudioState::ProjectLoaded:
+        toolbar_->EnableTool(TOOLBAR_ID_SAVE_PROJECT, true);
+        toolbar_->EnableTool(TOOLBAR_ID_INSPECTOR_MODE, true);
+        toolbar_->EnableTool(TOOLBAR_ID_START_STOP_RECORD, true);
+        break;
+
+    case StudioState::RecordingRunning:
+        toolbar_->EnableTool(TOOLBAR_ID_SAVE_PROJECT, true);
+        toolbar_->EnableTool(TOOLBAR_ID_PAUSE_RECORD, true);
+        isRecording = true;
+        break;
+
+    case StudioState::RecordingPaused:
+        toolbar_->EnableTool(TOOLBAR_ID_SAVE_PROJECT, true);
+        isRecording = true;
+        break;
+
+    case StudioState::Inspecting:
+        toolbar_->EnableTool(TOOLBAR_ID_SAVE_PROJECT, true);
+        toolbar_->EnableTool(TOOLBAR_ID_START_STOP_RECORD, false);
+        toolbar_->ToggleTool(TOOLBAR_ID_INSPECTOR_MODE, true);
+        break;
+    }
+
+    // Handle Start/Stop Record button icon and tooltip
+    if (isRecording) {
+        toolbar_->SetToolBitmap(TOOLBAR_ID_START_STOP_RECORD,
+            LoadToolbarStopRecordIcon());
+        toolbar_->SetToolShortHelp(TOOLBAR_ID_START_STOP_RECORD,
+            "Stop Recording");
+    }
+    else {
+        toolbar_->SetToolBitmap(TOOLBAR_ID_START_STOP_RECORD,
+            LoadToolbarStartRecordIcon());
+        toolbar_->SetToolShortHelp(TOOLBAR_ID_START_STOP_RECORD,
+            "Start Recording");
+    }
+
+    toolbar_->Realize();
 }
 
 }   // namespace webweaver::studio

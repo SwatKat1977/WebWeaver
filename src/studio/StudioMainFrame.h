@@ -32,6 +32,10 @@ enum class StudioState {
     Inspecting
 };
 
+struct StudioStateInfo {
+    StudioState state = StudioState::NoProject;
+};
+
 class StudioMainFrame : public wxFrame {
  public:
     explicit StudioMainFrame(wxWindow* parent = nullptr);
@@ -45,7 +49,8 @@ class StudioMainFrame : public wxFrame {
  private:
     wxAuiManager auiMgr_;
     wxAuiToolBar* toolbar_;
-    StudioState studioState_ = StudioState::NoProject;
+
+    StudioStateInfo currentStateInfo_;
 
     // Log area in inspector
     wxTextCtrl* inspectorLog_ = nullptr;
@@ -66,7 +71,7 @@ class StudioMainFrame : public wxFrame {
     void OnInspectorSaveJson(wxCommandEvent &event);
 
     void OnNewProjectEvent(wxCommandEvent &event);
-    void OnRecordToggleEvent(wxCommandEvent &event);
+    void OnRecordStartStopEvent(wxCommandEvent& event);
     void OnInspectorToggle(wxCommandEvent& event);
 };
 
