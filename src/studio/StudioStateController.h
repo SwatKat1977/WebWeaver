@@ -43,7 +43,8 @@ class StudioStateController {
     void SetUiReady(bool ready) { uiReady_ = ready; }
 
     // User intents
-    void OnProjectLoaded();
+    void OnSolutionLoaded();
+    void OnSolutionClosed();
     void OnRecordStartStop();
     void OnRecordPause();
     void OnInspectorToggle(bool shown);

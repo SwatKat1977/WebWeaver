@@ -186,6 +186,11 @@ void StudioMainFrame::CreateMainToolbar() {
         TOOLBAR_ID_NEW_SOLUTION);
 
     toolbar_->Bind(wxEVT_TOOL,
+        &StudioMainFrame::OnCloseSolutionEvent,
+        this,
+        TOOLBAR_ID_CLOSE_SOLUTION);
+
+    toolbar_->Bind(wxEVT_TOOL,
         &StudioMainFrame::OnRecordStartStopEvent,
         this,
         TOOLBAR_ID_START_STOP_RECORD);
@@ -468,7 +473,7 @@ void StudioMainFrame::OnNewSolutionEvent(wxCommandEvent& event) {
                 data.baseUrl,
                 data.browser);
 
-            stateController_->OnProjectLoaded();
+            stateController_->OnSolutionLoaded();
 
             return;
         }
@@ -493,6 +498,11 @@ void StudioMainFrame::OnNewSolutionEvent(wxCommandEvent& event) {
         // Unknown return code, exit cleanly.
         return;
     }
+}
+
+void StudioMainFrame::OnCloseSolutionEvent(wxCommandEvent& event) {
+    currentSolution_.reset();
+    stateController_->OnSolutionClosed();
 }
 
 void StudioMainFrame::OnRecordStartStopEvent(wxCommandEvent& event) {

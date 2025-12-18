@@ -47,8 +47,12 @@ void StudioStateController::SetState(StudioState newState) {
     }
 }
 
-void StudioStateController::OnProjectLoaded() {
+void StudioStateController::OnSolutionLoaded() {
     SetState(StudioState::ProjectLoaded);
+}
+
+void StudioStateController::OnSolutionClosed() {
+    SetState(StudioState::NoProject);
 }
 
 void StudioStateController::OnRecordStartStop() {

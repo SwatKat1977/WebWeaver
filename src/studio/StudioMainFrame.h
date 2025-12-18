@@ -57,6 +57,8 @@ class StudioMainFrame : public wxFrame {
     // Inspector event handlers
     // wxWidgets event handlers require non-const wxCommandEvent&
 
+    // ---- Inspector Events ----
+
     // NOLINTNEXTLINE(runtime/references)
     void OnInspectorOpenPage(wxCommandEvent &event);
 
@@ -75,8 +77,14 @@ class StudioMainFrame : public wxFrame {
     // NOLINTNEXTLINE(runtime/references)
     void OnInspectorSaveJson(wxCommandEvent &event);
 
+
+    // ---- Main Frame Events ----
+
     // NOLINTNEXTLINE(runtime/references)
     void OnNewSolutionEvent(wxCommandEvent &event);
+
+    // NOLINTNEXTLINE(runtime/references)
+    void OnCloseSolutionEvent(wxCommandEvent& event);
 
     // NOLINTNEXTLINE(runtime/references)
     void OnRecordStartStopEvent(wxCommandEvent& event);
