@@ -18,9 +18,9 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
 #include <wx/artprov.h>
-#include "ProjectCreateWizard/WizardBehaviourPage.h"
+#include "SolutionCreateWizard/WizardBehaviourPage.h"
 #include "WizardStepIndicator.h"
-#include "ProjectCreateWizard/BrowserIcons.h"
+#include "SolutionCreateWizard/BrowserIcons.h"
 #include "ProjectWizardControlIDs.h"
 
 

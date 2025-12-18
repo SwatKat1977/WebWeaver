@@ -18,7 +18,7 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
 #include <wx/artprov.h>
-#include "ProjectCreateWizard/WizardFinishPage.h"
+#include "SolutionCreateWizard/WizardFinishPage.h"
 #include "WizardStepIndicator.h"
 #include "ProjectWizardControlIDs.h"
 

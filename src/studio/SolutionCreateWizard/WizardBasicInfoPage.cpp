@@ -20,7 +20,7 @@ Copyright 2025 SwatKat1977
 #include <wx/artprov.h>
 #include <string>
 #include <vector>
-#include "ProjectCreateWizard/WizardBasicInfoPage.h"
+#include "SolutionCreateWizard/WizardBasicInfoPage.h"
 #include "WizardStepIndicator.h"
 
 
