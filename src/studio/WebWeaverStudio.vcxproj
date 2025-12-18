@@ -164,18 +164,19 @@
     <ClCompile Include="WizardStepIndicator.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_inspect.h" />
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_new_project.h" />
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_open_project.h" />
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_pause_record.h" />
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_resume_record.h" />
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_save_project.h" />
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_start_record.h" />
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_stop_record.h" />
     <ClInclude Include="BitmapUtils.h" />
     <ClInclude Include="imgResources\BrowserLogos\browser_chromium_icon.h" />
     <ClInclude Include="imgResources\BrowserLogos\browser_firefox_icon.h" />
     <ClInclude Include="imgResources\BrowserLogos\browser_google_chrome_icon.h" />
     <ClInclude Include="imgResources\BrowserLogos\browser_microsoft_edge_icon.h" />
-    <ClInclude Include="imgResources\toolbar\toolbar_inspect.h" />
-    <ClInclude Include="imgResources\toolbar\toolbar_new_project.h" />
-    <ClInclude Include="imgResources\toolbar\toolbar_open_project.h" />
-    <ClInclude Include="imgResources\toolbar\toolbar_pause_record.h" />
-    <ClInclude Include="imgResources\toolbar\toolbar_save_project.h" />
-    <ClInclude Include="imgResources\toolbar\toolbar_start_record.h" />
-    <ClInclude Include="imgResources\toolbar\toolbar_stop_record.h" />
     <ClInclude Include="Platform.h" />
     <ClInclude Include="ProjectCreateWizard\BrowserIcons.h" />
     <ClInclude Include="ProjectCreateWizard\ProjectCreateWizardBasePage.h" />

@@ -38,6 +38,8 @@ wxBitmap LoadToolbarStartRecordIcon();
 
 wxBitmap LoadToolbarStopRecordIcon();
 
+wxBitmap LoadToolbarResumeRecordIcon();
+
 }   // namespace webweaver::studio
 
 #endif  // TOOLBARICONS_H_
