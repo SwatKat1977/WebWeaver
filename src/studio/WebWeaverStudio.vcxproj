@@ -178,7 +178,7 @@
     <ClInclude Include="Platform.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SolutionCreateWizard\BrowserIcons.h" />
-    <ClInclude Include="SolutionCreateWizard\ProjectCreateWizardBasePage.h" />
+    <ClInclude Include="SolutionCreateWizard\SolutionCreateWizardBasePage.h" />
     <ClInclude Include="SolutionCreateWizard\WizardBasicInfoPage.h" />
     <ClInclude Include="SolutionCreateWizard\WizardBehaviourPage.h" />
     <ClInclude Include="SolutionCreateWizard\WizardFinishPage.h" />

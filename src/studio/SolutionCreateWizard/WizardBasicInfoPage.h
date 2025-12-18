@@ -23,7 +23,7 @@ Copyright 2025 SwatKat1977
 #include <string>
 #include <vector>
 #include "WizardStepIndicator.h"
-#include "SolutionCreateWizard/ProjectCreateWizardBasePage.h"
+#include "SolutionCreateWizard/SolutionCreateWizardBasePage.h"
 
 namespace webweaver::studio {
 

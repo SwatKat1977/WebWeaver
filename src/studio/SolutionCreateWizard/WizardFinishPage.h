@@ -20,7 +20,7 @@ Copyright 2025 SwatKat1977
 #ifndef PROJECTCREATEWIZARD_WIZARDFINISHPAGE_H_
 #define PROJECTCREATEWIZARD_WIZARDFINISHPAGE_H_
 #include <wx/wx.h>
-#include "SolutionCreateWizard/ProjectCreateWizardBasePage.h"
+#include "SolutionCreateWizard/SolutionCreateWizardBasePage.h"
 #include "StudioDefinitions.h"
 
 namespace webweaver::studio {

@@ -24,7 +24,7 @@ Copyright 2025 SwatKat1977
 #include <string>
 #include <utility>
 #include <vector>
-#include "SolutionCreateWizard/ProjectCreateWizardBasePage.h"
+#include "SolutionCreateWizard/SolutionCreateWizardBasePage.h"
 
 namespace webweaver::studio {
 
