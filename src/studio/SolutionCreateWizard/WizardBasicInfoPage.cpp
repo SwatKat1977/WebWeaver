@@ -104,8 +104,7 @@ WizardBasicInfoPage::WizardBasicInfoPage(wxWindow* parent,
     validator.AddCharIncludes(
         "abcdefghijklmnopqrstuvwxyz"
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        " _-"
-    );
+        " _-");
     txtSolutionName_->SetValidator(validator);
 
     // -----
@@ -188,8 +187,7 @@ bool WizardBasicInfoPage::ValidateFields() {
             "Only letters, spaces, underscores and hyphens are allowed.",
             "Invalid input",
             wxICON_WARNING | wxOK,
-            this
-        );
+            this);
         txtSolutionName_->SetFocus();
         return false;
     }
@@ -212,10 +210,10 @@ bool WizardBasicInfoPage::ValidateFields() {
         p.root_path() == p) {
         wxMessageBox(
             "The root of the C: drive is not writable.\n"
-            "Please choose a folder inside your Documents or AppData directory.",
+            "Please choose a folder inside your Documents or AppData "
+            "directory.",
             "Permission error",
-            wxICON_WARNING
-        );
+            wxICON_WARNING);
         return false;
     }
 #endif

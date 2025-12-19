@@ -83,6 +83,7 @@
     </ClInclude>
     <ClInclude Include="SolutionExplorerIcons.h" />
     <ClInclude Include="FilesystemUtils.h" />
+    <ClInclude Include="RecentSolutionsManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BitmapUtils.cpp" />
@@ -110,6 +111,7 @@
     <ClCompile Include="SolutionExplorerIcons.cpp" />
     <ClCompile Include="FilesystemUtils.cpp" />
     <ClCompile Include="StudioSolution.cpp" />
+    <ClCompile Include="RecentSolutionsManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VersionInfo.rc" />

@@ -238,8 +238,7 @@ void StudioMainFrame::CreateSolutionPanel() {
         "No solution loaded\n\nCreate or open a solution to begin",
         wxDefaultPosition,
         wxDefaultSize,
-        wxALIGN_CENTER
-    );
+        wxALIGN_CENTER);
 
     solutionExplorerPlaceholder_->SetForegroundColour(
         wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT));
@@ -659,8 +658,7 @@ void StudioMainFrame::UpdateToolbarState() {
     toolbar_->Refresh();
 }
 
-void StudioMainFrame::PopulateSolutionExplorerTree()
-{
+void StudioMainFrame::PopulateSolutionExplorerTree() {
     solutionExplorerTree_->DeleteAllItems();
 
     const auto& solution = *currentSolution_;
@@ -688,8 +686,7 @@ void StudioMainFrame::PopulateSolutionExplorerTree()
     solutionExplorerTree_->ExpandAll();
 }
 
-void StudioMainFrame::ShowSolutionExplorerTree()
-{
+void StudioMainFrame::ShowSolutionExplorerTree() {
     solutionExplorerPlaceholder_->Hide();
     solutionExplorerTree_->Show();
 
@@ -698,8 +695,7 @@ void StudioMainFrame::ShowSolutionExplorerTree()
     solutionExplorerPanel_->Layout();
 }
 
-void StudioMainFrame::ShowNoSolutionPlaceholder()
-{
+void StudioMainFrame::ShowNoSolutionPlaceholder() {
     solutionExplorerTree_->Hide();
     solutionExplorerTree_->DeleteAllItems();
 
@@ -709,8 +705,7 @@ void StudioMainFrame::ShowNoSolutionPlaceholder()
 }
 
 bool StudioMainFrame::SaveSolutionToDisk(
-    const StudioSolution& solution)
-{
+    const StudioSolution& solution) {
     std::filesystem::path solutionDir = solution.solutionDirectory;
 
     // Create solution directory if requested
@@ -737,7 +732,8 @@ bool StudioMainFrame::SaveSolutionToDisk(
         return false;
     }
 
-    out << j.dump(4); // pretty-print with indentation
+    // Pretty-print with indentation
+    out << j.dump(4);
     out.close();
 
     return true;

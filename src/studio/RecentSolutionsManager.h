@@ -17,29 +17,28 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#include <string>
-#include "FilesystemUtils.h"
+#ifndef RECENTSOLUTIONSMANAGER_H_
+#define RECENTSOLUTIONSMANAGER_H_
+#include <filesystem>
+#include <vector>
 
 namespace webweaver::studio {
 
-bool isdDirectoryWritable(const std::filesystem::path& dir) {
-    if (!std::filesystem::exists(dir) || !std::filesystem::is_directory(dir)) {
-        return false;
-    }
+class RecentSolutionsManager {
+ public:
+    void Load();
+    void Save() const;
 
-    // Try creating a temporary file inside the directory
-    std::filesystem::path testFile = dir / ".write_test_tmp";
+    void AddSolution(const std::filesystem::path& solutionFile);
+    const std::vector<std::filesystem::path>& GetSolutions() const;
 
-    std::ofstream ofs(testFile.string(), std::ios::out | std::ios::trunc);
-    if (!ofs.is_open())
-        return false;
+ private:
+    std::vector<std::filesystem::path> recent_;
+    static constexpr size_t kMaxRecent = 10;
 
-    ofs.close();
-    std::filesystem::remove(testFile);
-
-    return true;
-}
+    std::filesystem::path GetStoragePath() const;
+};
 
 }   // namespace webweaver::studio
 
-
+#endif  // RECENTSOLUTIONSMANAGER_H_

@@ -17,29 +17,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#include <string>
-#include "FilesystemUtils.h"
+#include "RecentSolutionsManager.h"
 
 namespace webweaver::studio {
 
-bool isdDirectoryWritable(const std::filesystem::path& dir) {
-    if (!std::filesystem::exists(dir) || !std::filesystem::is_directory(dir)) {
-        return false;
-    }
-
-    // Try creating a temporary file inside the directory
-    std::filesystem::path testFile = dir / ".write_test_tmp";
-
-    std::ofstream ofs(testFile.string(), std::ios::out | std::ios::trunc);
-    if (!ofs.is_open())
-        return false;
-
-    ofs.close();
-    std::filesystem::remove(testFile);
-
-    return true;
-}
+class RecentSolutionsManager {
+};
 
 }   // namespace webweaver::studio
-
-

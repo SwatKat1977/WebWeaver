@@ -17,8 +17,8 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef SOLUTIONCREATEWIZARD_BROWSERICONS_H_
-#define SOLUTIONCREATEWIZARD_BROWSERICONS_H_
+#ifndef SOLUTIONEXPLORERICONS_H_
+#define SOLUTIONEXPLORERICONS_H_
 
 #include <wx/wx.h>
 
@@ -34,4 +34,4 @@ wxBitmap LoadScriptsFilterIcon();
 
 }   // namespace webweaver::studio
 
-#endif  // SOLUTIONCREATEWIZARD_BROWSERICONS_H_
+#endif  // SOLUTIONEXPLORERICONS_H_

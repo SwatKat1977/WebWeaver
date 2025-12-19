@@ -152,6 +152,7 @@
     <ClCompile Include="BitmapUtils.cpp" />
     <ClCompile Include="FilesystemUtils.cpp" />
     <ClCompile Include="Platform.cpp" />
+    <ClCompile Include="RecentSolutionsManager.cpp" />
     <ClCompile Include="SolutionCreateWizard\BrowserIcons.cpp" />
     <ClCompile Include="SolutionCreateWizard\WizardBasicInfoPage.cpp" />
     <ClCompile Include="SolutionCreateWizard\WizardBehaviourPage.cpp" />
@@ -182,6 +183,7 @@
     <ClInclude Include="BitmapUtils.h" />
     <ClInclude Include="FilesystemUtils.h" />
     <ClInclude Include="Platform.h" />
+    <ClInclude Include="RecentSolutionsManager.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SolutionCreateWizard\BrowserIcons.h" />
     <ClInclude Include="SolutionCreateWizard\SolutionCreateWizardBasePage.h" />
