@@ -17,46 +17,21 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
+#ifndef SOLUTIONEXPLORERICONS_H_
+#define SOLUTIONEXPLORERICONS_H_
 
-#ifndef STUDIOSTATECONTROLLER_H_
-#define STUDIOSTATECONTROLLER_H_
-#include <functional>
+#include <wx/wx.h>
 
 namespace webweaver::studio {
 
-enum class StudioState {
-    NoSolution,
-    SolutionLoaded,
-    RecordingRunning,
-    RecordingPaused,
-    Inspecting
-};
+wxBitmap LoadRootIcon();
 
-class StudioStateController {
- public:
-    using StateChangedCallback = std::function<void(StudioState)>;
+wxBitmap LoadRecordingsFilterIcon();
 
-    explicit StudioStateController(StateChangedCallback cb);
+wxBitmap LoadPagesFilterIcon();
 
-    StudioState GetState() const;
-
-    void SetUiReady(bool ready) { uiReady_ = ready; }
-
-    // User intents
-    void OnSolutionLoaded();
-    void OnSolutionClosed();
-    void OnRecordStartStop();
-    void OnRecordPause();
-    void OnInspectorToggle(bool shown);
-
- private:
-    void SetState(StudioState newState);
-
-    StudioState state_ = StudioState::NoSolution;
-    StateChangedCallback onStateChanged_;
-    bool uiReady_ = false;
-};
+wxBitmap LoadScriptsFilterIcon();
 
 }   // namespace webweaver::studio
 
-#endif  // STUDIOSTATECONTROLLER_H_
+#endif  // SOLUTIONEXPLORERICONS_H_

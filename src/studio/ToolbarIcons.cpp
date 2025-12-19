@@ -22,6 +22,7 @@ Copyright 2025 SwatKat1977
 #include "../artworkResources/studio/toolbar/toolbar_inspect.h"
 #include "../artworkResources/studio/toolbar/toolbar_new_project.h"
 #include "../artworkResources/studio/toolbar/toolbar_open_project.h"
+#include "../artworkResources/studio/toolbar/toolbar_close_solution.h"
 #include "../artworkResources/studio/toolbar/toolbar_pause_record.h"
 #include "../artworkResources/studio/toolbar/toolbar_save_project.h"
 #include "../artworkResources/studio/toolbar/toolbar_start_record.h"
@@ -78,6 +79,11 @@ wxBitmap LoadToolbarStopRecordIcon() {
 wxBitmap LoadToolbarResumeRecordIcon() {
     return LoadToolbarIcon(RESUME_RECORD_ICON,
                            RESUME_RECORD_ICON_SIZE);
+}
+
+wxBitmap LoadToolbarCloseSolutionIcon() {
+    return LoadToolbarIcon(CLOSE_SOLUTION_ICON,
+                           CLOSE_SOLUTION_ICON_SIZE);
 }
 
 }   // namespace webweaver::studio

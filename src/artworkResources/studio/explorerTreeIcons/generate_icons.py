@@ -42,7 +42,9 @@ Copyright 2025 SwatKat1977
 */
 """
 
-def png_to_header(png_path: str, header_path: str, var_name: str):
+def png_to_header(png_path: str,
+                  header_path: str,
+                  var_name: str):
     input_png = Path(png_path)
     data = input_png.read_bytes()
 
@@ -65,38 +67,19 @@ def png_to_header(png_path: str, header_path: str, var_name: str):
         out.write("\n};\n")
         out.write(f"static const unsigned int {var_upper}_SIZE = {len(data)};\n")
 
-png_to_header("inspect-button.png",
-    "toolbar_inspect.h",
-    "inspect_icon")
 
-png_to_header("new-project-button.png",
-    "toolbar_new_project.h",
-    "new_project_icon")
+png_to_header("puzzle.png",
+    "root_icon.h",
+    "root_icon")
 
-png_to_header("open-button.png",
-    "toolbar_open_project.h",
-    "open_project_icon")
+png_to_header("movie-recording.png",
+    "recordings_icon.h",
+    "recordings_icon")
 
-png_to_header("pause-button.png",
-    "toolbar_pause_record.h",
-    "pause_record_icon")
+png_to_header("landing-page.png",
+    "pages_icon.h",
+    "pages_icon")
 
-png_to_header("rec-button.png",
-    "toolbar_start_record.h",
-    "start_record_icon")
-
-png_to_header("save-button.png",
-    "toolbar_save_project.h",
-    "save_project_icon")
-
-png_to_header("stop-button.png",
-    "toolbar_stop_record.h",
-    "stop_record_icon")
-
-png_to_header("resume-button.png",
-    "toolbar_resume_record.h",
-    "resume_record_icon")
-
-png_to_header("close-button.png",
-    "toolbar_close_solution.h",
-    "close_solution_icon")
+png_to_header("script.png",
+    "scripts_icon.h",
+    "scripts_icon")

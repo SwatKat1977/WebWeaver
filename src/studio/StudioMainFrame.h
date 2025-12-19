@@ -21,10 +21,13 @@ Copyright 2025 SwatKat1977
 #define STUDIOMAINFRAME_H_
 #include <wx/aui/aui.h>
 #include <wx/frame.h>
+#include <wx/treectrl.h>
+#include <wx/wx.h>
 #include <memory>
 #include <optional>
 #include "StudioStateController.h"
 #include "StudioSolution.h"
+#include "RecentSolutionsManager.h"
 
 namespace webweaver::studio {
 
@@ -39,10 +42,22 @@ class StudioMainFrame : public wxFrame {
  private:
     wxAuiManager auiMgr_;
     wxAuiToolBar* toolbar_;
+    wxMenu* recentSolutionsMenu_;
 
     std::unique_ptr<StudioStateController> stateController_;
-    StudioState currentState_ = StudioState::NoProject;
+    StudioState currentState_ = StudioState::NoSolution;
     std::optional<StudioSolution> currentSolution_;
+    RecentSolutionsManager recentSolutions_;
+
+    // Solution Explorer panel and controls
+    wxPanel* solutionExplorerPanel_;
+    wxStaticText* solutionExplorerPlaceholder_;
+    wxTreeCtrl* solutionExplorerTree_;
+    wxImageList* solutionExplorerTreeImages_;
+    int solutionExplorericonSolution_ = -1;
+    int solutionExplorericonRecordings_ = -1;
+    int solutionExplorericonPages_ = -1;
+    int solutionExplorericonScripts_ = -1;
 
     // Log area in inspector
     wxTextCtrl* inspectorLog_ = nullptr;
@@ -56,6 +71,8 @@ class StudioMainFrame : public wxFrame {
 
     // Inspector event handlers
     // wxWidgets event handlers require non-const wxCommandEvent&
+
+    // ---- Inspector Events ----
 
     // NOLINTNEXTLINE(runtime/references)
     void OnInspectorOpenPage(wxCommandEvent &event);
@@ -75,8 +92,17 @@ class StudioMainFrame : public wxFrame {
     // NOLINTNEXTLINE(runtime/references)
     void OnInspectorSaveJson(wxCommandEvent &event);
 
+
+    // ---- Main Frame Events ----
+
     // NOLINTNEXTLINE(runtime/references)
     void OnNewSolutionEvent(wxCommandEvent &event);
+
+    // NOLINTNEXTLINE(runtime/references)
+    void OnCloseSolutionEvent(wxCommandEvent& event);
+
+    // NOLINTNEXTLINE(runtime/references)
+    void OnOpenSolutionEvent(wxCommandEvent& event);
 
     // NOLINTNEXTLINE(runtime/references)
     void OnRecordStartStopEvent(wxCommandEvent& event);
@@ -86,6 +112,20 @@ class StudioMainFrame : public wxFrame {
 
     // NOLINTNEXTLINE(runtime/references)
     void OnInspectorEvent(wxCommandEvent& event);
+
+
+    // Solution Explorer Helper Methods:
+    void PopulateSolutionExplorerTree();
+    void ShowSolutionExplorerTree();
+    void ShowNoSolutionPlaceholder();
+
+    bool SaveSolutionToDisk(const StudioSolution& solution);
+    void RebuildRecentSolutionsMenu();
+
+    // NOLINTNEXTLINE(runtime/references)
+    void OnOpenRecentSolutionEvent(wxCommandEvent& event);
+
+    bool OpenSolution(const std::filesystem::path& solutionFile);
 };
 
 }   // namespace webweaver::studio

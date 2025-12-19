@@ -22,6 +22,7 @@ Copyright 2025 SwatKat1977
 #include <vector>
 #include "SolutionCreateWizard/WizardBasicInfoPage.h"
 #include "WizardStepIndicator.h"
+#include "FilesystemUtils.h"
 
 
 namespace webweaver::studio {
@@ -96,6 +97,15 @@ WizardBasicInfoPage::WizardBasicInfoPage(wxWindow* parent,
     txtSolutionName_ = new wxTextCtrl(inputAreaPanel, wxID_ANY);
     inputAreaSizer->Add(txtSolutionName_, 1, wxEXPAND);
     inputAreaSizer->AddSpacer(0);
+
+    // Add validator to solution name input -- only allow letters, spaces,
+    // underscores, and hyphens.
+    wxTextValidator validator(wxFILTER_INCLUDE_CHAR_LIST);
+    validator.AddCharIncludes(
+        "abcdefghijklmnopqrstuvwxyz"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        " _-");
+    txtSolutionName_->SetValidator(validator);
 
     // -----
     // Row 2 : Solution location
@@ -172,9 +182,45 @@ bool WizardBasicInfoPage::ValidateFields() {
         return false;
     }
 
+    if (!txtSolutionName_->Validate()) {
+        wxMessageBox(
+            "Only letters, spaces, underscores and hyphens are allowed.",
+            "Invalid input",
+            wxICON_WARNING | wxOK,
+            this);
+        txtSolutionName_->SetFocus();
+        return false;
+    }
+
     wxString solutionDir = txtSolutionDir_->GetValue().Strip(wxString::both);
     if (solutionDir.IsEmpty()) {
         wxMessageBox("Please enter a solution location.",
+                     "Validation error",
+                     wxICON_WARNING);
+        return false;
+    }
+
+    auto solutionDirStr = std::filesystem::path(solutionDir.ToStdString());
+
+#if defined(WEBWEAVER_PLATFORM_WIN64)
+    auto p = solutionDirStr.lexically_normal();
+
+    if (p.root_name() == "C:" &&
+        p.has_root_directory() &&
+        p.root_path() == p) {
+        wxMessageBox(
+            "The root of the C: drive is not writable.\n"
+            "Please choose a folder inside your Documents or AppData "
+            "directory.",
+            "Permission error",
+            wxICON_WARNING);
+        return false;
+    }
+#endif
+
+    if (!isdDirectoryWritable(solutionDirStr)) {
+        wxMessageBox("The specified solution location is not valid/writable."
+                     " Please choose another location.",
                      "Validation error",
                      wxICON_WARNING);
         return false;

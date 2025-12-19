@@ -78,6 +78,12 @@
     <ClInclude Include="..\artworkResources\studio\browserIcons\browser_microsoft_edge_icon.h">
       <Filter>ImgResources\BrowserIcons</Filter>
     </ClInclude>
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_close_solution.h">
+      <Filter>ImgResources\Toolbar</Filter>
+    </ClInclude>
+    <ClInclude Include="SolutionExplorerIcons.h" />
+    <ClInclude Include="FilesystemUtils.h" />
+    <ClInclude Include="RecentSolutionsManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BitmapUtils.cpp" />
@@ -102,6 +108,10 @@
     <ClCompile Include="SolutionCreateWizard\WizardSelectBrowserPage.cpp">
       <Filter>SolutionCreateWizard</Filter>
     </ClCompile>
+    <ClCompile Include="SolutionExplorerIcons.cpp" />
+    <ClCompile Include="FilesystemUtils.cpp" />
+    <ClCompile Include="StudioSolution.cpp" />
+    <ClCompile Include="RecentSolutionsManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VersionInfo.rc" />

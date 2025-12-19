@@ -17,31 +17,15 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef TOOLBARICONS_H_
-#define TOOLBARICONS_H_
-
-#include <wx/wx.h>
+#ifndef FILESYSTEMUTILS_H_
+#define FILESYSTEMUTILS_H_
+#include <filesystem>
+#include <fstream>
 
 namespace webweaver::studio {
 
-wxBitmap LoadToolbarInspectIcon();
+bool isdDirectoryWritable(const std::filesystem::path& dir);
 
-wxBitmap LoadToolbarNewProjectIcon();
+}
 
-wxBitmap LoadToolbarOpenProjectIcon();
-
-wxBitmap LoadToolbarSaveProjectIcon();
-
-wxBitmap LoadToolbarCloseSolutionIcon();
-
-wxBitmap LoadToolbarPauseRecordIcon();
-
-wxBitmap LoadToolbarStartRecordIcon();
-
-wxBitmap LoadToolbarStopRecordIcon();
-
-wxBitmap LoadToolbarResumeRecordIcon();
-
-}   // namespace webweaver::studio
-
-#endif  // TOOLBARICONS_H_
+#endif  // FILESYSTEMUTILS_H_

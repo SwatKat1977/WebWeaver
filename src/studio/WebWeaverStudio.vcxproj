@@ -78,6 +78,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>.;$(WEBWEAVER_WXWIDGETS_INCLUDE);$(WEBWEAVER_WXWIDGETS_LIB)\mswu</IncludePath>
     <LibraryPath>$(WEBWEAVER_WXWIDGETS_LIB);$(LibraryPath)</LibraryPath>
+    <ExternalIncludePath>..\3rd_party\;$(ExternalIncludePath)</ExternalIncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -109,7 +110,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;__WXDEBUG__;WXUSINGDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;__WXDEBUG__;WXUSINGDLL;_CRT_SECURE_NO_WARNINGS;WEBWEAVER_PLATFORM_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -133,7 +134,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;WXUSINGDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;WXUSINGDLL;_CRT_SECURE_NO_WARNINGS;WEBWEAVER_PLATFORM_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -149,14 +150,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BitmapUtils.cpp" />
+    <ClCompile Include="FilesystemUtils.cpp" />
     <ClCompile Include="Platform.cpp" />
+    <ClCompile Include="RecentSolutionsManager.cpp" />
     <ClCompile Include="SolutionCreateWizard\BrowserIcons.cpp" />
     <ClCompile Include="SolutionCreateWizard\WizardBasicInfoPage.cpp" />
     <ClCompile Include="SolutionCreateWizard\WizardBehaviourPage.cpp" />
     <ClCompile Include="SolutionCreateWizard\WizardFinishPage.cpp" />
     <ClCompile Include="SolutionCreateWizard\WizardSelectBrowserPage.cpp" />
+    <ClCompile Include="SolutionExplorerIcons.cpp" />
     <ClCompile Include="studio.cpp" />
     <ClCompile Include="StudioMainFrame.cpp" />
+    <ClCompile Include="StudioSolution.cpp" />
     <ClCompile Include="StudioStateController.cpp" />
     <ClCompile Include="ToolbarIcons.cpp" />
     <ClCompile Include="WizardStepIndicator.cpp" />
@@ -166,6 +171,7 @@
     <ClInclude Include="..\artworkResources\studio\browserIcons\browser_firefox_icon.h" />
     <ClInclude Include="..\artworkResources\studio\browserIcons\browser_google_chrome_icon.h" />
     <ClInclude Include="..\artworkResources\studio\browserIcons\browser_microsoft_edge_icon.h" />
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_close_solution.h" />
     <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_inspect.h" />
     <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_new_project.h" />
     <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_open_project.h" />
@@ -175,7 +181,9 @@
     <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_start_record.h" />
     <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_stop_record.h" />
     <ClInclude Include="BitmapUtils.h" />
+    <ClInclude Include="FilesystemUtils.h" />
     <ClInclude Include="Platform.h" />
+    <ClInclude Include="RecentSolutionsManager.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SolutionCreateWizard\BrowserIcons.h" />
     <ClInclude Include="SolutionCreateWizard\SolutionCreateWizardBasePage.h" />
@@ -183,6 +191,7 @@
     <ClInclude Include="SolutionCreateWizard\WizardBehaviourPage.h" />
     <ClInclude Include="SolutionCreateWizard\WizardFinishPage.h" />
     <ClInclude Include="SolutionCreateWizard\WizardSelectBrowserPage.h" />
+    <ClInclude Include="SolutionExplorerIcons.h" />
     <ClInclude Include="StudioDefinitions.h" />
     <ClInclude Include="StudioMainFrame.h" />
     <ClInclude Include="StudioSolution.h" />

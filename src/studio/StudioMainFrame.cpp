@@ -19,7 +19,10 @@ Copyright 2025 SwatKat1977
 */
 #include <wx/artprov.h>
 #include <wx/treectrl.h>
+#include <filesystem>
+#include <fstream>
 #include <string>
+#include <utility>
 #include <vector>
 #include "StudioMainFrame.h"
 #include "BitmapUtils.h"
@@ -29,6 +32,7 @@ Copyright 2025 SwatKat1977
 #include "SolutionCreateWizard/WizardBehaviourPage.h"
 #include "SolutionCreateWizard/WizardFinishPage.h"
 #include "ProjectWizardControlIDs.h"
+#include "SolutionExplorerIcons.h"
 
 namespace webweaver::studio {
 
@@ -36,14 +40,17 @@ namespace webweaver::studio {
 constexpr int TOOLBAR_ID_NEW_SOLUTION = wxID_HIGHEST + 1;
 constexpr int TOOLBAR_ID_OPEN_SOLUTION = wxID_HIGHEST + 2;
 constexpr int TOOLBAR_ID_SAVE_SOLUTION = wxID_HIGHEST + 3;
-constexpr int TOOLBAR_ID_INSPECTOR_MODE = wxID_HIGHEST + 4;
-constexpr int TOOLBAR_ID_START_STOP_RECORD = wxID_HIGHEST + 5;
-constexpr int TOOLBAR_ID_PAUSE_RECORD = wxID_HIGHEST + 6;
+constexpr int TOOLBAR_ID_CLOSE_SOLUTION = wxID_HIGHEST + 4;
+constexpr int TOOLBAR_ID_INSPECTOR_MODE = wxID_HIGHEST + 5;
+constexpr int TOOLBAR_ID_START_STOP_RECORD = wxID_HIGHEST + 6;
+constexpr int TOOLBAR_ID_PAUSE_RECORD = wxID_HIGHEST + 7;
 
 constexpr int PAGENO_BASICINFOPAGE = 0;
 constexpr int PAGENO_SELECTBROWSERPAGE = 1;
 constexpr int PAGENO_BEHAVIOURPAGE = 2;
 constexpr int PAGENO_FINISHPAGE = 3;
+
+constexpr int ID_RECENT_SOLUTION_BASE = wxID_HIGHEST + 500;
 
 enum {
     ID_INSPECTOR_OPEN_PAGE = wxID_HIGHEST + 1001,
@@ -78,10 +85,15 @@ StudioMainFrame::StudioMainFrame(wxWindow* parent)
 
     // -- File Menu --
     wxMenu *fileMenu = new wxMenu();
-    fileMenu->Append(wxID_EXIT, "New Project");
-    fileMenu->Append(wxID_EXIT, "Open Project");
-    fileMenu->Append(wxID_EXIT, "Save Project");
-    fileMenu->Append(wxID_EXIT, "Exit");
+    fileMenu->Append(wxID_NEW, "New Project\tCtrl+N");
+    fileMenu->Append(wxID_OPEN, "Open Project\tCtrl+O");
+
+    recentSolutionsMenu_ = new wxMenu();
+    fileMenu->AppendSubMenu(recentSolutionsMenu_, "Recent Solutions");
+
+    fileMenu->Append(wxID_SAVE, "Save Project\tCtrl+S");
+    fileMenu->AppendSeparator();
+    fileMenu->Append(wxID_EXIT, "Exit\tCtrl-X");
     menubar->Append(fileMenu, "File");
     SetMenuBar(menubar);
 
@@ -89,6 +101,9 @@ StudioMainFrame::StudioMainFrame(wxWindow* parent)
     helpMenu->Append(wxID_EXIT, "About");
     menubar->Append(helpMenu, "Help");
     SetMenuBar(menubar);
+
+    recentSolutions_.Load();
+    RebuildRecentSolutionsMenu();
 }
 
 void StudioMainFrame::InitAui() {
@@ -153,6 +168,11 @@ void StudioMainFrame::CreateMainToolbar() {
         LoadToolbarSaveProjectIcon(),
         "Save Solution");
 
+    toolbar_->AddTool(TOOLBAR_ID_CLOSE_SOLUTION,
+        "",
+        LoadToolbarCloseSolutionIcon(),
+        "Close Solution");
+
     toolbar_->AddSeparator();
 
     toolbar_->AddTool(TOOLBAR_ID_INSPECTOR_MODE,
@@ -178,6 +198,16 @@ void StudioMainFrame::CreateMainToolbar() {
         &StudioMainFrame::OnNewSolutionEvent,
         this,
         TOOLBAR_ID_NEW_SOLUTION);
+
+    toolbar_->Bind(wxEVT_TOOL,
+        &StudioMainFrame::OnCloseSolutionEvent,
+        this,
+        TOOLBAR_ID_CLOSE_SOLUTION);
+
+    toolbar_->Bind(wxEVT_TOOL,
+        &StudioMainFrame::OnOpenSolutionEvent,
+        this,
+        TOOLBAR_ID_OPEN_SOLUTION);
 
     toolbar_->Bind(wxEVT_TOOL,
         &StudioMainFrame::OnRecordStartStopEvent,
@@ -214,22 +244,58 @@ void StudioMainFrame::CreateMainToolbar() {
 
 void StudioMainFrame::CreateSolutionPanel() {
     // Solution panel (left top)
-    wxPanel *solutionPanel = new wxPanel(this);
-    wxBoxSizer* projectSizer = new wxBoxSizer(wxVERTICAL);
+    solutionExplorerPanel_ = new wxPanel(this);
+    wxBoxSizer* solutionSizer = new wxBoxSizer(wxVERTICAL);
 
-    wxTreeCtrl* projectTree = new wxTreeCtrl(
-        solutionPanel,
+    // --- Placeholder (no solution loaded) ---
+    solutionExplorerPlaceholder_ = new wxStaticText(
+        solutionExplorerPanel_,
+        wxID_ANY,
+        "No solution loaded\n\nCreate or open a solution to begin",
+        wxDefaultPosition,
+        wxDefaultSize,
+        wxALIGN_CENTER);
+
+    solutionExplorerPlaceholder_->SetForegroundColour(
+        wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT));
+
+    solutionExplorerTreeImages_ = new wxImageList(16, 16, true);
+
+    // Load bitmaps (replace with your actual loaders)
+    solutionExplorericonSolution_ = solutionExplorerTreeImages_->Add(
+        LoadRootIcon());
+    solutionExplorericonRecordings_ = solutionExplorerTreeImages_->Add(
+        LoadRecordingsFilterIcon());
+    solutionExplorericonPages_ = solutionExplorerTreeImages_->Add(
+        LoadPagesFilterIcon());
+    solutionExplorericonScripts_ = solutionExplorerTreeImages_->Add(
+        LoadScriptsFilterIcon());
+
+    solutionExplorerTree_ = new wxTreeCtrl(
+        solutionExplorerPanel_,
         wxID_ANY,
         wxDefaultPosition,
         wxDefaultSize,
-        wxTR_HAS_BUTTONS | wxTR_DEFAULT_STYLE);
-    projectSizer->Add(projectTree, 1, wxEXPAND | wxALL, 5);
+        wxTR_HAS_BUTTONS |
+        wxTR_NO_LINES |
+        wxTR_FULL_ROW_HIGHLIGHT |
+        wxTR_DEFAULT_STYLE);
 
-    projectTree->ExpandAll();
+    solutionExplorerTree_->AssignImageList(solutionExplorerTreeImages_);
 
-    solutionPanel->SetSizer(projectSizer);
+    // Layout
+    solutionSizer->Add(solutionExplorerPlaceholder_, 1, wxEXPAND | wxALL, 10);
+    solutionSizer->Add(solutionExplorerTree_, 1, wxEXPAND | wxALL, 0);
 
-    auiMgr_.AddPane(solutionPanel,
+    solutionExplorerTree_->ExpandAll();
+
+    solutionExplorerPanel_->SetSizer(solutionSizer);
+
+    // Start with no solution
+    solutionExplorerTree_->Hide();
+    solutionExplorerPlaceholder_->Show();
+
+    auiMgr_.AddPane(solutionExplorerPanel_,
                      wxAuiPaneInfo()
         .Left()
         .Row(1)
@@ -462,7 +528,18 @@ void StudioMainFrame::OnNewSolutionEvent(wxCommandEvent& event) {
                 data.baseUrl,
                 data.browser);
 
-            stateController_->OnProjectLoaded();
+            if (!SaveSolutionToDisk(currentSolution_.value())) {
+                return;
+            }
+
+            stateController_->OnSolutionLoaded();
+
+            ShowSolutionExplorerTree();
+
+            recentSolutions_.AddSolution(
+                currentSolution_->GetSolutionFilePath());
+            recentSolutions_.Save();
+            RebuildRecentSolutionsMenu();
 
             return;
         }
@@ -486,6 +563,32 @@ void StudioMainFrame::OnNewSolutionEvent(wxCommandEvent& event) {
 
         // Unknown return code, exit cleanly.
         return;
+    }
+}
+
+void StudioMainFrame::OnCloseSolutionEvent(wxCommandEvent& event) {
+    currentSolution_.reset();
+    stateController_->OnSolutionClosed();
+
+    ShowNoSolutionPlaceholder();
+}
+
+void StudioMainFrame::OnOpenSolutionEvent(wxCommandEvent& event) {
+    wxFileDialog dlg(
+        this,
+        "Open Webweaver Studio solution",
+        wxEmptyString,
+        wxEmptyString,
+        "Webweaver Solution (*.wws)|*.wws",
+        wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+
+    if (dlg.ShowModal() == wxID_OK) {
+        wxString path = dlg.GetPath();
+
+        if (OpenSolution(path.ToStdString())) {
+            stateController_->OnSolutionLoaded();
+            ShowSolutionExplorerTree();
+        }
     }
 }
 
@@ -513,6 +616,7 @@ void StudioMainFrame::OnInspectorEvent(wxCommandEvent& event) {
 void StudioMainFrame::UpdateToolbarState() {
     // First: disable everything that is state-dependent
     toolbar_->EnableTool(TOOLBAR_ID_SAVE_SOLUTION, false);
+    toolbar_->EnableTool(TOOLBAR_ID_CLOSE_SOLUTION, false);
     toolbar_->EnableTool(TOOLBAR_ID_INSPECTOR_MODE, false);
     toolbar_->EnableTool(TOOLBAR_ID_START_STOP_RECORD, false);
     toolbar_->EnableTool(TOOLBAR_ID_PAUSE_RECORD, false);
@@ -522,25 +626,25 @@ void StudioMainFrame::UpdateToolbarState() {
     bool isPaused = false;
 
     switch (currentState_) {
-    case StudioState::NoProject:
+    case StudioState::NoSolution:
         // Only New/Open make sense
         break;
 
-    case StudioState::ProjectLoaded:
+    case StudioState::SolutionLoaded:
         toolbar_->EnableTool(TOOLBAR_ID_SAVE_SOLUTION, true);
+        toolbar_->EnableTool(TOOLBAR_ID_CLOSE_SOLUTION, true);
         toolbar_->EnableTool(TOOLBAR_ID_INSPECTOR_MODE, true);
         toolbar_->EnableTool(TOOLBAR_ID_START_STOP_RECORD, true);
+
         break;
 
     case StudioState::RecordingRunning:
-        toolbar_->EnableTool(TOOLBAR_ID_SAVE_SOLUTION, true);
         toolbar_->EnableTool(TOOLBAR_ID_START_STOP_RECORD, true);
         toolbar_->EnableTool(TOOLBAR_ID_PAUSE_RECORD, true);
         hasActiveRecording = true;
         break;
 
     case StudioState::RecordingPaused:
-        toolbar_->EnableTool(TOOLBAR_ID_SAVE_SOLUTION, true);
         toolbar_->EnableTool(TOOLBAR_ID_START_STOP_RECORD, true);
         toolbar_->EnableTool(TOOLBAR_ID_PAUSE_RECORD, true);
         hasActiveRecording = true;
@@ -549,6 +653,7 @@ void StudioMainFrame::UpdateToolbarState() {
 
     case StudioState::Inspecting:
         toolbar_->EnableTool(TOOLBAR_ID_SAVE_SOLUTION, true);
+        toolbar_->EnableTool(TOOLBAR_ID_CLOSE_SOLUTION, true);
         toolbar_->EnableTool(TOOLBAR_ID_START_STOP_RECORD, false);
         toolbar_->EnableTool(TOOLBAR_ID_INSPECTOR_MODE, true);
         isInspecting = true;
@@ -586,6 +691,155 @@ void StudioMainFrame::UpdateToolbarState() {
 
     toolbar_->Realize();
     toolbar_->Refresh();
+}
+
+void StudioMainFrame::PopulateSolutionExplorerTree() {
+    solutionExplorerTree_->DeleteAllItems();
+
+    const auto& solution = *currentSolution_;
+
+    wxTreeItemId root = solutionExplorerTree_->AddRoot(
+        solution.solutionName,
+        solutionExplorericonSolution_,
+        solutionExplorericonSolution_);
+
+    solutionExplorerTree_->AppendItem(
+        root,
+        "Pages",
+        solutionExplorericonPages_);
+
+    solutionExplorerTree_->AppendItem(
+        root,
+        "Recordings",
+        solutionExplorericonRecordings_);
+
+    solutionExplorerTree_->AppendItem(
+        root,
+        "Scripts",
+        solutionExplorericonScripts_);
+
+    solutionExplorerTree_->ExpandAll();
+}
+
+void StudioMainFrame::ShowSolutionExplorerTree() {
+    solutionExplorerPlaceholder_->Hide();
+    solutionExplorerTree_->Show();
+
+    PopulateSolutionExplorerTree();
+
+    solutionExplorerPanel_->Layout();
+}
+
+void StudioMainFrame::ShowNoSolutionPlaceholder() {
+    solutionExplorerTree_->Hide();
+    solutionExplorerTree_->DeleteAllItems();
+
+    solutionExplorerPlaceholder_->Show();
+
+    solutionExplorerPanel_->Layout();
+}
+
+bool StudioMainFrame::SaveSolutionToDisk(
+    const StudioSolution& solution) {
+    std::filesystem::path solutionDir = solution.solutionDirectory;
+
+    // Create solution directory if requested
+    if (solution.createDirectoryForSolution) {
+        solutionDir /= solution.solutionName;
+    }
+
+    std::error_code ec;
+    std::filesystem::create_directories(solutionDir, ec);
+    if (ec) {
+        return false;
+    }
+
+    // Build .wws file path
+    std::filesystem::path solutionFile =
+        solutionDir / (solution.solutionName + ".wws");
+
+    // Serialize to JSON
+    nlohmann::json j = solution.ToJson();
+
+    // Write to file
+    std::ofstream out(solutionFile, std::ios::trunc);
+    if (!out.is_open()) {
+        return false;
+    }
+
+    // Pretty-print with indentation
+    out << j.dump(4);
+    out.close();
+
+    return true;
+}
+
+void StudioMainFrame::RebuildRecentSolutionsMenu() {
+    // Remove all existing items
+    while (recentSolutionsMenu_->GetMenuItemCount() > 0) {
+        recentSolutionsMenu_->Destroy(
+            recentSolutionsMenu_->FindItemByPosition(0));
+    }
+
+    int id = ID_RECENT_SOLUTION_BASE;
+
+    for (const auto& path : recentSolutions_.GetSolutions()) {
+        recentSolutionsMenu_->Append(id, path.string());
+        Bind(wxEVT_MENU,
+            &StudioMainFrame::OnOpenRecentSolutionEvent,
+            this,
+            id);
+        ++id;
+    }
+}
+
+void StudioMainFrame::OnOpenRecentSolutionEvent(wxCommandEvent& evt) {
+    int index = evt.GetId() - ID_RECENT_SOLUTION_BASE;
+    OpenSolution(recentSolutions_.GetSolutions()[index]);
+}
+
+bool StudioMainFrame::OpenSolution(const std::filesystem::path& solutionFile) {
+    if (!std::filesystem::exists(solutionFile)) {
+        wxMessageBox("Solution file does not exist.",
+            "Open Solution",
+            wxICON_ERROR);
+        return false;
+    }
+
+    nlohmann::json json;
+
+    try {
+        std::ifstream in(solutionFile);
+        in >> json;
+    }
+    catch (const std::exception& e) {
+        wxMessageBox(
+            wxString::Format("Failed to read solution file:\n%s", e.what()),
+            "Open Solution",
+            wxICON_ERROR);
+        return false;
+    }
+
+    SolutionLoadResult result = StudioSolution::FromJson(json);
+
+    if (!result.solution.has_value()) {
+        wxMessageBox(
+            SolutionLoadErrorToStr(result.error),
+            "Open Solution",
+            wxICON_ERROR);
+        return false;
+    }
+
+    currentSolution_ = std::move(result.solution.value());
+
+    stateController_->OnSolutionLoaded();
+
+    PopulateSolutionExplorerTree();
+    recentSolutions_.AddSolution(solutionFile);
+    recentSolutions_.Save();
+    RebuildRecentSolutionsMenu();
+
+    return true;
 }
 
 }   // namespace webweaver::studio
