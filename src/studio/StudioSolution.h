@@ -56,6 +56,9 @@ struct StudioSolution {
           selectedBrowser(std::move(browser)) {
     }
 
+    std::filesystem::path GetSolutionDirectory() const;
+    std::filesystem::path GetSolutionFilePath() const;
+
     nlohmann::json ToJson() const;
     static SolutionLoadResult FromJson(const nlohmann::json& rawJSON);
 };
