@@ -78,6 +78,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>.;$(WEBWEAVER_WXWIDGETS_INCLUDE);$(WEBWEAVER_WXWIDGETS_LIB)\mswu</IncludePath>
     <LibraryPath>$(WEBWEAVER_WXWIDGETS_LIB);$(LibraryPath)</LibraryPath>
+    <ExternalIncludePath>..\3rd_party\;$(ExternalIncludePath)</ExternalIncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -159,6 +160,7 @@
     <ClCompile Include="SolutionExplorerIcons.cpp" />
     <ClCompile Include="studio.cpp" />
     <ClCompile Include="StudioMainFrame.cpp" />
+    <ClCompile Include="StudioSolution.cpp" />
     <ClCompile Include="StudioStateController.cpp" />
     <ClCompile Include="ToolbarIcons.cpp" />
     <ClCompile Include="WizardStepIndicator.cpp" />

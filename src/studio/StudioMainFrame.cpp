@@ -19,6 +19,8 @@ Copyright 2025 SwatKat1977
 */
 #include <wx/artprov.h>
 #include <wx/treectrl.h>
+#include <filesystem>
+#include <fstream>
 #include <string>
 #include <vector>
 #include "StudioMainFrame.h"
@@ -510,6 +512,15 @@ void StudioMainFrame::OnNewSolutionEvent(wxCommandEvent& event) {
                 data.createSolutionDir,
                 data.baseUrl,
                 data.browser);
+            /*
+            bool StudioMainFrame::SaveSolutionToDisk(
+                const StudioSolution & solution,
+                const std::filesystem::path & baseDirectory)
+                */
+
+            if (!SaveSolutionToDisk(currentSolution_.value())) {
+                return;
+            }
 
             stateController_->OnSolutionLoaded();
 
@@ -695,6 +706,41 @@ void StudioMainFrame::ShowNoSolutionPlaceholder()
     solutionExplorerPlaceholder_->Show();
 
     solutionExplorerPanel_->Layout();
+}
+
+bool StudioMainFrame::SaveSolutionToDisk(
+    const StudioSolution& solution)
+{
+    std::filesystem::path solutionDir = solution.solutionDirectory;
+
+    // Create solution directory if requested
+    if (solution.createDirectoryForSolution) {
+        solutionDir /= solution.solutionName;
+    }
+
+    std::error_code ec;
+    std::filesystem::create_directories(solutionDir, ec);
+    if (ec) {
+        return false;
+    }
+
+    // Build .wws file path
+    std::filesystem::path solutionFile =
+        solutionDir / (solution.solutionName + ".wws");
+
+    // Serialize to JSON
+    nlohmann::json j = solution.ToJson();
+
+    // Write to file
+    std::ofstream out(solutionFile, std::ios::trunc);
+    if (!out.is_open()) {
+        return false;
+    }
+
+    out << j.dump(4); // pretty-print with indentation
+    out.close();
+
+    return true;
 }
 
 }   // namespace webweaver::studio

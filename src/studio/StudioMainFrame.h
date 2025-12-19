@@ -112,6 +112,9 @@ class StudioMainFrame : public wxFrame {
     void PopulateSolutionExplorerTree();
     void ShowSolutionExplorerTree();
     void ShowNoSolutionPlaceholder();
+
+
+    bool SaveSolutionToDisk(const StudioSolution& solution);
 };
 
 }   // namespace webweaver::studio

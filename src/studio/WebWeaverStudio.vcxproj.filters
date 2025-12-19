@@ -109,6 +109,7 @@
     </ClCompile>
     <ClCompile Include="SolutionExplorerIcons.cpp" />
     <ClCompile Include="FilesystemUtils.cpp" />
+    <ClCompile Include="StudioSolution.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VersionInfo.rc" />
