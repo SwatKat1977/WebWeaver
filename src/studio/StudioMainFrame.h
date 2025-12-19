@@ -27,6 +27,7 @@ Copyright 2025 SwatKat1977
 #include <optional>
 #include "StudioStateController.h"
 #include "StudioSolution.h"
+#include "RecentSolutionsManager.h"
 
 namespace webweaver::studio {
 
@@ -41,10 +42,12 @@ class StudioMainFrame : public wxFrame {
  private:
     wxAuiManager auiMgr_;
     wxAuiToolBar* toolbar_;
+    wxMenu* recentSolutionsMenu_;
 
     std::unique_ptr<StudioStateController> stateController_;
     StudioState currentState_ = StudioState::NoSolution;
     std::optional<StudioSolution> currentSolution_;
+    RecentSolutionsManager recentSolutions_;
 
     // Solution Explorer panel and controls
     wxPanel* solutionExplorerPanel_;
@@ -116,8 +119,13 @@ class StudioMainFrame : public wxFrame {
     void ShowSolutionExplorerTree();
     void ShowNoSolutionPlaceholder();
 
-
     bool SaveSolutionToDisk(const StudioSolution& solution);
+    void RebuildRecentSolutionsMenu();
+
+    // NOLINTNEXTLINE(runtime/references)
+    void OnOpenRecentSolutionEvent(wxCommandEvent& event);
+
+    bool OpenSolution(const std::filesystem::path& solutionFile);
 };
 
 }   // namespace webweaver::studio
