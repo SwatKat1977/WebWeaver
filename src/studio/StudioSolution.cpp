@@ -36,16 +36,76 @@ nlohmann::json StudioSolution::ToJson() const {
     };
 }
 
-StudioSolution StudioSolution::FromJson(const nlohmann::json& j) {
-    const auto& s = j.at("solution");
+SolutionLoadResult StudioSolution::FromJson(const nlohmann::json& rawJSON) {
+    const auto& solution = rawJSON.at("solution");
+    if (!rawJSON.is_object())
+        return { {}, SolutionLoadError::FileMalformed};
 
-    return StudioSolution{
-        s.at("SolutionName").get<std::string>(),
-        s.at("solutionDirectory").get<std::string>(),
-        s.at("solutionDirectoryCreated").get<bool>(),
-        s.at("baseUrl").get<std::string>(),
-        s.at("browser").get<std::string>()
+    if (!rawJSON.contains("version"))
+        return { {}, SolutionLoadError::MissingVersion};
+
+    if (!rawJSON["version"].is_number_integer())
+        return { {}, SolutionLoadError::FileMalformed};
+
+    int version = rawJSON["version"].get<int>();
+    if (version != 1)
+        return { std::nullopt, SolutionLoadError::UnsupportedVersion };
+
+    if (!rawJSON.contains("solution") ||
+        !rawJSON["solution"].is_object())
+        return { {}, SolutionLoadError::MissingSolutionObject};
+
+    const auto& s = rawJSON["solution"];
+
+    if (!s.contains("solutionName") ||
+        !s.contains("solutionDirectory") ||
+        !s.contains("solutionDirectoryCreated") ||
+        !s.contains("baseUrl") ||
+        !s.contains("browser"))
+        return { {}, SolutionLoadError::MissingRequiredField};
+
+    return {
+        StudioSolution{
+            s["solutionName"].get<std::string>(),
+            s["solutionDirectory"].get<std::string>(),
+            s["solutionDirectoryCreated"].get<bool>(),
+            s["baseUrl"].get<std::string>(),
+            s["browser"].get<std::string>()
+        },
+        SolutionLoadError::None
     };
+}
+
+std::string SolutionLoadErrorToStr(SolutionLoadError error)
+{
+    std::string message;
+
+    switch (error) {
+    case SolutionLoadError::FileMalformed:
+        message = "The solution file is malformed or corrupted.";
+        break;
+
+    case SolutionLoadError::MissingVersion:
+        message = "The solution file does not specify a version.";
+        break;
+
+    case SolutionLoadError::UnsupportedVersion:
+        message = "This solution file was created with a newer version of WebWeaver.";
+        break;
+
+    case SolutionLoadError::MissingSolutionObject:
+        message = "The solution file is missing required data.";
+        break;
+
+    case SolutionLoadError::MissingRequiredField:
+        message = "The solution file is incomplete.";
+        break;
+
+    default:
+        return;
+    }
+
+    return message;
 }
 
 }   // namespace webweaver::studio

@@ -20,10 +20,20 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 #ifndef STUDIOSOLUTION_H_
 #define STUDIOSOLUTION_H_
 #include <string>
+#include <optional>
 #include <utility>
 #include <nlohmann/json.hpp>
 
 namespace webweaver::studio {
+
+enum class SolutionLoadError {
+    None,
+    FileMalformed,
+    MissingVersion,
+    UnsupportedVersion,
+    MissingSolutionObject,
+    MissingRequiredField
+};
 
 struct StudioSolution {
     std::string solutionName;
@@ -45,8 +55,10 @@ struct StudioSolution {
     }
 
     nlohmann::json ToJson() const;
-    static StudioSolution FromJson(const nlohmann::json& j);
+    static struct SolutionLoadResult FromJson(const nlohmann::json& rawJSON);
 };
+
+std::string SolutionLoadErrorToStr(SolutionLoadError error);
 
 }   // namespace webweaver::studio
 
