@@ -27,7 +27,7 @@ nlohmann::json StudioSolution::ToJson() const {
     return {
         { "version", JSON_VERSION },
         { "solution", {
-            { "SolutionName", solutionName },
+            { "solutionName", solutionName },
             { "solutionDirectory", solutionDirectory },
             { "solutionDirectoryCreated", createDirectoryForSolution },
             { "baseUrl", baseUrl },
@@ -37,7 +37,6 @@ nlohmann::json StudioSolution::ToJson() const {
 }
 
 SolutionLoadResult StudioSolution::FromJson(const nlohmann::json& rawJSON) {
-    const auto& solution = rawJSON.at("solution");
     if (!rawJSON.is_object())
         return { {}, SolutionLoadError::FileMalformed};
 
@@ -49,7 +48,7 @@ SolutionLoadResult StudioSolution::FromJson(const nlohmann::json& rawJSON) {
 
     int version = rawJSON["version"].get<int>();
     if (version != 1)
-        return { std::nullopt, SolutionLoadError::UnsupportedVersion };
+        return { {}, SolutionLoadError::UnsupportedVersion };
 
     if (!rawJSON.contains("solution") ||
         !rawJSON["solution"].is_object())
@@ -102,7 +101,8 @@ std::string SolutionLoadErrorToStr(SolutionLoadError error)
         break;
 
     default:
-        return;
+        message = "Unknown solution load error.";
+        break;
     }
 
     return message;

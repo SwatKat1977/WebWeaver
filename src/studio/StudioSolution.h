@@ -35,6 +35,8 @@ enum class SolutionLoadError {
     MissingRequiredField
 };
 
+struct SolutionLoadResult;
+
 struct StudioSolution {
     std::string solutionName;
     std::string solutionDirectory;
@@ -55,7 +57,12 @@ struct StudioSolution {
     }
 
     nlohmann::json ToJson() const;
-    static struct SolutionLoadResult FromJson(const nlohmann::json& rawJSON);
+    static SolutionLoadResult FromJson(const nlohmann::json& rawJSON);
+};
+
+struct SolutionLoadResult {
+    std::optional<StudioSolution> solution;
+    SolutionLoadError error = SolutionLoadError::None;
 };
 
 std::string SolutionLoadErrorToStr(SolutionLoadError error);
