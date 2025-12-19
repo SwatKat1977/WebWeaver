@@ -194,6 +194,11 @@ void StudioMainFrame::CreateMainToolbar() {
         TOOLBAR_ID_CLOSE_SOLUTION);
 
     toolbar_->Bind(wxEVT_TOOL,
+        &StudioMainFrame::OnOpenSolutionEvent,
+        this,
+        TOOLBAR_ID_OPEN_SOLUTION);
+
+    toolbar_->Bind(wxEVT_TOOL,
         &StudioMainFrame::OnRecordStartStopEvent,
         this,
         TOOLBAR_ID_START_STOP_RECORD);
@@ -555,6 +560,23 @@ void StudioMainFrame::OnCloseSolutionEvent(wxCommandEvent& event) {
     stateController_->OnSolutionClosed();
 
     ShowNoSolutionPlaceholder();
+}
+
+void StudioMainFrame::OnOpenSolutionEvent(wxCommandEvent& event) {
+    wxFileDialog dlg(
+        this,
+        "Open Webweaver Studio solution",
+        wxEmptyString,
+        wxEmptyString,
+        "Webweaver Solution (*.wws)|*.wws",
+        wxFD_OPEN | wxFD_FILE_MUST_EXIST
+    );
+
+    if (dlg.ShowModal() == wxID_OK)
+    {
+        wxString path = dlg.GetPath();
+        // Load solution from path
+    }
 }
 
 void StudioMainFrame::OnRecordStartStopEvent(wxCommandEvent& event) {

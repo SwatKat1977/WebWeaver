@@ -99,6 +99,9 @@ class StudioMainFrame : public wxFrame {
     void OnCloseSolutionEvent(wxCommandEvent& event);
 
     // NOLINTNEXTLINE(runtime/references)
+    void OnOpenSolutionEvent(wxCommandEvent& event);
+
+    // NOLINTNEXTLINE(runtime/references)
     void OnRecordStartStopEvent(wxCommandEvent& event);
 
     // NOLINTNEXTLINE(runtime/references)
