@@ -30,7 +30,10 @@ class RecentSolutionsManager {
     void Save() const;
 
     void AddSolution(const std::filesystem::path& solutionFile);
-    const std::vector<std::filesystem::path>& GetSolutions() const;
+
+    const std::vector<std::filesystem::path>& GetSolutions() const {
+        return recent_;
+    }
 
  private:
     std::vector<std::filesystem::path> recent_;
