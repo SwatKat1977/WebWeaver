@@ -21,6 +21,8 @@ Copyright 2025 SwatKat1977
 #define STUDIOMAINFRAME_H_
 #include <wx/aui/aui.h>
 #include <wx/frame.h>
+#include <wx/treectrl.h>
+#include <wx/wx.h>
 #include <memory>
 #include <optional>
 #include "StudioStateController.h"
@@ -43,6 +45,14 @@ class StudioMainFrame : public wxFrame {
     std::unique_ptr<StudioStateController> stateController_;
     StudioState currentState_ = StudioState::NoSolution;
     std::optional<StudioSolution> currentSolution_;
+
+    // Solution Explorer panel and controls
+    wxPanel* solutionExplorerPanel_;
+    wxStaticText* solutionExplorerPlaceholder_;
+    wxTreeCtrl* solutionExplorerTree_;
+    wxImageList* solutionExplorerTreeImages_;
+    int solutionExplorericonSolution_ = -1;
+    int solutionExplorericonRecording_ = -1;
 
     // Log area in inspector
     wxTextCtrl* inspectorLog_ = nullptr;
@@ -94,6 +104,12 @@ class StudioMainFrame : public wxFrame {
 
     // NOLINTNEXTLINE(runtime/references)
     void OnInspectorEvent(wxCommandEvent& event);
+
+
+    // Solution Explorer Helper Methods:
+    void PopulateSolutionExplorerTree();
+    void ShowSolutionExplorerTree();
+    void ShowNoSolutionPlaceholder();
 };
 
 }   // namespace webweaver::studio

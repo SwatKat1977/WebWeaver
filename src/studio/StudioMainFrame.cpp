@@ -29,6 +29,7 @@ Copyright 2025 SwatKat1977
 #include "SolutionCreateWizard/WizardBehaviourPage.h"
 #include "SolutionCreateWizard/WizardFinishPage.h"
 #include "ProjectWizardControlIDs.h"
+#include "SolutionExplorerIcons.h"
 
 namespace webweaver::studio {
 
@@ -225,22 +226,55 @@ void StudioMainFrame::CreateMainToolbar() {
 
 void StudioMainFrame::CreateSolutionPanel() {
     // Solution panel (left top)
-    wxPanel *solutionPanel = new wxPanel(this);
+    solutionExplorerPanel_ = new wxPanel(this);
     wxBoxSizer* solutionSizer = new wxBoxSizer(wxVERTICAL);
 
-    wxTreeCtrl* solutionTree = new wxTreeCtrl(
-        solutionPanel,
+    // --- Placeholder (no solution loaded) ---
+    solutionExplorerPlaceholder_ = new wxStaticText(
+        solutionExplorerPanel_,
+        wxID_ANY,
+        "No solution loaded\n\nCreate or open a solution to begin",
+        wxDefaultPosition,
+        wxDefaultSize,
+        wxALIGN_CENTER
+    );
+
+    solutionExplorerPlaceholder_->SetForegroundColour(
+        wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT));
+
+    solutionExplorerTreeImages_ = new wxImageList(16, 16, true);
+
+    // Load bitmaps (replace with your actual loaders)
+    solutionExplorericonSolution_ = solutionExplorerTreeImages_->Add(
+        LoadRootIcon());
+    solutionExplorericonRecording_ = solutionExplorerTreeImages_->Add(
+        LoadRecordingsFilterIcon());
+
+    solutionExplorerTree_ = new wxTreeCtrl(
+        solutionExplorerPanel_,
         wxID_ANY,
         wxDefaultPosition,
         wxDefaultSize,
-        wxTR_HAS_BUTTONS | wxTR_DEFAULT_STYLE);
-    solutionSizer->Add(solutionTree, 1, wxEXPAND | wxALL, 5);
+        wxTR_HAS_BUTTONS |
+        wxTR_NO_LINES |
+        wxTR_FULL_ROW_HIGHLIGHT |
+        wxTR_DEFAULT_STYLE);
 
-    solutionTree->ExpandAll();
+    solutionExplorerTree_->AssignImageList(solutionExplorerTreeImages_);
 
-    solutionPanel->SetSizer(solutionSizer);
+    // Layout
+    solutionSizer->Add(solutionExplorerPlaceholder_, 1, wxEXPAND | wxALL, 10);
+    solutionSizer->Add(solutionExplorerTree_, 1, wxEXPAND | wxALL, 0);
 
-    auiMgr_.AddPane(solutionPanel,
+    solutionExplorerTree_->ExpandAll();
+
+    solutionExplorerPanel_->SetSizer(solutionSizer);
+
+    // Start with no solution
+    solutionExplorerTree_->Hide();
+    solutionExplorerPlaceholder_->Show();
+
+    auiMgr_.AddPane(solutionExplorerPanel_,
                      wxAuiPaneInfo()
         .Left()
         .Row(1)
@@ -475,6 +509,8 @@ void StudioMainFrame::OnNewSolutionEvent(wxCommandEvent& event) {
 
             stateController_->OnSolutionLoaded();
 
+            ShowSolutionExplorerTree();
+
             return;
         }
 
@@ -503,6 +539,8 @@ void StudioMainFrame::OnNewSolutionEvent(wxCommandEvent& event) {
 void StudioMainFrame::OnCloseSolutionEvent(wxCommandEvent& event) {
     currentSolution_.reset();
     stateController_->OnSolutionClosed();
+
+    ShowNoSolutionPlaceholder();
 }
 
 void StudioMainFrame::OnRecordStartStopEvent(wxCommandEvent& event) {
@@ -604,6 +642,49 @@ void StudioMainFrame::UpdateToolbarState() {
 
     toolbar_->Realize();
     toolbar_->Refresh();
+}
+
+void StudioMainFrame::PopulateSolutionExplorerTree()
+{
+    solutionExplorerTree_->DeleteAllItems();
+
+    const auto& solution = *currentSolution_;
+
+    wxTreeItemId root = solutionExplorerTree_->AddRoot(
+        solution.solutionName,
+        solutionExplorericonSolution_,
+        solutionExplorericonSolution_);
+
+    solutionExplorerTree_->AppendItem(root, "Pages");
+
+    solutionExplorerTree_->AppendItem(
+        root,
+        "Recordings",
+        solutionExplorericonRecording_);
+
+    solutionExplorerTree_->AppendItem(root, "Scripts");
+
+    solutionExplorerTree_->ExpandAll();
+}
+
+void StudioMainFrame::ShowSolutionExplorerTree()
+{
+    solutionExplorerPlaceholder_->Hide();
+    solutionExplorerTree_->Show();
+
+    PopulateSolutionExplorerTree();
+
+    solutionExplorerPanel_->Layout();
+}
+
+void StudioMainFrame::ShowNoSolutionPlaceholder()
+{
+    solutionExplorerTree_->Hide();
+    solutionExplorerTree_->DeleteAllItems();
+
+    solutionExplorerPlaceholder_->Show();
+
+    solutionExplorerPanel_->Layout();
 }
 
 }   // namespace webweaver::studio

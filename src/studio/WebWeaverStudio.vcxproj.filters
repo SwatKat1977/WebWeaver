@@ -81,6 +81,7 @@
     <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_close_solution.h">
       <Filter>ImgResources\Toolbar</Filter>
     </ClInclude>
+    <ClInclude Include="SolutionExplorerIcons.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BitmapUtils.cpp" />
@@ -105,6 +106,7 @@
     <ClCompile Include="SolutionCreateWizard\WizardSelectBrowserPage.cpp">
       <Filter>SolutionCreateWizard</Filter>
     </ClCompile>
+    <ClCompile Include="SolutionExplorerIcons.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VersionInfo.rc" />

@@ -155,6 +155,7 @@
     <ClCompile Include="SolutionCreateWizard\WizardBehaviourPage.cpp" />
     <ClCompile Include="SolutionCreateWizard\WizardFinishPage.cpp" />
     <ClCompile Include="SolutionCreateWizard\WizardSelectBrowserPage.cpp" />
+    <ClCompile Include="SolutionExplorerIcons.cpp" />
     <ClCompile Include="studio.cpp" />
     <ClCompile Include="StudioMainFrame.cpp" />
     <ClCompile Include="StudioStateController.cpp" />
@@ -184,6 +185,7 @@
     <ClInclude Include="SolutionCreateWizard\WizardBehaviourPage.h" />
     <ClInclude Include="SolutionCreateWizard\WizardFinishPage.h" />
     <ClInclude Include="SolutionCreateWizard\WizardSelectBrowserPage.h" />
+    <ClInclude Include="SolutionExplorerIcons.h" />
     <ClInclude Include="StudioDefinitions.h" />
     <ClInclude Include="StudioMainFrame.h" />
     <ClInclude Include="StudioSolution.h" />
