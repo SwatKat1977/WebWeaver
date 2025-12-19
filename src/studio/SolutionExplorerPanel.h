@@ -17,17 +17,42 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef STUDIOMAINFRAME_H_
-#define STUDIOMAINFRAME_H_
+#ifndef SOLUTIONEXPLORERPANEL_H_
+#define SOLUTIONEXPLORERPANEL_H_
+#include <wx/panel.h>
+#include <wx/treectrl.h>
+#include <wx/stattext.h>
+#include "StudioSolution.h"
 
 namespace webweaver::studio {
 
-class SolutionExplorerPanel {
+class SolutionExplorerPanel : public wxPanel {
+ public:
+    explicit SolutionExplorerPanel(wxWindow* parent);
+
+    void ShowNoSolution();
+    void ShowSolution(const StudioSolution& solution);
+    void Clear();
+
+ private:
+    wxTreeCtrl* tree_ = nullptr;
+    wxStaticText* placeholder_ = nullptr;
+    wxImageList* imageList_ = nullptr;
+
+    int iconSolution_ = -1;
+    int iconPages_ = -1;
+    int iconScripts_ = -1;
+    int iconRecordings_ = -1;
+
+    void CreateControls();
+
+    void PopulateEmptySolution(const StudioSolution& solution);
+
+    wxTreeItemId AppendEmptyNode(const wxTreeItemId& parent,
+                                 const wxString& label,
+                                 int icon);
 };
 
 }   // namespace webweaver::studio
 
-#endif  // STUDIOMAINFRAME_H_
-
-
-
+#endif  // SOLUTIONEXPLORERPANEL_H_
