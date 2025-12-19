@@ -75,8 +75,7 @@ SolutionLoadResult StudioSolution::FromJson(const nlohmann::json& rawJSON) {
     };
 }
 
-std::string SolutionLoadErrorToStr(SolutionLoadError error)
-{
+std::string SolutionLoadErrorToStr(SolutionLoadError error) {
     std::string message;
 
     switch (error) {
@@ -89,7 +88,8 @@ std::string SolutionLoadErrorToStr(SolutionLoadError error)
         break;
 
     case SolutionLoadError::UnsupportedVersion:
-        message = "This solution file was created with a newer version of WebWeaver.";
+        message = "This solution file was created with a newer version of "
+                  "WebWeaver.";
         break;
 
     case SolutionLoadError::MissingSolutionObject:
