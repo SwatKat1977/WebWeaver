@@ -75,8 +75,7 @@ SolutionLoadResult StudioSolution::FromJson(const nlohmann::json& rawJSON) {
     };
 }
 
-std::filesystem::path StudioSolution::GetSolutionDirectory() const
-{
+std::filesystem::path StudioSolution::GetSolutionDirectory() const {
     std::filesystem::path dir = solutionDirectory;
 
     if (createDirectoryForSolution) {
@@ -86,8 +85,7 @@ std::filesystem::path StudioSolution::GetSolutionDirectory() const
     return dir;
 }
 
-std::filesystem::path StudioSolution::GetSolutionFilePath() const
-{
+std::filesystem::path StudioSolution::GetSolutionFilePath() const {
     return GetSolutionDirectory() / (solutionName + ".wws");
 }
 

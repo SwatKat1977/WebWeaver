@@ -22,6 +22,7 @@ Copyright 2025 SwatKat1977
 #include <filesystem>
 #include <fstream>
 #include <string>
+#include <utility>
 #include <vector>
 #include "StudioMainFrame.h"
 #include "BitmapUtils.h"
@@ -535,7 +536,8 @@ void StudioMainFrame::OnNewSolutionEvent(wxCommandEvent& event) {
 
             ShowSolutionExplorerTree();
 
-            recentSolutions_.AddSolution(currentSolution_->GetSolutionFilePath());
+            recentSolutions_.AddSolution(
+                currentSolution_->GetSolutionFilePath());
             recentSolutions_.Save();
             RebuildRecentSolutionsMenu();
 
@@ -578,11 +580,9 @@ void StudioMainFrame::OnOpenSolutionEvent(wxCommandEvent& event) {
         wxEmptyString,
         wxEmptyString,
         "Webweaver Solution (*.wws)|*.wws",
-        wxFD_OPEN | wxFD_FILE_MUST_EXIST
-    );
+        wxFD_OPEN | wxFD_FILE_MUST_EXIST);
 
-    if (dlg.ShowModal() == wxID_OK)
-    {
+    if (dlg.ShowModal() == wxID_OK) {
         wxString path = dlg.GetPath();
 
         if (OpenSolution(path.ToStdString())) {
@@ -778,8 +778,7 @@ void StudioMainFrame::RebuildRecentSolutionsMenu() {
     // Remove all existing items
     while (recentSolutionsMenu_->GetMenuItemCount() > 0) {
         recentSolutionsMenu_->Destroy(
-            recentSolutionsMenu_->FindItemByPosition(0)
-        );
+            recentSolutionsMenu_->FindItemByPosition(0));
     }
 
     int id = ID_RECENT_SOLUTION_BASE;
@@ -794,14 +793,12 @@ void StudioMainFrame::RebuildRecentSolutionsMenu() {
     }
 }
 
-void StudioMainFrame::OnOpenRecentSolutionEvent(wxCommandEvent& evt)
-{
+void StudioMainFrame::OnOpenRecentSolutionEvent(wxCommandEvent& evt) {
     int index = evt.GetId() - ID_RECENT_SOLUTION_BASE;
     OpenSolution(recentSolutions_.GetSolutions()[index]);
 }
 
-bool StudioMainFrame::OpenSolution(const std::filesystem::path& solutionFile)
-{
+bool StudioMainFrame::OpenSolution(const std::filesystem::path& solutionFile) {
     if (!std::filesystem::exists(solutionFile)) {
         wxMessageBox("Solution file does not exist.",
             "Open Solution",

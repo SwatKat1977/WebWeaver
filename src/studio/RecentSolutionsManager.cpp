@@ -17,15 +17,15 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#include <fstream>
 #include <wx/stdpaths.h>
+#include <fstream>
+#include <string>
 #include <nlohmann/json.hpp>
 #include "RecentSolutionsManager.h"
 
 namespace webweaver::studio {
 
-void RecentSolutionsManager::Load()
-{
+void RecentSolutionsManager::Load() {
     recent_.clear();
 
     std::ifstream in(GetStoragePath());
@@ -43,8 +43,7 @@ void RecentSolutionsManager::Load()
     }
 }
 
-void RecentSolutionsManager::Save() const
-{
+void RecentSolutionsManager::Save() const {
     nlohmann::json j;
     j["version"] = 1;
 
@@ -59,8 +58,7 @@ void RecentSolutionsManager::Save() const
 }
 
 void RecentSolutionsManager::AddSolution(
-    const std::filesystem::path& path)
-{
+    const std::filesystem::path& path) {
     auto it = std::find(recent_.begin(), recent_.end(), path);
     if (it != recent_.end())
         recent_.erase(it);
