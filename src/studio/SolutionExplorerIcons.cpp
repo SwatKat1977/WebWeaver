@@ -22,6 +22,9 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 #include "../artworkResources/studio/explorerTreeIcons/recordings_icon.h"
 #include "../artworkResources/studio/explorerTreeIcons/root_icon.h"
 
+#include "../artworkResources/studio/explorerTreeIcons/pages_icon.h"
+#include "../artworkResources/studio/explorerTreeIcons/scripts_icon.h"
+
 namespace webweaver::studio {
 
 static wxBitmap LoadIcon(const unsigned char* png, const unsigned int size) {
@@ -41,6 +44,16 @@ wxBitmap LoadRootIcon() {
 wxBitmap LoadRecordingsFilterIcon() {
     return LoadIcon(RECORDINGS_ICON,
                     RECORDINGS_ICON_SIZE);
+}
+
+wxBitmap LoadPagesFilterIcon() {
+    return LoadIcon(PAGES_ICON,
+                    PAGES_ICON_SIZE);
+}
+
+wxBitmap LoadScriptsFilterIcon() {
+    return LoadIcon(SCRIPTS_ICON,
+                    SCRIPTS_ICON_SIZE);
 }
 
 }   // namespace webweaver::studio

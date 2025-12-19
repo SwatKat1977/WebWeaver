@@ -75,3 +75,11 @@ png_to_header("puzzle.png",
 png_to_header("movie-recording.png",
     "recordings_icon.h",
     "recordings_icon")
+
+png_to_header("landing-page.png",
+    "pages_icon.h",
+    "pages_icon")
+
+png_to_header("script.png",
+    "scripts_icon.h",
+    "scripts_icon")

@@ -28,6 +28,10 @@ wxBitmap LoadRootIcon();
 
 wxBitmap LoadRecordingsFilterIcon();
 
+wxBitmap LoadPagesFilterIcon();
+
+wxBitmap LoadScriptsFilterIcon();
+
 }   // namespace webweaver::studio
 
 #endif  // SOLUTIONCREATEWIZARD_BROWSERICONS_H_

@@ -247,8 +247,12 @@ void StudioMainFrame::CreateSolutionPanel() {
     // Load bitmaps (replace with your actual loaders)
     solutionExplorericonSolution_ = solutionExplorerTreeImages_->Add(
         LoadRootIcon());
-    solutionExplorericonRecording_ = solutionExplorerTreeImages_->Add(
+    solutionExplorericonRecordings_ = solutionExplorerTreeImages_->Add(
         LoadRecordingsFilterIcon());
+    solutionExplorericonPages_ = solutionExplorerTreeImages_->Add(
+        LoadPagesFilterIcon());
+    solutionExplorericonScripts_ = solutionExplorerTreeImages_->Add(
+        LoadScriptsFilterIcon());
 
     solutionExplorerTree_ = new wxTreeCtrl(
         solutionExplorerPanel_,
@@ -655,14 +659,20 @@ void StudioMainFrame::PopulateSolutionExplorerTree()
         solutionExplorericonSolution_,
         solutionExplorericonSolution_);
 
-    solutionExplorerTree_->AppendItem(root, "Pages");
+    solutionExplorerTree_->AppendItem(
+        root,
+        "Pages",
+        solutionExplorericonPages_);
 
     solutionExplorerTree_->AppendItem(
         root,
         "Recordings",
-        solutionExplorericonRecording_);
+        solutionExplorericonRecordings_);
 
-    solutionExplorerTree_->AppendItem(root, "Scripts");
+    solutionExplorerTree_->AppendItem(
+        root,
+        "Scripts",
+        solutionExplorericonScripts_);
 
     solutionExplorerTree_->ExpandAll();
 }

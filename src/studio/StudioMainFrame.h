@@ -52,7 +52,9 @@ class StudioMainFrame : public wxFrame {
     wxTreeCtrl* solutionExplorerTree_;
     wxImageList* solutionExplorerTreeImages_;
     int solutionExplorericonSolution_ = -1;
-    int solutionExplorericonRecording_ = -1;
+    int solutionExplorericonRecordings_ = -1;
+    int solutionExplorericonPages_ = -1;
+    int solutionExplorericonScripts_ = -1;
 
     // Log area in inspector
     wxTextCtrl* inspectorLog_ = nullptr;
