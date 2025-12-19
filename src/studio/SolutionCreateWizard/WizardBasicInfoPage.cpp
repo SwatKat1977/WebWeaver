@@ -98,6 +98,16 @@ WizardBasicInfoPage::WizardBasicInfoPage(wxWindow* parent,
     inputAreaSizer->Add(txtSolutionName_, 1, wxEXPAND);
     inputAreaSizer->AddSpacer(0);
 
+    // Add validator to solution name input -- only allow letters, spaces,
+    // underscores, and hyphens.
+    wxTextValidator validator(wxFILTER_INCLUDE_CHAR_LIST);
+    validator.AddCharIncludes(
+        "abcdefghijklmnopqrstuvwxyz"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        " _-"
+    );
+    txtSolutionName_->SetValidator(validator);
+
     // -----
     // Row 2 : Solution location
     // -----
@@ -170,6 +180,17 @@ bool WizardBasicInfoPage::ValidateFields() {
         wxMessageBox("Please enter a solution name.",
                      "Validation error",
                      wxICON_WARNING);
+        return false;
+    }
+
+    if (!txtSolutionName_->Validate()) {
+        wxMessageBox(
+            "Only letters, spaces, underscores and hyphens are allowed.",
+            "Invalid input",
+            wxICON_WARNING | wxOK,
+            this
+        );
+        txtSolutionName_->SetFocus();
         return false;
     }
 
