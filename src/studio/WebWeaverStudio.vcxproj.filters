@@ -82,6 +82,7 @@
       <Filter>ImgResources\Toolbar</Filter>
     </ClInclude>
     <ClInclude Include="SolutionExplorerIcons.h" />
+    <ClInclude Include="FilesystemUtils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BitmapUtils.cpp" />
@@ -107,6 +108,7 @@
       <Filter>SolutionCreateWizard</Filter>
     </ClCompile>
     <ClCompile Include="SolutionExplorerIcons.cpp" />
+    <ClCompile Include="FilesystemUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VersionInfo.rc" />

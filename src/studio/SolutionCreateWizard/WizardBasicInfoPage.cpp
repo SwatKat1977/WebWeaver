@@ -22,6 +22,7 @@ Copyright 2025 SwatKat1977
 #include <vector>
 #include "SolutionCreateWizard/WizardBasicInfoPage.h"
 #include "WizardStepIndicator.h"
+#include "FilesystemUtils.h"
 
 
 namespace webweaver::studio {
@@ -175,6 +176,32 @@ bool WizardBasicInfoPage::ValidateFields() {
     wxString solutionDir = txtSolutionDir_->GetValue().Strip(wxString::both);
     if (solutionDir.IsEmpty()) {
         wxMessageBox("Please enter a solution location.",
+                     "Validation error",
+                     wxICON_WARNING);
+        return false;
+    }
+
+    auto solutionDirStr = std::filesystem::path(solutionDir.ToStdString());
+
+#if defined(WEBWEAVER_PLATFORM_WIN64)
+    auto p = solutionDirStr.lexically_normal();
+
+    if (p.root_name() == "C:" &&
+        p.has_root_directory() &&
+        p.root_path() == p) {
+        wxMessageBox(
+            "The root of the C: drive is not writable.\n"
+            "Please choose a folder inside your Documents or AppData directory.",
+            "Permission error",
+            wxICON_WARNING
+        );
+        return false;
+    }
+#endif
+
+    if (!isdDirectoryWritable(solutionDirStr)) {
+        wxMessageBox("The specified solution location is not valid/writable."
+                     " Please choose another location.",
                      "Validation error",
                      wxICON_WARNING);
         return false;
