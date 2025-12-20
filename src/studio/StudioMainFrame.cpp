@@ -644,58 +644,6 @@ void StudioMainFrame::UpdateToolbarState() {
     toolbar_->Refresh();
 }
 
-#ifdef __OLD_CODE
-void StudioMainFrame::PopulateSolutionExplorerTree() {
-    solutionExplorerTree_->DeleteAllItems();
-
-    const auto& solution = *currentSolution_;
-
-    wxTreeItemId root = solutionExplorerTree_->AddRoot(
-        solution.solutionName,
-        solutionExplorericonSolution_,
-        solutionExplorericonSolution_);
-
-    solutionExplorerTree_->AppendItem(
-        root,
-        "Pages",
-        solutionExplorericonPages_);
-
-    solutionExplorerTree_->AppendItem(
-        root,
-        "Recordings",
-        solutionExplorericonRecordings_);
-
-    solutionExplorerTree_->AppendItem(
-        root,
-        "Scripts",
-        solutionExplorericonScripts_);
-
-    solutionExplorerTree_->ExpandAll();
-}
-#endif
-
-#ifdef __OLD_CODE__
-void StudioMainFrame::ShowSolutionExplorerTree() {
-    solutionExplorerPlaceholder_->Hide();
-    solutionExplorerTree_->Show();
-
-    PopulateSolutionExplorerTree();
-
-    solutionExplorerPanel_->Layout();
-}
-#endif
-
-#ifdef __OLD_CODE__
-void StudioMainFrame::ShowNoSolutionPlaceholder() {
-    solutionExplorerTree_->Hide();
-    solutionExplorerTree_->DeleteAllItems();
-
-    solutionExplorerPlaceholder_->Show();
-
-    solutionExplorerPanel_->Layout();
-}
-#endif
-
 bool StudioMainFrame::SaveSolutionToDisk(
     const StudioSolution& solution) {
     std::filesystem::path solutionDir = solution.solutionDirectory;
@@ -792,7 +740,6 @@ bool StudioMainFrame::OpenSolution(const std::filesystem::path& solutionFile) {
     stateController_->OnSolutionLoaded();
 
     solutionExplorerPanel_->ShowSolution(currentSolution_.value());
-    //PopulateSolutionExplorerTree();
     recentSolutions_.AddSolution(solutionFile);
     recentSolutions_.Save();
     RebuildRecentSolutionsMenu();
