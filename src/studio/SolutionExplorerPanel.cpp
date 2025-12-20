@@ -101,8 +101,9 @@ void SolutionExplorerPanel::ShowSolution(const StudioSolution& solution)
 void SolutionExplorerPanel::PopulateEmptySolution(
     const StudioSolution& solution)
 {
+    std::string solutionName = solution.solutionName;
     wxTreeItemId root = tree_->AddRoot(
-        solution.solutionName,
+        "Solution '" + solutionName + "'",
         iconSolution_,
         iconSolution_);
 
