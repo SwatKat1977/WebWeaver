@@ -24,8 +24,10 @@ Copyright 2025 SwatKat1977
 #include "WizardStepIndicator.h"
 #include "FilesystemUtils.h"
 
-
 namespace webweaver::studio {
+
+constexpr int MIN_SOLUTION_NAME_LENGTH = 60;
+
 
 WizardBasicInfoPage::WizardBasicInfoPage(wxWindow* parent,
                                          ProjectCreateWizardData* data,
@@ -97,6 +99,7 @@ WizardBasicInfoPage::WizardBasicInfoPage(wxWindow* parent,
     txtSolutionName_ = new wxTextCtrl(inputAreaPanel, wxID_ANY);
     inputAreaSizer->Add(txtSolutionName_, 1, wxEXPAND);
     inputAreaSizer->AddSpacer(0);
+    txtSolutionName_->SetMaxLength(MIN_SOLUTION_NAME_LENGTH);
 
     // Add validator to solution name input -- only allow letters, spaces,
     // underscores, and hyphens.
@@ -104,6 +107,7 @@ WizardBasicInfoPage::WizardBasicInfoPage(wxWindow* parent,
     validator.AddCharIncludes(
         "abcdefghijklmnopqrstuvwxyz"
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "0123456789"
         " _-");
     txtSolutionName_->SetValidator(validator);
 
