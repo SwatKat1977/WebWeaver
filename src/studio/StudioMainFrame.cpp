@@ -244,56 +244,7 @@ void StudioMainFrame::CreateMainToolbar() {
 
 void StudioMainFrame::CreateSolutionPanel() {
     // Solution panel (left top)
-    solutionExplorerPanel_ = new wxPanel(this);
-    wxBoxSizer* solutionSizer = new wxBoxSizer(wxVERTICAL);
-
-    // --- Placeholder (no solution loaded) ---
-    solutionExplorerPlaceholder_ = new wxStaticText(
-        solutionExplorerPanel_,
-        wxID_ANY,
-        "No solution loaded\n\nCreate or open a solution to begin",
-        wxDefaultPosition,
-        wxDefaultSize,
-        wxALIGN_CENTER);
-
-    solutionExplorerPlaceholder_->SetForegroundColour(
-        wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT));
-
-    solutionExplorerTreeImages_ = new wxImageList(16, 16, true);
-
-    // Load bitmaps (replace with your actual loaders)
-    solutionExplorericonSolution_ = solutionExplorerTreeImages_->Add(
-        LoadRootIcon());
-    solutionExplorericonRecordings_ = solutionExplorerTreeImages_->Add(
-        LoadRecordingsFilterIcon());
-    solutionExplorericonPages_ = solutionExplorerTreeImages_->Add(
-        LoadPagesFilterIcon());
-    solutionExplorericonScripts_ = solutionExplorerTreeImages_->Add(
-        LoadScriptsFilterIcon());
-
-    solutionExplorerTree_ = new wxTreeCtrl(
-        solutionExplorerPanel_,
-        wxID_ANY,
-        wxDefaultPosition,
-        wxDefaultSize,
-        wxTR_HAS_BUTTONS |
-        wxTR_NO_LINES |
-        wxTR_FULL_ROW_HIGHLIGHT |
-        wxTR_DEFAULT_STYLE);
-
-    solutionExplorerTree_->AssignImageList(solutionExplorerTreeImages_);
-
-    // Layout
-    solutionSizer->Add(solutionExplorerPlaceholder_, 1, wxEXPAND | wxALL, 10);
-    solutionSizer->Add(solutionExplorerTree_, 1, wxEXPAND | wxALL, 0);
-
-    solutionExplorerTree_->ExpandAll();
-
-    solutionExplorerPanel_->SetSizer(solutionSizer);
-
-    // Start with no solution
-    solutionExplorerTree_->Hide();
-    solutionExplorerPlaceholder_->Show();
+    solutionExplorerPanel_ = new SolutionExplorerPanel(this);
 
     auiMgr_.AddPane(solutionExplorerPanel_,
                      wxAuiPaneInfo()
@@ -534,7 +485,7 @@ void StudioMainFrame::OnNewSolutionEvent(wxCommandEvent& event) {
 
             stateController_->OnSolutionLoaded();
 
-            ShowSolutionExplorerTree();
+            solutionExplorerPanel_->ShowSolution(currentSolution_.value());
 
             recentSolutions_.AddSolution(
                 currentSolution_->GetSolutionFilePath());
@@ -570,7 +521,7 @@ void StudioMainFrame::OnCloseSolutionEvent(wxCommandEvent& event) {
     currentSolution_.reset();
     stateController_->OnSolutionClosed();
 
-    ShowNoSolutionPlaceholder();
+    solutionExplorerPanel_->ShowNoSolution();
 }
 
 void StudioMainFrame::OnOpenSolutionEvent(wxCommandEvent& event) {
@@ -587,7 +538,7 @@ void StudioMainFrame::OnOpenSolutionEvent(wxCommandEvent& event) {
 
         if (OpenSolution(path.ToStdString())) {
             stateController_->OnSolutionLoaded();
-            ShowSolutionExplorerTree();
+            solutionExplorerPanel_->ShowSolution(currentSolution_.value());
         }
     }
 }
@@ -693,52 +644,6 @@ void StudioMainFrame::UpdateToolbarState() {
     toolbar_->Refresh();
 }
 
-void StudioMainFrame::PopulateSolutionExplorerTree() {
-    solutionExplorerTree_->DeleteAllItems();
-
-    const auto& solution = *currentSolution_;
-
-    wxTreeItemId root = solutionExplorerTree_->AddRoot(
-        solution.solutionName,
-        solutionExplorericonSolution_,
-        solutionExplorericonSolution_);
-
-    solutionExplorerTree_->AppendItem(
-        root,
-        "Pages",
-        solutionExplorericonPages_);
-
-    solutionExplorerTree_->AppendItem(
-        root,
-        "Recordings",
-        solutionExplorericonRecordings_);
-
-    solutionExplorerTree_->AppendItem(
-        root,
-        "Scripts",
-        solutionExplorericonScripts_);
-
-    solutionExplorerTree_->ExpandAll();
-}
-
-void StudioMainFrame::ShowSolutionExplorerTree() {
-    solutionExplorerPlaceholder_->Hide();
-    solutionExplorerTree_->Show();
-
-    PopulateSolutionExplorerTree();
-
-    solutionExplorerPanel_->Layout();
-}
-
-void StudioMainFrame::ShowNoSolutionPlaceholder() {
-    solutionExplorerTree_->Hide();
-    solutionExplorerTree_->DeleteAllItems();
-
-    solutionExplorerPlaceholder_->Show();
-
-    solutionExplorerPanel_->Layout();
-}
-
 bool StudioMainFrame::SaveSolutionToDisk(
     const StudioSolution& solution) {
     std::filesystem::path solutionDir = solution.solutionDirectory;
@@ -834,7 +739,7 @@ bool StudioMainFrame::OpenSolution(const std::filesystem::path& solutionFile) {
 
     stateController_->OnSolutionLoaded();
 
-    PopulateSolutionExplorerTree();
+    solutionExplorerPanel_->ShowSolution(currentSolution_.value());
     recentSolutions_.AddSolution(solutionFile);
     recentSolutions_.Save();
     RebuildRecentSolutionsMenu();

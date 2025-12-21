@@ -28,6 +28,7 @@ Copyright 2025 SwatKat1977
 #include "StudioStateController.h"
 #include "StudioSolution.h"
 #include "RecentSolutionsManager.h"
+#include "SolutionExplorerPanel.h"
 
 namespace webweaver::studio {
 
@@ -48,16 +49,7 @@ class StudioMainFrame : public wxFrame {
     StudioState currentState_ = StudioState::NoSolution;
     std::optional<StudioSolution> currentSolution_;
     RecentSolutionsManager recentSolutions_;
-
-    // Solution Explorer panel and controls
-    wxPanel* solutionExplorerPanel_;
-    wxStaticText* solutionExplorerPlaceholder_;
-    wxTreeCtrl* solutionExplorerTree_;
-    wxImageList* solutionExplorerTreeImages_;
-    int solutionExplorericonSolution_ = -1;
-    int solutionExplorericonRecordings_ = -1;
-    int solutionExplorericonPages_ = -1;
-    int solutionExplorericonScripts_ = -1;
+    SolutionExplorerPanel* solutionExplorerPanel_;
 
     // Log area in inspector
     wxTextCtrl* inspectorLog_ = nullptr;
@@ -112,12 +104,6 @@ class StudioMainFrame : public wxFrame {
 
     // NOLINTNEXTLINE(runtime/references)
     void OnInspectorEvent(wxCommandEvent& event);
-
-
-    // Solution Explorer Helper Methods:
-    void PopulateSolutionExplorerTree();
-    void ShowSolutionExplorerTree();
-    void ShowNoSolutionPlaceholder();
 
     bool SaveSolutionToDisk(const StudioSolution& solution);
     void RebuildRecentSolutionsMenu();
