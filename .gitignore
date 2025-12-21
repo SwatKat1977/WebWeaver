@@ -20,3 +20,10 @@ build
 x64
 *.user
 src/studio/VersionInfo.aps
+
+#### Linux/Mac ####
+src/cmake_install.cmake
+src/CMakeCache.txt
+src/Makefile
+src/CMakeFiles
+src/src

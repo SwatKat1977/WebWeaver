@@ -5,16 +5,22 @@ include(${wxWidgets_USE_FILE})
 
 add_executable(webweaver_studio
     BitmapUtils.cpp
+    FilesystemUtils.cpp
     Platform.cpp
+    RecentSolutionsManager.cpp
+    SolutionExplorerIcons.cpp
+    SolutionExplorerPanel.cpp
     studio.cpp
     StudioMainFrame.cpp
+    StudioSolution.cpp
+    StudioStateController.cpp
     ToolbarIcons.cpp
     WizardStepIndicator.cpp
-    ProjectCreateWizard/BrowserIcons.cpp
-    ProjectCreateWizard/WizardBasicInfoPage.cpp
-    ProjectCreateWizard/WizardBehaviourPage.cpp
-    ProjectCreateWizard/WizardFinishPage.cpp
-    ProjectCreateWizard/WizardSelectBrowserPage.cpp
+    SolutionCreateWizard/BrowserIcons.cpp
+    SolutionCreateWizard/WizardBasicInfoPage.cpp
+    SolutionCreateWizard/WizardBehaviourPage.cpp
+    SolutionCreateWizard/WizardFinishPage.cpp
+    SolutionCreateWizard/WizardSelectBrowserPage.cpp
 )
 
 if(WIN32)
@@ -28,6 +34,10 @@ endif()
 target_include_directories(webweaver_studio PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ProjectCreate
+)
+
+target_include_directories(webweaver_studio PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../3rd_party
 )
 
 target_link_libraries(webweaver_studio
