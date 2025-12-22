@@ -84,6 +84,8 @@ struct SolutionLoadResult {
 
 std::string SolutionLoadErrorToStr(SolutionLoadError error);
 
+std::string SolutionDirectoryErrorToStr(SolutionDirectoryCreateStatus err);
+
 }   // namespace webweaver::studio
 
 #endif  // STUDIOSOLUTION_H_

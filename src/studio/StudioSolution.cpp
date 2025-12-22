@@ -169,4 +169,24 @@ SolutionDirectoryCreateStatus StudioSolution::EnsureDirectoryStructure() const {
     return SolutionDirectoryCreateStatus::None;
 }
 
+std::string SolutionDirectoryErrorToStr(SolutionDirectoryCreateStatus err) {
+    switch (err) {
+    case SolutionDirectoryCreateStatus::CannotCreateRoot:
+        return "Unable to create the solution directory.";
+
+    case SolutionDirectoryCreateStatus::CannotCreatePages:
+        return "Unable to create the Pages folder.";
+
+    case SolutionDirectoryCreateStatus::CannotCreateScripts:
+        return "Unable to create the Scripts folder.";
+
+    case SolutionDirectoryCreateStatus::CannotCreateRecordings:
+        return "Unable to create the Recordings folder.";
+
+    default:
+        return {};
+    }
+}
+
+
 }   // namespace webweaver::studio
