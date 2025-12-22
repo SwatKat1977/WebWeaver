@@ -23,6 +23,10 @@ namespace webweaver::studio {
 
 constexpr int JSON_VERSION = 1;
 
+const std::string PAGES_DIRECTORY = "pages";
+const std::string SCRIPTS_DIRECTORY = "scripts";
+const std::string RECORDINGS_DIRECTORY = "recordings";
+
 nlohmann::json StudioSolution::ToJson() const {
     return {
         { "version", JSON_VERSION },
@@ -120,6 +124,18 @@ std::string SolutionLoadErrorToStr(SolutionLoadError error) {
     }
 
     return message;
+}
+
+std::filesystem::path StudioSolution::GetPagesDirectory() const {
+    return GetSolutionDirectory() / PAGES_DIRECTORY;
+}
+
+std::filesystem::path StudioSolution::GetScriptsDirectory() const {
+    return GetSolutionDirectory() / SCRIPTS_DIRECTORY;
+}
+
+std::filesystem::path StudioSolution::GetRecordingsDirectory() const {
+    return GetSolutionDirectory() / RECORDINGS_DIRECTORY;
 }
 
 }   // namespace webweaver::studio

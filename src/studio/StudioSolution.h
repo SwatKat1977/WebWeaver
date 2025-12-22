@@ -59,6 +59,10 @@ struct StudioSolution {
     std::filesystem::path GetSolutionDirectory() const;
     std::filesystem::path GetSolutionFilePath() const;
 
+    std::filesystem::path GetPagesDirectory() const;
+    std::filesystem::path GetScriptsDirectory() const;
+    std::filesystem::path GetRecordingsDirectory() const;
+
     nlohmann::json ToJson() const;
     static SolutionLoadResult FromJson(const nlohmann::json& rawJSON);
 };
