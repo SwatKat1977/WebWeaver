@@ -138,4 +138,35 @@ std::filesystem::path StudioSolution::GetRecordingsDirectory() const {
     return GetSolutionDirectory() / RECORDINGS_DIRECTORY;
 }
 
+SolutionDirectoryCreateStatus StudioSolution::EnsureDirectoryStructure() const {
+    std::error_code errCode;
+
+    // Root solution directory
+    const auto root = GetSolutionDirectory();
+    std::filesystem::create_directories(root, errCode);
+    if (errCode) {
+        return SolutionDirectoryCreateStatus::CannotCreateRoot;
+    }
+
+    // Pages
+    std::filesystem::create_directories(GetPagesDirectory(), errCode);
+    if (errCode) {
+        return SolutionDirectoryCreateStatus::CannotCreatePages;
+    }
+
+    // Scripts
+    std::filesystem::create_directories(GetScriptsDirectory(), errCode);
+    if (errCode) {
+        return SolutionDirectoryCreateStatus::CannotCreateScripts;
+    }
+
+    // Recordings
+    std::filesystem::create_directories(GetRecordingsDirectory(), errCode);
+    if (errCode) {
+        return SolutionDirectoryCreateStatus::CannotCreateRecordings;
+    }
+
+    return SolutionDirectoryCreateStatus::None;
+}
+
 }   // namespace webweaver::studio

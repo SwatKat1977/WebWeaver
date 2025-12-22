@@ -35,6 +35,14 @@ enum class SolutionLoadError {
     MissingRequiredField
 };
 
+enum class SolutionDirectoryCreateStatus {
+    None,
+    CannotCreateRoot,
+    CannotCreatePages,
+    CannotCreateScripts,
+    CannotCreateRecordings
+};
+
 struct SolutionLoadResult;
 
 struct StudioSolution {
@@ -62,6 +70,8 @@ struct StudioSolution {
     std::filesystem::path GetPagesDirectory() const;
     std::filesystem::path GetScriptsDirectory() const;
     std::filesystem::path GetRecordingsDirectory() const;
+
+    SolutionDirectoryCreateStatus EnsureDirectoryStructure() const;
 
     nlohmann::json ToJson() const;
     static SolutionLoadResult FromJson(const nlohmann::json& rawJSON);
