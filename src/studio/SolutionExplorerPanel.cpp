@@ -109,7 +109,12 @@ void SolutionExplorerPanel::PopulateEmptySolution(
 
     AppendEmptyNode(root, "Pages", iconPages_);
     AppendEmptyNode(root, "Scripts", iconScripts_);
-    AppendEmptyNode(root, "Recordings", iconRecordings_);
+
+    wxTreeItemId recordings = tree_->AppendItem(root,
+                                                "Recordings",
+                                                iconRecordings_,
+                                                iconRecordings_);
+    PopulateRecordings(solution, recordings);
 }
 
 wxTreeItemId SolutionExplorerPanel::AppendEmptyNode(
@@ -120,6 +125,27 @@ wxTreeItemId SolutionExplorerPanel::AppendEmptyNode(
     auto node = tree_->AppendItem(parent, label, icon, icon);
     tree_->AppendItem(node, "(empty)");
     return node;
+}
+
+void SolutionExplorerPanel::PopulateRecordings(
+    const StudioSolution& solution,
+    const wxTreeItemId& recordingsNode) {
+    tree_->DeleteChildren(recordingsNode);
+
+    auto files = solution.DiscoverRecordingFiles();
+
+    if (files.empty()) {
+        tree_->AppendItem(recordingsNode, "(empty)");
+        return;
+    }
+
+    for (const auto& file : files) {
+        tree_->AppendItem(
+            recordingsNode,
+            file.stem().string(), // filename without .json
+            iconRecordings_,
+            iconRecordings_);
+    }
 }
 
 }   // namespace webweaver::studio
