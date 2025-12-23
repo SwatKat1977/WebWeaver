@@ -717,15 +717,6 @@ bool StudioMainFrame::OpenSolution(const std::filesystem::path& solutionFile) {
     // Move into current solution
     SolutionLoadResult result = StudioSolution::FromJson(json);
 
-    // Ensure directory structure (safe, idempotent)
-    if (currentSolution_->EnsureDirectoryStructure() !=
-        SolutionDirectoryCreateStatus::None) {
-        wxMessageBox("Failed to prepare solution folders.",
-                     "Open Solution", wxICON_ERROR);
-        currentSolution_.reset();
-        return false;
-    }
-
     if (!result.solution.has_value()) {
         wxMessageBox(
             SolutionLoadErrorToStr(result.error),
@@ -735,6 +726,15 @@ bool StudioMainFrame::OpenSolution(const std::filesystem::path& solutionFile) {
     }
 
     currentSolution_ = std::move(result.solution.value());
+
+    // Ensure directory structure (safe, idempotent)
+    if (currentSolution_->EnsureDirectoryStructure() !=
+        SolutionDirectoryCreateStatus::None) {
+        wxMessageBox("Failed to prepare solution folders.",
+                     "Open Solution", wxICON_ERROR);
+        currentSolution_.reset();
+        return false;
+    }
 
     // Update state + UI
     stateController_->OnSolutionLoaded();
