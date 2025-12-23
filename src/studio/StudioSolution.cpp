@@ -139,34 +139,45 @@ std::filesystem::path StudioSolution::GetRecordingsDirectory() const {
 }
 
 SolutionDirectoryCreateStatus StudioSolution::EnsureDirectoryStructure() const {
-    std::error_code errCode;
+    std::error_code ec;
 
-    // Root solution directory
-    const auto root = GetSolutionDirectory();
-    std::filesystem::create_directories(root, errCode);
-    if (errCode) {
-        return SolutionDirectoryCreateStatus::CannotCreateRoot;
-    }
+    ec.clear();
+    std::filesystem::create_directories(GetSolutionDirectory(), ec);
+    if (ec) return SolutionDirectoryCreateStatus::CannotCreateRoot;
 
-    // Pages
-    std::filesystem::create_directories(GetPagesDirectory(), errCode);
-    if (errCode) {
-        return SolutionDirectoryCreateStatus::CannotCreatePages;
-    }
+    ec.clear();
+    std::filesystem::create_directories(GetPagesDirectory(), ec);
+    if (ec) return SolutionDirectoryCreateStatus::CannotCreatePages;
 
-    // Scripts
-    std::filesystem::create_directories(GetScriptsDirectory(), errCode);
-    if (errCode) {
-        return SolutionDirectoryCreateStatus::CannotCreateScripts;
-    }
+    ec.clear();
+    std::filesystem::create_directories(GetScriptsDirectory(), ec);
+    if (ec) return SolutionDirectoryCreateStatus::CannotCreateScripts;
 
-    // Recordings
-    std::filesystem::create_directories(GetRecordingsDirectory(), errCode);
-    if (errCode) {
-        return SolutionDirectoryCreateStatus::CannotCreateRecordings;
-    }
+    ec.clear();
+    std::filesystem::create_directories(GetRecordingsDirectory(), ec);
+    if (ec) return SolutionDirectoryCreateStatus::CannotCreateRecordings;
 
     return SolutionDirectoryCreateStatus::None;
+}
+
+std::vector<std::filesystem::path> StudioSolution::DiscoverRecordingFiles() const
+{
+    std::vector<std::filesystem::path> recordings;
+
+    auto dir = GetRecordingsDirectory();
+    if (!std::filesystem::exists(dir))
+        return recordings;
+
+    for (const auto& entry : std::filesystem::directory_iterator(dir)) {
+        if (!entry.is_regular_file())
+            continue;
+
+        if (entry.path().extension() == ".wwrec") {
+            recordings.push_back(entry.path());
+        }
+    }
+
+    return recordings;
 }
 
 std::string SolutionDirectoryErrorToStr(SolutionDirectoryCreateStatus err) {
