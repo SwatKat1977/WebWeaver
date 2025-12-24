@@ -19,9 +19,11 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
 #ifndef STUDIOSOLUTION_H_
 #define STUDIOSOLUTION_H_
+#include <filesystem>
 #include <string>
 #include <optional>
 #include <utility>
+#include <vector>
 #include <nlohmann/json.hpp>
 
 namespace webweaver::studio {
@@ -33,6 +35,20 @@ enum class SolutionLoadError {
     UnsupportedVersion,
     MissingSolutionObject,
     MissingRequiredField
+};
+
+enum class SolutionDirectoryCreateStatus {
+    None,
+    CannotCreateRoot,
+    CannotCreatePages,
+    CannotCreateScripts,
+    CannotCreateRecordings
+};
+
+struct RecordingMetadata {
+    std::string id;
+    std::string name;
+    std::filesystem::path filePath;
 };
 
 struct SolutionLoadResult;
@@ -59,6 +75,16 @@ struct StudioSolution {
     std::filesystem::path GetSolutionDirectory() const;
     std::filesystem::path GetSolutionFilePath() const;
 
+    std::filesystem::path GetPagesDirectory() const;
+    std::filesystem::path GetScriptsDirectory() const;
+    std::filesystem::path GetRecordingsDirectory() const;
+
+    SolutionDirectoryCreateStatus EnsureDirectoryStructure() const;
+
+    std::vector<RecordingMetadata> DiscoverRecordingFiles() const;
+    std::optional<RecordingMetadata> LoadRecordingMetadata(
+        const std::filesystem::path& file) const;
+
     nlohmann::json ToJson() const;
     static SolutionLoadResult FromJson(const nlohmann::json& rawJSON);
 };
@@ -69,6 +95,8 @@ struct SolutionLoadResult {
 };
 
 std::string SolutionLoadErrorToStr(SolutionLoadError error);
+
+std::string SolutionDirectoryErrorToStr(SolutionDirectoryCreateStatus err);
 
 }   // namespace webweaver::studio
 

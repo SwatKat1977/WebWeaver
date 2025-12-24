@@ -33,6 +33,7 @@ Copyright 2025 SwatKat1977
 #include "SolutionCreateWizard/WizardFinishPage.h"
 #include "ProjectWizardControlIDs.h"
 #include "SolutionExplorerIcons.h"
+#include "StudioSolution.h"
 
 namespace webweaver::studio {
 
@@ -644,40 +645,28 @@ void StudioMainFrame::UpdateToolbarState() {
     toolbar_->Refresh();
 }
 
-bool StudioMainFrame::SaveSolutionToDisk(
-    const StudioSolution& solution) {
-    std::filesystem::path solutionDir = solution.solutionDirectory;
-
-    // Create solution directory if requested
-    if (solution.createDirectoryForSolution) {
-        solutionDir /= solution.solutionName;
-    }
-
-    std::error_code ec;
-    std::filesystem::create_directories(solutionDir, ec);
-    if (ec) {
+bool StudioMainFrame::SaveSolutionToDisk(const StudioSolution& solution) {
+    // Ensure solution + subdirectories exist
+    if (solution.EnsureDirectoryStructure() !=
+        SolutionDirectoryCreateStatus::None) {
         return false;
     }
 
-    // Build .wws file path
-    std::filesystem::path solutionFile =
-        solutionDir / (solution.solutionName + ".wws");
+    const std::filesystem::path solutionFile =
+        solution.GetSolutionFilePath();
 
     // Serialize to JSON
-    nlohmann::json j = solution.ToJson();
+    const nlohmann::json j = solution.ToJson();
 
-    // Write to file
     std::ofstream out(solutionFile, std::ios::trunc);
     if (!out.is_open()) {
         return false;
     }
 
-    // Pretty-print with indentation
     out << j.dump(4);
-    out.close();
-
     return true;
 }
+
 
 void StudioMainFrame::RebuildRecentSolutionsMenu() {
     // Remove all existing items
@@ -725,6 +714,7 @@ bool StudioMainFrame::OpenSolution(const std::filesystem::path& solutionFile) {
         return false;
     }
 
+    // Move into current solution
     SolutionLoadResult result = StudioSolution::FromJson(json);
 
     if (!result.solution.has_value()) {
@@ -737,9 +727,20 @@ bool StudioMainFrame::OpenSolution(const std::filesystem::path& solutionFile) {
 
     currentSolution_ = std::move(result.solution.value());
 
-    stateController_->OnSolutionLoaded();
+    // Ensure directory structure (safe, idempotent)
+    if (currentSolution_->EnsureDirectoryStructure() !=
+        SolutionDirectoryCreateStatus::None) {
+        wxMessageBox("Failed to prepare solution folders.",
+                     "Open Solution", wxICON_ERROR);
+        currentSolution_.reset();
+        return false;
+    }
 
+    // Update state + UI
+    stateController_->OnSolutionLoaded();
     solutionExplorerPanel_->ShowSolution(currentSolution_.value());
+
+    // Recent solutions
     recentSolutions_.AddSolution(solutionFile);
     recentSolutions_.Save();
     RebuildRecentSolutionsMenu();
