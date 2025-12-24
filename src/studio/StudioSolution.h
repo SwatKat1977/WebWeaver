@@ -19,6 +19,7 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
 #ifndef STUDIOSOLUTION_H_
 #define STUDIOSOLUTION_H_
+#include <filesystem>
 #include <string>
 #include <optional>
 #include <utility>
@@ -41,6 +42,12 @@ enum class SolutionDirectoryCreateStatus {
     CannotCreatePages,
     CannotCreateScripts,
     CannotCreateRecordings
+};
+
+struct RecordingMetadata {
+    std::string id;
+    std::string name;
+    std::filesystem::path filePath;
 };
 
 struct SolutionLoadResult;
@@ -73,7 +80,9 @@ struct StudioSolution {
 
     SolutionDirectoryCreateStatus EnsureDirectoryStructure() const;
 
-    std::vector<std::filesystem::path> DiscoverRecordingFiles() const;
+    std::vector<RecordingMetadata> DiscoverRecordingFiles() const;
+    std::optional<RecordingMetadata> LoadRecordingMetadata(
+        const std::filesystem::path& file) const;
 
     nlohmann::json ToJson() const;
     static SolutionLoadResult FromJson(const nlohmann::json& rawJSON);

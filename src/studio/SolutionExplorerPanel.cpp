@@ -132,17 +132,17 @@ void SolutionExplorerPanel::PopulateRecordings(
     const wxTreeItemId& recordingsNode) {
     tree_->DeleteChildren(recordingsNode);
 
-    auto files = solution.DiscoverRecordingFiles();
+    auto recordings = solution.DiscoverRecordingFiles();
 
-    if (files.empty()) {
+    if (recordings.empty()) {
         tree_->AppendItem(recordingsNode, "(empty)");
         return;
     }
 
-    for (const auto& file : files) {
+    for (const auto& rec : recordings) {
         tree_->AppendItem(
             recordingsNode,
-            file.stem().string(), // filename without .json
+            rec.name,
             iconRecordings_,
             iconRecordings_);
     }
