@@ -24,9 +24,9 @@ namespace webweaver::studio {
 
 constexpr int JSON_VERSION = 1;
 
-const std::string PAGES_DIRECTORY = "pages";
-const std::string SCRIPTS_DIRECTORY = "scripts";
-const std::string RECORDINGS_DIRECTORY = "recordings";
+const char PAGES_DIRECTORY[] = "pages";
+const char SCRIPTS_DIRECTORY[] = "scripts";
+const char RECORDINGS_DIRECTORY[] = "recordings";
 
 nlohmann::json StudioSolution::ToJson() const {
     return {
