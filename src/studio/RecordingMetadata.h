@@ -24,6 +24,16 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 
 namespace webweaver::studio {
 
+enum class RecordingLoadError {
+    None,
+    FileMalformed,
+    MissingRecordingObject,
+    MissingRequiredField,
+    UnsupportedVersion,
+    FileNotFound
+};
+
+struct RecordingLoadResult;
 
 struct RecordingMetadata {
     std::string id;
@@ -31,10 +41,15 @@ struct RecordingMetadata {
     std::filesystem::path filePath;
     std::chrono::system_clock::time_point createdAt;
 
-    static std::optional<RecordingMetadata>
-
-    FromFile(const std::filesystem::path& wwrecFile);
+    static RecordingLoadResult FromFile(const std::filesystem::path& wwrecFile);
 };
+
+struct RecordingLoadResult {
+    std::optional<RecordingMetadata> recording;
+    RecordingLoadError error = RecordingLoadError::None;
+};
+
+std::string RecordingLoadErrorToStr(RecordingLoadError error);
 
 }   // namespace webweaver::studio
 

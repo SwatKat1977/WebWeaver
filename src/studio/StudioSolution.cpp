@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
 #include <fstream>
+#include <wx/wx.h>
 #include "StudioSolution.h"
 
 namespace webweaver::studio {
@@ -164,7 +165,7 @@ SolutionDirectoryCreateStatus StudioSolution::EnsureDirectoryStructure() const {
 std::vector<RecordingMetadata> StudioSolution::DiscoverRecordingFiles() const {
     std::vector<RecordingMetadata> recordings;
 
-    auto dir = GetRecordingsDirectory();
+    const auto dir = GetRecordingsDirectory();
     if (!std::filesystem::exists(dir))
         return recordings;
 
@@ -177,11 +178,17 @@ std::vector<RecordingMetadata> StudioSolution::DiscoverRecordingFiles() const {
             continue;
         }
 
-        auto meta = RecordingMetadata::FromFile(entry.path());
+        auto result = RecordingMetadata::FromFile(entry.path());
 
-        if (meta) {
-            recordings.push_back(*meta);
+        if (!result.recording) {
+            wxLogWarning(
+                "Skipping recording %s:\n%s",
+                entry.path().string(),
+                RecordingLoadErrorToStr(result.error));
+            continue;
         }
+
+        recordings.push_back(std::move(*result.recording));
     }
 
     return recordings;

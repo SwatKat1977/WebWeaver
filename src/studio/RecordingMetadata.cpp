@@ -23,10 +23,11 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 
 namespace webweaver::studio {
 
-std::optional<RecordingMetadata>
-RecordingMetadata::FromFile(const std::filesystem::path& wwrecFile) {
-    if (!std::filesystem::exists(wwrecFile))
-        return std::nullopt;
+RecordingLoadResult RecordingMetadata::FromFile(
+    const std::filesystem::path& wwrecFile) {
+    if (!std::filesystem::exists(wwrecFile)) {
+        return { {}, RecordingLoadError::FileNotFound };
+    }
 
     nlohmann::json json;
 
@@ -34,17 +35,17 @@ RecordingMetadata::FromFile(const std::filesystem::path& wwrecFile) {
         std::ifstream in(wwrecFile);
         in >> json;
     } catch (...) {
-        return std::nullopt;
+        return { {}, RecordingLoadError::FileMalformed };
     }
 
     if (!json.contains("recording") || !json["recording"].is_object()) {
-        return std::nullopt;
+        return { {}, RecordingLoadError::MissingRecordingObject };
     }
 
     const auto& r = json["recording"];
 
     if (!r.contains("id") || !r.contains("name") || !r.contains("createdAt")) {
-        return std::nullopt;
+        return { {}, RecordingLoadError::MissingRequiredField };
     }
 
     RecordingMetadata meta;
@@ -56,7 +57,29 @@ RecordingMetadata::FromFile(const std::filesystem::path& wwrecFile) {
         std::chrono::system_clock::from_time_t(
             std::time(nullptr)); // placeholder for now
 
-    return meta;
+    return { meta, RecordingLoadError::None };
+}
+
+std::string RecordingLoadErrorToStr(RecordingLoadError error) {
+    switch (error) {
+    case RecordingLoadError::FileMalformed:
+        return "Recording metadata is malformed.";
+
+    case RecordingLoadError::MissingRecordingObject:
+        return "Recording metadata missing 'recording' JSON field.";
+
+    case RecordingLoadError::MissingRequiredField:
+        return "Recording metadata missing required JSON field.";
+
+    case RecordingLoadError::UnsupportedVersion:
+        return "Recording metadata has unsupported version.";
+
+    case RecordingLoadError::FileNotFound:
+        return "Recording metadata file was not found.";
+
+    default:
+        return {};
+    }
 }
 
 }   // namespace webweaver::studio
