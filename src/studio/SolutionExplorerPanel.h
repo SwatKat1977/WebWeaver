@@ -23,6 +23,7 @@ Copyright 2025 SwatKat1977
 #include <wx/treectrl.h>
 #include <wx/stattext.h>
 #include "StudioSolution.h"
+#include "RecordingMetadata.h"
 
 namespace webweaver::studio {
 

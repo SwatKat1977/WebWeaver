@@ -25,6 +25,7 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 #include <utility>
 #include <vector>
 #include <nlohmann/json.hpp>
+#include "RecordingMetadata.h"
 
 namespace webweaver::studio {
 
@@ -43,12 +44,6 @@ enum class SolutionDirectoryCreateStatus {
     CannotCreatePages,
     CannotCreateScripts,
     CannotCreateRecordings
-};
-
-struct RecordingMetadata {
-    std::string id;
-    std::string name;
-    std::filesystem::path filePath;
 };
 
 struct SolutionLoadResult;
