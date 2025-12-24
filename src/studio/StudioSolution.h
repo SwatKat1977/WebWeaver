@@ -77,8 +77,6 @@ struct StudioSolution {
     SolutionDirectoryCreateStatus EnsureDirectoryStructure() const;
 
     std::vector<RecordingMetadata> DiscoverRecordingFiles() const;
-    std::optional<RecordingMetadata> LoadRecordingMetadata(
-        const std::filesystem::path& file) const;
 
     nlohmann::json ToJson() const;
     static SolutionLoadResult FromJson(const nlohmann::json& rawJSON);

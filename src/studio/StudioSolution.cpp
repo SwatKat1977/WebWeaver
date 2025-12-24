@@ -177,7 +177,8 @@ std::vector<RecordingMetadata> StudioSolution::DiscoverRecordingFiles() const {
             continue;
         }
 
-        auto meta = LoadRecordingMetadata(entry.path());
+        auto meta = RecordingMetadata::FromFile(entry.path());
+
         if (meta) {
             recordings.push_back(*meta);
         }
@@ -203,36 +204,6 @@ std::string SolutionDirectoryErrorToStr(SolutionDirectoryCreateStatus err) {
     default:
         return {};
     }
-}
-
-std::optional<RecordingMetadata> StudioSolution::LoadRecordingMetadata(
-    const std::filesystem::path& file) const {
-    nlohmann::json json;
-
-    try {
-        std::ifstream in(file);
-        in >> json;
-    } catch (...) {
-        return std::nullopt;
-    }
-
-    if (!json.contains("recording") ||
-        !json["recording"].is_object())
-        return std::nullopt;
-
-    const auto& r = json["recording"];
-
-    if (!r.contains("name") || !r["name"].is_string())
-        return std::nullopt;
-
-    RecordingMetadata meta;
-    meta.name = r["name"].get<std::string>();
-    meta.filePath = file;
-
-    if (r.contains("id") && r["id"].is_string())
-        meta.id = r["id"].get<std::string>();
-
-    return meta;
 }
 
 }   // namespace webweaver::studio
