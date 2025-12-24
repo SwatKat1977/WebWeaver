@@ -161,8 +161,7 @@ SolutionDirectoryCreateStatus StudioSolution::EnsureDirectoryStructure() const {
     return SolutionDirectoryCreateStatus::None;
 }
 
-std::vector<RecordingMetadata> StudioSolution::DiscoverRecordingFiles() const
-{
+std::vector<RecordingMetadata> StudioSolution::DiscoverRecordingFiles() const {
     std::vector<RecordingMetadata> recordings;
 
     auto dir = GetRecordingsDirectory();

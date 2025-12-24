@@ -17,20 +17,19 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
+#include <string>
 #include "SolutionExplorerPanel.h"
 #include "SolutionExplorerIcons.h"
 
 namespace webweaver::studio {
 
 SolutionExplorerPanel::SolutionExplorerPanel(wxWindow* parent)
-    : wxPanel(parent)
-{
+    : wxPanel(parent) {
     CreateControls();
     ShowNoSolution();
 }
 
-void SolutionExplorerPanel::CreateControls()
-{
+void SolutionExplorerPanel::CreateControls() {
     auto* sizer = new wxBoxSizer(wxVERTICAL);
 
     // Placeholder text
@@ -40,8 +39,7 @@ void SolutionExplorerPanel::CreateControls()
         "No solution loaded\n\nCreate or open a solution to begin",
         wxDefaultPosition,
         wxDefaultSize,
-        wxALIGN_CENTER
-    );
+        wxALIGN_CENTER);
 
     placeholder_->SetForegroundColour(
         wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT));
@@ -52,8 +50,7 @@ void SolutionExplorerPanel::CreateControls()
         wxID_ANY,
         wxDefaultPosition,
         wxDefaultSize,
-        wxTR_HAS_BUTTONS | wxTR_LINES_AT_ROOT | wxTR_DEFAULT_STYLE
-    );
+        wxTR_HAS_BUTTONS | wxTR_LINES_AT_ROOT | wxTR_DEFAULT_STYLE);
 
     // Image list
     imageList_ = new wxImageList(16, 16, true);
@@ -72,8 +69,7 @@ void SolutionExplorerPanel::CreateControls()
     SetSizer(sizer);
 }
 
-void SolutionExplorerPanel::ShowNoSolution()
-{
+void SolutionExplorerPanel::ShowNoSolution() {
     tree_->DeleteAllItems();
     tree_->Hide();
     placeholder_->Show();
@@ -81,13 +77,11 @@ void SolutionExplorerPanel::ShowNoSolution()
     Layout();
 }
 
-void SolutionExplorerPanel::Clear()
-{
+void SolutionExplorerPanel::Clear() {
     tree_->DeleteAllItems();
 }
 
-void SolutionExplorerPanel::ShowSolution(const StudioSolution& solution)
-{
+void SolutionExplorerPanel::ShowSolution(const StudioSolution& solution) {
     placeholder_->Hide();
     tree_->Show();
 
@@ -99,8 +93,7 @@ void SolutionExplorerPanel::ShowSolution(const StudioSolution& solution)
 }
 
 void SolutionExplorerPanel::PopulateEmptySolution(
-    const StudioSolution& solution)
-{
+    const StudioSolution& solution) {
     std::string solutionName = solution.solutionName;
     wxTreeItemId root = tree_->AddRoot(
         "Solution '" + solutionName + "'",
@@ -120,8 +113,7 @@ void SolutionExplorerPanel::PopulateEmptySolution(
 wxTreeItemId SolutionExplorerPanel::AppendEmptyNode(
     const wxTreeItemId& parent,
     const wxString& label,
-    int icon)
-{
+    int icon) {
     auto node = tree_->AppendItem(parent, label, icon, icon);
     tree_->AppendItem(node, "(empty)");
     return node;
