@@ -29,6 +29,11 @@ struct RecordingMetadata {
     std::string id;
     std::string name;
     std::filesystem::path filePath;
+    std::chrono::system_clock::time_point createdAt;
+
+    static std::optional<RecordingMetadata>
+
+    FromFile(const std::filesystem::path& wwrecFile);
 };
 
 }   // namespace webweaver::studio
