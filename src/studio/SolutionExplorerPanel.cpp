@@ -141,8 +141,7 @@ void SolutionExplorerPanel::PopulateRecordings(
 }
 
 void SolutionExplorerPanel::RefreshRecordings(
-    const StudioSolution& solution)
-{
+    const StudioSolution& solution) {
     if (!tree_)
         return;
 
