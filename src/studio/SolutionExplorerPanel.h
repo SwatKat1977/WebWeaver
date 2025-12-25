@@ -23,6 +23,7 @@ Copyright 2025 SwatKat1977
 #include <wx/treectrl.h>
 #include <wx/stattext.h>
 #include "StudioSolution.h"
+#include "RecordingMetadata.h"
 
 namespace webweaver::studio {
 
@@ -36,6 +37,8 @@ class SolutionExplorerPanel : public wxPanel {
 
     void PopulateRecordings(const StudioSolution& solution,
                             const wxTreeItemId& recordingsNode);
+
+    void RefreshRecordings(const StudioSolution& solution);
 
  private:
     wxTreeCtrl* tree_ = nullptr;

@@ -17,6 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
+#include <wx/wx.h>
 #include <fstream>
 #include "StudioSolution.h"
 
@@ -164,7 +165,7 @@ SolutionDirectoryCreateStatus StudioSolution::EnsureDirectoryStructure() const {
 std::vector<RecordingMetadata> StudioSolution::DiscoverRecordingFiles() const {
     std::vector<RecordingMetadata> recordings;
 
-    auto dir = GetRecordingsDirectory();
+    const auto dir = GetRecordingsDirectory();
     if (!std::filesystem::exists(dir))
         return recordings;
 
@@ -177,10 +178,17 @@ std::vector<RecordingMetadata> StudioSolution::DiscoverRecordingFiles() const {
             continue;
         }
 
-        auto meta = LoadRecordingMetadata(entry.path());
-        if (meta) {
-            recordings.push_back(*meta);
+        auto result = RecordingMetadata::FromFile(entry.path());
+
+        if (!result.recording) {
+            wxLogWarning(
+                "Skipping recording %s:\n%s",
+                entry.path().string(),
+                RecordingLoadErrorToStr(result.error));
+            continue;
         }
+
+        recordings.push_back(std::move(*result.recording));
     }
 
     return recordings;
@@ -203,36 +211,6 @@ std::string SolutionDirectoryErrorToStr(SolutionDirectoryCreateStatus err) {
     default:
         return {};
     }
-}
-
-std::optional<RecordingMetadata> StudioSolution::LoadRecordingMetadata(
-    const std::filesystem::path& file) const {
-    nlohmann::json json;
-
-    try {
-        std::ifstream in(file);
-        in >> json;
-    } catch (...) {
-        return std::nullopt;
-    }
-
-    if (!json.contains("recording") ||
-        !json["recording"].is_object())
-        return std::nullopt;
-
-    const auto& r = json["recording"];
-
-    if (!r.contains("name") || !r["name"].is_string())
-        return std::nullopt;
-
-    RecordingMetadata meta;
-    meta.name = r["name"].get<std::string>();
-    meta.filePath = file;
-
-    if (r.contains("id") && r["id"].is_string())
-        meta.id = r["id"].get<std::string>();
-
-    return meta;
 }
 
 }   // namespace webweaver::studio

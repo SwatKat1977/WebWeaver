@@ -140,5 +140,28 @@ void SolutionExplorerPanel::PopulateRecordings(
     }
 }
 
+void SolutionExplorerPanel::RefreshRecordings(
+    const StudioSolution& solution) {
+    if (!tree_)
+        return;
+
+    auto root = tree_->GetRootItem();
+    if (!root.IsOk())
+        return;
+
+    wxTreeItemIdValue cookie;
+    auto child = tree_->GetFirstChild(root, cookie);
+
+    while (child.IsOk()) {
+        if (tree_->GetItemText(child) == "Recordings") {
+            PopulateRecordings(solution, child);
+            tree_->Expand(child);
+            return;
+        }
+
+        child = tree_->GetNextChild(root, cookie);
+    }
+}
+
 }   // namespace webweaver::studio
 

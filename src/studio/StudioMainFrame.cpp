@@ -493,6 +493,9 @@ void StudioMainFrame::OnNewSolutionEvent(wxCommandEvent& event) {
             recentSolutions_.Save();
             RebuildRecentSolutionsMenu();
 
+            recordingSession_ = std::make_unique<RecordingSession>(
+                currentSolution_.value());
+
             return;
         }
 
@@ -540,12 +543,29 @@ void StudioMainFrame::OnOpenSolutionEvent(wxCommandEvent& event) {
         if (OpenSolution(path.ToStdString())) {
             stateController_->OnSolutionLoaded();
             solutionExplorerPanel_->ShowSolution(currentSolution_.value());
+
+            recordingSession_ = std::make_unique<RecordingSession>(
+                currentSolution_.value());
         }
     }
 }
 
 void StudioMainFrame::OnRecordStartStopEvent(wxCommandEvent& event) {
     stateController_->OnRecordStartStop();
+
+    switch (stateController_->GetState()) {
+    case StudioState::RecordingRunning:
+        recordingSession_->Start("Untitled Recording");
+        break;
+
+    case StudioState::SolutionLoaded:
+        recordingSession_->Stop();
+        solutionExplorerPanel_->RefreshRecordings(currentSolution_.value());
+        break;
+
+    default:
+        break;
+    }
 }
 
 void StudioMainFrame::OnRecordPauseEvent(wxCommandEvent& event) {
