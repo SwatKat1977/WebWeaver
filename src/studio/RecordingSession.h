@@ -39,6 +39,7 @@ private:
     std::filesystem::path filePath_;
     nlohmann::json recordingJson_;
     bool active_ = false;
+    const StudioSolution& solution_;
 };
 
 }   // namespace webweaver::studio

@@ -38,6 +38,8 @@ class SolutionExplorerPanel : public wxPanel {
     void PopulateRecordings(const StudioSolution& solution,
                             const wxTreeItemId& recordingsNode);
 
+    void RefreshRecordings(const StudioSolution& solution);
+
  private:
     wxTreeCtrl* tree_ = nullptr;
     wxStaticText* placeholder_ = nullptr;

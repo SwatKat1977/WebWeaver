@@ -28,6 +28,7 @@ Copyright 2025 SwatKat1977
 #include "StudioStateController.h"
 #include "StudioSolution.h"
 #include "RecentSolutionsManager.h"
+#include "RecordingSession.h"
 #include "SolutionExplorerPanel.h"
 
 namespace webweaver::studio {
@@ -50,6 +51,8 @@ class StudioMainFrame : public wxFrame {
     std::optional<StudioSolution> currentSolution_;
     RecentSolutionsManager recentSolutions_;
     SolutionExplorerPanel* solutionExplorerPanel_;
+
+    std::unique_ptr<RecordingSession> recordingSession_;
 
     // Log area in inspector
     wxTextCtrl* inspectorLog_ = nullptr;
