@@ -53,9 +53,10 @@ RecordingLoadResult RecordingMetadata::FromFile(
     meta.name = r["name"].get<std::string>();
     meta.filePath = wwrecFile;
 
+    // Placeholder for now
     meta.createdAt =
         std::chrono::system_clock::from_time_t(
-            std::time(nullptr)); // placeholder for now
+            std::time(nullptr));
 
     return { meta, RecordingLoadError::None };
 }
