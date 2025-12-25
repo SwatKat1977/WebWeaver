@@ -551,10 +551,6 @@ void StudioMainFrame::OnOpenSolutionEvent(wxCommandEvent& event) {
 
 void StudioMainFrame::OnRecordStartStopEvent(wxCommandEvent& event) {
     stateController_->OnRecordStartStop();
-}
-
-void StudioMainFrame::OnRecordPauseEvent(wxCommandEvent& event) {
-    stateController_->OnRecordPause();
 
     switch (stateController_->GetState()) {
     case StudioState::RecordingRunning:
@@ -569,6 +565,10 @@ void StudioMainFrame::OnRecordPauseEvent(wxCommandEvent& event) {
     default:
         break;
     }
+}
+
+void StudioMainFrame::OnRecordPauseEvent(wxCommandEvent& event) {
+    stateController_->OnRecordPause();
 }
 
 void StudioMainFrame::OnInspectorEvent(wxCommandEvent& event) {

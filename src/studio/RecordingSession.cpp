@@ -48,8 +48,9 @@ RecordingSession::RecordingSession(const StudioSolution& solution)
 }
 
 bool RecordingSession::Start(const std::string& name) {
-    if (active_)
+    if (active_) {
         return false;
+    }
 
     const auto recordingsDir = solution_.GetRecordingsDirectory();
     std::filesystem::create_directories(recordingsDir);
@@ -62,8 +63,9 @@ bool RecordingSession::Start(const std::string& name) {
     recordingJson_ = {
         { "version", 1 },
         { "recording", {
+            { "id", "PLACEHOLDER" },
             { "name", name },
-            { "createdUtc", NowUtcIso() },
+            { "createdAt", NowUtcIso() },
             { "browser", solution_.selectedBrowser },
             { "baseUrl", solution_.baseUrl },
             { "steps", nlohmann::json::array() }
@@ -81,8 +83,9 @@ bool RecordingSession::Start(const std::string& name) {
 
 void RecordingSession::Stop()
 {
-    if (!active_)
+    if (!active_) {
         return;
+    }
 
     std::ofstream out(filePath_, std::ios::trunc);
     if (out.is_open()) {
