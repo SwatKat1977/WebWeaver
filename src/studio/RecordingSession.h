@@ -27,7 +27,7 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 namespace webweaver::studio {
 
 class RecordingSession {
-public:
+ public:
     explicit RecordingSession(const StudioSolution& solution);
 
     bool Start(const std::string& name);
@@ -35,7 +35,7 @@ public:
 
     bool IsRecording() const;
 
-private:
+ private:
     std::filesystem::path filePath_;
     nlohmann::json recordingJson_;
     bool active_ = false;

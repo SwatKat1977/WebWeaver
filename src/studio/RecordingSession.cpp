@@ -17,7 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#include <chrono>
+#include <chrono>   // NOLINT
 #include <fstream>
 #include <sstream>
 #include "RecordingSession.h"
@@ -25,11 +25,9 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 namespace webweaver::studio {
 
 
-static std::string NowUtcIso()
-{
-    using namespace std::chrono;
-    auto now = system_clock::now();
-    std::time_t t = system_clock::to_time_t(now);
+static std::string NowUtcIso() {
+    auto now = std::chrono::system_clock::now();
+    std::time_t t = std::chrono::system_clock::to_time_t(now);
 
     std::tm tm{};
 #ifdef _WIN32
@@ -81,8 +79,7 @@ bool RecordingSession::Start(const std::string& name) {
     return true;
 }
 
-void RecordingSession::Stop()
-{
+void RecordingSession::Stop() {
     if (!active_) {
         return;
     }
