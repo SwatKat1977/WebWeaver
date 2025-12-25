@@ -19,6 +19,10 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
 #ifndef RECORDINGSESSION_H_
 #define RECORDINGSESSION_H_
+#include <filesystem>
+#include <string>
+#include <nlohmann/json.hpp>
+#include "StudioSolution.h"
 
 namespace webweaver::studio {
 
