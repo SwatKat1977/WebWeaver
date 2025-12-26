@@ -555,7 +555,7 @@ void StudioMainFrame::OnRecordStartStopEvent(wxCommandEvent& event) {
 
     switch (stateController_->GetState()) {
     case StudioState::RecordingRunning:
-        recordingSession_->Start("Untitled Recording");
+        recordingSession_->Start(currentSolution_->GenerateNextRecordingName());
         break;
 
     case StudioState::SolutionLoaded:
