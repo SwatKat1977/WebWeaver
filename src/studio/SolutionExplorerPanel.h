@@ -57,6 +57,8 @@ class SolutionExplorerPanel : public wxPanel {
     wxTreeItemId AppendEmptyNode(const wxTreeItemId& parent,
                                  const wxString& label,
                                  int icon);
+
+    void OnItemContextMenu(wxTreeEvent& event);
 };
 
 }   // namespace webweaver::studio

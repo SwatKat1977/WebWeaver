@@ -23,6 +23,12 @@ Copyright 2025 SwatKat1977
 
 namespace webweaver::studio {
 
+enum {
+    ID_CTXMENU_REC_OPEN = wxID_HIGHEST + 3000,
+    ID_CTXMENU_REC_RENAME,
+    ID_CTXMENU_REC_DELETE
+};
+
 SolutionExplorerPanel::SolutionExplorerPanel(wxWindow* parent)
     : wxPanel(parent) {
     CreateControls();
@@ -51,6 +57,10 @@ void SolutionExplorerPanel::CreateControls() {
         wxDefaultPosition,
         wxDefaultSize,
         wxTR_HAS_BUTTONS | wxTR_LINES_AT_ROOT | wxTR_DEFAULT_STYLE);
+
+    tree_->Bind(wxEVT_TREE_ITEM_MENU,
+                &SolutionExplorerPanel::OnItemContextMenu,
+                this);
 
     // Image list
     imageList_ = new wxImageList(16, 16, true);
@@ -161,6 +171,21 @@ void SolutionExplorerPanel::RefreshRecordings(
 
         child = tree_->GetNextChild(root, cookie);
     }
+}
+
+void SolutionExplorerPanel::OnItemContextMenu(wxTreeEvent& event) {
+    wxTreeItemId item = event.GetItem();
+    if (!item.IsOk())
+        return;
+
+    wxMenu menu;
+
+    menu.Append(ID_CTXMENU_REC_OPEN, "Open");
+    menu.Append(ID_CTXMENU_REC_RENAME, "Rename");
+    menu.AppendSeparator();
+    menu.Append(ID_CTXMENU_REC_DELETE, "Delete");
+
+    PopupMenu(&menu);
 }
 
 }   // namespace webweaver::studio
