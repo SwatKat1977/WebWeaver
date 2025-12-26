@@ -29,6 +29,14 @@ enum {
     ID_CTXMENU_REC_DELETE
 };
 
+enum class ExplorerNodeType {
+    SolutionRoot,
+    FolderPages,
+    FolderScripts,
+    FolderRecordings,
+    RecordingItem
+};
+
 SolutionExplorerPanel::SolutionExplorerPanel(wxWindow* parent)
     : wxPanel(parent) {
     CreateControls();
@@ -214,11 +222,11 @@ void SolutionExplorerPanel::OnRenameRecording(wxCommandEvent&) {
         this,
         "Rename recording",
         "Rename",
-        oldName
-    );
+        oldName);
 
-    if (dlg.ShowModal() != wxID_OK)
+    if (dlg.ShowModal() != wxID_OK) {
         return;
+    }
 
     tree_->SetItemText(contextItem_, dlg.GetValue());
 }
@@ -227,9 +235,9 @@ void SolutionExplorerPanel::OnDeleteRecording(wxCommandEvent&) {
     if (wxMessageBox(
         "Delete this recording?",
         "Confirm",
-        wxYES_NO | wxICON_WARNING
-    ) != wxYES)
+        wxYES_NO | wxICON_WARNING) != wxYES) {
         return;
+    }
 
     tree_->Delete(contextItem_);
 }

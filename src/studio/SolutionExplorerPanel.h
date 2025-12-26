@@ -59,11 +59,10 @@ class SolutionExplorerPanel : public wxPanel {
                                  const wxString& label,
                                  int icon);
 
-    void OnItemContextMenu(wxTreeEvent& event);
+    void OnItemContextMenu(wxTreeEvent& event);  // NOLINT
     void OnOpenRecording(wxCommandEvent&);
     void OnRenameRecording(wxCommandEvent&);
     void OnDeleteRecording(wxCommandEvent&);
-
 };
 
 }   // namespace webweaver::studio
