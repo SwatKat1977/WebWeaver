@@ -20,6 +20,7 @@ Copyright 2025 SwatKat1977
 #include <string>
 #include "SolutionExplorerPanel.h"
 #include "SolutionExplorerIcons.h"
+#include "SolutionExplorerNodeData.h"
 
 namespace webweaver::studio {
 
@@ -27,14 +28,6 @@ enum {
     ID_CTXMENU_REC_OPEN = wxID_HIGHEST + 3000,
     ID_CTXMENU_REC_RENAME,
     ID_CTXMENU_REC_DELETE
-};
-
-enum class ExplorerNodeType {
-    SolutionRoot,
-    FolderPages,
-    FolderScripts,
-    FolderRecordings,
-    RecordingItem
 };
 
 SolutionExplorerPanel::SolutionExplorerPanel(wxWindow* parent)
@@ -129,15 +122,18 @@ void SolutionExplorerPanel::PopulateEmptySolution(
     wxTreeItemId root = tree_->AddRoot(
         "Solution '" + solutionName + "'",
         iconSolution_,
-        iconSolution_);
+        iconSolution_,
+        new ExplorerNodeData(ExplorerNodeType::SolutionRoot));
 
     AppendEmptyNode(root, "Pages", iconPages_);
     AppendEmptyNode(root, "Scripts", iconScripts_);
 
-    wxTreeItemId recordings = tree_->AppendItem(root,
-                                                "Recordings",
-                                                iconRecordings_,
-                                                iconRecordings_);
+    wxTreeItemId recordings = tree_->AppendItem(
+        root,
+        "Recordings",
+        iconRecordings_,
+        iconRecordings_,
+        new ExplorerNodeData(ExplorerNodeType::FolderRecordings));
     PopulateRecordings(solution, recordings);
 }
 
@@ -167,7 +163,8 @@ void SolutionExplorerPanel::PopulateRecordings(
             recordingsNode,
             rec.name,
             iconRecordings_,
-            iconRecordings_);
+            iconRecordings_,
+            new ExplorerNodeData(ExplorerNodeType::RecordingItem));
     }
 }
 
@@ -196,15 +193,30 @@ void SolutionExplorerPanel::RefreshRecordings(
 
 void SolutionExplorerPanel::OnItemContextMenu(wxTreeEvent& event) {
     wxTreeItemId item = event.GetItem();
-    if (!item.IsOk())
+    if (!item.IsOk()) {
         return;
+    }
+
+    auto* data = dynamic_cast<ExplorerNodeData*>(
+    tree_->GetItemData(item));
+
+    if (!data) {
+        return;
+    }
 
     wxMenu menu;
 
-    menu.Append(ID_CTXMENU_REC_OPEN, "Open");
-    menu.Append(ID_CTXMENU_REC_RENAME, "Rename");
-    menu.AppendSeparator();
-    menu.Append(ID_CTXMENU_REC_DELETE, "Delete");
+    switch (data->GetType()) {
+    case ExplorerNodeType::RecordingItem:
+        menu.Append(ID_CTXMENU_REC_OPEN, "Open");
+        menu.Append(ID_CTXMENU_REC_RENAME, "Rename");
+        menu.AppendSeparator();
+        menu.Append(ID_CTXMENU_REC_DELETE, "Delete");
+        break;
+
+    default:
+        return; // no menu
+    }
 
     contextItem_ = item;
 
