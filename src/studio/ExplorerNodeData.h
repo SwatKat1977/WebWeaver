@@ -23,6 +23,14 @@ Copyright 2025 SwatKat1977
 
 namespace webweaver::studio {
 
+enum class ExplorerNodeType {
+    SolutionRoot,
+    FolderPages,
+    FolderScripts,
+    FolderRecordings,
+    RecordingItem
+};
+
 class ExplorerNodeData : public wxTreeItemData {
 public:
     explicit ExplorerNodeData(ExplorerNodeType type)
