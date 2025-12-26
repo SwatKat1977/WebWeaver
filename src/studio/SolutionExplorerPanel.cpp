@@ -62,6 +62,19 @@ void SolutionExplorerPanel::CreateControls() {
                 &SolutionExplorerPanel::OnItemContextMenu,
                 this);
 
+    Bind(wxEVT_MENU,
+         &SolutionExplorerPanel::OnOpenRecording,
+         this,
+         ID_CTXMENU_REC_OPEN);
+    Bind(wxEVT_MENU,
+         &SolutionExplorerPanel::OnRenameRecording,
+         this,
+         ID_CTXMENU_REC_RENAME);
+    Bind(wxEVT_MENU,
+         &SolutionExplorerPanel::OnDeleteRecording,
+         this,
+         ID_CTXMENU_REC_DELETE);
+
     // Image list
     imageList_ = new wxImageList(16, 16, true);
 
@@ -185,7 +198,40 @@ void SolutionExplorerPanel::OnItemContextMenu(wxTreeEvent& event) {
     menu.AppendSeparator();
     menu.Append(ID_CTXMENU_REC_DELETE, "Delete");
 
+    contextItem_ = item;
+
     PopupMenu(&menu);
+}
+
+void SolutionExplorerPanel::OnOpenRecording(wxCommandEvent&) {
+    wxLogMessage("Open recording");
+}
+
+void SolutionExplorerPanel::OnRenameRecording(wxCommandEvent&) {
+    wxString oldName = tree_->GetItemText(contextItem_);
+
+    wxTextEntryDialog dlg(
+        this,
+        "Rename recording",
+        "Rename",
+        oldName
+    );
+
+    if (dlg.ShowModal() != wxID_OK)
+        return;
+
+    tree_->SetItemText(contextItem_, dlg.GetValue());
+}
+
+void SolutionExplorerPanel::OnDeleteRecording(wxCommandEvent&) {
+    if (wxMessageBox(
+        "Delete this recording?",
+        "Confirm",
+        wxYES_NO | wxICON_WARNING
+    ) != wxYES)
+        return;
+
+    tree_->Delete(contextItem_);
 }
 
 }   // namespace webweaver::studio

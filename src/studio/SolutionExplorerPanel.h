@@ -44,6 +44,7 @@ class SolutionExplorerPanel : public wxPanel {
     wxTreeCtrl* tree_ = nullptr;
     wxStaticText* placeholder_ = nullptr;
     wxImageList* imageList_ = nullptr;
+    wxTreeItemId contextItem_;
 
     int iconSolution_ = -1;
     int iconPages_ = -1;
@@ -59,6 +60,10 @@ class SolutionExplorerPanel : public wxPanel {
                                  int icon);
 
     void OnItemContextMenu(wxTreeEvent& event);
+    void OnOpenRecording(wxCommandEvent&);
+    void OnRenameRecording(wxCommandEvent&);
+    void OnDeleteRecording(wxCommandEvent&);
+
 };
 
 }   // namespace webweaver::studio
