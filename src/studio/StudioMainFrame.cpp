@@ -774,6 +774,18 @@ bool StudioMainFrame::OpenSolution(const std::filesystem::path& solutionFile) {
 
 void StudioMainFrame::OnDeleteRecording(wxCommandEvent& evt)
 {
+    if (stateController_->GetState() == StudioState::RecordingRunning ||
+        stateController_->GetState() == StudioState::RecordingPaused)
+    {
+        wxMessageBox(
+            "You cannot delete recordings while a recording session is active.\n\n"
+            "Stop the recording first.",
+            "Delete Recording",
+            wxICON_WARNING,
+            this);
+        return;
+    }
+
     auto* path =
         static_cast<std::filesystem::path*>(evt.GetClientData());
 
