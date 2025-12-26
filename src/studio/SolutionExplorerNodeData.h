@@ -17,8 +17,8 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef EXPLORERNODEDATA_H_
-#define EXPLORERNODEDATA_H_
+#ifndef SOLUTIONEXPLORERNODEDATA_H_
+#define SOLUTIONEXPLORERNODEDATA_H_
 #include <wx/wx.h>
 
 namespace webweaver::studio {
@@ -32,16 +32,16 @@ enum class ExplorerNodeType {
 };
 
 class ExplorerNodeData : public wxTreeItemData {
-public:
+ public:
     explicit ExplorerNodeData(ExplorerNodeType type)
         : type_(type) {}
 
     ExplorerNodeType GetType() const { return type_; }
 
-private:
+ private:
     ExplorerNodeType type_;
 };
 
-}
+}   // namespace webweaver::studio
 
-#endif  // EXPLORERNODEDATA_H_
+#endif  // SOLUTIONEXPLORERNODEDATA_H_
