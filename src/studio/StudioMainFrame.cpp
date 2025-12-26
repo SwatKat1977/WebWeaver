@@ -135,6 +135,10 @@ void StudioMainFrame::InitAui() {
 
     CreateInspectorPanel();
 
+    Bind(EVT_DELETE_RECORDING,
+         &StudioMainFrame::OnDeleteRecording,
+         this);
+
     auiMgr_.Update();
 }
 
@@ -766,6 +770,41 @@ bool StudioMainFrame::OpenSolution(const std::filesystem::path& solutionFile) {
     RebuildRecentSolutionsMenu();
 
     return true;
+}
+
+void StudioMainFrame::OnDeleteRecording(wxCommandEvent& evt)
+{
+    auto* path =
+        static_cast<std::filesystem::path*>(evt.GetClientData());
+
+    if (!path || !currentSolution_)
+        return;
+
+    int rc = wxMessageBox(
+        wxString::Format("Delete recording?\n\n%s",
+                         path->filename().string()),
+        "Delete Recording",
+        wxYES_NO | wxICON_WARNING,
+        this);
+
+    if (rc != wxYES)
+        return;
+
+    std::error_code ec;
+    std::filesystem::remove(*path, ec);
+
+    delete path; // clean up
+
+    if (ec) {
+        wxMessageBox(
+            wxString::Format("Failed to delete recording:\n%s",
+                             ec.message()),
+            "Delete Recording",
+            wxICON_ERROR);
+        return;
+    }
+
+    solutionExplorerPanel_->RefreshRecordings(*currentSolution_);
 }
 
 }   // namespace webweaver::studio

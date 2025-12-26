@@ -65,6 +65,8 @@ class SolutionExplorerPanel : public wxPanel {
     void OnDeleteRecording(wxCommandEvent&);
 };
 
+wxDECLARE_EVENT(EVT_DELETE_RECORDING, wxCommandEvent);
+
 }   // namespace webweaver::studio
 
 #endif  // SOLUTIONEXPLORERPANEL_H_

@@ -123,7 +123,7 @@ void SolutionExplorerPanel::PopulateEmptySolution(
         "Solution '" + solutionName + "'",
         iconSolution_,
         iconSolution_,
-        new ExplorerNodeData(ExplorerNodeType::SolutionRoot));
+        new ExplorerNodeData(ExplorerNodeType::SolutionRoot, ""));
 
     AppendEmptyNode(root, "Pages", iconPages_);
     AppendEmptyNode(root, "Scripts", iconScripts_);
@@ -133,7 +133,7 @@ void SolutionExplorerPanel::PopulateEmptySolution(
         "Recordings",
         iconRecordings_,
         iconRecordings_,
-        new ExplorerNodeData(ExplorerNodeType::FolderRecordings));
+        new ExplorerNodeData(ExplorerNodeType::FolderRecordings, ""));
     PopulateRecordings(solution, recordings);
 }
 
@@ -164,7 +164,8 @@ void SolutionExplorerPanel::PopulateRecordings(
             rec.name,
             iconRecordings_,
             iconRecordings_,
-            new ExplorerNodeData(ExplorerNodeType::RecordingItem));
+            new ExplorerNodeData(ExplorerNodeType::RecordingItem,
+            rec.filePath));
     }
 }
 
@@ -244,15 +245,23 @@ void SolutionExplorerPanel::OnRenameRecording(wxCommandEvent&) {
 }
 
 void SolutionExplorerPanel::OnDeleteRecording(wxCommandEvent&) {
-    if (wxMessageBox(
-        "Delete this recording?",
-        "Confirm",
-        wxYES_NO | wxICON_WARNING) != wxYES) {
+    if (!contextItem_.IsOk())
+        return;
+
+    auto* data = dynamic_cast<ExplorerNodeData*>(
+        tree_->GetItemData(contextItem_));
+
+    if (!data || data->GetType() != ExplorerNodeType::RecordingItem) {
         return;
     }
 
-    tree_->Delete(contextItem_);
+    wxCommandEvent evt(EVT_DELETE_RECORDING);
+    evt.SetClientData(new std::filesystem::path(data->GetPath()));
+
+    wxPostEvent(GetParent(), evt);
 }
+
+wxDEFINE_EVENT(EVT_DELETE_RECORDING, wxCommandEvent);
 
 }   // namespace webweaver::studio
 
