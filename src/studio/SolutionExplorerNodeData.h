@@ -20,6 +20,7 @@ Copyright 2025 SwatKat1977
 #ifndef SOLUTIONEXPLORERNODEDATA_H_
 #define SOLUTIONEXPLORERNODEDATA_H_
 #include <wx/wx.h>
+#include <utility>
 
 namespace webweaver::studio {
 

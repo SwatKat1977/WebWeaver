@@ -108,17 +108,21 @@ class StudioMainFrame : public wxFrame {
     // NOLINTNEXTLINE(runtime/references)
     void OnInspectorEvent(wxCommandEvent& event);
 
+    // NOLINTNEXTLINE(runtime/references)
     bool SaveSolutionToDisk(const StudioSolution& solution);
-    void RebuildRecentSolutionsMenu();
 
     // NOLINTNEXTLINE(runtime/references)
     void OnOpenRecentSolutionEvent(wxCommandEvent& event);
 
     bool OpenSolution(const std::filesystem::path& solutionFile);
 
+    // NOLINTNEXTLINE(runtime/references)
     void OnDeleteRecording(wxCommandEvent& evt);
 
+    // NOLINTNEXTLINE(runtime/references)
     void OnRenameRecording(wxCommandEvent& evt);
+
+    void RebuildRecentSolutionsMenu();
 };
 
 }   // namespace webweaver::studio

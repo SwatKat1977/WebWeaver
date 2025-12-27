@@ -218,7 +218,8 @@ void SolutionExplorerPanel::OnItemContextMenu(wxTreeEvent& event) {
         break;
 
     default:
-        return; // no menu
+        // No menu
+        return;
     }
 
     contextItem_ = item;

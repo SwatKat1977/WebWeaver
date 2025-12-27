@@ -778,14 +778,12 @@ bool StudioMainFrame::OpenSolution(const std::filesystem::path& solutionFile) {
     return true;
 }
 
-void StudioMainFrame::OnDeleteRecording(wxCommandEvent& evt)
-{
+void StudioMainFrame::OnDeleteRecording(wxCommandEvent& evt) {
     if (stateController_->GetState() == StudioState::RecordingRunning ||
-        stateController_->GetState() == StudioState::RecordingPaused)
-    {
+        stateController_->GetState() == StudioState::RecordingPaused) {
         wxMessageBox(
-            "You cannot delete recordings while a recording session is active.\n\n"
-            "Stop the recording first.",
+            "You cannot delete recordings while a recording session is "
+            "active.\n\nStop the recording first.",
             "Delete Recording",
             wxICON_WARNING,
             this);
@@ -795,8 +793,9 @@ void StudioMainFrame::OnDeleteRecording(wxCommandEvent& evt)
     auto* path =
         static_cast<std::filesystem::path*>(evt.GetClientData());
 
-    if (!path || !currentSolution_)
+    if (!path || !currentSolution_) {
         return;
+    }
 
     int rc = wxMessageBox(
         wxString::Format("Delete recording?\n\n%s",
@@ -811,7 +810,7 @@ void StudioMainFrame::OnDeleteRecording(wxCommandEvent& evt)
     std::error_code ec;
     std::filesystem::remove(*path, ec);
 
-    delete path; // clean up
+    delete path;
 
     if (ec) {
         wxMessageBox(
@@ -825,11 +824,9 @@ void StudioMainFrame::OnDeleteRecording(wxCommandEvent& evt)
     solutionExplorerPanel_->RefreshRecordings(*currentSolution_);
 }
 
-void StudioMainFrame::OnRenameRecording(wxCommandEvent& evt)
-{
+void StudioMainFrame::OnRenameRecording(wxCommandEvent& evt) {
     if (stateController_->GetState() == StudioState::RecordingRunning ||
-        stateController_->GetState() == StudioState::RecordingPaused)
-    {
+        stateController_->GetState() == StudioState::RecordingPaused) {
         wxMessageBox(
             "Stop recording before renaming recordings.",
             "Rename Recording",

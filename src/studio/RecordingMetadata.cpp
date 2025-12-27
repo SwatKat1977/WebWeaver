@@ -61,8 +61,7 @@ RecordingLoadResult RecordingMetadata::FromFile(
     return { meta, RecordingLoadError::None };
 }
 
-bool RecordingMetadata::UpdateRecordingName() const
-{
+bool RecordingMetadata::UpdateRecordingName() const {
     nlohmann::json json;
     std::ifstream in(filePath);
     if (!in.is_open())
