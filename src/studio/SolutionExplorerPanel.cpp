@@ -123,7 +123,8 @@ void SolutionExplorerPanel::PopulateEmptySolution(
         "Solution '" + solutionName + "'",
         iconSolution_,
         iconSolution_,
-        new ExplorerNodeData(ExplorerNodeType::SolutionRoot, ""));
+        new ExplorerNodeData(ExplorerNodeType::SolutionRoot,
+                             RecordingMetadata()));
 
     AppendEmptyNode(root, "Pages", iconPages_);
     AppendEmptyNode(root, "Scripts", iconScripts_);
@@ -133,7 +134,8 @@ void SolutionExplorerPanel::PopulateEmptySolution(
         "Recordings",
         iconRecordings_,
         iconRecordings_,
-        new ExplorerNodeData(ExplorerNodeType::FolderRecordings, ""));
+        new ExplorerNodeData(ExplorerNodeType::FolderRecordings,
+                             RecordingMetadata()));
     PopulateRecordings(solution, recordings);
 }
 
@@ -165,7 +167,7 @@ void SolutionExplorerPanel::PopulateRecordings(
             iconRecordings_,
             iconRecordings_,
             new ExplorerNodeData(ExplorerNodeType::RecordingItem,
-            rec.filePath));
+            rec));
     }
 }
 
@@ -240,7 +242,7 @@ void SolutionExplorerPanel::OnRenameRecording(wxCommandEvent&) {
         return;
 
     wxCommandEvent evt(EVT_RENAME_RECORDING);
-    evt.SetClientData(new std::filesystem::path(data->GetPath()));
+    evt.SetClientData(new std::filesystem::path(data->GetMetadata().filePath));
 
     wxPostEvent(GetParent(), evt);
 }
@@ -258,9 +260,23 @@ void SolutionExplorerPanel::OnDeleteRecording(wxCommandEvent&) {
     }
 
     wxCommandEvent evt(EVT_DELETE_RECORDING);
-    evt.SetClientData(new std::filesystem::path(data->GetPath()));
+    evt.SetClientData(new std::filesystem::path(data->GetMetadata().filePath));
 
     wxPostEvent(GetParent(), evt);
+}
+
+RecordingMetadata* SolutionExplorerPanel::GetSelectedRecording() const {
+    wxTreeItemId sel = tree_->GetSelection();
+    if (!sel.IsOk())
+        return nullptr;
+
+    auto* data =
+        dynamic_cast<ExplorerNodeData*>(tree_->GetItemData(sel));
+
+    if (!data)
+        return nullptr;
+
+    return &data->GetMetadata();
 }
 
 wxDEFINE_EVENT(EVT_DELETE_RECORDING, wxCommandEvent);

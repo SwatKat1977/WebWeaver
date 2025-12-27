@@ -838,44 +838,35 @@ void StudioMainFrame::OnRenameRecording(wxCommandEvent& evt)
         return;
     }
 
-    auto* oldPath =
-        static_cast<std::filesystem::path*>(evt.GetClientData());
-
-    if (!oldPath || !currentSolution_)
-        return;
+    const RecordingMetadata* recording =
+        solutionExplorerPanel_->GetSelectedRecording();
 
     wxTextEntryDialog dlg(
         this,
         "Enter a new name for the recording:",
         "Rename Recording",
-        oldPath->stem().string());
+        recording->name);
 
     if (dlg.ShowModal() != wxID_OK) {
-        delete oldPath;
         return;
     }
 
     std::string newName = dlg.GetValue().ToStdString();
 
     if (newName.empty()) {
-        delete oldPath;
         return;
     }
 
-    std::filesystem::path newPath =
-        oldPath->parent_path() / (newName + oldPath->extension().string());
+    // Make a mutable copy
+    RecordingMetadata updated = *recording;
+    updated.name = newName;
 
-    std::error_code ec;
-    std::filesystem::rename(*oldPath, newPath, ec);
-
-    delete oldPath;
-
-    if (ec) {
+    if (!updated.UpdateRecordingName()) {
         wxMessageBox(
-            wxString::Format("Failed to rename recording:\n%s",
-                             ec.message()),
+            "Failed to save recording metadata.",
             "Rename Recording",
-            wxICON_ERROR);
+            wxICON_ERROR,
+            this);
         return;
     }
 

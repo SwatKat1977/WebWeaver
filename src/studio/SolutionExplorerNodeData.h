@@ -34,16 +34,17 @@ enum class ExplorerNodeType {
 class ExplorerNodeData : public wxTreeItemData {
  public:
     explicit ExplorerNodeData(ExplorerNodeType type,
-                              std::filesystem::path path)
-        : type_(type), path_(std::move(path)) {}
+                              RecordingMetadata metadata)
+        : type_(type),
+          recording_(std::move(metadata)) {}
 
     ExplorerNodeType GetType() const { return type_; }
 
-    const std::filesystem::path& GetPath() const { return path_; }
+    RecordingMetadata& GetMetadata() { return recording_; }
 
  private:
     ExplorerNodeType type_;
-    std::filesystem::path path_;
+    RecordingMetadata recording_;
 };
 
 }   // namespace webweaver::studio

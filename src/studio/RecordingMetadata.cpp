@@ -61,6 +61,26 @@ RecordingLoadResult RecordingMetadata::FromFile(
     return { meta, RecordingLoadError::None };
 }
 
+bool RecordingMetadata::UpdateRecordingName() const
+{
+    nlohmann::json json;
+    std::ifstream in(filePath);
+    if (!in.is_open())
+        return false;
+
+    in >> json;
+    in.close();
+
+    json["recording"]["name"] = name;
+
+    std::ofstream out(filePath, std::ios::trunc);
+    if (!out.is_open())
+        return false;
+
+    out << json.dump(4);
+    return true;
+}
+
 std::string RecordingLoadErrorToStr(RecordingLoadError error) {
     switch (error) {
     case RecordingLoadError::FileMalformed:

@@ -40,6 +40,8 @@ class SolutionExplorerPanel : public wxPanel {
 
     void RefreshRecordings(const StudioSolution& solution);
 
+    RecordingMetadata* GetSelectedRecording() const;
+
  private:
     wxTreeCtrl* tree_ = nullptr;
     wxStaticText* placeholder_ = nullptr;
