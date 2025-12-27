@@ -135,8 +135,14 @@ void StudioMainFrame::InitAui() {
 
     CreateInspectorPanel();
 
+    // Delete recording event.
     Bind(EVT_DELETE_RECORDING,
          &StudioMainFrame::OnDeleteRecording,
+         this);
+
+    // Rename recording event.
+    Bind(EVT_RENAME_RECORDING,
+         &StudioMainFrame::OnRenameRecording,
          this);
 
     auiMgr_.Update();
@@ -812,6 +818,63 @@ void StudioMainFrame::OnDeleteRecording(wxCommandEvent& evt)
             wxString::Format("Failed to delete recording:\n%s",
                              ec.message()),
             "Delete Recording",
+            wxICON_ERROR);
+        return;
+    }
+
+    solutionExplorerPanel_->RefreshRecordings(*currentSolution_);
+}
+
+void StudioMainFrame::OnRenameRecording(wxCommandEvent& evt)
+{
+    if (stateController_->GetState() == StudioState::RecordingRunning ||
+        stateController_->GetState() == StudioState::RecordingPaused)
+    {
+        wxMessageBox(
+            "Stop recording before renaming recordings.",
+            "Rename Recording",
+            wxICON_WARNING,
+            this);
+        return;
+    }
+
+    auto* oldPath =
+        static_cast<std::filesystem::path*>(evt.GetClientData());
+
+    if (!oldPath || !currentSolution_)
+        return;
+
+    wxTextEntryDialog dlg(
+        this,
+        "Enter a new name for the recording:",
+        "Rename Recording",
+        oldPath->stem().string());
+
+    if (dlg.ShowModal() != wxID_OK) {
+        delete oldPath;
+        return;
+    }
+
+    std::string newName = dlg.GetValue().ToStdString();
+
+    if (newName.empty()) {
+        delete oldPath;
+        return;
+    }
+
+    std::filesystem::path newPath =
+        oldPath->parent_path() / (newName + oldPath->extension().string());
+
+    std::error_code ec;
+    std::filesystem::rename(*oldPath, newPath, ec);
+
+    delete oldPath;
+
+    if (ec) {
+        wxMessageBox(
+            wxString::Format("Failed to rename recording:\n%s",
+                             ec.message()),
+            "Rename Recording",
             wxICON_ERROR);
         return;
     }

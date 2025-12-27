@@ -117,6 +117,8 @@ class StudioMainFrame : public wxFrame {
     bool OpenSolution(const std::filesystem::path& solutionFile);
 
     void OnDeleteRecording(wxCommandEvent& evt);
+
+    void OnRenameRecording(wxCommandEvent& evt);
 };
 
 }   // namespace webweaver::studio

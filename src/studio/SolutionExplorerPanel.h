@@ -66,6 +66,7 @@ class SolutionExplorerPanel : public wxPanel {
 };
 
 wxDECLARE_EVENT(EVT_DELETE_RECORDING, wxCommandEvent);
+wxDECLARE_EVENT(EVT_RENAME_RECORDING, wxCommandEvent);
 
 }   // namespace webweaver::studio
 

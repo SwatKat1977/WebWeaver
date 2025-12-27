@@ -229,24 +229,26 @@ void SolutionExplorerPanel::OnOpenRecording(wxCommandEvent&) {
 }
 
 void SolutionExplorerPanel::OnRenameRecording(wxCommandEvent&) {
-    wxString oldName = tree_->GetItemText(contextItem_);
-
-    wxTextEntryDialog dlg(
-        this,
-        "Rename recording",
-        "Rename",
-        oldName);
-
-    if (dlg.ShowModal() != wxID_OK) {
+    if (!contextItem_.IsOk()) {
         return;
     }
 
-    tree_->SetItemText(contextItem_, dlg.GetValue());
+    auto* data = dynamic_cast<ExplorerNodeData*>(
+        tree_->GetItemData(contextItem_));
+
+    if (!data || data->GetType() != ExplorerNodeType::RecordingItem)
+        return;
+
+    wxCommandEvent evt(EVT_RENAME_RECORDING);
+    evt.SetClientData(new std::filesystem::path(data->GetPath()));
+
+    wxPostEvent(GetParent(), evt);
 }
 
 void SolutionExplorerPanel::OnDeleteRecording(wxCommandEvent&) {
-    if (!contextItem_.IsOk())
+    if (!contextItem_.IsOk()) {
         return;
+    }
 
     auto* data = dynamic_cast<ExplorerNodeData*>(
         tree_->GetItemData(contextItem_));
@@ -262,6 +264,7 @@ void SolutionExplorerPanel::OnDeleteRecording(wxCommandEvent&) {
 }
 
 wxDEFINE_EVENT(EVT_DELETE_RECORDING, wxCommandEvent);
+wxDEFINE_EVENT(EVT_RENAME_RECORDING, wxCommandEvent);
 
 }   // namespace webweaver::studio
 
