@@ -218,4 +218,16 @@ std::string SolutionDirectoryErrorToStr(SolutionDirectoryCreateStatus err) {
     }
 }
 
+RecordingViewContext StudioSolution::OpenRecording(
+    const RecordingMetadata& metadata) {
+    // metadata already represents a .wwrec file
+    // no reloading, no guessing
+
+    RecordingViewContext ctx;
+    ctx.metadata = metadata;
+    ctx.recordingFile = wxFileName(metadata.filePath.string());
+
+    return ctx;
+}
+
 }   // namespace webweaver::studio

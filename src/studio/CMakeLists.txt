@@ -10,6 +10,7 @@ add_executable(webweaver_studio
     RecentSolutionsManager.cpp
     RecordingMetadata.cpp
     RecordingSession.cpp
+    RecordingViewerPanel.cpp
     SolutionExplorerIcons.cpp
     SolutionExplorerPanel.cpp
     studio.cpp

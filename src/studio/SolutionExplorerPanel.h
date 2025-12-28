@@ -27,6 +27,8 @@ Copyright 2025 SwatKat1977
 
 namespace webweaver::studio {
 
+wxDECLARE_EVENT(EVT_OPEN_RECORDING, wxCommandEvent);
+
 class SolutionExplorerPanel : public wxPanel {
  public:
     explicit SolutionExplorerPanel(wxWindow* parent);

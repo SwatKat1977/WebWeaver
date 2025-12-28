@@ -30,6 +30,7 @@ Copyright 2025 SwatKat1977
 #include "RecentSolutionsManager.h"
 #include "RecordingSession.h"
 #include "SolutionExplorerPanel.h"
+#include "WorkspacePanel.h"
 
 namespace webweaver::studio {
 
@@ -51,6 +52,7 @@ class StudioMainFrame : public wxFrame {
     std::optional<StudioSolution> currentSolution_;
     RecentSolutionsManager recentSolutions_;
     SolutionExplorerPanel* solutionExplorerPanel_;
+    WorkspacePanel* workspacePanel_;
 
     std::unique_ptr<RecordingSession> recordingSession_;
 
@@ -87,7 +89,6 @@ class StudioMainFrame : public wxFrame {
     // NOLINTNEXTLINE(runtime/references)
     void OnInspectorSaveJson(wxCommandEvent &event);
 
-
     // ---- Main Frame Events ----
 
     // NOLINTNEXTLINE(runtime/references)
@@ -115,6 +116,8 @@ class StudioMainFrame : public wxFrame {
     void OnOpenRecentSolutionEvent(wxCommandEvent& event);
 
     bool OpenSolution(const std::filesystem::path& solutionFile);
+
+    void OnOpenRecording(wxCommandEvent& evt);
 
     // NOLINTNEXTLINE(runtime/references)
     void OnDeleteRecording(wxCommandEvent& evt);

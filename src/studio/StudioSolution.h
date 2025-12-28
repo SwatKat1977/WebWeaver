@@ -26,6 +26,7 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 #include <vector>
 #include <nlohmann/json.hpp>
 #include "RecordingMetadata.h"
+#include "RecordingViewContext.h"
 
 namespace webweaver::studio {
 
@@ -80,6 +81,9 @@ struct StudioSolution {
 
     nlohmann::json ToJson() const;
     static SolutionLoadResult FromJson(const nlohmann::json& rawJSON);
+
+    RecordingViewContext OpenRecording(const RecordingMetadata& metadata);
+
 };
 
 struct SolutionLoadResult {

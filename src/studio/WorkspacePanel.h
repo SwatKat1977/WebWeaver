@@ -19,8 +19,23 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
 #ifndef WORKSPACEPANEL_H_
 #define WORKSPACEPANEL_H_
+#include <wx/wx.h>
+#include "RecordingViewContext.h"
 
 namespace webweaver::studio {
+
+class WorkspacePanel : public wxPanel {
+ public:
+    explicit WorkspacePanel(wxWindow* parent);
+
+    void OpenRecording(const RecordingViewContext& ctx);
+    bool IsRecordingOpen(const wxFileName& file) const;
+
+ private:
+    wxAuiNotebook* notebook_;
+
+    void CreateUI();
+};
 
 }   // namespace webweaver::studio
 

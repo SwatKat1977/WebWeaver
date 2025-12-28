@@ -17,8 +17,70 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
+#include <wx/aui/auibook.h>
 #include "WorkspacePanel.h"
+#include "RecordingViewerPanel.h"
 
 namespace webweaver::studio {
+
+WorkspacePanel::WorkspacePanel(wxWindow* parent)
+    : wxPanel(parent) {
+    CreateUI();
+}
+
+void WorkspacePanel::CreateUI() {
+    auto* sizer = new wxBoxSizer(wxVERTICAL);
+
+    notebook_ = new wxAuiNotebook(
+        this,
+        wxID_ANY,
+        wxDefaultPosition,
+        wxDefaultSize,
+        wxAUI_NB_TOP | wxAUI_NB_TAB_MOVE);
+
+    sizer->Add(notebook_, 1, wxEXPAND);
+    SetSizer(sizer);
+}
+
+void WorkspacePanel::OpenRecording(const RecordingViewContext& ctx) {
+    if (IsRecordingOpen(ctx.recordingFile)) {
+        // focus existing tab
+        return;
+    }
+
+    auto* viewer = new RecordingViewerPanel(notebook_, ctx);
+    notebook_->AddPage(viewer, ctx.metadata.name, true);
+}
+
+bool WorkspacePanel::IsRecordingOpen(const wxFileName& file) const {
+    if (!notebook_)
+        return false;
+
+    wxFileName target(file);
+    target.Normalize(wxPATH_NORM_ABSOLUTE |
+                     wxPATH_NORM_DOTS |
+                     wxPATH_NORM_TILDE);
+
+    for (size_t i = 0; i < notebook_->GetPageCount(); ++i)
+    {
+        auto* page = notebook_->GetPage(i);
+
+        auto* viewer =
+            dynamic_cast<RecordingViewerPanel*>(page);
+
+        if (!viewer)
+            continue;
+
+        wxFileName openFile = viewer->GetRecordingFile();
+        openFile.Normalize(wxPATH_NORM_ABSOLUTE |
+                           wxPATH_NORM_DOTS |
+                           wxPATH_NORM_TILDE);
+
+        if (openFile == target)
+            return true;
+    }
+
+    return false;
+}
 
 }   // namespace webweaver::studio

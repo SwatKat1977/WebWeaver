@@ -17,18 +17,28 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef RECORDINGVIEWCONTEXT_H_
-#define RECORDINGVIEWCONTEXT_H_
-#include <wx/filename.h>
-#include "RecordingMetadata.h"
+#ifndef RECORDINGVIEWERPANEL_H_
+#define RECORDINGVIEWERPANEL_H_
+#include <wx/wx.h>
+#include "RecordingViewContext.h"
+
 
 namespace webweaver::studio {
 
-struct RecordingViewContext {
-    RecordingMetadata metadata;
-    wxFileName recordingFile;
+class RecordingViewerPanel : public wxPanel
+{
+public:
+    RecordingViewerPanel(wxWindow* parent,
+                         const RecordingViewContext& ctx);
+
+    const wxFileName& GetRecordingFile() const;
+
+private:
+    RecordingViewContext context_;
+
+    void CreateUI();
 };
 
 }   // namespace webweaver::studio
 
-#endif  // RECORDINGVIEWCONTEXT_H_
+#endif  // RECORDINGVIEWERPANEL_H_
