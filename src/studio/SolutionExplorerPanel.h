@@ -40,10 +40,13 @@ class SolutionExplorerPanel : public wxPanel {
 
     void RefreshRecordings(const StudioSolution& solution);
 
+    RecordingMetadata* GetSelectedRecording() const;
+
  private:
     wxTreeCtrl* tree_ = nullptr;
     wxStaticText* placeholder_ = nullptr;
     wxImageList* imageList_ = nullptr;
+    wxTreeItemId contextItem_;
 
     int iconSolution_ = -1;
     int iconPages_ = -1;
@@ -57,7 +60,15 @@ class SolutionExplorerPanel : public wxPanel {
     wxTreeItemId AppendEmptyNode(const wxTreeItemId& parent,
                                  const wxString& label,
                                  int icon);
+
+    void OnItemContextMenu(wxTreeEvent& event);  // NOLINT
+    void OnOpenRecording(wxCommandEvent&);
+    void OnRenameRecording(wxCommandEvent&);
+    void OnDeleteRecording(wxCommandEvent&);
 };
+
+wxDECLARE_EVENT(EVT_DELETE_RECORDING, wxCommandEvent);
+wxDECLARE_EVENT(EVT_RENAME_RECORDING, wxCommandEvent);
 
 }   // namespace webweaver::studio
 

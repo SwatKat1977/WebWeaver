@@ -135,6 +135,16 @@ void StudioMainFrame::InitAui() {
 
     CreateInspectorPanel();
 
+    // Delete recording event.
+    Bind(EVT_DELETE_RECORDING,
+         &StudioMainFrame::OnDeleteRecording,
+         this);
+
+    // Rename recording event.
+    Bind(EVT_RENAME_RECORDING,
+         &StudioMainFrame::OnRenameRecording,
+         this);
+
     auiMgr_.Update();
 }
 
@@ -555,7 +565,7 @@ void StudioMainFrame::OnRecordStartStopEvent(wxCommandEvent& event) {
 
     switch (stateController_->GetState()) {
     case StudioState::RecordingRunning:
-        recordingSession_->Start("Untitled Recording");
+        recordingSession_->Start(currentSolution_->GenerateNextRecordingName());
         break;
 
     case StudioState::SolutionLoaded:
@@ -766,6 +776,98 @@ bool StudioMainFrame::OpenSolution(const std::filesystem::path& solutionFile) {
     RebuildRecentSolutionsMenu();
 
     return true;
+}
+
+void StudioMainFrame::OnDeleteRecording(wxCommandEvent& evt) {
+    if (stateController_->GetState() == StudioState::RecordingRunning ||
+        stateController_->GetState() == StudioState::RecordingPaused) {
+        wxMessageBox(
+            "You cannot delete recordings while a recording session is "
+            "active.\n\nStop the recording first.",
+            "Delete Recording",
+            wxICON_WARNING,
+            this);
+        return;
+    }
+
+    auto* path =
+        static_cast<std::filesystem::path*>(evt.GetClientData());
+
+    if (!path || !currentSolution_) {
+        return;
+    }
+
+    int rc = wxMessageBox(
+        wxString::Format("Delete recording?\n\n%s",
+                         path->filename().string()),
+        "Delete Recording",
+        wxYES_NO | wxICON_WARNING,
+        this);
+
+    if (rc != wxYES)
+        return;
+
+    std::error_code ec;
+    std::filesystem::remove(*path, ec);
+
+    delete path;
+
+    if (ec) {
+        wxMessageBox(
+            wxString::Format("Failed to delete recording:\n%s",
+                             ec.message()),
+            "Delete Recording",
+            wxICON_ERROR);
+        return;
+    }
+
+    solutionExplorerPanel_->RefreshRecordings(*currentSolution_);
+}
+
+void StudioMainFrame::OnRenameRecording(wxCommandEvent& evt) {
+    if (stateController_->GetState() == StudioState::RecordingRunning ||
+        stateController_->GetState() == StudioState::RecordingPaused) {
+        wxMessageBox(
+            "Stop recording before renaming recordings.",
+            "Rename Recording",
+            wxICON_WARNING,
+            this);
+        return;
+    }
+
+    const RecordingMetadata* recording =
+        solutionExplorerPanel_->GetSelectedRecording();
+
+    wxTextEntryDialog dlg(
+        this,
+        "Enter a new name for the recording:",
+        "Rename Recording",
+        recording->name);
+
+    if (dlg.ShowModal() != wxID_OK) {
+        return;
+    }
+
+    std::string newName = dlg.GetValue().ToStdString();
+
+    if (newName.empty()) {
+        return;
+    }
+
+    // Make a mutable copy
+    RecordingMetadata updated = *recording;
+    updated.name = newName;
+
+    if (!updated.UpdateRecordingName()) {
+        wxMessageBox(
+            "Failed to save recording metadata.",
+            "Rename Recording",
+            wxICON_ERROR,
+            this);
+        return;
+    }
+
+    solutionExplorerPanel_->RefreshRecordings(*currentSolution_);
 }
 
 }   // namespace webweaver::studio

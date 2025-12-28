@@ -42,6 +42,8 @@ struct RecordingMetadata {
     std::chrono::system_clock::time_point createdAt;
 
     static RecordingLoadResult FromFile(const std::filesystem::path& wwrecFile);
+
+    bool UpdateRecordingName() const;
 };
 
 struct RecordingLoadResult {

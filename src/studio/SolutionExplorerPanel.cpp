@@ -20,8 +20,15 @@ Copyright 2025 SwatKat1977
 #include <string>
 #include "SolutionExplorerPanel.h"
 #include "SolutionExplorerIcons.h"
+#include "SolutionExplorerNodeData.h"
 
 namespace webweaver::studio {
+
+enum {
+    ID_CTXMENU_REC_OPEN = wxID_HIGHEST + 3000,
+    ID_CTXMENU_REC_RENAME,
+    ID_CTXMENU_REC_DELETE
+};
 
 SolutionExplorerPanel::SolutionExplorerPanel(wxWindow* parent)
     : wxPanel(parent) {
@@ -51,6 +58,23 @@ void SolutionExplorerPanel::CreateControls() {
         wxDefaultPosition,
         wxDefaultSize,
         wxTR_HAS_BUTTONS | wxTR_LINES_AT_ROOT | wxTR_DEFAULT_STYLE);
+
+    tree_->Bind(wxEVT_TREE_ITEM_MENU,
+                &SolutionExplorerPanel::OnItemContextMenu,
+                this);
+
+    Bind(wxEVT_MENU,
+         &SolutionExplorerPanel::OnOpenRecording,
+         this,
+         ID_CTXMENU_REC_OPEN);
+    Bind(wxEVT_MENU,
+         &SolutionExplorerPanel::OnRenameRecording,
+         this,
+         ID_CTXMENU_REC_RENAME);
+    Bind(wxEVT_MENU,
+         &SolutionExplorerPanel::OnDeleteRecording,
+         this,
+         ID_CTXMENU_REC_DELETE);
 
     // Image list
     imageList_ = new wxImageList(16, 16, true);
@@ -98,15 +122,20 @@ void SolutionExplorerPanel::PopulateEmptySolution(
     wxTreeItemId root = tree_->AddRoot(
         "Solution '" + solutionName + "'",
         iconSolution_,
-        iconSolution_);
+        iconSolution_,
+        new ExplorerNodeData(ExplorerNodeType::SolutionRoot,
+                             RecordingMetadata()));
 
     AppendEmptyNode(root, "Pages", iconPages_);
     AppendEmptyNode(root, "Scripts", iconScripts_);
 
-    wxTreeItemId recordings = tree_->AppendItem(root,
-                                                "Recordings",
-                                                iconRecordings_,
-                                                iconRecordings_);
+    wxTreeItemId recordings = tree_->AppendItem(
+        root,
+        "Recordings",
+        iconRecordings_,
+        iconRecordings_,
+        new ExplorerNodeData(ExplorerNodeType::FolderRecordings,
+                             RecordingMetadata()));
     PopulateRecordings(solution, recordings);
 }
 
@@ -136,7 +165,9 @@ void SolutionExplorerPanel::PopulateRecordings(
             recordingsNode,
             rec.name,
             iconRecordings_,
-            iconRecordings_);
+            iconRecordings_,
+            new ExplorerNodeData(ExplorerNodeType::RecordingItem,
+            rec));
     }
 }
 
@@ -162,6 +193,95 @@ void SolutionExplorerPanel::RefreshRecordings(
         child = tree_->GetNextChild(root, cookie);
     }
 }
+
+void SolutionExplorerPanel::OnItemContextMenu(wxTreeEvent& event) {
+    wxTreeItemId item = event.GetItem();
+    if (!item.IsOk()) {
+        return;
+    }
+
+    auto* data = dynamic_cast<ExplorerNodeData*>(
+    tree_->GetItemData(item));
+
+    if (!data) {
+        return;
+    }
+
+    wxMenu menu;
+
+    switch (data->GetType()) {
+    case ExplorerNodeType::RecordingItem:
+        menu.Append(ID_CTXMENU_REC_OPEN, "Open");
+        menu.Append(ID_CTXMENU_REC_RENAME, "Rename");
+        menu.AppendSeparator();
+        menu.Append(ID_CTXMENU_REC_DELETE, "Delete");
+        break;
+
+    default:
+        // No menu
+        return;
+    }
+
+    contextItem_ = item;
+
+    PopupMenu(&menu);
+}
+
+void SolutionExplorerPanel::OnOpenRecording(wxCommandEvent&) {
+    wxLogMessage("Open recording");
+}
+
+void SolutionExplorerPanel::OnRenameRecording(wxCommandEvent&) {
+    if (!contextItem_.IsOk()) {
+        return;
+    }
+
+    auto* data = dynamic_cast<ExplorerNodeData*>(
+        tree_->GetItemData(contextItem_));
+
+    if (!data || data->GetType() != ExplorerNodeType::RecordingItem)
+        return;
+
+    wxCommandEvent evt(EVT_RENAME_RECORDING);
+    evt.SetClientData(new std::filesystem::path(data->GetMetadata().filePath));
+
+    wxPostEvent(GetParent(), evt);
+}
+
+void SolutionExplorerPanel::OnDeleteRecording(wxCommandEvent&) {
+    if (!contextItem_.IsOk()) {
+        return;
+    }
+
+    auto* data = dynamic_cast<ExplorerNodeData*>(
+        tree_->GetItemData(contextItem_));
+
+    if (!data || data->GetType() != ExplorerNodeType::RecordingItem) {
+        return;
+    }
+
+    wxCommandEvent evt(EVT_DELETE_RECORDING);
+    evt.SetClientData(new std::filesystem::path(data->GetMetadata().filePath));
+
+    wxPostEvent(GetParent(), evt);
+}
+
+RecordingMetadata* SolutionExplorerPanel::GetSelectedRecording() const {
+    wxTreeItemId sel = tree_->GetSelection();
+    if (!sel.IsOk())
+        return nullptr;
+
+    auto* data =
+        dynamic_cast<ExplorerNodeData*>(tree_->GetItemData(sel));
+
+    if (!data)
+        return nullptr;
+
+    return &data->GetMetadata();
+}
+
+wxDEFINE_EVENT(EVT_DELETE_RECORDING, wxCommandEvent);
+wxDEFINE_EVENT(EVT_RENAME_RECORDING, wxCommandEvent);
 
 }   // namespace webweaver::studio
 

@@ -194,6 +194,11 @@ std::vector<RecordingMetadata> StudioSolution::DiscoverRecordingFiles() const {
     return recordings;
 }
 
+std::string StudioSolution::GenerateNextRecordingName() const {
+    auto recordings = DiscoverRecordingFiles();
+    return "Recording " + std::to_string(recordings.size() + 1);
+}
+
 std::string SolutionDirectoryErrorToStr(SolutionDirectoryCreateStatus err) {
     switch (err) {
     case SolutionDirectoryCreateStatus::CannotCreateRoot:
