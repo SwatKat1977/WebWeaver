@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{0a5e2752-0b13-4266-8309-fef1f96a98b7}</ProjectGuid>
+    <RootNamespace>WebWeaverStudio</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ExternalIncludePath>.;$(WEBWEAVER_WXWIDGETS_INCLUDE);$(WEBWEAVER_WXWIDGETS_LIB)\mswud</ExternalIncludePath>
+    <LibraryPath>$(WEBWEAVER_WXWIDGETS_LIB);$(LibraryPath)</LibraryPath>
+    <EmbedManifest>false</EmbedManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>.;$(WEBWEAVER_WXWIDGETS_INCLUDE);$(WEBWEAVER_WXWIDGETS_LIB)\mswu</IncludePath>
+    <LibraryPath>$(WEBWEAVER_WXWIDGETS_LIB);$(LibraryPath)</LibraryPath>
+    <ExternalIncludePath>..\3rd_party\;$(ExternalIncludePath)</ExternalIncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;__WXDEBUG__;WXUSINGDLL;_CRT_SECURE_NO_WARNINGS;WEBWEAVER_PLATFORM_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>wxbase33ud.lib;wxmsw33ud_core.lib;wxmsw33ud_aui.lib;wxmsw33ud_adv.lib;wxmsw33ud_html.lib;wxpngd.lib;wxzlibd.lib;wxjpegd.lib;wxtiffd.lib;wxregexud.lib;wxexpatd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <Manifest>
+      <AdditionalManifestFiles>
+      </AdditionalManifestFiles>
+    </Manifest>
+    <PostBuildEvent>
+      <Command>mt.exe -manifest "$(ProjectDir)WebWeaverStudio.manifest" -outputresource:"$(TargetPath)";#1</Command>
+      <Message>Generating Manifest [Debug]</Message>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;WXUSINGDLL;_CRT_SECURE_NO_WARNINGS;WEBWEAVER_PLATFORM_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <AdditionalDependencies>wxbase33u.lib;wxmsw33u_core.lib;wxmsw33u_aui.lib;wxmsw33u_adv.lib;wxmsw33u_html.lib;wxpng.lib;wxzlib.lib;wxjpeg.lib;wxtiff.lib;wxregexu.lib;wxexpat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <PostBuildEvent>
+      <Message>Generating Manifest [Release]</Message>
+      <Command>mt.exe -manifest "$(ProjectDir)WebWeaverStudio.manifest" -outputresource:"$(TargetPath)";#1</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="BitmapUtils.cpp" />
+    <ClCompile Include="FilesystemUtils.cpp" />
+    <ClCompile Include="Platform.cpp" />
+    <ClCompile Include="RecentSolutionsManager.cpp" />
+    <ClCompile Include="SolutionCreateWizard\BrowserIcons.cpp" />
+    <ClCompile Include="SolutionCreateWizard\WizardBasicInfoPage.cpp" />
+    <ClCompile Include="SolutionCreateWizard\WizardBehaviourPage.cpp" />
+    <ClCompile Include="SolutionCreateWizard\WizardFinishPage.cpp" />
+    <ClCompile Include="SolutionCreateWizard\WizardSelectBrowserPage.cpp" />
+    <ClCompile Include="SolutionExplorerIcons.cpp" />
+    <ClCompile Include="SolutionExplorerPanel.cpp" />
+    <ClCompile Include="studio.cpp" />
+    <ClCompile Include="StudioMainFrame.cpp" />
+    <ClCompile Include="StudioSolution.cpp" />
+    <ClCompile Include="StudioStateController.cpp" />
+    <ClCompile Include="ToolbarIcons.cpp" />
+    <ClCompile Include="WizardStepIndicator.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\artworkResources\studio\browserIcons\browser_chromium_icon.h" />
+    <ClInclude Include="..\artworkResources\studio\browserIcons\browser_firefox_icon.h" />
+    <ClInclude Include="..\artworkResources\studio\browserIcons\browser_google_chrome_icon.h" />
+    <ClInclude Include="..\artworkResources\studio\browserIcons\browser_microsoft_edge_icon.h" />
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_close_solution.h" />
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_inspect.h" />
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_new_project.h" />
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_open_project.h" />
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_pause_record.h" />
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_resume_record.h" />
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_save_project.h" />
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_start_record.h" />
+    <ClInclude Include="..\artworkResources\studio\toolbar\toolbar_stop_record.h" />
+    <ClInclude Include="BitmapUtils.h" />
+    <ClInclude Include="FilesystemUtils.h" />
+    <ClInclude Include="Platform.h" />
+    <ClInclude Include="RecentSolutionsManager.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="SolutionCreateWizard\BrowserIcons.h" />
+    <ClInclude Include="SolutionCreateWizard\SolutionCreateWizardBasePage.h" />
+    <ClInclude Include="SolutionCreateWizard\WizardBasicInfoPage.h" />
+    <ClInclude Include="SolutionCreateWizard\WizardBehaviourPage.h" />
+    <ClInclude Include="SolutionCreateWizard\WizardFinishPage.h" />
+    <ClInclude Include="SolutionCreateWizard\WizardSelectBrowserPage.h" />
+    <ClInclude Include="SolutionExplorerIcons.h" />
+    <ClInclude Include="SolutionExplorerPanel.h" />
+    <ClInclude Include="StudioDefinitions.h" />
+    <ClInclude Include="StudioMainFrame.h" />
+    <ClInclude Include="StudioSolution.h" />
+    <ClInclude Include="StudioStateController.h" />
+    <ClInclude Include="ToolbarIcons.h" />
+    <ClInclude Include="WizardStepIndicator.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="VersionInfo.rc" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

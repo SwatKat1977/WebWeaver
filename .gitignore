@@ -1,2 +1,29 @@
+########### DEV OPS ###########
+
+#### Virtual Environment ####
+.venv
+venv
+
+########### PYTHON ###########
 __pycache__
 .coverage
+.idea
+
+# Build
+dist
+build
+
+########### C++ ###########
+
+#### Windows ####
+.vs
+x64
+*.user
+src/studio/VersionInfo.aps
+
+#### Linux/Mac ####
+src/cmake_install.cmake
+src/CMakeCache.txt
+src/Makefile
+src/CMakeFiles
+src/src
