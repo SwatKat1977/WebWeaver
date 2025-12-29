@@ -228,7 +228,15 @@ void SolutionExplorerPanel::OnItemContextMenu(wxTreeEvent& event) {
 }
 
 void SolutionExplorerPanel::OnOpenRecording(wxCommandEvent&) {
-    wxLogMessage("Open recording");
+    auto* recording = GetSelectedRecording();
+    if (!recording)
+        return;
+
+    wxCommandEvent evt(EVT_OPEN_RECORDING);
+    evt.SetClientData(recording);
+    evt.SetEventObject(this);
+
+    ProcessWindowEvent(evt);
 }
 
 void SolutionExplorerPanel::OnRenameRecording(wxCommandEvent&) {
@@ -280,6 +288,7 @@ RecordingMetadata* SolutionExplorerPanel::GetSelectedRecording() const {
     return &data->GetMetadata();
 }
 
+wxDEFINE_EVENT(EVT_OPEN_RECORDING, wxCommandEvent);
 wxDEFINE_EVENT(EVT_DELETE_RECORDING, wxCommandEvent);
 wxDEFINE_EVENT(EVT_RENAME_RECORDING, wxCommandEvent);
 

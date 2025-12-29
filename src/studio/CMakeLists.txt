@@ -10,6 +10,7 @@ add_executable(webweaver_studio
     RecentSolutionsManager.cpp
     RecordingMetadata.cpp
     RecordingSession.cpp
+    RecordingViewerPanel.cpp
     SolutionExplorerIcons.cpp
     SolutionExplorerPanel.cpp
     studio.cpp
@@ -18,6 +19,7 @@ add_executable(webweaver_studio
     StudioStateController.cpp
     ToolbarIcons.cpp
     WizardStepIndicator.cpp
+    WorkspacePanel.cpp
     SolutionCreateWizard/BrowserIcons.cpp
     SolutionCreateWizard/WizardBasicInfoPage.cpp
     SolutionCreateWizard/WizardBehaviourPage.cpp

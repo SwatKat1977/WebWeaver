@@ -135,6 +135,11 @@ void StudioMainFrame::InitAui() {
 
     CreateInspectorPanel();
 
+    // Open recording event.
+    Bind(EVT_OPEN_RECORDING,
+     &StudioMainFrame::OnOpenRecording,
+     this);
+
     // Delete recording event.
     Bind(EVT_DELETE_RECORDING,
          &StudioMainFrame::OnDeleteRecording,
@@ -273,17 +278,11 @@ void StudioMainFrame::CreateWorkspacePanel() {
     // -------------------------
     // Workspace
     // -------------------------
-    wxPanel *workspacePanel = new wxPanel(this);
-    wxBoxSizer *workspaceSizer = new wxBoxSizer(wxVERTICAL);
-    workspaceSizer->Add(new wxStaticText(workspacePanel,
-                        wxID_ANY,
-                        "Workspace"), 0, wxALL, 5);
-
-    workspacePanel->SetSizer(workspaceSizer);
+    workspacePanel_ = new WorkspacePanel(this);
 
     // Add main central area
     auiMgr_.AddPane(
-        workspacePanel,
+        workspacePanel_,
         wxAuiPaneInfo()
         .CenterPane()
         .Row(1)
@@ -868,6 +867,21 @@ void StudioMainFrame::OnRenameRecording(wxCommandEvent& evt) {
     }
 
     solutionExplorerPanel_->RefreshRecordings(*currentSolution_);
+}
+
+void StudioMainFrame::OnOpenRecording(wxCommandEvent& evt) {
+    auto* metadata =
+        static_cast<RecordingMetadata*>(evt.GetClientData());
+
+    if (!metadata || !currentSolution_ || !workspacePanel_) {
+        return;
+    }
+
+    // 1. Ask the solution for a view context
+    RecordingViewContext ctx = currentSolution_->OpenRecording(*metadata);
+
+    // 2. Tell the workspace to display it
+    workspacePanel_->OpenRecording(ctx);
 }
 
 }   // namespace webweaver::studio
