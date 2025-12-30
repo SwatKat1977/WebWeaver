@@ -17,8 +17,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef RECORDINGSESSION_H_
-#define RECORDINGSESSION_H_
+#ifndef RECORDING_RECORDINGSESSION_H_
+#define RECORDING_RECORDINGSESSION_H_
 #include <filesystem>
 #include <string>
 #include <nlohmann/json.hpp>
@@ -44,4 +44,4 @@ class RecordingSession {
 
 }   // namespace webweaver::studio
 
-#endif  // RECORDINGSESSION_H_
+#endif  // RECORDING_RECORDINGSESSION_H_
