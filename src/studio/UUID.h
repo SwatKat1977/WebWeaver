@@ -17,32 +17,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
-#ifndef WORKSPACEPANEL_H_
-#define WORKSPACEPANEL_H_
-#include <wx/wx.h>
+#ifndef UUID_H_
+#define UUID_H_
 #include <string>
-#include "RecordingViewContext.h"
 
 namespace webweaver::studio {
 
-class WorkspacePanel : public wxPanel {
- public:
-    explicit WorkspacePanel(wxWindow* parent);
-
-    void OpenRecording(const RecordingViewContext& ctx);
-    bool IsRecordingOpen(const wxFileName& file) const;
-
-    void OnRecordingRenamedById(const std::string& id,
-                                const std::string& newName);
-
-    void OnRecordingDeletedById(const std::string& id);
-
- private:
-    wxAuiNotebook* notebook_;
-
-    void CreateUI();
-};
+std::string GenerateUuidV4();
 
 }   // namespace webweaver::studio
 
-#endif  // WORKSPACEPANEL_H_
+#endif  // UUID_H_

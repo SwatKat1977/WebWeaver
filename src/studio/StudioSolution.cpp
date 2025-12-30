@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
 #include <wx/wx.h>
+#include <algorithm>
 #include <fstream>
 #include "StudioSolution.h"
 
@@ -196,7 +197,31 @@ std::vector<RecordingMetadata> StudioSolution::DiscoverRecordingFiles() const {
 
 std::string StudioSolution::GenerateNextRecordingName() const {
     auto recordings = DiscoverRecordingFiles();
-    return "Recording " + std::to_string(recordings.size() + 1);
+
+    int maxIndex = 0;
+    const std::string prefix = "Recording ";
+
+    for (const auto& rec : recordings) {
+        const std::string& name = rec.name;
+
+        if (name.size() <= prefix.size()) {
+            continue;
+        }
+
+        // C++17-compatible prefix check
+        if (name.compare(0, prefix.size(), prefix) != 0) {
+            continue;
+        }
+
+        try {
+            int value = std::stoi(name.substr(prefix.size()));
+            maxIndex = std::max(maxIndex, value);
+        } catch (...) {
+            // Ignore malformed names
+        }
+    }
+
+    return "Recording " + std::to_string(maxIndex + 1);
 }
 
 std::string SolutionDirectoryErrorToStr(SolutionDirectoryCreateStatus err) {
@@ -225,7 +250,9 @@ RecordingViewContext StudioSolution::OpenRecording(
 
     RecordingViewContext ctx;
     ctx.metadata = metadata;
-    ctx.recordingFile = wxFileName(metadata.filePath.string());
+    ctx.recordingFile = wxFileName(
+        wxString::FromUTF8(
+            std::filesystem::absolute(metadata.filePath).string()));
 
     return ctx;
 }

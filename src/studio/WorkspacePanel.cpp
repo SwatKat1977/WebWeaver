@@ -61,26 +61,57 @@ bool WorkspacePanel::IsRecordingOpen(const wxFileName& file) const {
                      wxPATH_NORM_DOTS |
                      wxPATH_NORM_TILDE);
 
-    for (size_t i = 0; i < notebook_->GetPageCount(); ++i)
-    {
+    for (size_t i = 0; i < notebook_->GetPageCount(); ++i) {
         auto* page = notebook_->GetPage(i);
 
-        auto* viewer =
-            dynamic_cast<RecordingViewerPanel*>(page);
+        auto* viewer = dynamic_cast<RecordingViewerPanel*>(page);
 
-        if (!viewer)
+        if (!viewer) {
             continue;
+        }
 
         wxFileName openFile = viewer->GetRecordingFile();
         openFile.Normalize(wxPATH_NORM_ABSOLUTE |
                            wxPATH_NORM_DOTS |
                            wxPATH_NORM_TILDE);
 
-        if (openFile == target)
+        if (openFile == target) {
             return true;
+        }
     }
 
     return false;
+}
+
+void WorkspacePanel::OnRecordingDeletedById(const std::string& id) {
+    if (!notebook_) return;
+
+    for (size_t i = 0; i < notebook_->GetPageCount(); ++i) {
+        auto* viewer = dynamic_cast<RecordingViewerPanel*>(
+            notebook_->GetPage(i));
+        if (!viewer) continue;
+
+        if (viewer->GetRecordingId() == id) {
+            notebook_->DeletePage(i);
+            return;
+        }
+    }
+}
+
+void WorkspacePanel::OnRecordingRenamedById(const std::string& id,
+                                           const std::string& newName) {
+    if (!notebook_) return;
+
+    for (size_t i = 0; i < notebook_->GetPageCount(); ++i) {
+        auto* viewer = dynamic_cast<RecordingViewerPanel*>(
+            notebook_->GetPage(i));
+        if (!viewer) continue;
+
+        if (viewer->GetRecordingId() == id) {
+            notebook_->SetPageText(i, wxString::FromUTF8(newName));
+            return;
+        }
+    }
 }
 
 }   // namespace webweaver::studio

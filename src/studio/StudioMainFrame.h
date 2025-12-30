@@ -117,6 +117,7 @@ class StudioMainFrame : public wxFrame {
 
     bool OpenSolution(const std::filesystem::path& solutionFile);
 
+    // NOLINTNEXTLINE(runtime/references)
     void OnOpenRecording(wxCommandEvent& evt);
 
     // NOLINTNEXTLINE(runtime/references)

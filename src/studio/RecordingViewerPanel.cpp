@@ -82,6 +82,10 @@ void RecordingViewerPanel::CreateUI() {
     SetSizerAndFit(mainSizer);
 }
 
+const std::string& RecordingViewerPanel::GetRecordingId() const {
+    return context_.metadata.id;
+}
+
 const wxFileName& RecordingViewerPanel::GetRecordingFile() const {
     return context_.recordingFile;
 }

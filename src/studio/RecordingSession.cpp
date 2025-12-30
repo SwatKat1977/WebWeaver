@@ -21,6 +21,7 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 #include <fstream>
 #include <sstream>
 #include "RecordingSession.h"
+#include "UUID.h"
 
 namespace webweaver::studio {
 
@@ -58,10 +59,12 @@ bool RecordingSession::Start(const std::string& name) {
 
     filePath_ = recordingsDir / filename;
 
+    const std::string id = GenerateUuidV4();
+
     recordingJson_ = {
         { "version", 1 },
         { "recording", {
-            { "id", "PLACEHOLDER" },
+            { "id", id },
             { "name", name },
             { "createdAt", NowUtcIso() },
             { "browser", solution_.selectedBrowser },
