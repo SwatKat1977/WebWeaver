@@ -83,7 +83,6 @@ struct StudioSolution {
     static SolutionLoadResult FromJson(const nlohmann::json& rawJSON);
 
     RecordingViewContext OpenRecording(const RecordingMetadata& metadata);
-
 };
 
 struct SolutionLoadResult {

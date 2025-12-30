@@ -820,6 +820,14 @@ void StudioMainFrame::OnDeleteRecording(wxCommandEvent& evt) {
         return;
     }
 
+    const RecordingMetadata* selected =
+        solutionExplorerPanel_->GetSelectedRecording();
+    const std::string selectedId = selected ? selected->id : std::string{};
+
+    if (!selectedId.empty()) {
+        workspacePanel_->OnRecordingDeletedById(selectedId);
+    }
+
     solutionExplorerPanel_->RefreshRecordings(*currentSolution_);
 }
 
@@ -865,6 +873,8 @@ void StudioMainFrame::OnRenameRecording(wxCommandEvent& evt) {
             this);
         return;
     }
+
+    workspacePanel_->OnRecordingRenamedById(recording->id, newName);
 
     solutionExplorerPanel_->RefreshRecordings(*currentSolution_);
 }

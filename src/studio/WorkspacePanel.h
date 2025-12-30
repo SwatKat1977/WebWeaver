@@ -20,6 +20,7 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 #ifndef WORKSPACEPANEL_H_
 #define WORKSPACEPANEL_H_
 #include <wx/wx.h>
+#include <string>
 #include "RecordingViewContext.h"
 
 namespace webweaver::studio {
@@ -30,6 +31,11 @@ class WorkspacePanel : public wxPanel {
 
     void OpenRecording(const RecordingViewContext& ctx);
     bool IsRecordingOpen(const wxFileName& file) const;
+
+    void OnRecordingRenamedById(const std::string& id,
+                                const std::string& newName);
+
+    void OnRecordingDeletedById(const std::string& id);
 
  private:
     wxAuiNotebook* notebook_;

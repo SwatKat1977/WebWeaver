@@ -225,7 +225,9 @@ RecordingViewContext StudioSolution::OpenRecording(
 
     RecordingViewContext ctx;
     ctx.metadata = metadata;
-    ctx.recordingFile = wxFileName(metadata.filePath.string());
+    ctx.recordingFile = wxFileName(
+        wxString::FromUTF8(
+            std::filesystem::absolute(metadata.filePath).string()));
 
     return ctx;
 }

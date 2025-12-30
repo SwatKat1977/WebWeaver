@@ -20,20 +20,22 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 #ifndef RECORDINGVIEWERPANEL_H_
 #define RECORDINGVIEWERPANEL_H_
 #include <wx/wx.h>
+#include <string>
 #include "RecordingViewContext.h"
 
 
 namespace webweaver::studio {
 
-class RecordingViewerPanel : public wxPanel
-{
-public:
+class RecordingViewerPanel : public wxPanel {
+ public:
     RecordingViewerPanel(wxWindow* parent,
                          const RecordingViewContext& ctx);
 
+    const std::string& GetRecordingId() const;
+
     const wxFileName& GetRecordingFile() const;
 
-private:
+ private:
     RecordingViewContext context_;
 
     void CreateUI();
