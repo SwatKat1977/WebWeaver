@@ -9,7 +9,6 @@ add_executable(webweaver_studio
     Platform.cpp
     RecentSolutionsManager.cpp
     RecordingMetadata.cpp
-    RecordingSession.cpp
     RecordingViewerPanel.cpp
     SolutionExplorerIcons.cpp
     SolutionExplorerPanel.cpp
@@ -21,6 +20,7 @@ add_executable(webweaver_studio
     UUID.cpp
     WizardStepIndicator.cpp
     WorkspacePanel.cpp
+    recording/RecordingSession.cpp
     SolutionCreateWizard/BrowserIcons.cpp
     SolutionCreateWizard/WizardBasicInfoPage.cpp
     SolutionCreateWizard/WizardBehaviourPage.cpp
