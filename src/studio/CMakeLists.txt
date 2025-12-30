@@ -20,6 +20,7 @@ add_executable(webweaver_studio
     UUID.cpp
     WizardStepIndicator.cpp
     WorkspacePanel.cpp
+    recording/RecordingEventType.cpp
     recording/RecordingSession.cpp
     SolutionCreateWizard/BrowserIcons.cpp
     SolutionCreateWizard/WizardBasicInfoPage.cpp
