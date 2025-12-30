@@ -60,7 +60,7 @@ bool RecordingSession::Start(const std::string& name) {
     filePath_ = recordingsDir / filename;
 
     const std::string id = GenerateUuidV4();
- 
+
     recordingJson_ = {
         { "version", 1 },
         { "recording", {
