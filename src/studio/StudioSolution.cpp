@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.If not, see < https://www.gnu.org/licenses/>.
 */
 #include <wx/wx.h>
+#include <algorithm>
 #include <fstream>
 #include "StudioSolution.h"
 
@@ -194,31 +195,28 @@ std::vector<RecordingMetadata> StudioSolution::DiscoverRecordingFiles() const {
     return recordings;
 }
 
-std::string StudioSolution::GenerateNextRecordingName() const
-{
+std::string StudioSolution::GenerateNextRecordingName() const {
     auto recordings = DiscoverRecordingFiles();
 
     int maxIndex = 0;
     const std::string prefix = "Recording ";
 
-    for (const auto& rec : recordings)
-    {
+    for (const auto& rec : recordings) {
         const std::string& name = rec.name;
 
-        if (name.size() <= prefix.size())
+        if (name.size() <= prefix.size()) {
             continue;
+        }
 
         // C++17-compatible prefix check
-        if (name.compare(0, prefix.size(), prefix) != 0)
+        if (name.compare(0, prefix.size(), prefix) != 0) {
             continue;
+        }
 
-        try
-        {
+        try {
             int value = std::stoi(name.substr(prefix.size()));
             maxIndex = std::max(maxIndex, value);
-        }
-        catch (...)
-        {
+        } catch (...) {
             // Ignore malformed names
         }
     }
