@@ -696,7 +696,6 @@ bool StudioMainFrame::SaveSolutionToDisk(const StudioSolution& solution) {
     return true;
 }
 
-
 void StudioMainFrame::RebuildRecentSolutionsMenu() {
     // Remove all existing items
     while (recentSolutionsMenu_->GetMenuItemCount() > 0) {
