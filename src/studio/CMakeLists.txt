@@ -18,6 +18,7 @@ add_executable(webweaver_studio
     StudioSolution.cpp
     StudioStateController.cpp
     ToolbarIcons.cpp
+    UUID.cpp
     WizardStepIndicator.cpp
     WorkspacePanel.cpp
     SolutionCreateWizard/BrowserIcons.cpp
