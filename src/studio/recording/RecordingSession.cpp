@@ -20,6 +20,7 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 #include <chrono>   // NOLINT
 #include <fstream>
 #include <sstream>
+#include "RecordingEvent.h"
 #include "RecordingSession.h"
 #include "UUID.h"
 
@@ -79,6 +80,10 @@ bool RecordingSession::Start(const std::string& name) {
 
     out << recordingJson_.dump(4);
     active_ = true;
+
+    nextIndex_ = 0;
+    startTime_ = std::chrono::steady_clock::now();
+
     return true;
 }
 
@@ -93,6 +98,43 @@ void RecordingSession::Stop() {
     }
 
     active_ = false;
+}
+
+void RecordingSession::AppendEvent(RecordingEventType type,
+                                   nlohmann::json payload) {
+    if (!active_) {
+        return;
+    }
+
+    const auto now = std::chrono::steady_clock::now();
+    const auto elapsed =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            now - startTime_).count();
+
+    RecordingEvent event;
+    event.index = nextIndex_++;
+    event.timestampMs = static_cast<uint64_t>(elapsed);
+    event.type = type;
+    event.payload = std::move(payload);
+
+    // Append to in-memory JSON
+    recordingJson_["recording"]["events"].push_back({
+        { "index", event.index },
+        { "timestamp", event.timestampMs },
+        { "type", EventTypeToString(event.type) },
+        { "payload", event.payload }
+    });
+
+    FlushToDisk();
+}
+
+void RecordingSession::FlushToDisk()
+{
+    std::ofstream out(filePath_, std::ios::trunc);
+    if (!out.is_open())
+        return;
+
+    out << recordingJson_.dump(4);
 }
 
 }   // namespace webweaver::studio

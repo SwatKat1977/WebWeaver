@@ -23,6 +23,7 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 #include <string>
 #include <nlohmann/json.hpp>
 #include "StudioSolution.h"
+#include "RecordingEventType.h"
 
 namespace webweaver::studio {
 
@@ -33,13 +34,25 @@ class RecordingSession {
     bool Start(const std::string& name);
     void Stop();
 
-    bool IsRecording() const;
+    bool IsRecording() const { return active_; };
+
+    // Appends a single immutable event to the recording.
+    // - Index and timestamp are assigned internally.
+    // - Events are always appended in order.
+    // - This method is safe to call repeatedly while recording is active.
+    void AppendEvent(RecordingEventType type,
+                     nlohmann::json payload);
 
  private:
+    bool active_ = false;
+
     std::filesystem::path filePath_;
     nlohmann::json recordingJson_;
-    bool active_ = false;
+    uint32_t nextIndex_ = 0;
+    std::chrono::steady_clock::time_point startTime_;
     const StudioSolution& solution_;
+
+    void FlushToDisk();
 };
 
 }   // namespace webweaver::studio
