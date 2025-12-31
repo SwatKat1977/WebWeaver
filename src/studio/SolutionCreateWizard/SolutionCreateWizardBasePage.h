@@ -20,6 +20,7 @@ Copyright 2025 SwatKat1977
 #ifndef SOLUTIONCREATEWIZARD_SOLUTIONCREATEWIZARDBASEPAGE_H_
 #define SOLUTIONCREATEWIZARD_SOLUTIONCREATEWIZARDBASEPAGE_H_
 #include <string>
+#include "BrowserLaunchOptions.h"
 
 namespace webweaver::studio {
 
@@ -33,6 +34,9 @@ struct ProjectCreateWizardData {
     std::string baseUrl;
     std::string browser;
     bool launchBrowserAutomatically;
+
+    // -- PAGE 3 [Behaviour Page] --
+    BrowserLaunchOptions browserLaunchOptions;
 };
 
 }   // namespace webweaver::studio

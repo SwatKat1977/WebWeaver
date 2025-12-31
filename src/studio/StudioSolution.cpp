@@ -39,7 +39,8 @@ nlohmann::json StudioSolution::ToJson() const {
             { "solutionDirectoryCreated", createDirectoryForSolution },
             { "baseUrl", baseUrl },
             { "browser", selectedBrowser }
-        }}
+        }},
+        { "browserLaunchOptions", browserLaunchOptions.ToJson() }
     };
 }
 
