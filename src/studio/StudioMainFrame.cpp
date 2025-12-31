@@ -482,12 +482,15 @@ void StudioMainFrame::OnNewSolutionEvent(wxCommandEvent& event) {
         default:
             // No more pages .. end wizard and create solution
 
+            BrowserLaunchOptions browserLaunchOptions;
+
             currentSolution_.emplace(
                 data.solutionName,
                 data.solutionDirectory,
                 data.createSolutionDir,
                 data.baseUrl,
-                data.browser);
+                data.browser,
+                browserLaunchOptions);
 
             if (!SaveSolutionToDisk(currentSolution_.value())) {
                 return;

@@ -34,7 +34,7 @@ class RecordingSession {
     bool Start(const std::string& name);
     void Stop();
 
-    bool IsRecording() const { return active_; };
+    bool IsRecording() const { return active_; }
 
     // Appends a single immutable event to the recording.
     // - Index and timestamp are assigned internally.

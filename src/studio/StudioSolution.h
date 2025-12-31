@@ -25,6 +25,7 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 #include <utility>
 #include <vector>
 #include <nlohmann/json.hpp>
+#include "BrowserLaunchOptions.h"
 #include "RecordingMetadata.h"
 #include "RecordingViewContext.h"
 
@@ -55,17 +56,20 @@ struct StudioSolution {
     bool createDirectoryForSolution;
     std::string baseUrl;
     std::string selectedBrowser;
+    BrowserLaunchOptions browserLaunchOptions;
 
     StudioSolution(std::string name,
                    std::string solutionDir,
                    bool createSolutionDir,
                    std::string url,
-                   std::string browser)
+                   std::string browser,
+                   BrowserLaunchOptions browserLaunchOpts)
         : solutionName(std::move(name)),
           solutionDirectory(std::move(solutionDir)),
           createDirectoryForSolution(createSolutionDir),
           baseUrl(std::move(url)),
-          selectedBrowser(std::move(browser)) {
+          selectedBrowser(std::move(browser)),
+          browserLaunchOptions(std::move(browserLaunchOpts)) {
     }
 
     std::filesystem::path GetSolutionDirectory() const;

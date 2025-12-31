@@ -20,6 +20,7 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 #include <chrono>   // NOLINT
 #include <fstream>
 #include <sstream>
+#include <utility>
 #include "RecordingEvent.h"
 #include "RecordingSession.h"
 #include "UUID.h"
@@ -92,10 +93,10 @@ void RecordingSession::Stop() {
         return;
     }
 
-    std::ofstream out(filePath_, std::ios::trunc);
-    if (out.is_open()) {
-        out << recordingJson_.dump(4);
-    }
+    recordingJson_["recording"]["endedAt"] = NowUtcIso();
+
+    // Persist final state
+    FlushToDisk();
 
     active_ = false;
 }
@@ -128,11 +129,11 @@ void RecordingSession::AppendEvent(RecordingEventType type,
     FlushToDisk();
 }
 
-void RecordingSession::FlushToDisk()
-{
+void RecordingSession::FlushToDisk() {
     std::ofstream out(filePath_, std::ios::trunc);
-    if (!out.is_open())
+    if (!out.is_open()) {
         return;
+    }
 
     out << recordingJson_.dump(4);
 }

@@ -5,6 +5,7 @@ include(${wxWidgets_USE_FILE})
 
 add_executable(webweaver_studio
     BitmapUtils.cpp
+    BrowserLaunchOptions.cpp
     FilesystemUtils.cpp
     Platform.cpp
     RecentSolutionsManager.cpp
