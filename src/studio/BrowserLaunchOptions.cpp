@@ -48,7 +48,8 @@ BrowserLaunchOptions BrowserLaunchOptions::FromJson(const nlohmann::json& j) {
     BrowserLaunchOptions opts;
 
     if (!j.is_object()) {
-        return opts; // defaults
+        // No launcher options, use defaults.
+        return opts;
     }
 
     opts.privateMode =

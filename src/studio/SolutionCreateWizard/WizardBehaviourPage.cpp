@@ -100,8 +100,7 @@ WizardBehaviourPage::WizardBehaviourPage(wxWindow* parent,
     CentreOnParent();
 }
 
-void WizardBehaviourPage::OnNextClickEvent(wxCommandEvent&)
-{
+void WizardBehaviourPage::OnNextClickEvent(wxCommandEvent&) {
     auto& opts = data_->browserLaunchOptions;
 
     opts.privateMode = chkPrivate_->GetValue();
@@ -114,7 +113,7 @@ void WizardBehaviourPage::OnNextClickEvent(wxCommandEvent&)
     bool defaultWindowSize = radioDefaultWindowSize_->GetValue();
 
     if (opts.maximised) {
-        opts.windowSize.reset();  
+        opts.windowSize.reset();
     } else if (defaultWindowSize) {
         opts.maximised = false;
         opts.windowSize.reset();
@@ -122,8 +121,8 @@ void WizardBehaviourPage::OnNextClickEvent(wxCommandEvent&)
         opts.windowSize = WindowSize{
             static_cast<uint32_t>(wxAtoi(txtWindowWidth_->GetValue())),
             static_cast<uint32_t>(wxAtoi(txtWindowHeight_->GetValue()))
-        };  
-        opts.maximised = false;  
+        };
+        opts.maximised = false;
     }
 
     const wxString userAgent = txtUserAgent_->GetValue();
@@ -136,19 +135,26 @@ void WizardBehaviourPage::OnNextClickEvent(wxCommandEvent&)
     EndModal(wxID_OK);
 }
 
-void WizardBehaviourPage::CreateBehaviourPanel(wxBoxSizer* parent)
-{
+void WizardBehaviourPage::CreateBehaviourPanel(wxBoxSizer* parent) {
     wxStaticBoxSizer* behaviourBox =
         new wxStaticBoxSizer(wxVERTICAL, this, "Recording Browser Settings");
 
-    chkPrivate_ = new wxCheckBox(this, wxID_ANY,
-                                 "Private / Incognito mode (recommended)");
-    chkDisableExtensions_ = new wxCheckBox(this, wxID_ANY,
-                                           "Disable extensions (recommended)");
-    chkDisableNotifications_ = new wxCheckBox(this, wxID_ANY,
-                                              "Disable notifications (recommended)");
-    chkIgnoreCertErrors_ = new wxCheckBox(this, wxID_ANY,
-                                          "Ignore certificate errors (advanced)");
+    chkPrivate_ = new wxCheckBox(
+        this,
+        wxID_ANY,
+        "Private / Incognito mode (recommended)");
+    chkDisableExtensions_ = new wxCheckBox(
+        this,
+        wxID_ANY,
+        "Disable extensions (recommended)");
+    chkDisableNotifications_ = new wxCheckBox(
+        this,
+        wxID_ANY,
+        "Disable notifications (recommended)");
+    chkIgnoreCertErrors_ = new wxCheckBox(
+        this,
+        wxID_ANY,
+        "Ignore certificate errors (advanced)");
 
     chkPrivate_->SetValue(true);
     chkDisableExtensions_->SetValue(true);
@@ -209,7 +215,10 @@ void WizardBehaviourPage::CreateBehaviourPanel(wxBoxSizer* parent)
     wxWindow* pane = advancedPane_->GetPane();
 
     wxBoxSizer* advSizer = new wxBoxSizer(wxVERTICAL);
-    advSizer->Add(new wxStaticText(pane, wxID_ANY, "User agent override"), 0, wxBOTTOM, 5);
+    advSizer->Add(new wxStaticText(pane,
+                                   wxID_ANY,
+                                   "User agent override"),
+                  0, wxBOTTOM, 5);
     txtUserAgent_ = new wxTextCtrl(pane, wxID_ANY);
     advSizer->Add(txtUserAgent_, 0, wxEXPAND);
 
@@ -219,8 +228,7 @@ void WizardBehaviourPage::CreateBehaviourPanel(wxBoxSizer* parent)
     parent->Add(behaviourBox, 1, wxEXPAND);
 }
 
-void WizardBehaviourPage::SyncWindowSizeState()
-{
+void WizardBehaviourPage::SyncWindowSizeState() {
     bool custom = radioCustomWindowSize_->GetValue();
     txtWindowWidth_->Enable(custom);
     txtWindowHeight_->Enable(custom);
