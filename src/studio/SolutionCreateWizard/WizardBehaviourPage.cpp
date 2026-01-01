@@ -69,6 +69,10 @@ WizardBehaviourPage::WizardBehaviourPage(wxWindow* parent,
     headerSizer->Add(textBoxSizer, 1, wxALIGN_CENTER_VERTICAL);
     mainSizer->Add(headerSizer, 0, wxLEFT | wxRIGHT, 10);
 
+    wxBoxSizer* contentSizer = new wxBoxSizer(wxVERTICAL);
+    CreateBehaviourPanel(contentSizer);
+    mainSizer->Add(contentSizer, 1, wxEXPAND | wxLEFT | wxRIGHT, 20);
+
     // Button bar
     wxBoxSizer *buttonSizer = new wxBoxSizer(wxHORIZONTAL);
     buttonSizer->AddStretchSpacer();
@@ -96,8 +100,119 @@ WizardBehaviourPage::WizardBehaviourPage(wxWindow* parent,
     CentreOnParent();
 }
 
-void WizardBehaviourPage::OnNextClickEvent(wxCommandEvent& event) {
+void WizardBehaviourPage::OnNextClickEvent(wxCommandEvent&)
+{
+    auto& opts = data_->browserLaunchOptions;
+
+    opts.privateMode = chkPrivate_->GetValue();
+    opts.disableExtensions = chkDisableExtensions_->GetValue();
+    opts.disableNotifications = chkDisableNotifications_->GetValue();
+    opts.ignoreCertificateErrors = chkIgnoreCertErrors_->GetValue();
+
+    opts.maximised = radioMaximised_->GetValue();
+
+    if (!opts.maximised) {
+        opts.windowSize = WindowSize{
+            static_cast<uint32_t>(wxAtoi(txtWindowWidth_->GetValue())),
+            static_cast<uint32_t>(wxAtoi(txtWindowHeight_->GetValue()))
+        };
+    } else {
+        opts.windowSize.reset();
+    }
+
+    const wxString ua = txtUserAgent_->GetValue();
+    if (!ua.IsEmpty()) {
+        opts.userAgent = ua.ToStdString();
+    } else {
+        opts.userAgent.reset();
+    }
+
     EndModal(wxID_OK);
+}
+
+void WizardBehaviourPage::CreateBehaviourPanel(wxBoxSizer* parent)
+{
+    wxStaticBoxSizer* behaviourBox =
+        new wxStaticBoxSizer(wxVERTICAL, this, "Recording Browser Settings");
+
+    chkPrivate_ = new wxCheckBox(this, wxID_ANY,
+                                 "Private / Incognito mode (recommended)");
+    chkDisableExtensions_ = new wxCheckBox(this, wxID_ANY,
+                                           "Disable extensions (recommended)");
+    chkDisableNotifications_ = new wxCheckBox(this, wxID_ANY,
+                                              "Disable notifications (recommended)");
+    chkIgnoreCertErrors_ = new wxCheckBox(this, wxID_ANY,
+                                          "Ignore certificate errors (advanced)");
+
+    chkPrivate_->SetValue(true);
+    chkDisableExtensions_->SetValue(true);
+    chkDisableNotifications_->SetValue(true);
+
+    behaviourBox->Add(chkPrivate_, 0, wxALL, 5);
+    behaviourBox->Add(chkDisableExtensions_, 0, wxALL, 5);
+    behaviourBox->Add(chkDisableNotifications_, 0, wxALL, 5);
+    behaviourBox->Add(chkIgnoreCertErrors_, 0, wxALL, 5);
+
+    behaviourBox->AddSpacer(10);
+
+    // Window size section
+    wxStaticText* windowLabel =
+        new wxStaticText(this, wxID_ANY, "Browser window");
+    windowLabel->SetFont(windowLabel->GetFont().Bold());
+
+    behaviourBox->Add(windowLabel, 0, wxALL, 5);
+
+    radioMaximised_ = new wxRadioButton(this, wxID_ANY,
+                                        "Maximised",
+                                        wxDefaultPosition,
+                                        wxDefaultSize,
+                                        wxRB_GROUP);
+    radioCustomWindowSize_ = new wxRadioButton(this, wxID_ANY,
+                                               "Custom size");
+
+    txtWindowWidth_ = new wxTextCtrl(this, wxID_ANY, "1280",
+                                    wxDefaultPosition, wxSize(60, -1));
+    txtWindowHeight_ = new wxTextCtrl(this, wxID_ANY, "800",
+                                      wxDefaultPosition, wxSize(60, -1));
+
+    wxBoxSizer* sizeSizer = new wxBoxSizer(wxHORIZONTAL);
+    sizeSizer->Add(txtWindowWidth_, 0, wxRIGHT, 5);
+    sizeSizer->Add(new wxStaticText(this, wxID_ANY, "×"),
+                   0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
+    sizeSizer->Add(txtWindowHeight_, 0);
+
+    behaviourBox->Add(radioMaximised_, 0, wxALL, 5);
+    behaviourBox->Add(radioCustomWindowSize_, 0, wxLEFT | wxTOP, 5);
+    behaviourBox->Add(sizeSizer, 0, wxLEFT | wxBOTTOM, 30);
+
+    radioMaximised_->SetValue(true);
+    SyncWindowSizeState();
+
+    radioMaximised_->Bind(wxEVT_RADIOBUTTON,
+                           [this](wxCommandEvent&) { SyncWindowSizeState(); });
+    radioCustomWindowSize_->Bind(wxEVT_RADIOBUTTON,
+                            [this](wxCommandEvent&) { SyncWindowSizeState(); });
+
+    // Advanced section
+    advancedPane_ = new wxCollapsiblePane(this, wxID_ANY, "Advanced");
+    wxWindow* pane = advancedPane_->GetPane();
+
+    wxBoxSizer* advSizer = new wxBoxSizer(wxVERTICAL);
+    advSizer->Add(new wxStaticText(pane, wxID_ANY, "User agent override"), 0, wxBOTTOM, 5);
+    txtUserAgent_ = new wxTextCtrl(pane, wxID_ANY);
+    advSizer->Add(txtUserAgent_, 0, wxEXPAND);
+
+    pane->SetSizer(advSizer);
+    behaviourBox->Add(advancedPane_, 0, wxEXPAND | wxALL, 5);
+
+    parent->Add(behaviourBox, 1, wxEXPAND);
+}
+
+void WizardBehaviourPage::SyncWindowSizeState()
+{
+    bool custom = radioCustomWindowSize_->GetValue();
+    txtWindowWidth_->Enable(custom);
+    txtWindowHeight_->Enable(custom);
 }
 
 }   // namespace webweaver::studio

@@ -20,6 +20,7 @@ Copyright 2025 SwatKat1977
 #ifndef SOLUTIONCREATEWIZARD_WIZARDBEHAVIOURPAGE_H_
 #define SOLUTIONCREATEWIZARD_WIZARDBEHAVIOURPAGE_H_
 #include <wx/wx.h>
+#include <wx/collpane.h>
 #include "SolutionCreateWizard/SolutionCreateWizardBasePage.h"
 #include "StudioDefinitions.h"
 
@@ -36,8 +37,26 @@ class WizardBehaviourPage : public wxDialog {
     // NOLINTNEXTLINE(runtime/references)
     void OnNextClickEvent(wxCommandEvent& event);
 
+    // Recording behaviour controls
+    wxCheckBox* chkPrivate_ = nullptr;
+    wxCheckBox* chkDisableExtensions_ = nullptr;
+    wxCheckBox* chkDisableNotifications_ = nullptr;
+    wxCheckBox* chkIgnoreCertErrors_ = nullptr;
+
+    wxRadioButton* radioMaximised_ = nullptr;
+    wxRadioButton* radioCustomWindowSize_ = nullptr;
+    wxTextCtrl* txtWindowWidth_ = nullptr;
+    wxTextCtrl* txtWindowHeight_ = nullptr;
+
+    wxCollapsiblePane* advancedPane_ = nullptr;
+    wxTextCtrl* txtUserAgent_ = nullptr;
+
     ProjectCreateWizardData *data_;
     StepsList steps_;
+
+
+    void CreateBehaviourPanel(wxBoxSizer* parent);
+    void SyncWindowSizeState();
 };
 
 }   // namespace webweaver::studio
