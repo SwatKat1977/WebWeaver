@@ -39,7 +39,8 @@ nlohmann::json StudioSolution::ToJson() const {
             { "solutionDirectoryCreated", createDirectoryForSolution },
             { "baseUrl", baseUrl },
             { "browser", selectedBrowser }
-        }}
+        }},
+        { "browserLaunchOptions", browserLaunchOptions.ToJson() }
     };
 }
 
@@ -70,13 +71,23 @@ SolutionLoadResult StudioSolution::FromJson(const nlohmann::json& rawJSON) {
         !s.contains("browser"))
         return { {}, SolutionLoadError::MissingRequiredField};
 
+    BrowserLaunchOptions launchOptions;
+
+    if (s.contains("browserLaunchOptions") &&
+        s["browserLaunchOptions"].is_object()) {
+        launchOptions =
+            BrowserLaunchOptions::FromJson(
+                s["browserLaunchOptions"]);
+    }
+
     return {
         StudioSolution{
             s["solutionName"].get<std::string>(),
             s["solutionDirectory"].get<std::string>(),
             s["solutionDirectoryCreated"].get<bool>(),
             s["baseUrl"].get<std::string>(),
-            s["browser"].get<std::string>()
+            s["browser"].get<std::string>(),
+            launchOptions
         },
         SolutionLoadError::None
     };

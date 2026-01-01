@@ -487,7 +487,8 @@ void StudioMainFrame::OnNewSolutionEvent(wxCommandEvent& event) {
                 data.solutionDirectory,
                 data.createSolutionDir,
                 data.baseUrl,
-                data.browser);
+                data.browser,
+                data.browserLaunchOptions);
 
             if (!SaveSolutionToDisk(currentSolution_.value())) {
                 return;

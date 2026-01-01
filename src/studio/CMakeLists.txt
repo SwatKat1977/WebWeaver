@@ -5,11 +5,11 @@ include(${wxWidgets_USE_FILE})
 
 add_executable(webweaver_studio
     BitmapUtils.cpp
+    BrowserLaunchOptions.cpp
     FilesystemUtils.cpp
     Platform.cpp
     RecentSolutionsManager.cpp
     RecordingMetadata.cpp
-    RecordingSession.cpp
     RecordingViewerPanel.cpp
     SolutionExplorerIcons.cpp
     SolutionExplorerPanel.cpp
@@ -21,6 +21,8 @@ add_executable(webweaver_studio
     UUID.cpp
     WizardStepIndicator.cpp
     WorkspacePanel.cpp
+    recording/RecordingEventType.cpp
+    recording/RecordingSession.cpp
     SolutionCreateWizard/BrowserIcons.cpp
     SolutionCreateWizard/WizardBasicInfoPage.cpp
     SolutionCreateWizard/WizardBehaviourPage.cpp

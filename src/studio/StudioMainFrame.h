@@ -28,7 +28,7 @@ Copyright 2025 SwatKat1977
 #include "StudioStateController.h"
 #include "StudioSolution.h"
 #include "RecentSolutionsManager.h"
-#include "RecordingSession.h"
+#include "recording/RecordingSession.h"
 #include "SolutionExplorerPanel.h"
 #include "WorkspacePanel.h"
 
