@@ -71,7 +71,7 @@ WizardBehaviourPage::WizardBehaviourPage(wxWindow* parent,
 
     wxBoxSizer* contentSizer = new wxBoxSizer(wxVERTICAL);
     CreateBehaviourPanel(contentSizer);
-    mainSizer->Add(contentSizer, 1, wxEXPAND | wxLEFT | wxRIGHT, 20);
+    mainSizer->Add(contentSizer, 0, wxEXPAND | wxLEFT | wxRIGHT, 20);
 
     // Button bar
     wxBoxSizer *buttonSizer = new wxBoxSizer(wxHORIZONTAL);
@@ -110,19 +110,25 @@ void WizardBehaviourPage::OnNextClickEvent(wxCommandEvent&)
     opts.ignoreCertificateErrors = chkIgnoreCertErrors_->GetValue();
 
     opts.maximised = radioMaximised_->GetValue();
+    bool customWindowSize = radioCustomWindowSize_->GetValue();
+    bool defaultWindowSize = radioDefaultWindowSize_->GetValue();
 
-    if (!opts.maximised) {
+    if (opts.maximised) {
+        opts.windowSize.reset();  
+    } else if (defaultWindowSize) {
+        opts.maximised = false;
+        opts.windowSize.reset();
+    } else {
         opts.windowSize = WindowSize{
             static_cast<uint32_t>(wxAtoi(txtWindowWidth_->GetValue())),
             static_cast<uint32_t>(wxAtoi(txtWindowHeight_->GetValue()))
-        };
-    } else {
-        opts.windowSize.reset();
+        };  
+        opts.maximised = false;  
     }
 
-    const wxString ua = txtUserAgent_->GetValue();
-    if (!ua.IsEmpty()) {
-        opts.userAgent = ua.ToStdString();
+    const wxString userAgent = txtUserAgent_->GetValue();
+    if (!userAgent.IsEmpty()) {
+        opts.userAgent = userAgent.ToStdString();
     } else {
         opts.userAgent.reset();
     }
@@ -162,11 +168,15 @@ void WizardBehaviourPage::CreateBehaviourPanel(wxBoxSizer* parent)
 
     behaviourBox->Add(windowLabel, 0, wxALL, 5);
 
-    radioMaximised_ = new wxRadioButton(this, wxID_ANY,
-                                        "Maximised",
+    radioDefaultWindowSize_ = new wxRadioButton(this, wxID_ANY,
+                                        "Defeault size",
                                         wxDefaultPosition,
                                         wxDefaultSize,
                                         wxRB_GROUP);
+    radioMaximised_ = new wxRadioButton(this, wxID_ANY,
+                                        "Maximised (Recommended)",
+                                        wxDefaultPosition,
+                                        wxDefaultSize);
     radioCustomWindowSize_ = new wxRadioButton(this, wxID_ANY,
                                                "Custom size");
 
@@ -181,9 +191,10 @@ void WizardBehaviourPage::CreateBehaviourPanel(wxBoxSizer* parent)
                    0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
     sizeSizer->Add(txtWindowHeight_, 0);
 
+    behaviourBox->Add(radioDefaultWindowSize_, 0, wxALL, 5);
     behaviourBox->Add(radioMaximised_, 0, wxALL, 5);
     behaviourBox->Add(radioCustomWindowSize_, 0, wxLEFT | wxTOP, 5);
-    behaviourBox->Add(sizeSizer, 0, wxLEFT | wxBOTTOM, 30);
+    behaviourBox->Add(sizeSizer, 0, wxLEFT | wxBOTTOM, 10);
 
     radioMaximised_->SetValue(true);
     SyncWindowSizeState();

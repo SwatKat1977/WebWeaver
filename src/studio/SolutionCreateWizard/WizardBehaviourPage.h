@@ -43,6 +43,7 @@ class WizardBehaviourPage : public wxDialog {
     wxCheckBox* chkDisableNotifications_ = nullptr;
     wxCheckBox* chkIgnoreCertErrors_ = nullptr;
 
+    wxRadioButton* radioDefaultWindowSize_ = nullptr;
     wxRadioButton* radioMaximised_ = nullptr;
     wxRadioButton* radioCustomWindowSize_ = nullptr;
     wxTextCtrl* txtWindowWidth_ = nullptr;
