@@ -21,7 +21,7 @@ import sys
 from typing import Optional
 import wx
 import wx.aui
-from solution_explorer_panel import SolutionExplorerPanel
+# from solution_explorer_panel import SolutionExplorerPanel
 from toolbar_icons import (
     load_toolbar_inspect_icon,
     load_toolbar_new_solution_icon,
@@ -29,25 +29,54 @@ from toolbar_icons import (
     load_toolbar_pause_record_icon,
     load_toolbar_save_solution_icon,
     load_toolbar_start_record_icon,
-    load_toolbar_stop_record_icon,
-    load_toolbar_resume_record_icon,
+    # load_toolbar_stop_record_icon,
+    # load_toolbar_resume_record_icon,
     load_toolbar_close_solution_icon)
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
     else wx.DefaultPosition
 
+
 class StudioMainFrame(wx.Frame):
+    """
+    Main application window for WebWeaver Automation Studio.
+
+    This frame is responsible for initialising the top-level user interface,
+    including the menu bar, AUI-managed toolbars, and other dockable panes.
+    It serves as the central coordination point for the Studio UI.
+    """
+    # pylint: disable=too-few-public-methods
 
     TOOLBAR_ID_NEW_SOLUTION: int = wx.ID_HIGHEST + 1
+    """Toolbar command ID for creating a new solution."""
+
     TOOLBAR_ID_OPEN_SOLUTION: int = wx.ID_HIGHEST + 2
+    """Toolbar command ID for opening an existing solution."""
+
     TOOLBAR_ID_SAVE_SOLUTION: int = wx.ID_HIGHEST + 3
+    """Toolbar command ID for saving the current solution."""
+
     TOOLBAR_ID_CLOSE_SOLUTION: int = wx.ID_HIGHEST + 4
+    """Toolbar command ID for closing the current solution."""
+
     TOOLBAR_ID_INSPECTOR_MODE: int = wx.ID_HIGHEST + 5
+    """Toolbar command ID for toggling Inspector mode."""
+
     TOOLBAR_ID_START_STOP_RECORD: int = wx.ID_HIGHEST + 6
+    """Toolbar command ID for starting or stopping recording."""
+
     TOOLBAR_ID_PAUSE_RECORD: int = wx.ID_HIGHEST + 7
+    """Toolbar command ID for pausing an active recording."""
 
     def __init__(self, parent: Optional[wx.Window] = None):
+        """
+        Initialise the main application frame.
+
+        This sets up the frame window, menu bar, and platform-specific
+        behaviour. AUI-managed components are initialised separately
+        via :meth:`init_aui`.
+        """
         super().__init__(
             parent,
             title="Webweaver Automation Studio",
@@ -57,9 +86,12 @@ class StudioMainFrame(wx.Frame):
         )
 
         self._toolbar = None
+        """The main application toolbar (AUI-managed)."""
 
         self._aui_mgr: wx.aui.AuiManager = wx.aui.AuiManager()
+        """AUI manager responsible for dockable panes and toolbars."""
 
+        # Disable native macOS fullscreen handling
         if sys.platform == "darwin":
             self.EnableFullScreenView(False)
 
@@ -92,6 +124,13 @@ class StudioMainFrame(wx.Frame):
         self.SetMenuBar(menubar)
 
     def init_aui(self) -> None:
+        """
+        Initialise AUI-managed components for the frame.
+
+        This method attaches the AUI manager to the frame, resets any
+        previously stored layout, applies visual metrics, and creates
+        the main toolbar.
+        """
         self._aui_mgr.SetManagedWindow(self)
 
         # Reset any previously stored layout
@@ -103,9 +142,16 @@ class StudioMainFrame(wx.Frame):
         # --------------------------------------------------------------
         # TOOLBAR (top, dockable)
         # --------------------------------------------------------------
-        self.create_main_toolbar()
+        self._create_main_toolbar()
 
-    def create_main_toolbar(self):
+    def _create_main_toolbar(self):
+        """
+        Create and configure the main application toolbar.
+
+        The toolbar is docked at the top of the frame and contains
+        commands for solution management, inspection mode, and
+        recording control.
+        """
         self._toolbar = wx.aui.AuiToolBar(
             self,
             wx.ID_ANY,
@@ -123,7 +169,7 @@ class StudioMainFrame(wx.Frame):
         self._toolbar.AddTool(
             self.TOOLBAR_ID_NEW_SOLUTION,
             "",
-            load_toolbar_new_project_icon(),
+            load_toolbar_new_solution_icon(),
             "Create New Solution",)
 
         self._toolbar.AddTool(

@@ -24,10 +24,28 @@ from typing import Optional, Dict, Any
 
 @dataclass
 class WindowSize:
+    """
+    Represents a window size in pixels.
+
+    This is a simple value object used to describe the width and height
+    of a browser window when launching a session.
+    """
+
     width: int = 0
+    """The width of the window in pixels."""
+
     height: int = 0
+    """The height of the window in pixels."""
 
     def to_dict(self) -> Dict[str, int]:
+        """
+        Convert the window size to a JSON-serialisable dictionary.
+
+        Returns
+        -------
+        Dict[str, int]
+            A dictionary containing 'width' and 'height' entries.
+        """
         return {
             "width": self.width,
             "height": self.height,
@@ -35,6 +53,23 @@ class WindowSize:
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> Optional["WindowSize"]:
+        """
+        Create a WindowSize instance from a dictionary.
+
+        The dictionary is expected to contain integer 'width' and
+        'height' values. If the input is invalid or incomplete,
+        None is returned.
+
+        Parameters
+        ----------
+        data : Dict[str, Any]
+            Dictionary containing window size data.
+
+        Returns
+        -------
+        Optional[WindowSize]
+            A WindowSize instance if parsing succeeds, otherwise None.
+        """
         if not isinstance(data, dict):
             return None
 
@@ -49,16 +84,47 @@ class WindowSize:
 
 @dataclass
 class BrowserLaunchOptions:
+    """
+    Describes configuration options used when launching a browser.
+
+    This class encapsulates browser startup preferences such as privacy
+    mode, extension handling, window size, and user agent overrides.
+    It supports round-trip serialisation to and from dictionaries.
+    """
+
     private_mode: bool = True
+    """Whether the browser should be launched in private/incognito mode."""
+
     disable_extensions: bool = True
+    """Whether browser extensions should be disabled."""
+
     disable_notifications: bool = True
+    """Whether browser notifications should be suppressed."""
+
     ignore_certificate_errors: bool = False
+    """Whether SSL/TLS certificate errors should be ignored."""
 
     user_agent: Optional[str] = None
+    """Optional user agent string override."""
+
     window_size: Optional[WindowSize] = None
+    """Optional explicit window size to use when launching the browser."""
+
     maximised: bool = False
+    """Whether the browser window should start maximised."""
 
     def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert the launch options to a JSON-serialisable dictionary.
+
+        Only optional fields that are explicitly set are included in
+        the output.
+
+        Returns
+        -------
+        Dict[str, Any]
+            A dictionary representation of the launch options.
+        """
         data: Dict[str, Any] = {
             "privateMode": self.private_mode,
             "disableExtensions": self.disable_extensions,
@@ -77,6 +143,23 @@ class BrowserLaunchOptions:
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> "BrowserLaunchOptions":
+        """
+        Create a BrowserLaunchOptions instance from a dictionary.
+
+        Missing or invalid fields are ignored and default values are
+        preserved, matching the behaviour of the original C++
+        implementation.
+
+        Parameters
+        ----------
+        data : Dict[str, Any]
+            Dictionary containing browser launch options.
+
+        Returns
+        -------
+        BrowserLaunchOptions
+            A populated BrowserLaunchOptions instance.
+        """
         opts = BrowserLaunchOptions()
 
         if not isinstance(data, dict):
