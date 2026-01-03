@@ -213,38 +213,36 @@ class StudioMainFrame(wx.Frame):
 
         self._toolbar.Realize()
 
-        '''
-        // --- Bind toolbar events ---
-        self._toolbar->Bind(wxEVT_TOOL,
-            &StudioMainFrame::OnNewSolutionEvent,
-            this,
-            TOOLBAR_ID_NEW_SOLUTION);
+        # --- Bind toolbar events ---
+        self._toolbar.Bind(
+            wx.EVT_TOOL,
+            self.on_new_solution_event,
+            id=self.TOOLBAR_ID_NEW_SOLUTION)
 
-        self._toolbar->Bind(wxEVT_TOOL,
-            &StudioMainFrame::OnCloseSolutionEvent,
-            this,
-            TOOLBAR_ID_CLOSE_SOLUTION);
+        self._toolbar.Bind(
+            wx.EVT_TOOL,
+            self.on_close_solution_event,
+            id=self.TOOLBAR_ID_CLOSE_SOLUTION)
 
-        self._toolbar->Bind(wxEVT_TOOL,
-            &StudioMainFrame::OnOpenSolutionEvent,
-            this,
-            TOOLBAR_ID_OPEN_SOLUTION);
+        self._toolbar.Bind(
+            wx.EVT_TOOL,
+            self.on_open_solution_event,
+            id=self.TOOLBAR_ID_OPEN_SOLUTION)
 
-        self._toolbar->Bind(wxEVT_TOOL,
-            &StudioMainFrame::OnRecordStartStopEvent,
-            this,
-            TOOLBAR_ID_START_STOP_RECORD);
+        self._toolbar.Bind(
+            wx.EVT_TOOL,
+            self.on_record_start_stop_event,
+            id=self.TOOLBAR_ID_START_STOP_RECORD)
 
-        self._toolbar->Bind(wxEVT_TOOL,
-            &StudioMainFrame::OnRecordPauseEvent,
-            this,
-            TOOLBAR_ID_PAUSE_RECORD);
+        self._toolbar.Bind(
+            wx.EVT_TOOL,
+            self.on_record_pause_event,
+            id=self.TOOLBAR_ID_PAUSE_RECORD)
 
-        self._toolbar->Bind(wxEVT_TOOL,
-            &StudioMainFrame::OnInspectorEvent,
-            this,
-            TOOLBAR_ID_INSPECTOR_MODE);
-        '''
+        self._toolbar.Bind(
+            wx.EVT_TOOL,
+            self.on_inspector_event,
+            id=self.TOOLBAR_ID_INSPECTOR_MODE)
 
         self._aui_mgr.AddPane(
             self._toolbar,
@@ -262,3 +260,21 @@ class StudioMainFrame(wx.Frame):
             .Movable(False))
 
         self._aui_mgr.Update()
+
+    def on_new_solution_event(self, _event: wx.CommandEvent):
+        ...
+
+    def on_close_solution_event(self, _event: wx.CommandEvent):
+        ...
+
+    def on_open_solution_event(self, _event: wx.CommandEvent):
+        ...
+
+    def on_record_start_stop_event(self, _event: wx.CommandEvent):
+        ...
+
+    def on_record_pause_event(self, _event: wx.CommandEvent):
+        ...
+
+    def on_inspector_event(self, _event: wx.CommandEvent):
+        ...
