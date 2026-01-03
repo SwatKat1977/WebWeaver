@@ -1,3 +1,22 @@
+"""
+This source file is part of Web Weaver
+For the latest info, see https://github.com/SwatKat1977/WebWeaver
+
+Copyright 2025 SwatKat1977
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
 import sys
 from typing import Optional
 import wx
@@ -5,10 +24,10 @@ import wx.aui
 from solution_explorer_panel import SolutionExplorerPanel
 from toolbar_icons import (
     load_toolbar_inspect_icon,
-    load_toolbar_new_project_icon,
-    load_toolbar_open_project_icon,
+    load_toolbar_new_solution_icon,
+    load_toolbar_open_solution_icon,
     load_toolbar_pause_record_icon,
-    load_toolbar_save_project_icon,
+    load_toolbar_save_solution_icon,
     load_toolbar_start_record_icon,
     load_toolbar_stop_record_icon,
     load_toolbar_resume_record_icon,
@@ -110,13 +129,13 @@ class StudioMainFrame(wx.Frame):
         self._toolbar.AddTool(
             self.TOOLBAR_ID_OPEN_SOLUTION,
             "",
-            load_toolbar_open_project_icon(),
+            load_toolbar_open_solution_icon(),
             "Open Solution")
 
         self._toolbar.AddTool(
             self.TOOLBAR_ID_SAVE_SOLUTION,
             "",
-            load_toolbar_save_project_icon(),
+            load_toolbar_save_solution_icon(),
             "Save Solution")
 
         self._toolbar.AddTool(
