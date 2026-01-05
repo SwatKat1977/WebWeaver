@@ -32,6 +32,7 @@ from toolbar_icons import (
     # load_toolbar_stop_record_icon,
     # load_toolbar_resume_record_icon,
     load_toolbar_close_solution_icon)
+from workspace_panel import WorkspacePanel
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -88,7 +89,7 @@ class StudioMainFrame(wx.Frame):
         self._toolbar = None
         """The main application toolbar (AUI-managed)."""
 
-        self._aui_mgr: wx.aui.AuiManager = wx.aui.AuiManager()
+        self._aui_mgr: wx.aui.AuiManager = wx.aui.AuiManager(self)
         """AUI manager responsible for dockable panes and toolbars."""
 
         # Disable native macOS fullscreen handling
@@ -131,18 +132,30 @@ class StudioMainFrame(wx.Frame):
         previously stored layout, applies visual metrics, and creates
         the main toolbar.
         """
-        self._aui_mgr.SetManagedWindow(self)
 
-        # Reset any previously stored layout
-        self._aui_mgr.LoadPerspective("", True)
-
-        self._aui_mgr.GetArtProvider().SetMetric(wx.aui.AUI_DOCKART_SASH_SIZE,
-                                                2)
+        self._aui_mgr.GetArtProvider().SetMetric(
+            wx.aui.AUI_DOCKART_SASH_SIZE,
+            2)
 
         # --------------------------------------------------------------
         # TOOLBAR (top, dockable)
         # --------------------------------------------------------------
         self._create_main_toolbar()
+
+        # --------------------------------------------------------------
+        # Create workspace panel
+        # --------------------------------------------------------------
+
+        self._create_workspace_panel()
+
+        self._aui_mgr.Update()
+
+        # Force wxAUI to compute sizes/paint.
+        self.Layout()
+        self.SendSizeEvent()
+
+        wx.CallLater(1, self._aui_mgr.Update)
+        wx.CallLater(1, self.SendSizeEvent)
 
     def _create_main_toolbar(self):
         """
@@ -259,8 +272,6 @@ class StudioMainFrame(wx.Frame):
             .Floatable(False)
             .Movable(False))
 
-        self._aui_mgr.Update()
-
     def on_new_solution_event(self, _event: wx.CommandEvent):
         ...
 
@@ -278,3 +289,23 @@ class StudioMainFrame(wx.Frame):
 
     def on_inspector_event(self, _event: wx.CommandEvent):
         ...
+
+    def _create_workspace_panel(self):
+        # -------------------------
+        # Workspace
+        # -------------------------
+        self.workspace_panel = WorkspacePanel(self)
+
+        info = (
+            wx.aui.AuiPaneInfo()
+            .Name("Workspace")
+            .CenterPane()
+            .PaneBorder(False)
+            .CaptionVisible(False)
+            .Show(True)
+        )
+
+        self._aui_mgr.AddPane(self.workspace_panel, info)
+
+        self.workspace_panel.Show(True)
+        self._aui_mgr.GetPane("Workspace").Show(True)
