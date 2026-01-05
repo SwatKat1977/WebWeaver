@@ -24,8 +24,20 @@ from recording_viewer_panel import RecordingViewerPanel
 
 
 class WorkspacePanel(wx.Panel):
+    """
+    Main workspace panel that hosts open recording viewers in a tabbed interface.
+
+    This panel manages an AuiNotebook containing one tab per open recording.
+    It is responsible for opening recordings, preventing duplicates, and
+    reacting to recording lifecycle events such as rename and deletion.
+    """
 
     def __init__(self, parent: wx.Window):
+        """
+        Create the workspace panel.
+
+        :param parent: Parent wx window.
+        """
         super().__init__(parent)
 
         self._notebook: wx.aui.AuiNotebook = None
@@ -33,6 +45,15 @@ class WorkspacePanel(wx.Panel):
         self._create_ui()
 
     def open_recording(self, ctx: RecordingViewContext):
+        """
+        Open a recording in the workspace.
+
+        If the recording is already open, this method does nothing (the
+        existing tab is left as-is). Otherwise, a new RecordingViewerPanel
+        is created and added as a notebook tab.
+
+        :param ctx: Recording view context containing metadata and file path.
+        """
         if self.is_recording_open(ctx.recording_file):
             # focus existing tab
             return
@@ -41,6 +62,15 @@ class WorkspacePanel(wx.Panel):
         self._notebook.AddPage(viewer, ctx.metadata.name, select=True)
 
     def is_recording_open(self, file) -> bool:
+        """
+        Check whether a recording file is already open in the workspace.
+
+        File paths are normalized before comparison to ensure consistent
+        matching regardless of relative paths or symbolic components.
+
+        :param file: Path to the recording file.
+        :return: True if the recording is already open, otherwise False.
+        """
         if not self._notebook:
             return False
 
@@ -68,6 +98,14 @@ class WorkspacePanel(wx.Panel):
     def on_recording_renamed_by_id(self,
                                    recording_id: str,
                                    new_name: str) -> None:
+        """
+        Update the tab title for an open recording that has been renamed.
+
+        If the recording is not currently open, this method does nothing.
+
+        :param recording_id: Unique ID of the recording.
+        :param new_name: New display name for the recording.
+        """
         if not self._notebook:
             return
 
@@ -82,6 +120,13 @@ class WorkspacePanel(wx.Panel):
                 return
 
     def on_recording_deleted_by_id(self, recording_id: str) -> None:
+        """
+        Close the tab for a recording that has been deleted.
+
+        If the recording is not currently open, this method does nothing.
+
+        :param recording_id: Unique ID of the deleted recording.
+        """
         if not self._notebook:
             return
 
@@ -96,6 +141,12 @@ class WorkspacePanel(wx.Panel):
                 return
 
     def _create_ui(self):
+        """
+        Construct and lay out the workspace UI components.
+
+        This includes the workspace title and the tabbed notebook used
+        to host recording viewer panels.
+        """
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         title = wx.StaticText(self, wx.ID_ANY, "Workspace")

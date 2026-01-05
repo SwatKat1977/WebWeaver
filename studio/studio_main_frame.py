@@ -92,6 +92,8 @@ class StudioMainFrame(wx.Frame):
         self._aui_mgr: wx.aui.AuiManager = wx.aui.AuiManager(self)
         """AUI manager responsible for dockable panes and toolbars."""
 
+        self._workspace_panel: Optional[WorkspacePanel] = None
+
         # Disable native macOS fullscreen handling
         if sys.platform == "darwin":
             self.EnableFullScreenView(False)
@@ -294,7 +296,7 @@ class StudioMainFrame(wx.Frame):
         # -------------------------
         # Workspace
         # -------------------------
-        self.workspace_panel = WorkspacePanel(self)
+        self._workspace_panel = WorkspacePanel(self)
 
         info = (
             wx.aui.AuiPaneInfo()
@@ -305,7 +307,7 @@ class StudioMainFrame(wx.Frame):
             .Show(True)
         )
 
-        self._aui_mgr.AddPane(self.workspace_panel, info)
+        self._aui_mgr.AddPane(self._workspace_panel, info)
 
-        self.workspace_panel.Show(True)
+        self._workspace_panel.Show(True)
         self._aui_mgr.GetPane("Workspace").Show(True)

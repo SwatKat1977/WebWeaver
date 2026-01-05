@@ -126,7 +126,7 @@ class RecordingMetadata:
         try:
             with wwrec_file.open("r", encoding="utf-8") as f:
                 data = json.load(f)
-        except Exception:
+        except (OSError, json.JSONDecodeError):
             return RecordingLoadResult(
                 error=RecordingLoadError.FILE_MALFORMED
             )
@@ -173,7 +173,7 @@ class RecordingMetadata:
         try:
             with self.file_path.open("r", encoding="utf-8") as f:
                 data = json.load(f)
-        except Exception:
+        except (OSError, json.JSONDecodeError):
             return False
 
         if "recording" not in data or not isinstance(data["recording"], dict):
@@ -184,7 +184,36 @@ class RecordingMetadata:
         try:
             with self.file_path.open("w", encoding="utf-8") as f:
                 json.dump(data, f, indent=4)
-        except Exception:
+        except (OSError, TypeError, ValueError):
             return False
 
         return True
+
+def recording_load_error_to_str(error: RecordingLoadError) -> str:
+    """
+    Convert a RecordingLoadError into a user-facing error message.
+
+    Args:
+        error:
+            The recording load error enum value.
+
+    Returns:
+        A human-readable description of the recording load error.
+        Returns an empty string if the error is unrecognized.
+    """
+    if error == RecordingLoadError.FILE_MALFORMED:
+        return "Recording metadata is malformed."
+
+    if error == RecordingLoadError.MISSING_RECORDING_OBJECT:
+        return "Recording metadata missing 'recording' JSON field."
+
+    if error == RecordingLoadError.MISSING_REQUIRED_FIELD:
+        return "Recording metadata missing required JSON field."
+
+    if error == RecordingLoadError.UNSUPPORTED_VERSION:
+        return "Recording metadata has unsupported version."
+
+    if error == RecordingLoadError.FILE_NOT_FOUND:
+        return "Recording metadata file was not found."
+
+    return ""

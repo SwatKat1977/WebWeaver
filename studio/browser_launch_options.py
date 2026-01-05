@@ -113,7 +113,7 @@ class BrowserLaunchOptions:
     maximised: bool = False
     """Whether the browser window should start maximised."""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_json(self) -> Dict[str, Any]:
         """
         Convert the launch options to a JSON-serialisable dictionary.
 
@@ -142,9 +142,9 @@ class BrowserLaunchOptions:
         return data
 
     @staticmethod
-    def from_dict(data: Dict[str, Any]) -> "BrowserLaunchOptions":
+    def from_json(data: Dict[str, Any]) -> "BrowserLaunchOptions":
         """
-        Create a BrowserLaunchOptions instance from a dictionary.
+        Create a BrowserLaunchOptions instance from a json dictionary.
 
         Missing or invalid fields are ignored and default values are
         preserved, matching the behaviour of the original C++
