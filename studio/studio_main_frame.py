@@ -33,6 +33,7 @@ from toolbar_icons import (
     # load_toolbar_resume_record_icon,
     load_toolbar_close_solution_icon)
 from workspace_panel import WorkspacePanel
+from solution_explorer_panel import SolutionExplorerPanel
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -89,6 +90,8 @@ class StudioMainFrame(wx.Frame):
         self._toolbar = None
         """The main application toolbar (AUI-managed)."""
 
+        self._solution_explorer_panel = None
+
         self._aui_mgr: wx.aui.AuiManager = wx.aui.AuiManager(self)
         """AUI manager responsible for dockable panes and toolbars."""
 
@@ -143,6 +146,8 @@ class StudioMainFrame(wx.Frame):
         # TOOLBAR (top, dockable)
         # --------------------------------------------------------------
         self._create_main_toolbar()
+
+        self._create_solution_panel()
 
         # --------------------------------------------------------------
         # Create workspace panel
@@ -291,6 +296,21 @@ class StudioMainFrame(wx.Frame):
 
     def on_inspector_event(self, _event: wx.CommandEvent):
         ...
+
+    def _create_solution_panel(self) -> None:
+        # Solution panel (left top)
+        self._solution_explorer_panel = SolutionExplorerPanel(self)
+
+        self._aui_mgr.AddPane(self._solution_explorer_panel,
+                        wx.aui.AuiPaneInfo()
+                        .Left()
+                        .Row(1)
+                        .PaneBorder(False)
+                        .Caption("Solution Explorer")
+                        .CloseButton(True)
+                        .MaximizeButton(True)
+                        .MinimizeButton(True)
+                        .BestSize(300, 300))
 
     def _create_workspace_panel(self):
         # -------------------------
