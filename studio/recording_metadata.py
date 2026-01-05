@@ -86,16 +86,16 @@ class RecordingMetadata:
     metadata and helper methods for loading and updating that metadata on disk.
     """
 
-    id: str
+    id: str = ""
     """Unique identifier for the recording."""
 
-    name: str
+    name: str = ""
     """Human-readable name of the recording."""
 
-    file_path: Path
+    file_path: Path = ""
     """Filesystem path to the .wwrec file backing this metadata."""
 
-    created_at: datetime
+    created_at: datetime = 0
     """Timestamp indicating when the recording was created."""
 
     @staticmethod

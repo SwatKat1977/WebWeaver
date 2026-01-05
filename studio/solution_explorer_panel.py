@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import wx
 import wx.aui
+from recording_metadata import RecordingMetadata
 from studio_solution import StudioSolution
 from solution_explorer_node_data import (
     SolutionExplorerNodeData,
@@ -125,22 +126,45 @@ class SolutionExplorerPanel(wx.Panel):
         self._tree.Bind(wx.EVT_MENU,
                         self._on_delete_recording,
                         id=ID_CONTEXT_MENU_REC_DELETE)
+       '''
 
         sizer.Add(self._placeholder, 1, wx.ALIGN_CENTER | wx.ALL, 10)
         sizer.Add(self._tree, 1, wx.EXPAND)
 
-        '''
-
         self.SetSizer(sizer)
 
+    def _populate_empty_solution(self, solution: StudioSolution) -> None:
+        solution_name: str = f"Solution '{solution.solution_name}'"
+        root: wx.TreeItemId = self._tree.AddRoot(
+            solution_name,
+            self._icon_solution,
+            self._icon_solution,
+            SolutionExplorerNodeData(ExplorerNodeType.SOLUTION_ROOT,
+                                     RecordingMetadata())
+        )
+
+        self._append_empty_node(root, "Pages", self._icon_pages)
+        self._append_empty_node(root, "Scripts", self._icon_scripts)
+
+        recordings: wx.TreeItemId = self._tree.AppendItem(
+            root,
+            "Recordings",
+            self._icon_recordings,
+            self._icon_recordings,
+            SolutionExplorerNodeData(ExplorerNodeType.FOLDER_RECORDINGS,
+                                     RecordingMetadata()))
+
+        #PopulateRecordings(solution, recordings);
+
+    def _append_empty_node(self,
+                           parent: wx.TreeItemId,
+                           label: str,
+                           icon: int) -> wx.TreeItemId:
+        node = self._tree.AppendItem(parent, label, icon, icon)
+        self._tree.AppendItem(node, "(empty)")
+        return node
 
     '''
-
-#include <wx/panel.h>
-#include <wx/treectrl.h>
-#include <wx/stattext.h>
-#include "StudioSolution.h"
-#include "RecordingMetadata.h"
 
 namespace webweaver::studio {
 
@@ -218,38 +242,6 @@ SolutionExplorerPanel::SolutionExplorerPanel(wxWindow* parent)
 
 
 
-
-void SolutionExplorerPanel::PopulateEmptySolution(
-    const StudioSolution& solution) {
-    std::string solutionName = solution.solutionName;
-    wxTreeItemId root = tree_->AddRoot(
-        "Solution '" + solutionName + "'",
-        iconSolution_,
-        iconSolution_,
-        new ExplorerNodeData(ExplorerNodeType::SolutionRoot,
-                             RecordingMetadata()));
-
-    AppendEmptyNode(root, "Pages", iconPages_);
-    AppendEmptyNode(root, "Scripts", iconScripts_);
-
-    wxTreeItemId recordings = tree_->AppendItem(
-        root,
-        "Recordings",
-        iconRecordings_,
-        iconRecordings_,
-        new ExplorerNodeData(ExplorerNodeType::FolderRecordings,
-                             RecordingMetadata()));
-    PopulateRecordings(solution, recordings);
-}
-
-wxTreeItemId SolutionExplorerPanel::AppendEmptyNode(
-    const wxTreeItemId& parent,
-    const wxString& label,
-    int icon) {
-    auto node = tree_->AppendItem(parent, label, icon, icon);
-    tree_->AppendItem(node, "(empty)");
-    return node;
-}
 
 void SolutionExplorerPanel::RefreshRecordings(
     const StudioSolution& solution) {

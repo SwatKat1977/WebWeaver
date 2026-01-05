@@ -17,6 +17,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import json
+from pathlib import Path
 import sys
 from typing import Optional
 import wx
@@ -34,6 +36,12 @@ from toolbar_icons import (
     load_toolbar_close_solution_icon)
 from workspace_panel import WorkspacePanel
 from solution_explorer_panel import SolutionExplorerPanel
+from recording.recording_session import RecordingSession
+from studio_state_controller import StudioState, StudioStateController
+from studio_solution import (
+    StudioSolution,
+    solution_load_error_to_str,
+    SolutionDirectoryCreateStatus)
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -97,6 +105,11 @@ class StudioMainFrame(wx.Frame):
 
         self._workspace_panel: Optional[WorkspacePanel] = None
 
+        self._current_state_: StudioState = StudioState.NO_SOLUTION
+        self._recording_session: Optional[RecordingSession] = None
+        self._current_solution: Optional[StudioSolution] = None
+        self._state_controller: Optional[StudioStateController] = None
+
         # Disable native macOS fullscreen handling
         if sys.platform == "darwin":
             self.EnableFullScreenView(False)
@@ -142,6 +155,8 @@ class StudioMainFrame(wx.Frame):
             wx.aui.AUI_DOCKART_SASH_SIZE,
             2)
 
+        self._state_controller = StudioStateController(self._on_state_changed)
+
         # --------------------------------------------------------------
         # TOOLBAR (top, dockable)
         # --------------------------------------------------------------
@@ -163,6 +178,10 @@ class StudioMainFrame(wx.Frame):
 
         wx.CallLater(1, self._aui_mgr.Update)
         wx.CallLater(1, self.SendSizeEvent)
+
+    def _on_state_changed(self, new_state):
+        self.current_state = new_state
+        #self.update_toolbar_state()
 
     def _create_main_toolbar(self):
         """
@@ -286,7 +305,29 @@ class StudioMainFrame(wx.Frame):
         ...
 
     def on_open_solution_event(self, _event: wx.CommandEvent):
-        ...
+        dlg: wx.FileDialog = wx.FileDialog(
+            self,
+            message="Open Webweaver Studio solution",
+            defaultDir="",
+            defaultFile="",
+            wildcard="Webweaver Solution (*.wws)|*.wws",
+            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
+
+        try:
+            if dlg.ShowModal() == wx.ID_OK:
+                path = Path(dlg.GetPath())
+
+                if self._open_solution(path):
+                    self._state_controller.on_solution_loaded()
+                    self._solution_explorer_panel.show_solution(
+                        self._current_solution
+                    )
+
+                    self._recording_session = RecordingSession(
+                        self._current_solution)
+
+        finally:
+            dlg.Destroy()
 
     def on_record_start_stop_event(self, _event: wx.CommandEvent):
         ...
@@ -331,3 +372,58 @@ class StudioMainFrame(wx.Frame):
 
         self._workspace_panel.Show(True)
         self._aui_mgr.GetPane("Workspace").Show(True)
+
+    def _open_solution(self, solution_file: Path) -> bool:
+        if not solution_file.exists():
+            wx.MessageBox(
+                "Solution file does not exist.",
+                "Open Solution",
+                wx.ICON_ERROR
+            )
+            return False
+
+        try:
+            with solution_file.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception as e:
+            wx.MessageBox(
+                f"Failed to read solution file:\n{e}",
+                "Open Solution",
+                wx.ICON_ERROR
+            )
+            return False
+
+        # Load solution from JSON
+        result = StudioSolution.from_json(data)
+
+        if result.solution is None:
+            wx.MessageBox(
+                solution_load_error_to_str(result.error),
+                "Open Solution",
+                wx.ICON_ERROR
+            )
+            return False
+
+        self._current_solution = result.solution
+
+        # Ensure directory structure (safe, idempotent)
+        status = self._current_solution.ensure_directory_structure()
+        if status != SolutionDirectoryCreateStatus.NONE_:
+            wx.MessageBox(
+                "Failed to prepare solution folders.",
+                "Open Solution",
+                wx.ICON_ERROR
+            )
+            self._current_solution = None
+            return False
+
+        # Update state + UI
+        self._state_controller.on_solution_loaded()
+        self._solution_explorer_panel.show_solution(self._current_solution)
+
+        # Recent solutions
+        #self.recent_solutions.add_solution(solution_file)
+        #self.recent_solutions.save()
+        #self.rebuild_recent_solutions_menu()
+
+        return True
