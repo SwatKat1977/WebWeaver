@@ -79,7 +79,7 @@ class SolutionExplorerPanel(wx.Panel):
                             recordings_node: wx.TreeItemId) -> None:
         self._tree.DeleteChildren(recordings_node)
 
-        recordings = solution.DiscoverRecordingFiles()
+        recordings = solution.discover_recording_files()
 
         if not recordings:
             self._tree.AppendItem(recordings_node, "(empty)")
@@ -154,7 +154,7 @@ class SolutionExplorerPanel(wx.Panel):
             SolutionExplorerNodeData(ExplorerNodeType.FOLDER_RECORDINGS,
                                      RecordingMetadata()))
 
-        #PopulateRecordings(solution, recordings);
+        self.populate_recordings(solution, recordings)
 
     def _append_empty_node(self,
                            parent: wx.TreeItemId,
@@ -365,7 +365,4 @@ wxDEFINE_EVENT(EVT_DELETE_RECORDING, wxCommandEvent);
 wxDEFINE_EVENT(EVT_RENAME_RECORDING, wxCommandEvent);
 
 }   // namespace webweaver::studio
-
-
-
     '''
