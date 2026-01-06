@@ -17,6 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from pathlib import Path
 from typing import Optional
 import wx
 import wx.aui
@@ -140,16 +141,14 @@ class SolutionExplorerPanel(wx.Panel):
 
         self.Bind(wx.EVT_TREE_ITEM_MENU, self._on_item_context_menu)
         self.Bind(wx.EVT_MENU,
-                        self._on_open_recording,
-                        id=ID_CONTEXT_MENU_REC_OPEN)
+                  self._on_open_recording,
+                  id=ID_CONTEXT_MENU_REC_OPEN)
         self.Bind(wx.EVT_MENU,
-                        self._on_rename_recording,
-                        id=ID_CONTEXT_MENU_REC_RENAME)
-        '''
-        self._tree.Bind(wx.EVT_MENU,
-                        self._on_delete_recording,
-                        id=ID_CONTEXT_MENU_REC_DELETE)
-        '''
+                  self._on_rename_recording,
+                  id=ID_CONTEXT_MENU_REC_RENAME)
+        self.Bind(wx.EVT_MENU,
+                  self._on_delete_recording,
+                  id=ID_CONTEXT_MENU_REC_DELETE)
 
         # Image list for solution explorer tree
         self._image_list = wx.ImageList(16, 16, True)
@@ -250,77 +249,15 @@ class SolutionExplorerPanel(wx.Panel):
 
         wx.PostEvent(self.GetParent(), evt)
 
-    '''
+    def _on_delete_recording(self, _event: wx.CommandEvent) -> None:
+        if not self._context_item.IsOk():
+            return
 
-class SolutionExplorerPanel : public wxPanel {
- public:
-    explicit SolutionExplorerPanel(wxWindow* parent);
+        data = self._tree.GetItemData(self._context_item)
+        if not data or data.node_type != ExplorerNodeType.RECORDING_ITEM:
+            return
 
-    void ShowNoSolution();
-    void ShowSolution(const StudioSolution& solution);
-    void Clear();
+        evt: wx.CommandEvent = wx.CommandEvent(EVT_DELETE_RECORDING)
+        evt.SetClientData(Path(data.metadata.file_path))
 
-    void PopulateRecordings(const StudioSolution& solution,
-                            const wxTreeItemId& recordingsNode);
-
-    void RefreshRecordings(const StudioSolution& solution);
-
-    RecordingMetadata* GetSelectedRecording() const;
-
- private:
-    wxTreeCtrl* tree_ = nullptr;
-    wxStaticText* placeholder_ = nullptr;
-    wxImageList* imageList_ = nullptr;
-    wxTreeItemId contextItem_;
-
-    int iconSolution_ = -1;
-    int iconPages_ = -1;
-    int iconScripts_ = -1;
-    int iconRecordings_ = -1;
-
-    void CreateControls();
-
-    void PopulateEmptySolution(const StudioSolution& solution);
-
-    wxTreeItemId AppendEmptyNode(const wxTreeItemId& parent,
-                                 const wxString& label,
-                                 int icon);
-
-    void OnItemContextMenu(wxTreeEvent& event);  // NOLINT
-    void OnOpenRecording(wxCommandEvent&);
-    void OnRenameRecording(wxCommandEvent&);
-    void OnDeleteRecording(wxCommandEvent&);
-};
-
-enum {
-    ID_CTXMENU_REC_OPEN = wxID_HIGHEST + 3000,
-    ID_CTXMENU_REC_RENAME,
-    ID_CTXMENU_REC_DELETE
-};
-
-
-
-
-
-
-
-
-void SolutionExplorerPanel::OnDeleteRecording(wxCommandEvent&) {
-    if (!contextItem_.IsOk()) {
-        return;
-    }
-
-    auto* data = dynamic_cast<ExplorerNodeData*>(
-        tree_->GetItemData(contextItem_));
-
-    if (!data || data->GetType() != ExplorerNodeType::RecordingItem) {
-        return;
-    }
-
-    wxCommandEvent evt(EVT_DELETE_RECORDING);
-    evt.SetClientData(new std::filesystem::path(data->GetMetadata().filePath));
-
-    wxPostEvent(GetParent(), evt);
-}
-
-    '''
+        wx.PostEvent(self.GetParent(), evt)

@@ -188,12 +188,10 @@ class StudioMainFrame(wx.Frame):
         Bind(EVT_OPEN_RECORDING,
         &StudioMainFrame::OnOpenRecording,
             this);
-
-    // Delete recording event.
-    Bind(EVT_DELETE_RECORDING,
-         &StudioMainFrame::OnDeleteRecording,
-         this);
         '''
+
+        # Delete recording event.
+        self.Bind(DeleteRecordingEvent, self._delete_recording_event)
 
         # Rename recording event.
         self.Bind(RenameRecordingEvent, self._rename_recording_event)
@@ -493,4 +491,47 @@ class StudioMainFrame(wx.Frame):
             return
 
         #workspacePanel_->OnRecordingRenamedById(recording->id, newName);
+        self._solution_explorer_panel.refresh_recordings(self._current_solution)
+
+    def _delete_recording_event(self, evt: wx.CommandEvent) -> None:
+        if self._state_controller.state in (StudioState.RECORDING_RUNNING,
+                                            StudioState.RECORDING_PAUSED):
+            wx.MessageBox(
+                "You cannot delete recordings while a recording session is "
+                "active.\n\nStop the recording first.",
+                "Delete Recording",
+                wx.ICON_WARNING,
+                self)
+            return
+
+        path = Path(evt.GetClientData())
+        if not path or not self._current_solution:
+            return
+
+        filename = Path(path).name
+        rc: int = wx.MessageBox(
+            f"Delete recording?\n\n{filename}",
+            "Delete Recording",
+            wx.YES_NO | wx.ICON_WARNING,
+            self)
+        if rc is not wx.YES:
+            return
+
+        try:
+            Path(path).unlink()
+        except OSError as e:
+            wx.MessageBox(
+                f"Failed to delete recording:\n{e}",
+                "Delete Recording",
+                wx.ICON_ERROR,
+                self
+            )
+            return
+
+        selected = self._solution_explorer_panel.get_selected_recording()
+        selected_id = selected.id if selected else ""
+
+        if selected_id:
+            self._workspace_panel.on_recording_deleted_by_id(selected_id)
+
         self._solution_explorer_panel.refresh_recordings(self._current_solution)
