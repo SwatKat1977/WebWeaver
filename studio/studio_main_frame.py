@@ -23,6 +23,8 @@ import sys
 from typing import Optional
 import wx
 import wx.aui
+from recording_metadata import RecordingMetadata
+from solution_explorer_panel import SolutionExplorerPanel
 from toolbar_icons import (
     load_toolbar_inspect_icon,
     load_toolbar_new_solution_icon,
@@ -34,12 +36,10 @@ from toolbar_icons import (
     # load_toolbar_resume_record_icon,
     load_toolbar_close_solution_icon)
 from workspace_panel import WorkspacePanel
-from solution_explorer_panel import SolutionExplorerPanel
 from recording.recording_events import (
     OpenRecordingEvent,
     RenameRecordingEvent,
     DeleteRecordingEvent)
-from recording_metadata import RecordingMetadata
 from recording.recording_session import RecordingSession
 from recording_view_context import RecordingViewContext
 from studio_state_controller import StudioState, StudioStateController
