@@ -46,7 +46,7 @@ def _load_icon(png_bytes: bytes) -> wx.Bitmap:
     image = wx.Image(stream)
 
     # Force 32x32, high quality (matches C++)
-    image = image.Scale(16, 32, wx.IMAGE_QUALITY_HIGH)
+    image = image.Scale(16, 16, wx.IMAGE_QUALITY_HIGH)
 
     return wx.Bitmap(image)
 
@@ -99,7 +99,7 @@ def load_pages_filter_icon() -> wx.Bitmap:
     return _load_icon(PAGES_ICON)
 
 
-def load_script_filter_icon() -> wx.Bitmap:
+def load_scripts_filter_icon() -> wx.Bitmap:
     """
     Load the scripts filter solution icon
 

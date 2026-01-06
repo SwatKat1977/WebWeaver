@@ -17,6 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from typing import Optional
 import wx
 import wx.aui
 from recording_metadata import RecordingMetadata
@@ -24,6 +25,10 @@ from studio_solution import StudioSolution
 from solution_explorer_node_data import (
     SolutionExplorerNodeData,
     ExplorerNodeType)
+from solution_explorer_icons import (load_root_icon,
+                                     load_pages_filter_icon,
+                                     load_scripts_filter_icon,
+                                     load_recordings_filter_icon)
 
 EVT_OPEN_RECORDING = wx.NewEventType()
 EVT_DELETE_RECORDING = wx.NewEventType()
@@ -43,8 +48,9 @@ class SolutionExplorerPanel(wx.Panel):
     def __init__(self, parent: wx.Window):
         super().__init__(parent)
 
-        self._tree: wx.TreeCtrl | None = None
-        self._placeholder: wx.StaticText | None = None
+        self._tree: Optional[wx.TreeCtrl] = None
+        self._placeholder: Optional[wx.StaticText] = None
+        self._image_list: Optional[wx.ImageList] = None
         self._context_item = None
 
         self._icon_solution: int = -1
@@ -85,13 +91,6 @@ class SolutionExplorerPanel(wx.Panel):
             self._tree.AppendItem(recordings_node, "(empty)")
             return
 
-        '''
-        self._icon_solution: int = -1
-        self._icon_pages: int = -1
-        self._icon_scripts: int = -1
-        self._icon_recordings: int = -1
-        '''
-
         for rec in recordings:
             self._tree.AppendItem(
                 recordings_node,
@@ -112,7 +111,7 @@ class SolutionExplorerPanel(wx.Panel):
 
         self._tree = wx.TreeCtrl(
             self,
-            style=wx.TR_HAS_BUTTONS | wx.TR_LINES_AT_ROOT | wx.TR_HIDE_ROOT
+            style=wx.TR_HAS_BUTTONS | wx.TR_LINES_AT_ROOT # | wx.TR_HIDE_ROOT
         )
 
         '''
@@ -128,6 +127,17 @@ class SolutionExplorerPanel(wx.Panel):
                         id=ID_CONTEXT_MENU_REC_DELETE)
        '''
 
+        # Image list for solution explorer tree
+        self._image_list = wx.ImageList(16, 16, True)
+
+        self._icon_solution = self._image_list.Add(load_root_icon())
+        self._icon_pages = self._image_list.Add(load_pages_filter_icon())
+        self._icon_scripts = self._image_list.Add(load_scripts_filter_icon())
+        self._icon_recordings = self._image_list.Add(load_recordings_filter_icon())
+
+        self._tree.AssignImageList(self._image_list)
+
+        # Layout
         sizer.Add(self._placeholder, 1, wx.ALIGN_CENTER | wx.ALL, 10)
         sizer.Add(self._tree, 1, wx.EXPAND)
 
