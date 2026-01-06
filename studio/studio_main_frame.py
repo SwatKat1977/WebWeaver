@@ -324,6 +324,14 @@ class StudioMainFrame(wx.Frame):
         """ PLACEHOLDER """
 
     def on_open_solution_event(self, _event: wx.CommandEvent):
+        """
+        Handle the "Open Solution" command.
+
+        Displays a file dialog allowing the user to select a Webweaver Studio
+        solution file (.wws). If a solution is successfully loaded, the
+        application state is updated, the solution explorer is refreshed, and a
+        new recording session is initialized.
+        """
         dlg: wx.FileDialog = wx.FileDialog(
             self,
             message="Open Webweaver Studio solution",
@@ -404,7 +412,7 @@ class StudioMainFrame(wx.Frame):
         try:
             with solution_file.open("r", encoding="utf-8") as f:
                 data = json.load(f)
-        except Exception as e:
+        except (OSError, json.JSONDecodeError) as e:
             wx.MessageBox(
                 f"Failed to read solution file:\n{e}",
                 "Open Solution",
