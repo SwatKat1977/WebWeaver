@@ -114,8 +114,8 @@ class SolutionExplorerPanel(wx.Panel):
             style=wx.TR_HAS_BUTTONS | wx.TR_LINES_AT_ROOT # | wx.TR_HIDE_ROOT
         )
 
-        '''
         self._tree.Bind(wx.EVT_TREE_ITEM_MENU, self.on_item_context_menu)
+        '''
         self._tree.Bind(wx.EVT_MENU,
                         self._on_open_recording,
                         id=ID_CONTEXT_MENU_REC_OPEN)
@@ -125,7 +125,7 @@ class SolutionExplorerPanel(wx.Panel):
         self._tree.Bind(wx.EVT_MENU,
                         self._on_delete_recording,
                         id=ID_CONTEXT_MENU_REC_DELETE)
-       '''
+        '''
 
         # Image list for solution explorer tree
         self._image_list = wx.ImageList(16, 16, True)
@@ -173,6 +173,32 @@ class SolutionExplorerPanel(wx.Panel):
         node = self._tree.AppendItem(parent, label, icon, icon)
         self._tree.AppendItem(node, "(empty)")
         return node
+
+    def on_item_context_menu(self, event: wx.TreeEvent) -> None:
+        item: wx.TreeItemId = event.GetItem()
+        if not item.IsOk():
+            return
+
+        data = self._tree.GetItemData(item)
+
+        if not data:
+            return
+
+        menu = wx.Menu()
+
+        if data.node_type == ExplorerNodeType.RECORDING_ITEM:
+            menu.Append(ID_CONTEXT_MENU_REC_OPEN, "Open")
+            menu.Append(ID_CONTEXT_MENU_REC_RENAME, "Rename")
+            menu.AppendSeparator()
+            menu.Append(ID_CONTEXT_MENU_REC_DELETE, "Delete")
+
+        else:
+            # No menu
+            return
+
+        self._context_item = item
+
+        self.PopupMenu(menu)
 
     '''
 
@@ -276,38 +302,7 @@ void SolutionExplorerPanel::RefreshRecordings(
     }
 }
 
-void SolutionExplorerPanel::OnItemContextMenu(wxTreeEvent& event) {
-    wxTreeItemId item = event.GetItem();
-    if (!item.IsOk()) {
-        return;
-    }
 
-    auto* data = dynamic_cast<ExplorerNodeData*>(
-    tree_->GetItemData(item));
-
-    if (!data) {
-        return;
-    }
-
-    wxMenu menu;
-
-    switch (data->GetType()) {
-    case ExplorerNodeType::RecordingItem:
-        menu.Append(ID_CTXMENU_REC_OPEN, "Open");
-        menu.Append(ID_CTXMENU_REC_RENAME, "Rename");
-        menu.AppendSeparator();
-        menu.Append(ID_CTXMENU_REC_DELETE, "Delete");
-        break;
-
-    default:
-        // No menu
-        return;
-    }
-
-    contextItem_ = item;
-
-    PopupMenu(&menu);
-}
 
 void SolutionExplorerPanel::OnOpenRecording(wxCommandEvent&) {
     auto* recording = GetSelectedRecording();
