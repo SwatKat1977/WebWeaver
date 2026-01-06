@@ -493,5 +493,4 @@ class StudioMainFrame(wx.Frame):
             return
 
         #workspacePanel_->OnRecordingRenamedById(recording->id, newName);
-
-        #solutionExplorerPanel_->RefreshRecordings(*currentSolution_);
+        self._solution_explorer_panel.refresh_recordings(self._current_solution)

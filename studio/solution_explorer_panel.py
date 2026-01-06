@@ -96,6 +96,24 @@ class SolutionExplorerPanel(wx.Panel):
                 SolutionExplorerNodeData(ExplorerNodeType.RECORDING_ITEM, rec)
             )
 
+    def refresh_recordings(self, solution: StudioSolution):
+        if not self._tree:
+            return
+
+        root = self._tree.GetRootItem()
+        if not root.IsOk():
+            return
+
+        child, cookie = self._tree.GetFirstChild(root)
+
+        while child.IsOk():
+            if self._tree.GetItemText(child) == "Recordings":
+                self.populate_recordings(solution, child)
+                self._tree.Expand(child)
+                return
+
+            child, cookie = self._tree.GetNextChild(root, cookie);
+
     def  get_selected_recording(self) -> Optional[RecordingMetadata]:
         if not self._context_item or not self._context_item.IsOk():
             return None
@@ -280,28 +298,6 @@ enum {
     ID_CTXMENU_REC_DELETE
 };
 
-void SolutionExplorerPanel::RefreshRecordings(
-    const StudioSolution& solution) {
-    if (!tree_)
-        return;
-
-    auto root = tree_->GetRootItem();
-    if (!root.IsOk())
-        return;
-
-    wxTreeItemIdValue cookie;
-    auto child = tree_->GetFirstChild(root, cookie);
-
-    while (child.IsOk()) {
-        if (tree_->GetItemText(child) == "Recordings") {
-            PopulateRecordings(solution, child);
-            tree_->Expand(child);
-            return;
-        }
-
-        child = tree_->GetNextChild(root, cookie);
-    }
-}
 
 
 
