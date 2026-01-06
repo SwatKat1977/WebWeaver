@@ -107,14 +107,14 @@ class RecordingViewerPanel(wx.Panel):
             row = wx.BoxSizer(wx.HORIZONTAL)
 
             row.Add(
-                wx.StaticText(self, wx.ID_ANY, label),
+                wx.StaticText(self, wx.ID_ANY, str(label)),
                 0,
                 wx.RIGHT,
                 5
             )
 
             row.Add(
-                wx.StaticText(self, wx.ID_ANY, value),
+                wx.StaticText(self, wx.ID_ANY, str(value)),
                 1
             )
 
@@ -128,8 +128,8 @@ class RecordingViewerPanel(wx.Panel):
         # Fields
         recording_file = self._context.recording_file
 
-        add_field("File:", recording_file.GetFullName())
-        add_field("Path:", recording_file.GetPath())
+        add_field("File:", recording_file.name)
+        add_field("Path:", recording_file.parent)
         add_field(
             "Recorded:",
             format_time_point(self._context.metadata.created_at)

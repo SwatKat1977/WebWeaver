@@ -22,6 +22,14 @@ from recording_metadata import RecordingMetadata
 
 
 class ExplorerNodeType(enum.Enum):
+    """
+    Enumeration of node types used in the Solution Explorer tree.
+
+    This enum identifies the semantic role of each tree node, allowing
+    the UI and event handlers to distinguish between solution roots,
+    logical folders, and individual recording items.
+    """
+
     SOLUTION_ROOT = enum.auto()
     FOLDER_PAGES = enum.auto()
     FOLDER_SCRIPTS = enum.auto()
@@ -30,17 +38,56 @@ class ExplorerNodeType(enum.Enum):
 
 
 class SolutionExplorerNodeData:
+    """
+    Data container attached to nodes in the Solution Explorer tree.
+
+    Instances of this class are stored as item data on tree nodes and
+    provide structured access to the node's type and associated model
+    object (such as recording metadata).
+
+    This allows the tree UI to remain lightweight while still supporting
+    context-sensitive actions like opening, renaming, or deleting items.
+    """
+
     def __init__(self,
                  node_type: ExplorerNodeType,
                  metadata: RecordingMetadata):
+        """
+        Create a new SolutionExplorerNodeData instance.
+
+        Parameters
+        ----------
+        node_type : ExplorerNodeType
+            The type of the tree node.
+        metadata : RecordingMetadata
+            Metadata associated with the node, typically representing a
+            recording item. May be ``None`` for non-recording nodes.
+        """
         super().__init__()
         self._node_type = node_type
         self._recording = metadata
 
     @property
     def node_type(self) -> ExplorerNodeType:
+        """
+        Get the type of this explorer node.
+
+        Returns
+        -------
+        ExplorerNodeType
+            The node type associated with this tree item.
+        """
         return self._node_type
 
     @property
     def metadata(self) -> RecordingMetadata:
+        """
+        Get the metadata associated with this explorer node.
+
+        Returns
+        -------
+        RecordingMetadata
+            The metadata object attached to this node. For recording nodes,
+            this contains information such as name, file path, and timestamps.
+        """
         return self._recording

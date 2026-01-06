@@ -21,6 +21,14 @@ import enum
 
 
 class RecordingEventType(enum.Enum):
+    """
+    Enumeration of supported recording event types.
+
+    This enum represents the different kinds of events that may appear
+    in a recording timeline or event stream. The string values correspond
+    to the serialized form used in recording files.
+    """
+
     NAV_GOTO = "nav.goto"
     DOM_CLICK = "dom.click"
     WAIT = "wait"
@@ -28,17 +36,53 @@ class RecordingEventType(enum.Enum):
 
 
 def event_type_from_str(value: str) -> RecordingEventType:
+    """
+    Convert a string value into a :class:`RecordingEventType`.
+
+    This function maps the serialized string representation of an event
+    type (as stored in recording files) to the corresponding enum value.
+    If the input string is not recognized, :data:`RecordingEventType.UNKNOWN`
+    is returned.
+
+    Parameters
+    ----------
+    value : str
+        Serialized event type string (e.g. ``"nav.goto"``, ``"dom.click"``,
+        ``"wait"``).
+
+    Returns
+    -------
+    RecordingEventType
+        The corresponding enum value, or :data:`RecordingEventType.UNKNOWN`
+        if the string is not recognized.
+    """
     if value == "nav.goto":
         return RecordingEventType.NAV_GOTO
 
-    if str == "dom.click":
+    if value == "dom.click":
         return RecordingEventType.DOM_CLICK
 
-    if str == "wait":
+    if value == "wait":
         return RecordingEventType.WAIT
 
     return RecordingEventType.UNKNOWN
 
 
 def event_type_to_str(event_type: RecordingEventType) -> str:
+    """
+    Convert a :class:`RecordingEventType` into its serialized string form.
+
+    This returns the value that should be written to disk or transmitted
+    when serializing a recording event.
+
+    Parameters
+    ----------
+    event_type : RecordingEventType
+        The event type to convert.
+
+    Returns
+    -------
+    str
+        The serialized string representation of the event type.
+    """
     return event_type.value

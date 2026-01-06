@@ -26,14 +26,47 @@ import uuid
 from recording.recording_event_type import RecordingEventType
 from studio_solution import StudioSolution
 
-#include "StudioSolution.h"
 
 def now_utc_iso() -> str:
+    """
+    Get the current UTC time formatted as an ISO-8601 timestamp string.
+
+    The returned string is in the format::
+
+        YYYY-MM-DDTHH:MM:SSZ
+
+    This format is suitable for use in filenames and JSON metadata where
+    a stable, timezone-independent timestamp is required.
+
+    Returns
+    -------
+    str
+        The current UTC time formatted as an ISO-8601 string.
+    """
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 class RecordingSession:
+    """
+    Manages a live recording session for a solution.
+
+    This class is responsible for creating, writing, and finalizing a recording
+    file (.wwrec). It handles session lifecycle, event indexing, timestamping,
+    and incremental persistence to disk.
+
+    A recording session is started with :meth:`start`, populated with events
+    using :meth:`append_event`, and finalized using :meth:`stop`.
+    """
+
     def __init__(self, solution: StudioSolution):
+        """
+        Create a new RecordingSession.
+
+        Parameters
+        ----------
+        solution : StudioSolution
+            The solution for which this recording session is created.
+        """
         self._active: bool = False
         self._file_path: typing.Optional[Path] = None
         self._recording_json: typing.Dict[str, typing.Any] = {}
@@ -42,9 +75,35 @@ class RecordingSession:
         self._solution = solution
 
     def is_recording(self) -> bool:
+        """
+        Check whether a recording session is currently active.
+
+        Returns
+        -------
+        bool
+            True if a recording is currently in progress, False otherwise.
+        """
         return self._active
 
     def start(self, name: str) -> bool:
+        """
+        Start a new recording session.
+
+        This creates a new recording file in the solution's recordings
+        directory, initializes the recording metadata, and writes the initial
+        file to disk.
+
+        Parameters
+        ----------
+        name : str
+            Human-readable name of the recording.
+
+        Returns
+        -------
+        bool
+            True if the recording session was started successfully, or False
+            if a session is already active or the file could not be created.
+        """
         if self._active:
             return False
 
@@ -81,6 +140,13 @@ class RecordingSession:
         return True
 
     def stop(self):
+        """
+        Stop the active recording session.
+
+        Finalizes the recording by writing the end timestamp and flushing
+        the final state to disk. If no recording is active, this method does
+        nothing.
+        """
         if not self._active:
             return
 
@@ -94,10 +160,20 @@ class RecordingSession:
                      event_type: RecordingEventType,
                      payload: typing.Dict[str, typing.Any]) -> None:
         """
-        Appends a single immutable event to the recording.
-        - Index and timestamp are assigned internally.
-        - Events are always appended in order.
-        - This method is safe to call repeatedly while recording is active.
+        Append a single event to the active recording.
+
+        - The event index and timestamp are assigned automatically.
+        - Events are always appended in chronological order.
+        - Each call immediately persists the updated recording to disk.
+
+        If no recording session is currently active, this method does nothing.
+
+        Parameters
+        ----------
+        event_type : RecordingEventType
+            The type of event being recorded.
+        payload : dict
+            Event-specific data to attach to the event.
         """
         if not self._active or self._start_time is None:
             return
@@ -117,6 +193,12 @@ class RecordingSession:
         self._flush_to_disk()
 
     def _flush_to_disk(self) -> None:
+        """
+        Write the current recording state to disk.
+
+        This overwrites the recording file with the current JSON state.
+        If no file path is set, this method does nothing.
+        """
         if self._file_path is None:
             return
 

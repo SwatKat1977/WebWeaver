@@ -17,6 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from pathlib import Path
 import wx
 import wx.aui
 from recording_view_context import RecordingViewContext
@@ -74,10 +75,7 @@ class WorkspacePanel(wx.Panel):
         if not self._notebook:
             return False
 
-        target = wx.FileName(file)
-        target.Normalize(wx.PATH_NORM_ABSOLUTE |
-                         wx.PATH_NORM_DOTS |
-                         wx.PATH_NORM_TILDE)
+        target = Path(file).expanduser().resolve()
 
         for i in range(self._notebook.GetPageCount()):
             page = self._notebook.GetPage(i)
@@ -85,11 +83,7 @@ class WorkspacePanel(wx.Panel):
             if not isinstance(page, RecordingViewerPanel):
                 continue
 
-            open_file: wx.FileName = page.get_recording_file()
-            open_file.Normalize(wx.PATH_NORM_ABSOLUTE |
-                                wx.PATH_NORM_DOTS |
-                                wx.PATH_NORM_TILDE)
-
+            open_file = Path(page.get_recording_file()).expanduser().resolve()
             if open_file == target:
                 return True
 
