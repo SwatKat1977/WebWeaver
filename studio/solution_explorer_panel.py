@@ -115,13 +115,13 @@ class SolutionExplorerPanel(wx.Panel):
         )
 
         self._tree.Bind(wx.EVT_TREE_ITEM_MENU, self.on_item_context_menu)
-        '''
         self._tree.Bind(wx.EVT_MENU,
                         self._on_open_recording,
                         id=ID_CONTEXT_MENU_REC_OPEN)
         self._tree.Bind(wx.EVT_MENU,
                         self._on_rename_recording,
                         id=ID_CONTEXT_MENU_REC_RENAME)
+        '''
         self._tree.Bind(wx.EVT_MENU,
                         self._on_delete_recording,
                         id=ID_CONTEXT_MENU_REC_DELETE)
@@ -200,11 +200,32 @@ class SolutionExplorerPanel(wx.Panel):
 
         self.PopupMenu(menu)
 
+    def _on_open_recording(self, _event: wx.CommandEvent) -> None:
+        recording = self.get_selected_recording()
+        if not recording:
+            return
+
+        event = wx.CommandEvent(EVT_OPEN_RECORDING)
+        event.SetClientData(recording)
+        event.SetEventObject(self)
+
+        self.ProcessWindowEvent(event)
+
+    def _on_rename_recording(self, _event: wx.CommandEvent) -> None:
+        if not self._context_item.IsOk():
+            return
+
+        data = self._tree.GetItemData(self._context_item)
+
+        if  not data or data.node_type != ExplorerNodeType.RECORDING_ITEM:
+            return
+
+        evt = wx.CommandEvent(EVT_RENAME_RECORDING)
+        evt.SetClientObject(data.get_metadata().file_path)
+
+        wx.PostEvent(self.GetParent(), evt)
+
     '''
-
-namespace webweaver::studio {
-
-wxDECLARE_EVENT(EVT_OPEN_RECORDING, wxCommandEvent);
 
 class SolutionExplorerPanel : public wxPanel {
  public:
@@ -246,22 +267,10 @@ class SolutionExplorerPanel : public wxPanel {
     void OnDeleteRecording(wxCommandEvent&);
 };
 
-wxDECLARE_EVENT(EVT_DELETE_RECORDING, wxCommandEvent);
-wxDECLARE_EVENT(EVT_RENAME_RECORDING, wxCommandEvent);
-
-}   // namespace webweaver::studio
-
-#endif  // SOLUTIONEXPLORERPANEL_H_
-
-
-
 /*
-#include <string>
 #include "SolutionExplorerPanel.h"
 #include "SolutionExplorerIcons.h"
 #include "SolutionExplorerNodeData.h"
-
-namespace webweaver::studio {
 
 enum {
     ID_CTXMENU_REC_OPEN = wxID_HIGHEST + 3000,
@@ -269,15 +278,11 @@ enum {
     ID_CTXMENU_REC_DELETE
 };
 
-
 SolutionExplorerPanel::SolutionExplorerPanel(wxWindow* parent)
     : wxPanel(parent) {
     CreateControls();
     ShowNoSolution();
 }
-
-
-
 
 void SolutionExplorerPanel::RefreshRecordings(
     const StudioSolution& solution) {
@@ -304,34 +309,9 @@ void SolutionExplorerPanel::RefreshRecordings(
 
 
 
-void SolutionExplorerPanel::OnOpenRecording(wxCommandEvent&) {
-    auto* recording = GetSelectedRecording();
-    if (!recording)
-        return;
 
-    wxCommandEvent evt(EVT_OPEN_RECORDING);
-    evt.SetClientData(recording);
-    evt.SetEventObject(this);
 
-    ProcessWindowEvent(evt);
-}
 
-void SolutionExplorerPanel::OnRenameRecording(wxCommandEvent&) {
-    if (!contextItem_.IsOk()) {
-        return;
-    }
-
-    auto* data = dynamic_cast<ExplorerNodeData*>(
-        tree_->GetItemData(contextItem_));
-
-    if (!data || data->GetType() != ExplorerNodeType::RecordingItem)
-        return;
-
-    wxCommandEvent evt(EVT_RENAME_RECORDING);
-    evt.SetClientData(new std::filesystem::path(data->GetMetadata().filePath));
-
-    wxPostEvent(GetParent(), evt);
-}
 
 void SolutionExplorerPanel::OnDeleteRecording(wxCommandEvent&) {
     if (!contextItem_.IsOk()) {
@@ -364,10 +344,4 @@ RecordingMetadata* SolutionExplorerPanel::GetSelectedRecording() const {
 
     return &data->GetMetadata();
 }
-
-wxDEFINE_EVENT(EVT_OPEN_RECORDING, wxCommandEvent);
-wxDEFINE_EVENT(EVT_DELETE_RECORDING, wxCommandEvent);
-wxDEFINE_EVENT(EVT_RENAME_RECORDING, wxCommandEvent);
-
-}   // namespace webweaver::studio
     '''

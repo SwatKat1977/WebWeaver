@@ -162,6 +162,8 @@ class StudioMainFrame(wx.Frame):
         # --------------------------------------------------------------
         self._create_main_toolbar()
 
+        self._state_controller.ui_ready = True
+
         self._create_solution_panel()
 
         # --------------------------------------------------------------
@@ -171,6 +173,28 @@ class StudioMainFrame(wx.Frame):
         self._create_workspace_panel()
 
         self._aui_mgr.Update()
+
+
+        # --------------------------------------------------------------
+        # Recordings events
+        # --------------------------------------------------------------
+
+        # Open recording event.
+        '''
+        Bind(EVT_OPEN_RECORDING,
+        &StudioMainFrame::OnOpenRecording,
+            this);
+
+    // Delete recording event.
+    Bind(EVT_DELETE_RECORDING,
+         &StudioMainFrame::OnDeleteRecording,
+         this);
+        '''
+
+        # Rename recording event.
+        self.Bind(EVT_RENAME_RECORDING,
+                  OnRenameRecording,
+                  self)
 
         # Force wxAUI to compute sizes/paint.
         self.Layout()
