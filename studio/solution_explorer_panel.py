@@ -20,6 +20,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from typing import Optional
 import wx
 import wx.aui
+from recording.recording_events import (
+    EVT_OPEN_RECORDING,
+    EVT_RENAME_RECORDING,
+    EVT_DELETE_RECORDING)
 from recording_metadata import RecordingMetadata
 from studio_solution import StudioSolution
 from solution_explorer_node_data import (
@@ -29,14 +33,6 @@ from solution_explorer_icons import (load_root_icon,
                                      load_pages_filter_icon,
                                      load_scripts_filter_icon,
                                      load_recordings_filter_icon)
-
-EVT_OPEN_RECORDING = wx.NewEventType()
-EVT_DELETE_RECORDING = wx.NewEventType()
-EVT_RENAME_RECORDING = wx.NewEventType()
-
-OpenRecordingEvent = wx.PyEventBinder(EVT_OPEN_RECORDING, 1)
-DeleteRecordingEvent = wx.PyEventBinder(EVT_DELETE_RECORDING, 1)
-RenameRecordingEvent = wx.PyEventBinder(EVT_RENAME_RECORDING, 1)
 
 ID_CONTEXT_MENU_REC_OPEN = wx.ID_HIGHEST + 3000
 ID_CONTEXT_MENU_REC_RENAME = wx.ID_HIGHEST + 3001
@@ -100,6 +96,16 @@ class SolutionExplorerPanel(wx.Panel):
                 SolutionExplorerNodeData(ExplorerNodeType.RECORDING_ITEM, rec)
             )
 
+    def  get_selected_recording(self) -> Optional[RecordingMetadata]:
+        if not self._context_item or not self._context_item.IsOk():
+            return None
+
+        data = self._tree.GetItemData(self._context_item)
+        if not data:
+            return None
+
+        return data.metadata
+
     def _create_controls(self):
         sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -114,11 +120,11 @@ class SolutionExplorerPanel(wx.Panel):
             style=wx.TR_HAS_BUTTONS | wx.TR_LINES_AT_ROOT # | wx.TR_HIDE_ROOT
         )
 
-        self._tree.Bind(wx.EVT_TREE_ITEM_MENU, self.on_item_context_menu)
-        self._tree.Bind(wx.EVT_MENU,
+        self.Bind(wx.EVT_TREE_ITEM_MENU, self._on_item_context_menu)
+        self.Bind(wx.EVT_MENU,
                         self._on_open_recording,
                         id=ID_CONTEXT_MENU_REC_OPEN)
-        self._tree.Bind(wx.EVT_MENU,
+        self.Bind(wx.EVT_MENU,
                         self._on_rename_recording,
                         id=ID_CONTEXT_MENU_REC_RENAME)
         '''
@@ -174,7 +180,7 @@ class SolutionExplorerPanel(wx.Panel):
         self._tree.AppendItem(node, "(empty)")
         return node
 
-    def on_item_context_menu(self, event: wx.TreeEvent) -> None:
+    def _on_item_context_menu(self, event: wx.TreeEvent) -> None:
         item: wx.TreeItemId = event.GetItem()
         if not item.IsOk():
             return
@@ -212,6 +218,7 @@ class SolutionExplorerPanel(wx.Panel):
         self.ProcessWindowEvent(event)
 
     def _on_rename_recording(self, _event: wx.CommandEvent) -> None:
+
         if not self._context_item.IsOk():
             return
 
@@ -221,7 +228,7 @@ class SolutionExplorerPanel(wx.Panel):
             return
 
         evt = wx.CommandEvent(EVT_RENAME_RECORDING)
-        evt.SetClientObject(data.get_metadata().file_path)
+        evt.SetClientObject(data.metadata.file_path)
 
         wx.PostEvent(self.GetParent(), evt)
 
@@ -267,22 +274,11 @@ class SolutionExplorerPanel : public wxPanel {
     void OnDeleteRecording(wxCommandEvent&);
 };
 
-/*
-#include "SolutionExplorerPanel.h"
-#include "SolutionExplorerIcons.h"
-#include "SolutionExplorerNodeData.h"
-
 enum {
     ID_CTXMENU_REC_OPEN = wxID_HIGHEST + 3000,
     ID_CTXMENU_REC_RENAME,
     ID_CTXMENU_REC_DELETE
 };
-
-SolutionExplorerPanel::SolutionExplorerPanel(wxWindow* parent)
-    : wxPanel(parent) {
-    CreateControls();
-    ShowNoSolution();
-}
 
 void SolutionExplorerPanel::RefreshRecordings(
     const StudioSolution& solution) {
@@ -331,17 +327,4 @@ void SolutionExplorerPanel::OnDeleteRecording(wxCommandEvent&) {
     wxPostEvent(GetParent(), evt);
 }
 
-RecordingMetadata* SolutionExplorerPanel::GetSelectedRecording() const {
-    wxTreeItemId sel = tree_->GetSelection();
-    if (!sel.IsOk())
-        return nullptr;
-
-    auto* data =
-        dynamic_cast<ExplorerNodeData*>(tree_->GetItemData(sel));
-
-    if (!data)
-        return nullptr;
-
-    return &data->GetMetadata();
-}
     '''

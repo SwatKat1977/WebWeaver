@@ -169,6 +169,7 @@ class RecordingMetadata:
         bool
             True if the file was successfully updated, False otherwise.
         """
+        self.file_path = Path(self.file_path)
 
         try:
             with self.file_path.open("r", encoding="utf-8") as f:

@@ -23,7 +23,6 @@ import sys
 from typing import Optional
 import wx
 import wx.aui
-# from solution_explorer_panel import SolutionExplorerPanel
 from toolbar_icons import (
     load_toolbar_inspect_icon,
     load_toolbar_new_solution_icon,
@@ -36,6 +35,11 @@ from toolbar_icons import (
     load_toolbar_close_solution_icon)
 from workspace_panel import WorkspacePanel
 from solution_explorer_panel import SolutionExplorerPanel
+from recording.recording_events import (
+    OpenRecordingEvent,
+    RenameRecordingEvent,
+    DeleteRecordingEvent)
+from recording_metadata import RecordingMetadata
 from recording.recording_session import RecordingSession
 from studio_state_controller import StudioState, StudioStateController
 from studio_solution import (
@@ -192,9 +196,7 @@ class StudioMainFrame(wx.Frame):
         '''
 
         # Rename recording event.
-        self.Bind(EVT_RENAME_RECORDING,
-                  OnRenameRecording,
-                  self)
+        self.Bind(RenameRecordingEvent, self._rename_recording_event)
 
         # Force wxAUI to compute sizes/paint.
         self.Layout()
@@ -451,3 +453,45 @@ class StudioMainFrame(wx.Frame):
         #self.rebuild_recent_solutions_menu()
 
         return True
+
+    def _rename_recording_event(self, evt: wx.CommandEvent) -> None:
+        if self._state_controller.state in (StudioState.RECORDING_RUNNING,
+                                            StudioState.RECORDING_PAUSED):
+            wx.MessageBox(
+                "Stop recording before renaming recordings.",
+                "Rename Recording",
+                wx.ICON_WARNING,
+                self)
+            return
+
+        recording = self._solution_explorer_panel.get_selected_recording()
+
+        dlg: wx.TextEntryDialog = wx.TextEntryDialog(
+            self,
+            "Enter a new name for the recording:",
+            "Rename Recording",
+            recording.name)
+
+        if dlg.ShowModal() != wx.ID_OK:
+            return
+
+        new_name: str = dlg.GetValue()
+
+        if not new_name:
+            return
+
+        # Make a copy of the recording to update.
+        updated: RecordingMetadata = recording
+        updated.name = new_name
+
+        if not updated.update_recording_name():
+            wx.MessageBox(
+                "Failed to save recording metadata.",
+                "Rename Recording",
+                wx.ICON_ERROR,
+                self)
+            return
+
+        #workspacePanel_->OnRecordingRenamedById(recording->id, newName);
+
+        #solutionExplorerPanel_->RefreshRecordings(*currentSolution_);
