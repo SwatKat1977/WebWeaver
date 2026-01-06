@@ -61,7 +61,7 @@ class StudioMainFrame(wx.Frame):
     including the menu bar, AUI-managed toolbars, and other dockable panes.
     It serves as the central coordination point for the Studio UI.
     """
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods, too-many-instance-attributes
 
     TOOLBAR_ID_NEW_SOLUTION: int = wx.ID_HIGHEST + 1
     """Toolbar command ID for creating a new solution."""
@@ -199,7 +199,7 @@ class StudioMainFrame(wx.Frame):
         wx.CallLater(1, self.SendSizeEvent)
 
     def _on_state_changed(self, new_state):
-        self.current_state = new_state
+        self._current_state_ = new_state
         #self.update_toolbar_state()
 
     def _create_main_toolbar(self):
@@ -318,10 +318,10 @@ class StudioMainFrame(wx.Frame):
             .Movable(False))
 
     def on_new_solution_event(self, _event: wx.CommandEvent):
-        ...
+        """ PLACEHOLDER """
 
     def on_close_solution_event(self, _event: wx.CommandEvent):
-        ...
+        """ PLACEHOLDER """
 
     def on_open_solution_event(self, _event: wx.CommandEvent):
         dlg: wx.FileDialog = wx.FileDialog(
@@ -349,13 +349,13 @@ class StudioMainFrame(wx.Frame):
             dlg.Destroy()
 
     def on_record_start_stop_event(self, _event: wx.CommandEvent):
-        ...
+        """ PLACEHOLDER """
 
     def on_record_pause_event(self, _event: wx.CommandEvent):
-        ...
+        """ PLACEHOLDER """
 
     def on_inspector_event(self, _event: wx.CommandEvent):
-        ...
+        """ PLACEHOLDER """
 
     def _create_solution_panel(self) -> None:
         # Solution panel (left top)
@@ -460,7 +460,7 @@ class StudioMainFrame(wx.Frame):
         # 2. Tell the workspace to display it
         self._workspace_panel.open_recording(ctx)
 
-    def _rename_recording_event(self, evt: wx.CommandEvent) -> None:
+    def _rename_recording_event(self, _evt: wx.CommandEvent) -> None:
         if self._state_controller.state in (StudioState.RECORDING_RUNNING,
                                             StudioState.RECORDING_PAUSED):
             wx.MessageBox(
