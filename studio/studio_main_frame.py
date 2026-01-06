@@ -153,6 +153,9 @@ class StudioMainFrame(wx.Frame):
 
         self.SetMenuBar(menubar)
 
+        self._recent_solutions.load()
+        self._rebuild_recent_solutions_menu()
+
     def init_aui(self) -> None:
         """
         Initialise AUI-managed components for the frame.
@@ -572,20 +575,15 @@ class StudioMainFrame(wx.Frame):
         Rebuild the "Recent Solutions" menu from the current recent solutions list.
         """
 
-        paths = self._recent_solutions.get_solutions()
-        print("RECENT SOLUTIONS:", paths)
+        # Remove all existing items
+        while self._recent_solutions_menu.GetMenuItemCount() > 0:
+            item = self._recent_solutions_menu.FindItemByPosition(0)
+            self._recent_solutions_menu.Delete(item)
 
-        # Build a brand new menu
-        new_menu = wx.Menu()
-
-        print("MENU ITEM:", self._recent_solutions_menu_item)
-        print("OLD MENU:", self._recent_solutions_menu)
-        print("NEW MENU:", new_menu)
-
-        menu_id: int = self.RECENT_SOLUTION_BASE_ID
+        menu_id = self.RECENT_SOLUTION_BASE_ID
 
         for path in self._recent_solutions.get_solutions():
-            new_menu.Append(menu_id, str(path))
+            self._recent_solutions_menu.Append(menu_id, str(path))
 
             self.Bind(
                 wx.EVT_MENU,
@@ -595,15 +593,10 @@ class StudioMainFrame(wx.Frame):
 
             menu_id += 1
 
-        if new_menu.GetMenuItemCount() == 0:
-            item = new_menu.Append(self.RECENT_SOLUTION_BASE_ID, "(empty)")
+        if self._recent_solutions_menu.GetMenuItemCount() == 0:
+            item = self._recent_solutions_menu.Append(
+                self.RECENT_SOLUTION_BASE_ID, "(empty)")
             item.Enable(False)
-
-        # Swap the submenu on the existing menu item
-        self._recent_solutions_menu_item.SetSubMenu(new_menu)
-
-        # Update our reference
-        self._recent_solutions_menu = new_menu
 
     def _on_open_recent_solution_event(self, evt: wx.CommandEvent) -> None:
         index: int = evt.GetId() - self.RECENT_SOLUTION_BASE_ID
