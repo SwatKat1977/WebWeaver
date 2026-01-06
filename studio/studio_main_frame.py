@@ -23,6 +23,7 @@ import sys
 from typing import Optional
 import wx
 import wx.aui
+from recent_solutions_manager import RecentSolutionsManager
 from recording_metadata import RecordingMetadata
 from solution_explorer_panel import SolutionExplorerPanel
 from toolbar_icons import (
@@ -84,6 +85,8 @@ class StudioMainFrame(wx.Frame):
     TOOLBAR_ID_PAUSE_RECORD: int = wx.ID_HIGHEST + 7
     """Toolbar command ID for pausing an active recording."""
 
+    RECENT_SOLUTION_BASE_ID: int = wx.ID_HIGHEST + 500
+
     def __init__(self, parent: Optional[wx.Window] = None):
         """
         Initialise the main application frame.
@@ -115,6 +118,8 @@ class StudioMainFrame(wx.Frame):
         self._current_solution: Optional[StudioSolution] = None
         self._state_controller: Optional[StudioStateController] = None
 
+        self._recent_solutions: RecentSolutionsManager = RecentSolutionsManager()
+
         # Disable native macOS fullscreen handling
         if sys.platform == "darwin":
             self.EnableFullScreenView(False)
@@ -130,8 +135,9 @@ class StudioMainFrame(wx.Frame):
         file_menu.Append(wx.ID_OPEN, "Open Project\tCtrl+O")
 
         self._recent_solutions_menu = wx.Menu()
-        file_menu.AppendSubMenu(self._recent_solutions_menu,
-                                "Recent Solutions")
+        self._recent_solutions_menu_item = file_menu.AppendSubMenu(
+            self._recent_solutions_menu,
+            "Recent Solutions")
 
         file_menu.Append(wx.ID_SAVE, "Save Project\tCtrl+S")
         file_menu.AppendSeparator()
@@ -320,9 +326,6 @@ class StudioMainFrame(wx.Frame):
     def on_new_solution_event(self, _event: wx.CommandEvent):
         """ PLACEHOLDER """
 
-    def on_close_solution_event(self, _event: wx.CommandEvent):
-        """ PLACEHOLDER """
-
     def on_open_solution_event(self, _event: wx.CommandEvent):
         """
         Handle the "Open Solution" command.
@@ -355,6 +358,18 @@ class StudioMainFrame(wx.Frame):
 
         finally:
             dlg.Destroy()
+
+    def on_close_solution_event(self, _event: wx.CommandEvent):
+        """
+        Handle the "Close Solution" command.
+
+        Closes the currently loaded solution, resets the application state,
+        and updates the UI to reflect that no solution is open.
+        """
+        self._current_solution = None
+        self._state_controller.on_solution_closed()
+
+        self._solution_explorer_panel.show_no_solution()
 
     def on_record_start_stop_event(self, _event: wx.CommandEvent):
         """ PLACEHOLDER """
@@ -449,9 +464,9 @@ class StudioMainFrame(wx.Frame):
         self._solution_explorer_panel.show_solution(self._current_solution)
 
         # Recent solutions
-        #self.recent_solutions.add_solution(solution_file)
-        #self.recent_solutions.save()
-        #self.rebuild_recent_solutions_menu()
+        self._recent_solutions.add_solution(solution_file)
+        self._recent_solutions.save()
+        wx.CallAfter(self._rebuild_recent_solutions_menu)
 
         return True
 
@@ -551,3 +566,45 @@ class StudioMainFrame(wx.Frame):
             self._workspace_panel.on_recording_deleted_by_id(selected_id)
 
         self._solution_explorer_panel.refresh_recordings(self._current_solution)
+
+    def _rebuild_recent_solutions_menu(self) -> None:
+        """
+        Rebuild the "Recent Solutions" menu from the current recent solutions list.
+        """
+
+        paths = self._recent_solutions.get_solutions()
+        print("RECENT SOLUTIONS:", paths)
+
+        # Build a brand new menu
+        new_menu = wx.Menu()
+
+        print("MENU ITEM:", self._recent_solutions_menu_item)
+        print("OLD MENU:", self._recent_solutions_menu)
+        print("NEW MENU:", new_menu)
+
+        menu_id: int = self.RECENT_SOLUTION_BASE_ID
+
+        for path in self._recent_solutions.get_solutions():
+            new_menu.Append(menu_id, str(path))
+
+            self.Bind(
+                wx.EVT_MENU,
+                self._on_open_recent_solution_event,
+                id=menu_id
+            )
+
+            menu_id += 1
+
+        if new_menu.GetMenuItemCount() == 0:
+            item = new_menu.Append(self.RECENT_SOLUTION_BASE_ID, "(empty)")
+            item.Enable(False)
+
+        # Swap the submenu on the existing menu item
+        self._recent_solutions_menu_item.SetSubMenu(new_menu)
+
+        # Update our reference
+        self._recent_solutions_menu = new_menu
+
+    def _on_open_recent_solution_event(self, evt: wx.CommandEvent) -> None:
+        index: int = evt.GetId() - self.RECENT_SOLUTION_BASE_ID
+        self._open_solution(self._recent_solutions.get_solutions()[index])
