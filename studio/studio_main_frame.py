@@ -41,6 +41,7 @@ from recording.recording_events import (
     DeleteRecordingEvent)
 from recording_metadata import RecordingMetadata
 from recording.recording_session import RecordingSession
+from recording_view_context import RecordingViewContext
 from studio_state_controller import StudioState, StudioStateController
 from studio_solution import (
     StudioSolution,
@@ -184,11 +185,7 @@ class StudioMainFrame(wx.Frame):
         # --------------------------------------------------------------
 
         # Open recording event.
-        '''
-        Bind(EVT_OPEN_RECORDING,
-        &StudioMainFrame::OnOpenRecording,
-            this);
-        '''
+        self.Bind(OpenRecordingEvent, self._open_recording_event)
 
         # Delete recording event.
         self.Bind(DeleteRecordingEvent, self._delete_recording_event)
@@ -451,6 +448,19 @@ class StudioMainFrame(wx.Frame):
         #self.rebuild_recent_solutions_menu()
 
         return True
+
+    def _open_recording_event(self, evt: wx.CommandEvent) -> None:
+        metadata = evt.GetClientData()
+        if not metadata or not self._current_solution or \
+                not self._workspace_panel:
+            return
+
+        # 1. Ask the solution for a view context
+        ctx: RecordingViewContext = self._current_solution.open_recording(
+            metadata)
+
+        # 2. Tell the workspace to display it
+        self._workspace_panel.open_recording(ctx)
 
     def _rename_recording_event(self, evt: wx.CommandEvent) -> None:
         if self._state_controller.state in (StudioState.RECORDING_RUNNING,

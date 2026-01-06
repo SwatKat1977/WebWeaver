@@ -232,7 +232,7 @@ class SolutionExplorerPanel(wx.Panel):
         event.SetClientData(recording)
         event.SetEventObject(self)
 
-        self.ProcessWindowEvent(event)
+        wx.PostEvent(self.GetParent(), event)
 
     def _on_rename_recording(self, _event: wx.CommandEvent) -> None:
 
