@@ -174,11 +174,9 @@ class StudioMainFrame(wx.Frame):
         # --------------------------------------------------------------
         # Create workspace panel
         # --------------------------------------------------------------
-
         self._create_workspace_panel()
 
         self._aui_mgr.Update()
-
 
         # --------------------------------------------------------------
         # Recordings events
