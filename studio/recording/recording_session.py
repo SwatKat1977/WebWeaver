@@ -77,6 +77,7 @@ class RecordingSession:
 
     @property
     def last_error(self) -> typing.Optional[str]:
+        """ Get the last error message, or None if no message """
         return self._last_error
 
     def is_recording(self) -> bool:

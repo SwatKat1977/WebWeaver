@@ -413,6 +413,7 @@ class StudioMainFrame(wx.Frame):
                 self._current_solution)
 
     def on_record_pause_event(self, _event: wx.CommandEvent):
+        """ Pause or resume a recording """
         self._state_controller.on_record_pause()
 
     def on_inspector_event(self, _event: wx.CommandEvent):
