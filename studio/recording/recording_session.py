@@ -31,9 +31,9 @@ def now_utc_iso() -> str:
     """
     Get the current UTC time formatted as an ISO-8601 timestamp string.
 
-    The returned string is in the format::
+    The returned string is in the format:
 
-        YYYY-MM-DDTHH:MM:SSZ
+        YYYY-MM-DDTHH-MM-SS
 
     This format is suitable for use in filenames and JSON metadata where
     a stable, timezone-independent timestamp is required.
