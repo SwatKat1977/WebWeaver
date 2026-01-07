@@ -33,8 +33,8 @@ from toolbar_icons import (
     load_toolbar_pause_record_icon,
     load_toolbar_save_solution_icon,
     load_toolbar_start_record_icon,
-    # load_toolbar_stop_record_icon,
-    # load_toolbar_resume_record_icon,
+    load_toolbar_stop_record_icon,
+    load_toolbar_resume_record_icon,
     load_toolbar_close_solution_icon)
 from workspace_panel import WorkspacePanel
 from recording.recording_events import (
@@ -113,7 +113,7 @@ class StudioMainFrame(wx.Frame):
 
         self._workspace_panel: Optional[WorkspacePanel] = None
 
-        self._current_state_: StudioState = StudioState.NO_SOLUTION
+        self._current_state: StudioState = StudioState.NO_SOLUTION
         self._recording_session: Optional[RecordingSession] = None
         self._current_solution: Optional[StudioSolution] = None
         self._state_controller: Optional[StudioStateController] = None
@@ -177,6 +177,7 @@ class StudioMainFrame(wx.Frame):
         self._create_main_toolbar()
 
         self._state_controller.ui_ready = True
+        self._update_toolbar_state()
 
         self._create_solution_panel()
 
@@ -208,8 +209,8 @@ class StudioMainFrame(wx.Frame):
         wx.CallLater(1, self.SendSizeEvent)
 
     def _on_state_changed(self, new_state):
-        self._current_state_ = new_state
-        #self.update_toolbar_state()
+        self._current_state = new_state
+        self._update_toolbar_state()
 
     def _create_main_toolbar(self):
         """
@@ -611,3 +612,75 @@ class StudioMainFrame(wx.Frame):
     def _on_open_recent_solution_event(self, evt: wx.CommandEvent) -> None:
         index: int = evt.GetId() - self.RECENT_SOLUTION_BASE_ID
         self._open_solution(self._recent_solutions.get_solutions()[index])
+
+    def _update_toolbar_state(self) -> None:
+        # First: disable everything that is state-dependent
+        self._toolbar.EnableTool(self.TOOLBAR_ID_SAVE_SOLUTION, False)
+        self._toolbar.EnableTool(self.TOOLBAR_ID_CLOSE_SOLUTION, False)
+        self._toolbar.EnableTool(self.TOOLBAR_ID_INSPECTOR_MODE, False)
+        self._toolbar.EnableTool(self.TOOLBAR_ID_START_STOP_RECORD, False)
+        self._toolbar.EnableTool(self.TOOLBAR_ID_PAUSE_RECORD, False)
+
+        has_active_recording: bool = False
+        is_inspecting: bool = False
+        is_paused: bool = False
+
+        # Only New/Open make sense
+        if self._current_state == StudioState.NO_SOLUTION:
+            pass
+
+        elif self._current_state == StudioState.SOLUTION_LOADED:
+            self._toolbar.EnableTool(self.TOOLBAR_ID_SAVE_SOLUTION, True)
+            self._toolbar.EnableTool(self.TOOLBAR_ID_CLOSE_SOLUTION, True)
+            self._toolbar.EnableTool(self.TOOLBAR_ID_INSPECTOR_MODE, True)
+            self._toolbar.EnableTool(self.TOOLBAR_ID_START_STOP_RECORD, True)
+
+        elif self._current_state == StudioState.RECORDING_RUNNING:
+            self._toolbar.EnableTool(self.TOOLBAR_ID_START_STOP_RECORD, True)
+            self._toolbar.EnableTool(self.TOOLBAR_ID_PAUSE_RECORD, True)
+            has_active_recording = True
+
+        elif self._current_state == StudioState.RECORDING_PAUSED:
+            self._toolbar.EnableTool(self.TOOLBAR_ID_START_STOP_RECORD, True)
+            self._toolbar.EnableTool(self.TOOLBAR_ID_PAUSE_RECORD, True)
+            has_active_recording = True
+            is_paused = True
+
+        elif self._current_state == StudioState.INSPECTING:
+            self._toolbar.EnableTool(self.TOOLBAR_ID_SAVE_SOLUTION, True)
+            self._toolbar.EnableTool(self.TOOLBAR_ID_CLOSE_SOLUTION, True)
+            self._toolbar.EnableTool(self.TOOLBAR_ID_START_STOP_RECORD, False)
+            self._toolbar.EnableTool(self.TOOLBAR_ID_INSPECTOR_MODE, True)
+            is_inspecting = True
+
+        # Handle active recording states
+        if has_active_recording:
+            self._toolbar.SetToolBitmap(self.TOOLBAR_ID_START_STOP_RECORD,
+                                        load_toolbar_stop_record_icon())
+            self._toolbar.SetToolShortHelp(self.TOOLBAR_ID_START_STOP_RECORD,
+                                           "Stop Recording")
+
+        else:
+            self._toolbar.SetToolBitmap(self.TOOLBAR_ID_START_STOP_RECORD,
+                                        load_toolbar_start_record_icon())
+            self._toolbar.SetToolShortHelp(self.TOOLBAR_ID_START_STOP_RECORD,
+                                           "Start Recording")
+
+        # Handle active recording paused states
+        if is_paused:
+            self._toolbar.SetToolBitmap(self.TOOLBAR_ID_PAUSE_RECORD,
+                                        load_toolbar_resume_record_icon())
+            self._toolbar.SetToolShortHelp(self.TOOLBAR_ID_PAUSE_RECORD,
+                                           "Resume Recording")
+
+        else:
+            self._toolbar.SetToolBitmap(self.TOOLBAR_ID_PAUSE_RECORD,
+                                        load_toolbar_pause_record_icon())
+            self._toolbar.SetToolShortHelp(self.TOOLBAR_ID_PAUSE_RECORD,
+                                           "Pause Recording")
+
+        # Handle Inspector Mode toggle button
+        self._toolbar.ToggleTool(self.TOOLBAR_ID_INSPECTOR_MODE, is_inspecting)
+
+        self._toolbar.Realize()
+        self._toolbar.Refresh()
