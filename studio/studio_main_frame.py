@@ -289,17 +289,17 @@ class StudioMainFrame(wx.Frame):
 
         self._toolbar.Bind(
             wx.EVT_TOOL,
-            self.on_close_solution_event,
+            self._on_close_solution_event,
             id=self.TOOLBAR_ID_CLOSE_SOLUTION)
 
         self._toolbar.Bind(
             wx.EVT_TOOL,
-            self.on_open_solution_event,
+            self._on_open_solution_event,
             id=self.TOOLBAR_ID_OPEN_SOLUTION)
 
         self._toolbar.Bind(
             wx.EVT_TOOL,
-            self.on_record_start_stop_event,
+            self._on_record_start_stop_event,
             id=self.TOOLBAR_ID_START_STOP_RECORD)
 
         self._toolbar.Bind(
@@ -330,7 +330,7 @@ class StudioMainFrame(wx.Frame):
     def on_new_solution_event(self, _event: wx.CommandEvent):
         """ PLACEHOLDER """
 
-    def on_open_solution_event(self, _event: wx.CommandEvent):
+    def _on_open_solution_event(self, _event: wx.CommandEvent):
         """
         Handle the "Open Solution" command.
 
@@ -363,7 +363,7 @@ class StudioMainFrame(wx.Frame):
         finally:
             dlg.Destroy()
 
-    def on_close_solution_event(self, _event: wx.CommandEvent):
+    def _on_close_solution_event(self, _event: wx.CommandEvent):
         """
         Handle the "Close Solution" command.
 
@@ -375,15 +375,40 @@ class StudioMainFrame(wx.Frame):
 
         self._solution_explorer_panel.show_no_solution()
 
-    def on_record_start_stop_event(self, _event: wx.CommandEvent):
+    def _on_record_start_stop_event(self, _event: wx.CommandEvent):
         self._state_controller.on_record_start_stop()
 
         if self._state_controller.state == StudioState.RECORDING_RUNNING:
-            self._recording_session.start(
+            ok = self._recording_session.start(
                 self._current_solution.generate_next_recording_name())
+            if not ok:
+                wx.MessageBox(
+                    self._recording_session.last_error or
+                    "Failed to start recording.",
+                    "Recording Error",
+                    wx.ICON_ERROR,
+                    self
+                )
+
+                # Revert state change
+                self._state_controller.on_record_start_stop()
+                return
 
         elif self._state_controller.state == StudioState.SOLUTION_LOADED:
-            self._recording_session.stop()
+            ok = self._recording_session.stop()
+            if not ok:
+                wx.MessageBox(
+                    self._recording_session.last_error or
+                    "Failed to stop recording.",
+                    "Recording Error",
+                    wx.ICON_ERROR,
+                    self
+                )
+
+                # Revert state change
+                self._state_controller.on_record_start_stop()
+                return
+
             self._solution_explorer_panel.refresh_recordings(
                 self._current_solution)
 
@@ -612,6 +637,9 @@ class StudioMainFrame(wx.Frame):
     def _on_open_recent_solution_event(self, evt: wx.CommandEvent) -> None:
         index: int = evt.GetId() - self.RECENT_SOLUTION_BASE_ID
         self._open_solution(self._recent_solutions.get_solutions()[index])
+
+        self._recording_session = RecordingSession(
+            self._current_solution)
 
     def _update_toolbar_state(self) -> None:
         # First: disable everything that is state-dependent
