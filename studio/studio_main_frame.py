@@ -375,10 +375,19 @@ class StudioMainFrame(wx.Frame):
         self._solution_explorer_panel.show_no_solution()
 
     def on_record_start_stop_event(self, _event: wx.CommandEvent):
-        """ PLACEHOLDER """
+        self._state_controller.on_record_start_stop()
+
+        if self._state_controller.state == StudioState.RECORDING_RUNNING:
+            self._recording_session.start(
+                self._current_solution.generate_next_recording_name())
+
+        elif self._state_controller.state == StudioState.SOLUTION_LOADED:
+            self._recording_session.stop()
+            self._solution_explorer_panel.refresh_recordings(
+                self._current_solution)
 
     def on_record_pause_event(self, _event: wx.CommandEvent):
-        """ PLACEHOLDER """
+        self._state_controller.on_record_pause()
 
     def on_inspector_event(self, _event: wx.CommandEvent):
         """ PLACEHOLDER """
@@ -524,7 +533,8 @@ class StudioMainFrame(wx.Frame):
                 self)
             return
 
-        #workspacePanel_->OnRecordingRenamedById(recording->id, newName);
+        self._workspace_panel.on_recording_renamed_by_id(recording.id,
+                                                         new_name)
         self._solution_explorer_panel.refresh_recordings(self._current_solution)
 
     def _delete_recording_event(self, evt: wx.CommandEvent) -> None:
