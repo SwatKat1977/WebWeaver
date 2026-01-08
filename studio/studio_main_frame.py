@@ -48,8 +48,8 @@ from studio_solution import (
     StudioSolution,
     solution_load_error_to_str,
     SolutionDirectoryCreateStatus)
-from project_create_wizard.wizard_basic_info_page import WizardBasicInfoPage
-from project_create_wizard.project_create_wizard_data import \
+from solution_create_wizard.wizard_basic_info_page import WizardBasicInfoPage
+from solution_create_wizard.project_create_wizard_data import \
     ProjectCreateWizardData
 
 # macOS menu bar offset
