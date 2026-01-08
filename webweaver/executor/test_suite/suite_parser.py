@@ -27,6 +27,7 @@ from webweaver.executor.executor_exceptions import (
     TestSuiteFileNotFound,
     TestSuiteParseFailed)
 from webweaver.executor.test_suite.normalisation import normalise_classes
+from webweaver.executor.test_suite.suite_loader import load_suite_file
 
 
 class SuiteParser:
@@ -79,34 +80,8 @@ class SuiteParser:
             ValueError: If validation fails.
         """
         path: Path = Path(file_path)
-        if not path.exists():
-            raise TestSuiteFileNotFound(f"Suite file '{file_path}' not found.")
 
-        # Parse file depending on extension
-        try:
-            if file_path.endswith(".json"):
-                with open(file_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-
-            elif file_path.endswith((".yaml", ".yml")):
-                with open(file_path, "r", encoding="utf-8") as f:
-                    data = yaml.safe_load(f)
-
-            else:
-                raise TestSuiteParseFailed(
-                    (f"Unsupported file format for '{file_path}'. "
-                      "Use .json or .yaml"))
-
-        except json.JSONDecodeError as ex:
-            raise TestSuiteParseFailed(
-                f"Invalid JSON in suite file {file_path}: {ex.msg} "
-                f"(line {ex.lineno}, column {ex.colno})"
-            ) from ex
-
-        except yaml.YAMLError as ex:
-            raise TestSuiteParseFailed(
-                f"Invalid YAML in suite file {file_path}: {ex}"
-            ) from ex
+        data = load_suite_file(path)
 
         # Validate against schema
         try:
