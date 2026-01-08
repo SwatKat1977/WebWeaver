@@ -85,7 +85,8 @@ class SuiteParser:
         try:
             validate_suite(data, self._schema)
         except TestSuiteValidationFailed as ex:
-            raise ValueError(f"Suite validation error: {ex}") from ex
+            raise TestSuiteValidationFailed(f"Suite validation error: {ex}")\
+                from ex
 
         return normalise_suite(
             data,
