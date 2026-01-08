@@ -305,20 +305,17 @@ class TestExecutor:
         obj = cls()
         return cls_name, cls, obj
 
-    async def _collect_tasks_for_class(self, class_conf, test_parallel):
-        # pylint: disable=too-many-locals
+    def _prepare_test_instance(self, cls_name, obj):
 
-        cls_name, cls, obj = self._create_test_instance(class_conf)
-        methods_conf = class_conf.get("methods", {"include": [], "exclude": []})
-
-        # Inject shared test logger into the class instance if not already present
-        # Inject shared test logger into the class instance if not already present
+        # Inject shared test logger into the class instance if not already
+        # present.
         if not hasattr(obj, "logger"):
             obj.logger = logging.getLogger(f"webweaver.{cls_name}")
 
             # Add a clean formatter with (Class::Method)
             short_cls = cls_name.rsplit(".", 1)[-1]
-            for handler in obj.logger.handlers or logging.getLogger("webweaver").handlers:
+            for handler in obj.logger.handlers or \
+                           logging.getLogger("webweaver").handlers:
                 handler.setFormatter(logging.Formatter(
                     "%(asctime)s [%(levelname)s] "
                     f"({short_cls}::%(funcName)s) %(message)s",
@@ -346,6 +343,14 @@ class TestExecutor:
 
         # link assertion context to collector for assume_that()
         obj.assertions.soft_collector = obj.softly
+
+    async def _collect_tasks_for_class(self, class_conf, test_parallel):
+        # pylint: disable=too-many-locals
+
+        cls_name, cls, obj = self._create_test_instance(class_conf)
+        self._prepare_test_instance(cls_name, obj)
+
+        methods_conf = class_conf.get("methods", {"include": [], "exclude": []})
 
         # listeners attached to the class (used only for method tasks)
         method_listeners = getattr(cls, "__listeners__", [])
