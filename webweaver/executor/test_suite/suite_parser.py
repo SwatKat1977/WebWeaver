@@ -25,6 +25,8 @@ from webweaver.executor.executor_exceptions import (
     TestSuiteSchemaParseFailed)
 from webweaver.executor.test_suite.normalisation import normalise_classes
 from webweaver.executor.test_suite.suite_loader import load_suite_file
+from webweaver.executor.test_suite.suite_validator import (
+    validate_suite, TestSuiteValidationFailed)
 
 
 class SuiteParser:
@@ -82,9 +84,9 @@ class SuiteParser:
 
         # Validate against schema
         try:
-            validate(instance=data, schema=self._schema)
-        except ValidationError as ex:
-            raise ValueError(f"Suite validation error: {ex.message}") from ex
+            validate_suite(data, self._schema)
+        except TestSuiteValidationFailed as ex:
+            raise ValueError(f"Suite validation error: {ex}") from ex
 
         return self._normalise(data)
 
