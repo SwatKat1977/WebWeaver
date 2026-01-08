@@ -344,6 +344,47 @@ class TestExecutor:
         # link assertion context to collector for assume_that()
         obj.assertions.soft_collector = obj.softly
 
+    def _discover_test_methods(self, obj, methods_conf):
+        all_methods = [
+            attr for attr in dir(obj)
+            if callable(getattr(obj, attr)) and getattr(getattr(obj, attr),
+                                                        "is_test", False)]
+        selected = self._filter_methods(all_methods, methods_conf)
+
+        enabled_methods = [
+            m for m in selected if getattr(getattr(obj, m), "enabled", True)]
+
+        return selected, enabled_methods
+
+    def _discover_fixtures(self, obj, selected, enabled_methods):
+        # Only collect class-level hooks if at least one enabled test exists
+        if enabled_methods:
+            before_class_methods = [
+                getattr(obj, m) for m in dir(obj)
+                if callable(getattr(obj, m)) and getattr(getattr(obj, m),
+                                                         "is_before_class",
+                                                         False)]
+            after_class_methods = [
+                getattr(obj, m) for m in dir(obj)
+                if callable(getattr(obj, m)) and getattr(getattr(obj, m),
+                                                         "is_after_class",
+                                                         False)]
+        else:
+            before_class_methods = []
+            after_class_methods = []
+
+        before_method_methods = [
+            getattr(obj, m) for m in dir(obj)
+            if callable(getattr(obj, m)) and getattr(getattr(obj, m),
+                                                     "is_before_method", False)]
+        after_method_methods = [
+            getattr(obj, m) for m in dir(obj)
+            if callable(getattr(obj, m)) and getattr(getattr(obj, m),
+                                                     "is_after_method", False)]
+
+        return before_class_methods, after_class_methods, \
+            before_method_methods, after_method_methods
+
     async def _collect_tasks_for_class(self, class_conf, test_parallel):
         # pylint: disable=too-many-locals
 
@@ -355,38 +396,11 @@ class TestExecutor:
         # listeners attached to the class (used only for method tasks)
         method_listeners = getattr(cls, "__listeners__", [])
 
-        all_methods = [
-            attr for attr in dir(obj)
-            if callable(getattr(obj, attr)) and getattr(getattr(obj, attr), "is_test", False)
-        ]
-        selected = self._filter_methods(all_methods, methods_conf)
+        selected, enabled_methods = self._discover_test_methods(obj,
+                                                                methods_conf)
 
-        # Only collect class-level hooks if at least one enabled test exists
-        enabled_methods = [
-            m for m in selected if getattr(getattr(obj, m), "enabled", True)
-        ]
-
-        if enabled_methods:
-            before_class_methods = [
-                getattr(obj, m) for m in dir(obj)
-                if callable(getattr(obj, m)) and getattr(getattr(obj, m), "is_before_class", False)
-            ]
-            after_class_methods = [
-                getattr(obj, m) for m in dir(obj)
-                if callable(getattr(obj, m)) and getattr(getattr(obj, m), "is_after_class", False)
-            ]
-        else:
-            before_class_methods = []
-            after_class_methods = []
-
-        before_method_methods = [
-            getattr(obj, m) for m in dir(obj)
-            if callable(getattr(obj, m)) and getattr(getattr(obj, m), "is_before_method", False)
-        ]
-        after_method_methods = [
-            getattr(obj, m) for m in dir(obj)
-            if callable(getattr(obj, m)) and getattr(getattr(obj, m), "is_after_method", False)
-        ]
+        before_class_methods, after_class_methods, before_method_methods, after_method_methods = \
+            self._discover_fixtures(obj, selected, enabled_methods)
 
         sequential, parallel = [], []
 
