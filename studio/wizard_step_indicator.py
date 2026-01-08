@@ -52,7 +52,7 @@ class WizardStepIndicator(wx.Panel):
         for _ in self._steps:
             label: wx.StaticText = wx.StaticText(self, wx.ID_ANY, "")
             sizer.Add(label, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 20)
-            self._labels_.push_back(label)
+            self._labels.append(label)
 
         self.SetSizer(sizer)
         self.set_active(self._active_index)
