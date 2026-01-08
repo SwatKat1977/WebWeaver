@@ -385,6 +385,73 @@ class TestExecutor:
         return before_class_methods, after_class_methods, \
             before_method_methods, after_method_methods
 
+    async def _build_method_tasks(self, cls_name, obj, selected,
+                                  test_parallel, method_listeners,
+                                  before_method_methods,
+                                  after_method_methods):
+        sequential = []
+        parallel = []
+
+        for method_name in selected:
+            method = getattr(obj, method_name)
+            provider = getattr(method, "data_provider", None)
+
+            # ---------- CASE 1: Data Provider ----------
+            if provider:
+                rows = provider()
+                if inspect.iscoroutine(rows):
+                    rows = await rows
+
+                for idx, row in enumerate(rows):
+
+                    # --- Use row["name"] if present, otherwise fallback to index ---
+                    if isinstance(row, dict) and "name" in row:
+                        label = row["name"]
+                    else:
+                        label = str(idx)
+
+                    case_name = f"{method_name}[{label}]"
+                    test_name = f"{cls_name}.{case_name}"
+                    mtr = TestResult(case_name, cls_name)
+
+                    async def parameterised_task(method=method, row=row):
+                        # dict → kwargs | list/tuple → positional args
+                        if isinstance(row, dict):
+                            return await self._call(method, **row)
+                        return await self._call(method, *row)
+
+                    target = parallel if test_parallel == "methods" else sequential
+                    target.append((
+                        test_name,
+                        parameterised_task,
+                        mtr,
+                        method_listeners,
+                        before_method_methods,
+                        after_method_methods
+                    ))
+
+                continue
+
+            # ---------- CASE 2: Normal test (no provider) ----------
+            else:
+                case_name = method_name
+                test_name = f"{cls_name}.{case_name}"
+                mtr = TestResult(case_name, cls_name)
+
+                task = method
+                target = parallel if test_parallel == "methods" else sequential
+
+                target.append((
+                    test_name,
+                    task,
+                    mtr,
+                    method_listeners,
+                    before_method_methods,
+                    after_method_methods
+                ))
+
+        return sequential, parallel
+
     async def _collect_tasks_for_class(self, class_conf, test_parallel):
         # pylint: disable=too-many-locals
 
@@ -405,63 +472,14 @@ class TestExecutor:
         sequential, parallel = [], []
 
         if test_parallel != "classes":
-            for method_name in selected:
-                method = getattr(obj, method_name)
-                provider = getattr(method, "data_provider", None)
-
-                # ---------- CASE 1: Data Provider ----------
-                if provider:
-                    rows = provider()
-                    if inspect.iscoroutine(rows):
-                        rows = await rows
-
-                    for idx, row in enumerate(rows):
-
-                        # --- Use row["name"] if present, otherwise fallback to index ---
-                        if isinstance(row, dict) and "name" in row:
-                            label = row["name"]
-                        else:
-                            label = str(idx)
-
-                        case_name = f"{method_name}[{label}]"
-                        test_name = f"{cls_name}.{case_name}"
-                        mtr = TestResult(case_name, cls_name)
-
-                        async def parameterised_task(method=method, row=row):
-                            # dict → kwargs | list/tuple → positional args
-                            if isinstance(row, dict):
-                                return await self._call(method, **row)
-                            return await self._call(method, *row)
-
-                        target = parallel if test_parallel == "methods" else sequential
-                        target.append((
-                            test_name,
-                            parameterised_task,
-                            mtr,
-                            method_listeners,
-                            before_method_methods,
-                            after_method_methods
-                        ))
-
-                    continue
-
-                # ---------- CASE 2: Normal test (no provider) ----------
-                else:
-                    case_name = method_name
-                    test_name = f"{cls_name}.{case_name}"
-                    mtr = TestResult(case_name, cls_name)
-
-                    task = method
-                    target = parallel if test_parallel == "methods" else sequential
-
-                    target.append((
-                        test_name,
-                        task,
-                        mtr,
-                        method_listeners,
-                        before_method_methods,
-                        after_method_methods
-                    ))
+            sequential, parallel = await self._build_method_tasks(
+                cls_name,
+                obj,
+                selected,
+                test_parallel,
+                method_listeners,
+                before_method_methods,
+                after_method_methods)
 
         if test_parallel == "classes":
             # class wrapper: run methods sequentially INSIDE; return dict of per-method results
