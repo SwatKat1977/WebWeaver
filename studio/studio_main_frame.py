@@ -48,6 +48,9 @@ from studio_solution import (
     StudioSolution,
     solution_load_error_to_str,
     SolutionDirectoryCreateStatus)
+from project_create_wizard.wizard_basic_info_page import WizardBasicInfoPage
+from project_create_wizard.project_create_wizard_data import \
+    ProjectCreateWizardData
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -86,6 +89,21 @@ class StudioMainFrame(wx.Frame):
     """Toolbar command ID for pausing an active recording."""
 
     RECENT_SOLUTION_BASE_ID: int = wx.ID_HIGHEST + 500
+
+    PAGE_NO_BASIC_INFO_PAGE: int = 0
+    PAGE_NO_SELECT_BROWSER_PAGE: int = 1
+    PAGE_NO_BEHAVIOUR_PAGE: int = 2
+    PAGE_NO_FINISH_PAGE: int = 3
+
+    SOLUTION_WIZARD_PAGE_CLASSES = {
+        PAGE_NO_BASIC_INFO_PAGE: WizardBasicInfoPage,
+    }
+    """
+        PAGENO_SELECTBROWSERPAGE: WizardSelectBrowserPage,
+        PAGENO_BEHAVIOURPAGE: WizardBehaviourPage,
+        PAGENO_FINISHPAGE: WizardFinishPage,
+    }
+    """
 
     def __init__(self, parent: Optional[wx.Window] = None):
         """
@@ -328,7 +346,35 @@ class StudioMainFrame(wx.Frame):
             .Movable(False))
 
     def on_new_solution_event(self, _event: wx.CommandEvent):
-        """ PLACEHOLDER """
+
+        # Steps for wizard indicator
+        steps = [
+            "Basic solution info",
+            "Browser selection",
+            "Configure behaviour",
+            "Finish"
+        ]
+
+        data: ProjectCreateWizardData = ProjectCreateWizardData()
+
+        page_number: int = self.PAGE_NO_BASIC_INFO_PAGE
+
+        while True:
+            page_class = self.SOLUTION_WIZARD_PAGE_CLASSES.get(page_number)
+
+            if not page_class:
+                self._create_solution(data)
+                break
+
+            dlg = page_class(self, data, steps)
+            result = dlg.ShowModal()
+            next_page = dlg.NEXT_WIZARD_PAGE
+            dlg.Destroy()
+
+            if result != wx.ID_OK:
+                break
+
+            page_number = next_page
 
     def _on_open_solution_event(self, _event: wx.CommandEvent):
         """

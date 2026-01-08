@@ -42,7 +42,10 @@ def is_directory_writable(path: Path) -> bool:
 
 
 class WizardBasicInfoPage(wx.Dialog):
+
     MIN_SOLUTION_NAME_LENGTH: int = 60
+
+    NEXT_WIZARD_PAGE = None
 
     def __init__(self, parent, data: ProjectCreateWizardData, steps: list):
         super().__init__(parent, title="Create your new solution",
