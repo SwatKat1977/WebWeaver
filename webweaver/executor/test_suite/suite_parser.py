@@ -19,13 +19,10 @@ Copyright 2025 SwatKat1977
 """
 import json
 from pathlib import Path
-import yaml
 from jsonschema import validate, ValidationError
 from webweaver.executor.executor_exceptions import (
     TestSuiteSchemaFileNotFound,
-    TestSuiteSchemaParseFailed,
-    TestSuiteFileNotFound,
-    TestSuiteParseFailed)
+    TestSuiteSchemaParseFailed)
 from webweaver.executor.test_suite.normalisation import normalise_classes
 from webweaver.executor.test_suite.suite_loader import load_suite_file
 
