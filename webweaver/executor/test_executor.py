@@ -30,7 +30,7 @@ from webweaver.executor.test_result import TestResult
 from webweaver.executor.test_status import TestStatus
 from webweaver.executor.assertions import (
     SoftAssertions, AssertionFailure, AssertionContext)
-
+from webweaver.executor.discovery.class_resolver import resolve_class
 
 @dataclass
 class TaskContext:
@@ -304,7 +304,7 @@ class TestExecutor:
 
         cls_name = class_conf["name"]
         methods_conf = class_conf.get("methods", {"include": [], "exclude": []})
-        cls = self._resolve_class(cls_name)
+        cls = resolve_class(cls_name)
         obj = cls()
 
         # Inject shared test logger into the class instance if not already present
@@ -475,7 +475,7 @@ class TestExecutor:
                             return results
 
                     # --- 2) Run test methods sequentially ---
-                    for method_name in selected:
+                    for method_name in enabled_methods:
                         method = getattr(obj, method_name)
                         provider = getattr(method, "data_provider", None)
 
@@ -519,6 +519,12 @@ class TestExecutor:
                         # ---- Normal test (no provider) ----
                         mtr = TestResult(method_name, cls_name)
                         task = method
+                        ctx = TaskContext(
+                            listeners=method_listeners,
+                            before_methods=before_method_methods,
+                            after_methods=after_method_methods,
+                            lock=None
+                        )
                         res = await self.__run_task(task, mtr, ctx)
                         results[f"{cls_name}.{method_name}"] = res
                         ran.add(method_name)
@@ -578,21 +584,28 @@ class TestExecutor:
 
                 # seq here are wrapper tasks returning dicts of method results
                 for task_info in seq:
-                    # for (_name, task, result, listeners, before_methods, after_methods) in seq:
-                    ctx = TaskContext(
-                        listeners=task_info[SequentialTaskIndex.LISTENERS],
-                        before_methods=task_info[SequentialTaskIndex.BEFORE_METHODS],
-                        after_methods=task_info[SequentialTaskIndex.AFTER_METHODS],
-                        lock=None)
-                    res = await self.__run_task(
-                        task_info[SequentialTaskIndex.TASK],
-                        task_info[SequentialTaskIndex.RESULT],
-                        ctx)
+                    task = task_info[SequentialTaskIndex.TASK]
+                    name = task_info[SequentialTaskIndex.NAME]
+
+                    # If this is the class wrapper, call it DIRECTLY (no lifecycle!)
+                    if name.endswith(".__class_wrapper__"):
+                        res = await task()
+                    else:
+                        ctx = TaskContext(
+                            listeners=task_info[SequentialTaskIndex.LISTENERS],
+                            before_methods=task_info[SequentialTaskIndex.BEFORE_METHODS],
+                            after_methods=task_info[SequentialTaskIndex.AFTER_METHODS],
+                            lock=None)
+
+                        res = await self.__run_task(
+                            task,
+                            task_info[SequentialTaskIndex.RESULT],
+                            ctx)
+
                     if isinstance(res, dict):
                         results.update(res)
-
                     else:
-                        results[task_info[SequentialTaskIndex.NAME]] = res
+                        results[name] = res
 
         except Exception as ex:  # pylint: disable=broad-exception-caught
             results.update(self.__handle_test_exception(suite_test, ex))
@@ -700,6 +713,10 @@ class TestExecutor:
                     sequential_tasks.extend(class_entry[ClassTaskIndex.SEQUENTIAL])
                     parallel_tasks.extend(class_entry[ClassTaskIndex.PARALLEL])
 
+        print(f"sequential_tasks : {sequential_tasks}\n\n")
+        print(f"parallel_tasks   : {parallel_tasks}\n\n")
+        print(f"class_fixtures   : {class_fixtures}\n\n")
+
         return sequential_tasks, parallel_tasks, class_fixtures
 
     async def __run_task(self,
@@ -792,14 +809,6 @@ class TestExecutor:
                 return await execute()
 
         return await execute()
-
-    def _resolve_class(self, dotted_path: str):
-        """
-        Import a class by dotted path, e.g. "com.example.tests.LoginTest".
-        """
-        module_name, class_name = dotted_path.rsplit(".", 1)
-        module = __import__(module_name, fromlist=[class_name])
-        return getattr(module, class_name)
 
     async def _call(self, func, *args, **kwargs):
         result = func(*args, **kwargs)
