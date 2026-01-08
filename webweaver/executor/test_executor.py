@@ -299,13 +299,17 @@ class TestExecutor:
 
         return sequential_tasks, parallel_tasks
 
+    def _create_test_instance(self, class_conf):
+        cls_name = class_conf["name"]
+        cls = resolve_class(cls_name)
+        obj = cls()
+        return cls_name, cls, obj
+
     async def _collect_tasks_for_class(self, class_conf, test_parallel):
         # pylint: disable=too-many-locals
 
-        cls_name = class_conf["name"]
+        cls_name, cls, obj = self._create_test_instance(class_conf)
         methods_conf = class_conf.get("methods", {"include": [], "exclude": []})
-        cls = resolve_class(cls_name)
-        obj = cls()
 
         # Inject shared test logger into the class instance if not already present
         # Inject shared test logger into the class instance if not already present
