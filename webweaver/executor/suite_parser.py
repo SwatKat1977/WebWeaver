@@ -26,6 +26,7 @@ from webweaver.executor.executor_exceptions import (
     TestSuiteSchemaParseFailed,
     TestSuiteFileNotFound,
     TestSuiteParseFailed)
+from webweaver.executor.test_suite.normalisation import normalise_classes
 
 
 class SuiteParser:
@@ -149,42 +150,7 @@ class SuiteParser:
                     suite.get("thread_count", self.DEFAULT_TEST_THREAD_COUNT)
                 )
 
-            # Merge class entries by name (strings + dicts)
-            merged = {}
-            order = []  # preserve first-seen order
-
-            for cls in test["classes"]:
-                if isinstance(cls, str):
-                    name = cls
-                    methods = {"include": [], "exclude": []}
-                else:
-                    name = cls["name"]
-                    methods = cls.get("methods", {})
-                    # defaults for methods
-                    include = methods.get("include", [])
-                    exclude = methods.get("exclude", [])
-                    if isinstance(include, str):
-                        include = [include]
-                    if isinstance(exclude, str):
-                        exclude = [exclude]
-                    methods = {"include": include, "exclude": exclude}
-
-                if name not in merged:
-                    merged[name] = {"name": name, "methods": {"include": [], "exclude": []}}
-                    order.append(name)
-
-                # Merge include/exclude, preserving order and removing dups
-                def _extend_unique(dst_list, src_list):
-                    seen = set(dst_list)
-                    for item in src_list:
-                        if item not in seen:
-                            dst_list.append(item)
-                            seen.add(item)
-
-                _extend_unique(merged[name]["methods"]["include"], methods["include"])
-                _extend_unique(merged[name]["methods"]["exclude"], methods["exclude"])
-
-            # Rebuild in first-seen order
-            test["classes"] = [merged[name] for name in order]
+            # Normalise the test classes
+            test["classes"] = normalise_classes(test["classes"])
 
         return data
