@@ -1,0 +1,17 @@
+[run]
+# Only measure files in your source folder(s)
+source =
+    webweaver/executor
+
+[report]
+# Don't include test files in the report
+omit =
+    unit_tests/*
+    webweaver/web/*
+
+exclude_lines =
+    pragma: no cover
+    if __name__ == "__main__":
+
+[html]
+directory = htmlcov
