@@ -78,7 +78,7 @@ class SuiteParser:
             ValueError: If validation fails.
         """
         path: Path = Path(file_path)
-        if path.exists(file_path):
+        if not path.exists():
             raise TestSuiteFileNotFound(f"Suite file '{file_path}' not found.")
 
         # Parse file depending on extension
