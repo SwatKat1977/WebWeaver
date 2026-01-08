@@ -76,3 +76,74 @@ def normalise_classes(raw_classes: list) -> list[dict]:
         extend_unique(merged[name]["methods"]["exclude"], methods["exclude"])
 
     return [merged[name] for name in order]
+
+
+def normalise_suite(data: dict,
+                    default_suite_threads: int,
+                    default_test_threads: int) -> dict:
+    """
+    Normalize a parsed and schema-validated test suite definition.
+
+    This function applies all suite- and test-level business rules and
+    defaulting logic, transforming the raw suite dictionary into a fully
+    normalized form that the executor can rely on.
+
+    The following rules are applied:
+
+    Suite-level:
+      - If 'suite.parallel' is missing, it defaults to "none".
+      - If 'suite.thread_count' is missing, it defaults to
+        'default_suite_threads'.
+
+    Test-level:
+      - If 'test.parallel' is missing, it inherits from 'suite.parallel'.
+      - If 'test.parallel' == "none", then 'test.thread_count' is forced to 1.
+      - Otherwise, if 'test.thread_count' is missing, it defaults to:
+            - 'suite.thread_count' if present
+            - otherwise 'default_test_threads'
+
+    Classes:
+      - Each test's 'classes' list is normalized via 'normalise_classes':
+            - class entries are merged by name
+            - method include/exclude lists are defaulted and deduplicated
+            - first-seen class order is preserved
+
+    The input dictionary is modified in-place and also returned.
+
+    Args:
+        data (dict):
+            A parsed and schema-validated suite definition.
+
+        default_suite_threads (int):
+            Default thread count for the suite if not specified.
+
+        default_test_threads (int):
+            Default thread count for tests if not specified.
+
+    Returns:
+        dict:
+            The normalized suite definition dictionary.
+    """
+    suite = data["suite"]
+
+    # Suite-level defaults
+    suite.setdefault("parallel", "none")
+    suite.setdefault("thread_count", default_suite_threads)
+
+    for test in data["tests"]:
+        # Inherit parallel from suite if not specified
+        test["parallel"] = test.get("parallel", suite.get("parallel", "none"))
+
+        # Compute thread_count with sensible defaults
+        if test["parallel"] == "none":
+            test["thread_count"] = 1
+        else:
+            test.setdefault(
+                "thread_count",
+                suite.get("thread_count", default_test_threads)
+            )
+
+        # Normalise the test classes
+        test["classes"] = normalise_classes(test["classes"])
+
+    return data

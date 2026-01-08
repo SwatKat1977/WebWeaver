@@ -1,5 +1,5 @@
 import unittest
-from test_suite.normalisation import normalise_classes
+from test_suite.normalisation import normalise_classes, normalise_suite
 
 
 class TestNormaliseClasses(unittest.TestCase):
@@ -158,4 +158,103 @@ class TestNormaliseClasses(unittest.TestCase):
                     "exclude": ["b3"]
                 }
             },
+        ])
+
+
+class TestNormaliseSuite(unittest.TestCase):
+
+    def _base_suite(self):
+        """
+        Returns a minimal valid suite dict structure.
+        """
+        return {
+            "suite": {},
+            "tests": [
+                {
+                    "classes": ["A"],
+                }
+            ]
+        }
+
+    def test_suite_defaults_applied(self):
+        data = self._base_suite()
+
+        result = normalise_suite(data, default_suite_threads=10, default_test_threads=5)
+
+        self.assertEqual(result["suite"]["parallel"], "none")
+        self.assertEqual(result["suite"]["thread_count"], 10)
+
+    def test_test_inherits_parallel_from_suite(self):
+        data = self._base_suite()
+        data["suite"]["parallel"] = "methods"
+
+        result = normalise_suite(data, default_suite_threads=10, default_test_threads=5)
+
+        test = result["tests"][0]
+        self.assertEqual(test["parallel"], "methods")
+
+    def test_parallel_none_forces_thread_count_to_one(self):
+        data = self._base_suite()
+        data["suite"]["parallel"] = "none"
+
+        result = normalise_suite(data, default_suite_threads=10, default_test_threads=5)
+
+        test = result["tests"][0]
+        self.assertEqual(test["thread_count"], 1)
+
+    def test_parallel_non_none_inherits_suite_thread_count(self):
+        data = self._base_suite()
+        data["suite"]["parallel"] = "methods"
+        data["suite"]["thread_count"] = 7
+
+        result = normalise_suite(data, default_suite_threads=10, default_test_threads=5)
+
+        test = result["tests"][0]
+        self.assertEqual(test["thread_count"], 7)
+
+    def test_parallel_non_none_inherits_defaulted_suite_thread_count(self):
+        data = self._base_suite()
+        data["suite"]["parallel"] = "methods"
+        # Note: no suite["thread_count"]
+
+        result = normalise_suite(data, default_suite_threads=10, default_test_threads=5)
+
+        test = result["tests"][0]
+        self.assertEqual(test["thread_count"], 10)
+
+    def test_explicit_test_thread_count_is_preserved(self):
+        data = self._base_suite()
+        data["suite"]["parallel"] = "methods"
+        data["tests"][0]["thread_count"] = 42
+
+        result = normalise_suite(data, default_suite_threads=10, default_test_threads=5)
+
+        test = result["tests"][0]
+        self.assertEqual(test["thread_count"], 42)
+
+    def test_classes_are_normalised(self):
+        data = {
+            "suite": {},
+            "tests": [
+                {
+                    "classes": [
+                        "A",
+                        {"name": "A", "methods": {"include": ["x"]}},
+                    ]
+                }
+            ]
+        }
+
+        result = normalise_suite(data, default_suite_threads=10, default_test_threads=5)
+
+        classes = result["tests"][0]["classes"]
+
+        self.assertEqual(classes, [
+            {
+                "name": "A",
+                "methods": {
+                    "include": ["x"],
+                    "exclude": [],
+                }
+            }
         ])

@@ -22,7 +22,7 @@ from pathlib import Path
 from webweaver.executor.executor_exceptions import (
     TestSuiteSchemaFileNotFound,
     TestSuiteSchemaParseFailed)
-from webweaver.executor.test_suite.normalisation import normalise_classes
+from webweaver.executor.test_suite.normalisation import normalise_suite
 from webweaver.executor.test_suite.suite_loader import load_suite_file
 from webweaver.executor.test_suite.suite_validator import (
     validate_suite, TestSuiteValidationFailed)
@@ -87,43 +87,8 @@ class SuiteParser:
         except TestSuiteValidationFailed as ex:
             raise ValueError(f"Suite validation error: {ex}") from ex
 
-        return self._normalise(data)
-
-    def _normalise(self, data: dict) -> dict:
-        """
-        Normalize the suite configuration, applying defaults and merging classes.
-
-        - suite.parallel defaults to "none"
-        - suite.thread_count defaults to DEFAULT_SUITE_THREAD_COUNT
-        - test.parallel inherits from suite.parallel if missing
-        - test.thread_count:
-            * if test.parallel == "none": set to 1
-            * else: inherit suite.thread_count if missing, or DEFAULT_TEST_THREAD_COUNT
-        - classes:
-            * strings and dicts merged by 'name'
-            * methods.include/exclude default to [] and are deduped (order preserved)
-        """
-        suite = data["suite"]
-
-        # Suite-level defaults
-        suite.setdefault("parallel", "none")
-        suite.setdefault("thread_count", self.DEFAULT_SUITE_THREAD_COUNT)
-
-        for test in data["tests"]:
-            # Inherit parallel from suite if not specified
-            test["parallel"] = test.get("parallel", suite.get("parallel", "none"))
-
-            # Compute thread_count with sensible defaults
-            if test["parallel"] == "none":
-                # If user explicitly set a non-1 value while parallel is none, coerce to 1
-                test["thread_count"] = 1
-            else:
-                test.setdefault(
-                    "thread_count",
-                    suite.get("thread_count", self.DEFAULT_TEST_THREAD_COUNT)
-                )
-
-            # Normalise the test classes
-            test["classes"] = normalise_classes(test["classes"])
-
-        return data
+        return normalise_suite(
+            data,
+            self.DEFAULT_SUITE_THREAD_COUNT,
+            self.DEFAULT_TEST_THREAD_COUNT,
+        )
