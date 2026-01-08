@@ -601,7 +601,19 @@ class TestExecutor:
 
         sequential, parallel = [], []
 
-        if test_parallel != "classes":
+        if test_parallel == "classes":
+            parallel = await self._build_class_wrapper_task(
+                cls_name,
+                obj,
+                selected,
+                enabled_methods,
+                before_class_methods,
+                after_class_methods,
+                before_method_methods,
+                after_method_methods,
+                method_listeners,
+            )
+        else:
             sequential, parallel = await self._build_method_tasks(
                 cls_name,
                 obj,
@@ -610,131 +622,6 @@ class TestExecutor:
                 method_listeners,
                 before_method_methods,
                 after_method_methods)
-
-        if test_parallel == "classes":
-            # class wrapper: run methods sequentially INSIDE; return dict of per-method results
-            async def class_task():
-                """
-                Class wrapper task:
-                  1) run all @before_class hooks
-                  2) execute selected test methods sequentially (with
-                     before/after_method + listeners)
-                  3) always run all @after_class hooks (even on failure)
-                  4) if the wrapper bombs, mark any not-yet-run methods as SKIPPED
-                """
-                results = {}
-                ran = set()
-
-                try:
-                    # --- 1) Run @before_class hooks first ---
-                    for before_class in before_class_methods:
-                        try:
-                            result = before_class()
-                            if inspect.iscoroutine(result):
-                                await result
-
-                        except Exception as ex:  # if a before_class fails, skip all methods
-                            self._logger.warning(
-                                "Exception in before_class '%s' for %s: %s",
-                                getattr(before_class, "__name__",
-                                        str(before_class)), cls_name, ex)
-                            for method_name in selected:
-                                tr = TestResult(method_name, cls_name)
-                                tr.status = TestStatus.SKIPPED
-                                tr.caught_exception = ex
-                                results[f"{cls_name}.{method_name}"] = tr
-                            # Abort method execution; finally will still run after_class
-                            return results
-
-                    # --- 2) Run test methods sequentially ---
-                    for method_name in enabled_methods:
-                        method = getattr(obj, method_name)
-                        provider = getattr(method, "data_provider", None)
-
-                        # ---- Data Provider Case ----
-                        if provider:
-                            rows = provider()
-                            if inspect.iscoroutine(rows):
-                                rows = await rows
-
-                            for idx, row in enumerate(rows):
-
-                                # Naming rule
-                                if isinstance(row, dict) and "name" in row:
-                                    label = row["name"]
-                                else:
-                                    label = str(idx)
-
-                                case_name = f"{method_name}[{label}]"
-                                mtr = TestResult(case_name, cls_name)
-
-                                async def parameterised_task(method=method, row=row):
-                                    if isinstance(row, dict):
-                                        clean_row = dict(row)
-                                        clean_row.pop("name", None)
-                                        return await self._call(method, **clean_row)
-                                    return await self._call(method, *row)
-
-                                ctx = TaskContext(
-                                    listeners=method_listeners,
-                                    before_methods=before_method_methods,
-                                    after_methods=after_method_methods,
-                                    lock=None
-                                )
-
-                                res = await self.__run_task(parameterised_task, mtr, ctx)
-                                results[f"{cls_name}.{case_name}"] = res
-                                ran.add(method_name)
-
-                            continue  # <-- prevents raw run
-
-                        # ---- Normal test (no provider) ----
-                        mtr = TestResult(method_name, cls_name)
-                        task = method
-                        ctx = TaskContext(
-                            listeners=method_listeners,
-                            before_methods=before_method_methods,
-                            after_methods=after_method_methods,
-                            lock=None
-                        )
-                        res = await self.__run_task(task, mtr, ctx)
-                        results[f"{cls_name}.{method_name}"] = res
-                        ran.add(method_name)
-
-                except Exception as ex:  # pylint: disable=broad-exception-caught
-                    # --- 3) Wrapper failure: mark any not-yet-run methods as SKIPPED ---
-                    self._logger.warning("Exception in class wrapper for %s: %s", cls_name, ex)
-                    for method_name in selected:
-                        if method_name in ran:
-                            continue
-                        tr = TestResult(method_name, cls_name)
-                        tr.status = TestStatus.SKIPPED
-                        tr.caught_exception = ex
-                        results[f"{cls_name}.{method_name}"] = tr
-
-                finally:
-                    # --- 4) Always run @after_class hooks ---
-                    for after_class in after_class_methods:
-                        try:
-                            result = after_class()
-                            if inspect.iscoroutine(result):
-                                await result
-
-                        except Exception as ex2:
-                            self._logger.warning("Exception in after_class '%s' for %s: %s",
-                                                 getattr(after_class, "__name__", str(after_class)),
-                                                 cls_name, ex2)
-
-                return results
-
-            task_name = f"{cls_name}.__class_wrapper__"
-            dummy = TestResult("__class_wrapper__", cls_name)
-            task = class_task
-
-            if test_parallel == "classes":
-                parallel.append((task_name, task, dummy, [], [], []))
-            else:
-                sequential.append((task_name, task, dummy, [], [], []))
 
         return sequential, parallel, before_class_methods, after_class_methods
 
