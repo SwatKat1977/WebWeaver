@@ -18,7 +18,7 @@ Copyright 2025 SwatKat1977
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
 import json
-import os
+from pathlib import Path
 import yaml
 from jsonschema import validate, ValidationError
 from webweaver.executor.executor_exceptions import (
@@ -77,7 +77,8 @@ class SuiteParser:
         Raises:
             ValueError: If validation fails.
         """
-        if not os.path.exists(file_path):
+        path: Path = Path(file_path)
+        if path.exists(file_path):
             raise TestSuiteFileNotFound(f"Suite file '{file_path}' not found.")
 
         # Parse file depending on extension
