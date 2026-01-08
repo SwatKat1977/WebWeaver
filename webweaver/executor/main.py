@@ -104,7 +104,7 @@ def main():
     ensure_path_in_sys_path(logger, args.search)
 
     if not os.path.isfile(args.suite_json):
-        logger.critical("Test suite JSON file not found")
+        logger.critical("Test suite JSON file '%s' not found", args.suite_json)
         return
 
     suite_schema_file: str = os.path.join(webweaver_root, "suite_schema.json")
