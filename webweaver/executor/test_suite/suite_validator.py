@@ -21,7 +21,7 @@ from jsonschema import validate, ValidationError
 
 
 class TestSuiteValidationFailed(Exception):
-    pass
+    """ Test suite JSON schema validation failure exception """
 
 
 def validate_suite(data: dict, schema: dict) -> None:

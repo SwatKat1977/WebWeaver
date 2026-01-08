@@ -19,7 +19,6 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
 import json
 from pathlib import Path
-from jsonschema import validate, ValidationError
 from webweaver.executor.executor_exceptions import (
     TestSuiteSchemaFileNotFound,
     TestSuiteSchemaParseFailed)
