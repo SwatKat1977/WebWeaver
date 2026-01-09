@@ -20,17 +20,18 @@ Copyright 2025 SwatKat1977
 import asyncio
 import inspect
 from dataclasses import dataclass
-from enum import IntEnum
 import fnmatch
 import logging
 import threading
 import time
 import typing
+from test_task import TestTask
 from webweaver.executor.test_result import TestResult
 from webweaver.executor.test_status import TestStatus
 from webweaver.executor.assertions import (
     SoftAssertions, AssertionFailure, AssertionContext)
 from webweaver.executor.discovery.class_resolver import resolve_class
+
 
 @dataclass
 class TaskContext:
@@ -52,54 +53,6 @@ class TaskContext:
     before_methods: typing.Optional[list] = None
     after_methods: typing.Optional[list] = None
     lock: typing.Optional[threading.Lock] = None
-
-
-class SequentialTaskIndex(IntEnum):
-    """
-    Index positions for elements within a sequential task tuple.
-
-    A sequential task is represented as a 6-element tuple:
-
-        (name, task, result, listeners, before_methods, after_methods)
-
-    Attributes:
-        NAME (int): Index of the task name (str), typically in the form
-            "Class.method".
-        TASK (int): Index of the callable to be executed.
-        RESULT (int): Index of the TestResult object associated with the task.
-        LISTENERS (int): Index of the list of listeners attached to the task.
-        BEFORE_METHODS (int): Index of the list of methods to run before the task.
-        AFTER_METHODS (int): Index of the list of methods to run after the task.
-    """
-    NAME = 0
-    TASK = 1
-    RESULT = 2
-    LISTENERS = 3
-    BEFORE_METHODS = 4
-    AFTER_METHODS = 5
-
-
-class ClassTaskIndex(IntEnum):
-    """
-    Index positions for elements within the tuple returned by
-    `_collect_tasks_for_class`.
-
-    That tuple has the following structure:
-
-        (sequential_tasks, parallel_tasks, before_classes, after_classes)
-
-    Attributes:
-        SEQUENTIAL (int): Index of the list of sequential tasks for the class.
-        PARALLEL (int): Index of the list of parallel tasks for the class.
-        BEFORE_CLASSES (int): Index of the list of class-level setup
-            ("before") methods.
-        AFTER_CLASSES (int): Index of the list of class-level teardown
-            ("after") methods.
-    """
-    SEQUENTIAL = 0
-    PARALLEL = 1
-    BEFORE_CLASS = 2
-    AFTER_CLASS = 3
 
 
 class TestExecutor:
@@ -179,41 +132,40 @@ class TestExecutor:
         if parallel_tasks:
             tasks = []
 
-            for (name, task, test_result, listeners, before_methods, after_methods) in parallel_tasks:
+            for task in parallel_tasks:
                 ctx = TaskContext(
-                    listeners=listeners,
-                    before_methods=before_methods,
-                    after_methods=after_methods,
+                    listeners=task.listeners,
+                    before_methods=task.before_methods,
+                    after_methods=task.after_methods,
                     lock=None
                 )
-                tasks.append(self.__run_task(task, test_result, ctx))
+                tasks.append(self.__run_task(task.func, task.result, ctx))
 
             # Run everything concurrently
             parallel_results = await asyncio.gather(*tasks)
 
             # Merge results back into dict
-            for (name, *_), res in zip(parallel_tasks, parallel_results):
+            for task, res in zip(parallel_tasks, parallel_results):
                 if isinstance(res, dict):
                     results.update(res)
                 else:
-                    results[name] = res
+                    results[task.name] = res
 
         # === SEQUENTIAL EXECUTION ===
         else:
-            for (name, task, test_result, listeners, before_methods,
-                 after_methods) in sequential_tasks:
+            for task in sequential_tasks:
                 ctx = TaskContext(
-                    listeners=listeners,
-                    before_methods=before_methods,
-                    after_methods=after_methods,
+                    listeners=task.listeners,
+                    before_methods=task.before_methods,
+                    after_methods=task.after_methods,
                     lock=None
                 )
-                out = await self.__run_task(task, test_result, ctx)
+                out = await self.__run_task(task.func, task.result, ctx)
 
                 if isinstance(out, dict):
                     results.update(out)  # <- flatten wrappers into methods
                 elif isinstance(out, TestResult):
-                    results[name] = out
+                    results[task.name] = out
 
         # run after_class hooks
         for hooks in class_fixtures.values():
@@ -261,43 +213,6 @@ class TestExecutor:
                                    for pat in exclude_patterns)]
 
         return selected
-
-    def _collect_method_tasks(self, obj, cls_name, selected_methods, test_parallel):
-        """
-        Collect tasks for the given object's methods and categorize them as
-        sequential or parallel based on the test execution mode.
-
-        Parameters:
-            obj (object): The instance containing the methods to execute.
-            cls_name (str): The class name of the object, used for task naming.
-            selected_methods (Iterable[str]): Names of methods to wrap as tasks.
-            test_parallel (str): Execution mode indicator. If set to "tests",
-                "classes", or "methods", tasks will be marked as parallel;
-                otherwise, they will be sequential.
-
-        Returns:
-            tuple[list[tuple[str, Callable, TestResult]], list[tuple[str, Callable, TestResult]]]:
-                A tuple containing two lists:
-                - sequential_tasks: Tasks to run sequentially.
-                - parallel_tasks: Tasks to run in parallel.
-                Each task is represented as a tuple of
-                (task_name, task_callable, TestResult).
-        """
-        sequential_tasks = []
-        parallel_tasks = []
-
-        for method_name in selected_methods:
-            method = getattr(obj, method_name)
-            task_name = f"{cls_name}.{method_name}"
-            results_obj = TestResult(method_name, cls_name)
-            task = method
-
-            if test_parallel in ("tests", "classes", "methods"):
-                parallel_tasks.append((task_name, task, results_obj))
-            else:
-                sequential_tasks.append((task_name, task, results_obj))
-
-        return sequential_tasks, parallel_tasks
 
     def _create_test_instance(self, class_conf):
         cls_name = class_conf["name"]
@@ -421,13 +336,13 @@ class TestExecutor:
                         return await self._call(method, *row)
 
                     target = parallel if test_parallel == "methods" else sequential
-                    target.append((
-                        test_name,
-                        parameterised_task,
-                        mtr,
-                        method_listeners,
-                        before_method_methods,
-                        after_method_methods
+                    target.append(TestTask(
+                        name=test_name,
+                        func=parameterised_task,
+                        result=mtr,
+                        listeners=method_listeners,
+                        before_methods=before_method_methods,
+                        after_methods=after_method_methods,
                     ))
 
                 continue
@@ -438,16 +353,15 @@ class TestExecutor:
                 test_name = f"{cls_name}.{case_name}"
                 mtr = TestResult(case_name, cls_name)
 
-                task = method
                 target = parallel if test_parallel == "methods" else sequential
 
-                target.append((
-                    test_name,
-                    task,
-                    mtr,
-                    method_listeners,
-                    before_method_methods,
-                    after_method_methods
+                target.append(TestTask(
+                    name=test_name,
+                    func=method,
+                    result=mtr,
+                    listeners=method_listeners,
+                    before_methods=before_method_methods,
+                    after_methods=after_method_methods,
                 ))
 
         return sequential, parallel
@@ -463,7 +377,8 @@ class TestExecutor:
             before_method_methods,
             after_method_methods,
             method_listeners):
-        # class wrapper: run methods sequentially INSIDE; return dict of per-method results
+        # class wrapper: run methods sequentially INSIDE; return dict of
+        # per-method results.
         async def class_task():
             """
             Class wrapper task:
@@ -580,7 +495,13 @@ class TestExecutor:
         dummy = TestResult("__class_wrapper__", cls_name)
         task = class_task
 
-        return [(task_name, task, dummy, [], [], [])]
+        return [TestTask(
+            name=task_name,
+            func=task,
+            result=dummy,
+            listeners=[],
+            before_methods=[],
+            after_methods=[])]
 
     async def _collect_tasks_for_class(self, class_conf, test_parallel):
         # pylint: disable=too-many-locals
@@ -642,29 +563,24 @@ class TestExecutor:
                 class_fixtures[class_name] = {"before": before_class, "after": after_class}
 
                 # seq here are wrapper tasks returning dicts of method results
-                for task_info in seq:
-                    task = task_info[SequentialTaskIndex.TASK]
-                    name = task_info[SequentialTaskIndex.NAME]
-
-                    # If this is the class wrapper, call it DIRECTLY (no lifecycle!)
-                    if name.endswith(".__class_wrapper__"):
-                        res = await task()
+                for task in seq:
+                    # If this is the class wrapper, call it DIRECTLY (no
+                    # lifecycle!)
+                    if task.name.endswith(".__class_wrapper__"):
+                        res = await task.func()
                     else:
                         ctx = TaskContext(
-                            listeners=task_info[SequentialTaskIndex.LISTENERS],
-                            before_methods=task_info[SequentialTaskIndex.BEFORE_METHODS],
-                            after_methods=task_info[SequentialTaskIndex.AFTER_METHODS],
+                            listeners=task.listeners,
+                            before_methods=task.before_methods,
+                            after_methods=task.after_methods,
                             lock=None)
 
-                        res = await self.__run_task(
-                            task,
-                            task_info[SequentialTaskIndex.RESULT],
-                            ctx)
+                        res = await self.__run_task(task.func, task.result, ctx)
 
                     if isinstance(res, dict):
                         results.update(res)
                     else:
-                        results[name] = res
+                        results[task.name] = res
 
         except Exception as ex:  # pylint: disable=broad-exception-caught
             results.update(self.__handle_test_exception(suite_test, ex))
@@ -682,7 +598,7 @@ class TestExecutor:
         results = {}
         for class_conf in suite_test["classes"]:
             cls_name = class_conf["name"]
-            cls = self._resolve_class(cls_name)
+            cls = resolve_class(cls_name)
             obj = cls()
             all_methods = [
                 attr for attr in dir(obj)
@@ -701,47 +617,8 @@ class TestExecutor:
         return results
 
     async def __collect_from_suite(self, suite: dict):
-        """
-        Collect tasks from a test suite configuration and categorize them into
-        sequential tasks, parallel tasks, and class-level fixtures.
-
-        This method inspects the suite definition, determines whether tests
-        should run sequentially or in parallel (based on suite or test-level
-        `parallel` configuration), and prepares callable task wrappers along
-        with associated fixtures.
-
-        Parameters:
-            suite (dict): A dictionary describing the test suite. Expected keys:
-                - "suite" (dict): Suite-level configuration, may contain
-                  `"parallel"` to set default parallelism.
-                - "tests" (list[dict]): A list of test configurations. Each
-                                        test may
-                  contain:
-                    * "name" (str, optional): The test name.
-                    * "parallel" (str, optional): Parallelism mode, overrides
-                      the suite-level setting. Accepted values are
-                      `"tests"`, `"classes"`, `"methods"`, or `"none"`.
-                    * "classes" (list[dict]): Class-level configurations, each
-                      with:
-                        - "name" (str): Class name.
-                        - "methods" (dict, optional): Filtering configuration
-                          for selecting test methods with `"include"` /
-                          `"exclude"`.
-
-        Returns:
-            tuple[
-                list[tuple[str, Callable, TestResult, list, list, list]],
-                list[tuple[str, Callable, TestResult, list, list, list]],
-                dict[str, dict[str, list]]
-            ]:
-                A tuple containing:
-                - sequential_tasks: Tasks to run sequentially.
-                - parallel_tasks: Tasks to run in parallel.
-                - class_fixtures: A mapping of class names to their fixtures
-                  with `"before"` and `"after"` method lists.
-        """
-        sequential_tasks = []
-        parallel_tasks = []
+        sequential_tasks: list[TestTask] = []
+        parallel_tasks: list[TestTask] = []
         class_fixtures = {}
 
         suite_conf = suite["suite"]
@@ -752,29 +629,30 @@ class TestExecutor:
             if test_parallel == "tests":
                 test_name = suite_test.get("name", "UnnamedTest")
                 dummy_result = TestResult("__test_wrapper__", test_name)
-                parallel_tasks.append((
-                    test_name,
-                    lambda: self.__run_suite_test(suite_test, class_fixtures),
-                    dummy_result,
-                    [],
-                    [],
-                    []
+
+                parallel_tasks.append(TestTask(
+                    name=test_name,
+                    func=lambda st=suite_test: self.__run_suite_test(st, class_fixtures),
+                    result=dummy_result,
+                    listeners=[],
+                    before_methods=[],
+                    after_methods=[],
                 ))
+
             else:
                 for class_conf in suite_test["classes"]:
-                    class_entry = await self._collect_tasks_for_class(class_conf,
-                                                                test_parallel)
+                    seq, par, before, after = await self._collect_tasks_for_class(
+                        class_conf, test_parallel
+                    )
+
                     class_name = class_conf["name"]
                     class_fixtures[class_name] = {
-                        "before": class_entry[ClassTaskIndex.BEFORE_CLASS],
-                        "after": class_entry[ClassTaskIndex.AFTER_CLASS]
+                        "before": before,
+                        "after": after
                     }
-                    sequential_tasks.extend(class_entry[ClassTaskIndex.SEQUENTIAL])
-                    parallel_tasks.extend(class_entry[ClassTaskIndex.PARALLEL])
 
-        print(f"sequential_tasks : {sequential_tasks}\n\n")
-        print(f"parallel_tasks   : {parallel_tasks}\n\n")
-        print(f"class_fixtures   : {class_fixtures}\n\n")
+                    sequential_tasks.extend(seq)
+                    parallel_tasks.extend(par)
 
         return sequential_tasks, parallel_tasks, class_fixtures
 

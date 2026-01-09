@@ -42,7 +42,7 @@ def ensure_path_in_sys_path(logger: logging.Logger, path: str):
     """
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
-        logger.debug(f"Added '%s' to sys.path", path)
+        logger.debug("Added '%s' to sys.path", path)
 
 
 def main():
