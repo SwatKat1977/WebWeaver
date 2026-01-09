@@ -50,7 +50,7 @@ from studio_solution import (
     SolutionDirectoryCreateStatus)
 from solution_create_wizard.wizard_basic_info_page import WizardBasicInfoPage
 from solution_create_wizard.solution_create_wizard_data import \
-    ProjectCreateWizardData
+    SolutionCreateWizardData
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -355,7 +355,7 @@ class StudioMainFrame(wx.Frame):
             "Finish"
         ]
 
-        data: ProjectCreateWizardData = ProjectCreateWizardData()
+        data: SolutionCreateWizardData = SolutionCreateWizardData()
 
         page_number: int = self.PAGE_NO_BASIC_INFO_PAGE
 
