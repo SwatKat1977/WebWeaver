@@ -22,7 +22,6 @@ import importlib
 
 class ClassResolutionError(Exception):
     """ Class resolution error """
-    pass
 
 
 def resolve_class(dotted_path: str):

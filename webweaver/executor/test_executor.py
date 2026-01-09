@@ -25,12 +25,12 @@ import logging
 import threading
 import time
 import typing
+from test_task import TestTask
 from webweaver.executor.test_result import TestResult
 from webweaver.executor.test_status import TestStatus
 from webweaver.executor.assertions import (
     SoftAssertions, AssertionFailure, AssertionContext)
 from webweaver.executor.discovery.class_resolver import resolve_class
-from test_task import TestTask
 
 
 @dataclass

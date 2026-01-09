@@ -24,7 +24,21 @@ from webweaver.executor.test_status import TestStatus
 
 data_providers = {}
 
+
 def data_provider(name):
+    """
+    Registers a function as a named data provider.
+
+    A data provider is a function that supplies test data to parameterized
+    tests. The decorated function will be stored in the global `data_providers`
+    registry under the given name.
+
+    Args:
+        name: The name under which to register the data provider.
+
+    Returns:
+        A decorator that registers the decorated function as a data provider.
+    """
     def wrapper(func):
         data_providers[name] = func
         return func
@@ -34,6 +48,26 @@ def data_provider(name):
 
 # === Decorator to mark test methods ===
 def test(provider=None, parallel=False, enabled=True):
+    """
+    Marks a function as a test case.
+
+    This decorator wraps the function in a test execution harness that:
+    - Handles synchronous and asynchronous test functions.
+    - Catches test failures and unexpected exceptions.
+    - Returns a standardized (TestStatus, exception) tuple.
+    - Attaches metadata to the function for the test runner.
+
+    Args:
+        provider:
+            Optional data provider function or name used to supply test data.
+        parallel:
+            If True, this test is allowed to run in parallel with others.
+        enabled:
+            If False, the test will be skipped.
+
+    Returns:
+        A decorator that transforms a function into a managed test case.
+    """
     def decorator(func):
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
