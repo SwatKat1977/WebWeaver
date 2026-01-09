@@ -262,43 +262,6 @@ class TestExecutor:
 
         return selected
 
-    def _collect_method_tasks(self, obj, cls_name, selected_methods, test_parallel):
-        """
-        Collect tasks for the given object's methods and categorize them as
-        sequential or parallel based on the test execution mode.
-
-        Parameters:
-            obj (object): The instance containing the methods to execute.
-            cls_name (str): The class name of the object, used for task naming.
-            selected_methods (Iterable[str]): Names of methods to wrap as tasks.
-            test_parallel (str): Execution mode indicator. If set to "tests",
-                "classes", or "methods", tasks will be marked as parallel;
-                otherwise, they will be sequential.
-
-        Returns:
-            tuple[list[tuple[str, Callable, TestResult]], list[tuple[str, Callable, TestResult]]]:
-                A tuple containing two lists:
-                - sequential_tasks: Tasks to run sequentially.
-                - parallel_tasks: Tasks to run in parallel.
-                Each task is represented as a tuple of
-                (task_name, task_callable, TestResult).
-        """
-        sequential_tasks = []
-        parallel_tasks = []
-
-        for method_name in selected_methods:
-            method = getattr(obj, method_name)
-            task_name = f"{cls_name}.{method_name}"
-            results_obj = TestResult(method_name, cls_name)
-            task = method
-
-            if test_parallel in ("tests", "classes", "methods"):
-                parallel_tasks.append((task_name, task, results_obj))
-            else:
-                sequential_tasks.append((task_name, task, results_obj))
-
-        return sequential_tasks, parallel_tasks
-
     def _create_test_instance(self, class_conf):
         cls_name = class_conf["name"]
         cls = resolve_class(cls_name)
@@ -682,7 +645,7 @@ class TestExecutor:
         results = {}
         for class_conf in suite_test["classes"]:
             cls_name = class_conf["name"]
-            cls = self._resolve_class(cls_name)
+            cls = resolve_class(cls_name)
             obj = cls()
             all_methods = [
                 attr for attr in dir(obj)
@@ -771,10 +734,6 @@ class TestExecutor:
                     }
                     sequential_tasks.extend(class_entry[ClassTaskIndex.SEQUENTIAL])
                     parallel_tasks.extend(class_entry[ClassTaskIndex.PARALLEL])
-
-        print(f"sequential_tasks : {sequential_tasks}\n\n")
-        print(f"parallel_tasks   : {parallel_tasks}\n\n")
-        print(f"class_fixtures   : {class_fixtures}\n\n")
 
         return sequential_tasks, parallel_tasks, class_fixtures
 
