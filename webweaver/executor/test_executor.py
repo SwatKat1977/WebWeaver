@@ -31,28 +31,7 @@ from webweaver.executor.test_status import TestStatus
 from webweaver.executor.assertions import (
     SoftAssertions, AssertionFailure, AssertionContext)
 from webweaver.executor.discovery.class_resolver import resolve_class
-
-
-@dataclass
-class TaskContext:
-    """
-    Context container for managing task execution state, lifecycle hooks,
-    and optional synchronization.
-
-    Attributes:
-        listeners (list | None): A collection of listener objects or callbacks
-            that can be notified about task-related events, or None if not set.
-        before_methods (list | None): Callables to be executed before the main
-            task logic runs, or None if not defined.
-        after_methods (list | None): Callables to be executed after the main
-            task logic completes, or None if not defined.
-        lock (threading.Lock | None): Optional lock for thread-safe access and
-            modification of the context, or None if synchronization is not required.
-    """
-    listeners: typing.Optional[list] = None
-    before_methods: typing.Optional[list] = None
-    after_methods: typing.Optional[list] = None
-    lock: typing.Optional[threading.Lock] = None
+from task_context import TaskContext
 
 
 class TestExecutor:
