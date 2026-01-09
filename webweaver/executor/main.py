@@ -23,10 +23,11 @@ import logging
 import os
 import pathlib
 import sys
-from webweaver.executor.suite_parser import SuiteParser
+from webweaver.executor.test_suite.suite_parser import SuiteParser
 from webweaver.executor.test_executor import TestExecutor
 from webweaver.executor.discoverer import discover_listeners
 from webweaver.version import __version__
+from webweaver.executor.discovery.test_preparation import inject_listeners_into_suite
 
 
 def ensure_path_in_sys_path(logger: logging.Logger, path: str):
@@ -41,7 +42,7 @@ def ensure_path_in_sys_path(logger: logging.Logger, path: str):
     """
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
-        logger.debug(f"Added '%s' to sys.path", path)
+        logger.debug("Added '%s' to sys.path", path)
 
 
 def main():
@@ -104,7 +105,7 @@ def main():
     ensure_path_in_sys_path(logger, args.search)
 
     if not os.path.isfile(args.suite_json):
-        logger.critical("Test suite JSON file not found")
+        logger.critical("Test suite JSON file '%s' not found", args.suite_json)
         return
 
     suite_schema_file: str = os.path.join(webweaver_root, "suite_schema.json")
@@ -123,20 +124,7 @@ def main():
     executor = TestExecutor(logger)
 
     # Inject discovered (global) listeners into test classes safely
-    for suite_test in suite.get("tests", []):
-        for cls_conf in suite_test.get("classes", []):
-            cls = executor._resolve_class(cls_conf["name"])
-
-            # Ensure listener list exists
-            if not hasattr(cls, "__listeners__"):
-                cls.__listeners__ = []
-
-            existing_types = {type(l) for l in cls.__listeners__}
-
-            # Merge in only *new* listener types from discover_listeners()
-            for listener in listeners:
-                if type(listener) not in existing_types:
-                    cls.__listeners__.append(listener)
+    inject_listeners_into_suite(suite, listeners)
 
     results = asyncio.run(executor.run_tests(suite))
 
