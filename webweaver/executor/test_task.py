@@ -18,8 +18,13 @@ Copyright 2025-2026 Webweaver Development Team
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
 from dataclasses import dataclass
+import inspect
+import time
 from typing import Callable
 from test_result import TestResult
+from task_context import TaskContext
+from test_status import TestStatus
+from assertions import AssertionFailure
 
 
 @dataclass
@@ -49,3 +54,84 @@ class TestTask:
 
     after_methods: list
     """List of callables to run after executing the task."""
+
+    async def run(self, executor, lock=None):
+        ctx = TaskContext(
+            listeners=self.listeners,
+            before_methods=self.before_methods,
+            after_methods=self.after_methods,
+            lock=lock
+        )
+
+        before_methods = ctx.before_methods or []
+        after_methods = ctx.after_methods or []
+        listeners = ctx.listeners or []
+
+        async def _call(func, *args, **kwargs):
+            result = func(*args, **kwargs)
+            if inspect.iscoroutine(result):
+                return await result
+            return result
+
+        async def _run_task_body():
+            try:
+                result = self.func()
+
+                if inspect.iscoroutine(result):
+                    result = await result
+
+                if isinstance(result, dict):
+                    return result
+
+                if isinstance(result, TestResult):
+                    return result
+
+                if isinstance(result, tuple) and len(result) == 2:
+                    status, ex = result
+                    self.result.status = status
+                    self.result.caught_exception = ex
+                    return self.result
+
+                self.result.status = TestStatus.SUCCESS
+                return self.result
+
+            except AssertionFailure as ex:
+                self.result.status = TestStatus.FAILURE
+                self.result.caught_exception = ex
+                return self.result
+
+            except Exception as ex:
+                self.result.status = TestStatus.FAILURE
+                self.result.caught_exception = ex
+                return self.result
+
+        async def _finalize_task():
+            if self.result.status != TestStatus.SKIPPED:
+                for am in after_methods:
+                    await _call(am)
+
+            for listener in listeners:
+                if self.result.status is TestStatus.SUCCESS:
+                    await _call(listener.on_test_success, self.result)
+                elif self.result.status is TestStatus.FAILURE:
+                    await _call(listener.on_test_failure, self.result)
+                elif self.result.status is TestStatus.SKIPPED:
+                    await _call(listener.on_test_skipped, self.result)
+
+            self.result.end_milliseconds = int(time.time() * 1000)
+
+        async def execute():
+            self.result.start_milliseconds = int(time.time() * 1000)
+
+            for bm in before_methods:
+                await _call(bm)
+
+            result = await _run_task_body()
+            await _finalize_task()
+            return result
+
+        if lock:
+            async with lock:
+                return await execute()
+
+        return await execute()

@@ -19,40 +19,14 @@ Copyright 2025 SwatKat1977
 """
 import asyncio
 import inspect
-from dataclasses import dataclass
 import fnmatch
 import logging
-import threading
-import time
-import typing
 from test_task import TestTask
 from webweaver.executor.test_result import TestResult
 from webweaver.executor.test_status import TestStatus
 from webweaver.executor.assertions import (
-    SoftAssertions, AssertionFailure, AssertionContext)
+    SoftAssertions, AssertionContext)
 from webweaver.executor.discovery.class_resolver import resolve_class
-
-
-@dataclass
-class TaskContext:
-    """
-    Context container for managing task execution state, lifecycle hooks,
-    and optional synchronization.
-
-    Attributes:
-        listeners (list | None): A collection of listener objects or callbacks
-            that can be notified about task-related events, or None if not set.
-        before_methods (list | None): Callables to be executed before the main
-            task logic runs, or None if not defined.
-        after_methods (list | None): Callables to be executed after the main
-            task logic completes, or None if not defined.
-        lock (threading.Lock | None): Optional lock for thread-safe access and
-            modification of the context, or None if synchronization is not required.
-    """
-    listeners: typing.Optional[list] = None
-    before_methods: typing.Optional[list] = None
-    after_methods: typing.Optional[list] = None
-    lock: typing.Optional[threading.Lock] = None
 
 
 class TestExecutor:
@@ -130,16 +104,7 @@ class TestExecutor:
 
         # === PARALLEL EXECUTION (async replacement for ThreadPoolExecutor) ===
         if parallel_tasks:
-            tasks = []
-
-            for task in parallel_tasks:
-                ctx = TaskContext(
-                    listeners=task.listeners,
-                    before_methods=task.before_methods,
-                    after_methods=task.after_methods,
-                    lock=None
-                )
-                tasks.append(self.__run_task(task.func, task.result, ctx))
+            tasks = [task.run(self) for task in parallel_tasks]
 
             # Run everything concurrently
             parallel_results = await asyncio.gather(*tasks)
@@ -152,20 +117,13 @@ class TestExecutor:
                     results[task.name] = res
 
         # === SEQUENTIAL EXECUTION ===
-        else:
-            for task in sequential_tasks:
-                ctx = TaskContext(
-                    listeners=task.listeners,
-                    before_methods=task.before_methods,
-                    after_methods=task.after_methods,
-                    lock=None
-                )
-                out = await self.__run_task(task.func, task.result, ctx)
+        for task in sequential_tasks:
+            out = await task.run(self)
 
-                if isinstance(out, dict):
-                    results.update(out)  # <- flatten wrappers into methods
-                elif isinstance(out, TestResult):
-                    results[task.name] = out
+            if isinstance(out, dict):
+                results.update(out)  # <- flatten wrappers into methods
+            elif isinstance(out, TestResult):
+                results[task.name] = out
 
         # run after_class hooks
         for hooks in class_fixtures.values():
@@ -332,8 +290,13 @@ class TestExecutor:
                     async def parameterised_task(method=method, row=row):
                         # dict → kwargs | list/tuple → positional args
                         if isinstance(row, dict):
-                            return await self._call(method, **row)
-                        return await self._call(method, *row)
+                            result = method(**row)
+                        else:
+                            result = method(*row)
+
+                        if inspect.iscoroutine(result):
+                            return await result
+                        return result
 
                     target = parallel if test_parallel == "methods" else sequential
                     target.append(TestTask(
@@ -431,21 +394,28 @@ class TestExecutor:
                             case_name = f"{method_name}[{label}]"
                             mtr = TestResult(case_name, cls_name)
 
-                            async def parameterised_task(method=method, row=row):
+                            async def parameterised_task(method=method,
+                                                         row=row):
                                 if isinstance(row, dict):
                                     clean_row = dict(row)
                                     clean_row.pop("name", None)
-                                    return await self._call(method, **clean_row)
-                                return await self._call(method, *row)
+                                    result = method(**clean_row)
+                                else:
+                                    result = method(*row)
 
-                            ctx = TaskContext(
+                                if inspect.iscoroutine(result):
+                                    return await result
+                                return result
+
+                            task = TestTask(
+                                name=f"{cls_name}.{case_name}",
+                                func=parameterised_task,
+                                result=mtr,
                                 listeners=method_listeners,
                                 before_methods=before_method_methods,
                                 after_methods=after_method_methods,
-                                lock=None
                             )
-
-                            res = await self.__run_task(parameterised_task, mtr, ctx)
+                            res = await task.run(self)
                             results[f"{cls_name}.{case_name}"] = res
                             ran.add(method_name)
 
@@ -453,13 +423,15 @@ class TestExecutor:
 
                     # ---- Normal test (no provider) ----
                     mtr = TestResult(method_name, cls_name)
-                    ctx = TaskContext(
+                    task = TestTask(
+                        name=f"{cls_name}.{method_name}",
+                        func=method,
+                        result=mtr,
                         listeners=method_listeners,
                         before_methods=before_method_methods,
                         after_methods=after_method_methods,
-                        lock=None
                     )
-                    res = await self.__run_task(method, mtr, ctx)
+                    res = await task.run(self)
                     results[f"{cls_name}.{method_name}"] = res
                     ran.add(method_name)
 
@@ -569,13 +541,7 @@ class TestExecutor:
                     if task.name.endswith(".__class_wrapper__"):
                         res = await task.func()
                     else:
-                        ctx = TaskContext(
-                            listeners=task.listeners,
-                            before_methods=task.before_methods,
-                            after_methods=task.after_methods,
-                            lock=None)
-
-                        res = await self.__run_task(task.func, task.result, ctx)
+                        res = await task.run(self)
 
                     if isinstance(res, dict):
                         results.update(res)
@@ -655,100 +621,3 @@ class TestExecutor:
                     parallel_tasks.extend(par)
 
         return sequential_tasks, parallel_tasks, class_fixtures
-
-    async def __run_task(self,
-                         task,
-                         test_result: TestResult,
-                         ctx: TaskContext = None):
-
-        ctx = ctx or TaskContext()
-
-        before_methods = ctx.before_methods or []
-        after_methods = ctx.after_methods or []
-        listeners = ctx.listeners or []
-
-        lock = ctx.lock or None
-
-        async def _call(func, *args, **kwargs):
-            """Call a function whether it's sync or async."""
-            result = func(*args, **kwargs)
-            if inspect.iscoroutine(result):
-                return await result
-            return result
-
-        async def _run_task_body():
-            try:
-                result = task()
-
-                # Await coroutine-based tasks
-                if inspect.iscoroutine(result):
-                    result = await result
-
-                # If a data-provider wrapped call already returned TestResult or dict, return it
-                if isinstance(result, dict):
-                    return result
-
-                if isinstance(result, TestResult):
-                    return result
-
-                # Old: (status, exception)
-                if isinstance(result, tuple) and len(result) == 2:
-                    status, ex = result
-                    test_result.status = status
-                    test_result.caught_exception = ex
-                    return test_result
-
-                # Normal success
-                test_result.status = TestStatus.SUCCESS
-                return test_result
-
-            except AssertionFailure as ex:
-                test_result.status = TestStatus.FAILURE
-                test_result.caught_exception = ex
-                return test_result
-
-            except Exception as ex:
-                test_result.status = TestStatus.FAILURE
-                test_result.caught_exception = ex
-                return test_result
-
-        async def _finalize_task():
-            # Run after-method hooks only if not skipped
-            if test_result.status != TestStatus.SKIPPED:
-                for am in after_methods:
-                    await _call(am)
-
-            # Notify listeners
-            for listener in listeners:
-                if test_result.status is TestStatus.SUCCESS:
-                    await _call(listener.on_test_success, test_result)
-                elif test_result.status is TestStatus.FAILURE:
-                    await _call(listener.on_test_failure, test_result)
-                elif test_result.status is TestStatus.SKIPPED:
-                    await _call(listener.on_test_skipped, test_result)
-
-            test_result.end_milliseconds = int(time.time() * 1000)
-
-        async def execute():
-            test_result.start_milliseconds = int(time.time() * 1000)
-
-            # Run before-method hooks
-            for bm in before_methods:
-                await _call(bm)
-
-            result = await _run_task_body()
-            await _finalize_task()
-            return result
-
-        # If task has a lock, wrap execution
-        if lock:
-            async with lock:
-                return await execute()
-
-        return await execute()
-
-    async def _call(self, func, *args, **kwargs):
-        result = func(*args, **kwargs)
-        if inspect.iscoroutine(result):
-            return await result
-        return result
