@@ -122,14 +122,13 @@ class TestExecutor:
                     results[task.name] = res
 
         # === SEQUENTIAL EXECUTION ===
-        else:
-            for task in sequential_tasks:
-                out = await task.run(self)
+        for task in sequential_tasks:
+            out = await task.run(self)
 
-                if isinstance(out, dict):
-                    results.update(out)  # <- flatten wrappers into methods
-                elif isinstance(out, TestResult):
-                    results[task.name] = out
+            if isinstance(out, dict):
+                results.update(out)  # <- flatten wrappers into methods
+            elif isinstance(out, TestResult):
+                results[task.name] = out
 
         # run after_class hooks
         for hooks in class_fixtures.values():
