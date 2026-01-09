@@ -20,6 +20,7 @@ Copyright 2025-2026 Webweaver Development Team
 from dataclasses import dataclass
 from typing import Callable
 from test_result import TestResult
+from task_context import TaskContext
 
 
 @dataclass
@@ -49,3 +50,14 @@ class TestTask:
 
     after_methods: list
     """List of callables to run after executing the task."""
+
+    async def run(self, executor, lock=None):
+        ctx = TaskContext(
+            listeners=self.listeners,
+            before_methods=self.before_methods,
+            after_methods=self.after_methods,
+            lock=lock
+        )
+        return await executor._TestExecutor__run_task(self.func,
+                                                      self.result,
+                                                      ctx)

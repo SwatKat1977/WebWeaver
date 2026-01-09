@@ -109,16 +109,7 @@ class TestExecutor:
 
         # === PARALLEL EXECUTION (async replacement for ThreadPoolExecutor) ===
         if parallel_tasks:
-            tasks = []
-
-            for task in parallel_tasks:
-                ctx = TaskContext(
-                    listeners=task.listeners,
-                    before_methods=task.before_methods,
-                    after_methods=task.after_methods,
-                    lock=None
-                )
-                tasks.append(self.__run_task(task.func, task.result, ctx))
+            tasks = [task.run(self) for task in parallel_tasks]
 
             # Run everything concurrently
             parallel_results = await asyncio.gather(*tasks)
@@ -133,13 +124,7 @@ class TestExecutor:
         # === SEQUENTIAL EXECUTION ===
         else:
             for task in sequential_tasks:
-                ctx = TaskContext(
-                    listeners=task.listeners,
-                    before_methods=task.before_methods,
-                    after_methods=task.after_methods,
-                    lock=None
-                )
-                out = await self.__run_task(task.func, task.result, ctx)
+                out = await task.run(self)
 
                 if isinstance(out, dict):
                     results.update(out)  # <- flatten wrappers into methods
@@ -548,13 +533,7 @@ class TestExecutor:
                     if task.name.endswith(".__class_wrapper__"):
                         res = await task.func()
                     else:
-                        ctx = TaskContext(
-                            listeners=task.listeners,
-                            before_methods=task.before_methods,
-                            after_methods=task.after_methods,
-                            lock=None)
-
-                        res = await self.__run_task(task.func, task.result, ctx)
+                        res = await task.run(self)
 
                     if isinstance(res, dict):
                         results.update(res)
