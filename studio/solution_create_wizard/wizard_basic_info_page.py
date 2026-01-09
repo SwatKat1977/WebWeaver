@@ -22,8 +22,9 @@ import sys
 import typing
 import wx
 from wizard_step_indicator import WizardStepIndicator
-from project_create_wizard.project_create_wizard_data \
-    import ProjectCreateWizardData
+from solution_create_wizard.solution_create_wizard_data \
+    import SolutionCreateWizardData
+from solution_create_wizard.solution_creation_page import SolutionCreationPage
 
 
 def is_directory_writable(path: Path) -> bool:
@@ -45,9 +46,9 @@ class WizardBasicInfoPage(wx.Dialog):
 
     MIN_SOLUTION_NAME_LENGTH: int = 60
 
-    NEXT_WIZARD_PAGE = None
+    NEXT_WIZARD_PAGE = SolutionCreationPage.PAGE_NO_SELECT_BROWSER_PAGE
 
-    def __init__(self, parent, data: ProjectCreateWizardData, steps: list):
+    def __init__(self, parent, data: SolutionCreateWizardData, steps: list):
         super().__init__(parent, title="Create your new solution",
                          style=wx.DEFAULT_DIALOG_STYLE)
 
