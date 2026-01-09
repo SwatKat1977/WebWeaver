@@ -49,7 +49,7 @@ from studio_solution import (
     solution_load_error_to_str,
     SolutionDirectoryCreateStatus)
 from solution_create_wizard.wizard_basic_info_page import WizardBasicInfoPage
-from solution_create_wizard.project_create_wizard_data import \
+from solution_create_wizard.solution_create_wizard_data import \
     ProjectCreateWizardData
 
 # macOS menu bar offset
