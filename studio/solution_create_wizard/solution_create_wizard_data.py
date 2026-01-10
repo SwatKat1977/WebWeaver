@@ -34,5 +34,5 @@ class SolutionCreateWizardData:
     launch_browser_automatically: bool = True
 
     # -- PAGE 3 [Behaviour Page] --
-    browserLaunchOptions: BrowserLaunchOptions = \
+    browser_launch_options: BrowserLaunchOptions = \
         field(default_factory=BrowserLaunchOptions)

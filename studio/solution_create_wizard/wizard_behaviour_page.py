@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import typing
 import wx
+from browser_launch_options import BrowserLaunchOptions, WindowSize
 from wizard_step_indicator import WizardStepIndicator
 from solution_create_wizard.solution_create_wizard_data import \
     SolutionCreateWizardData
@@ -151,23 +152,6 @@ class WizardBehaviourPage(wx.Dialog):
 
         behaviour_box.Add(window_label, 0, wx.ALL, 5)
 
-        """
-        # Recording behaviour controls
-        self._chk_private: typing.Optional[wx.CheckBox] =  None
-        self._chk_disable_extensions: typing.Optional[wx.CheckBox] =  None
-        self._chk_disable_notifications: typing.Optional[wx.CheckBox] =  None
-        self._chk_ignore_cert_errors: typing.Optional[wx.CheckBox] =  None
-
-        self._radio_default_window_size: typing.Optional[wx.RadioButton] =  None
-        self._radio_maximised: typing.Optional[wx.RadioButton] =  None
-        self._radio_custom_window_size: typing.Optional[wx.RadioButton] =  None
-        self._txt_window_width: typing.Optional[wx.TextCtrl] =  None
-        self._txt_window_height: typing.Optional[wx.TextCtrl] =  None
-
-        self._advanced_pane: typing.Optional[wx.CollapsiblePane] =  None
-        self._txt_user_agent: typing.Optional[wx.wxTextCtrl] =  None
-        """
-
         self._radio_default_window_size = wx.RadioButton(self,
                                                          wx.ID_ANY,
                                                          "Default size",
@@ -203,14 +187,14 @@ class WizardBehaviourPage(wx.Dialog):
         behaviour_box.Add(size_sizer, 0, wx.LEFT | wx.BOTTOM, 10)
 
         self._radio_maximised.SetValue(True)
-        ####self._sync_window_size_state()
+        self._sync_window_size_state()
 
-        """
-        self._radio_maximised.Bind(wxEVT_RADIOBUTTON,
-                               [this](wxCommandEvent&) { SyncWindowSizeState(); })
-        self._radio_custom_window_size.Bind(wxEVT_RADIOBUTTON,
-                                [this](wxCommandEvent&) { SyncWindowSizeState(); })
-        """
+        self._radio_maximised.Bind(
+            wx.EVT_RADIOBUTTON, lambda evt: self._sync_window_size_state()
+        )
+        self._radio_custom_window_size.Bind(
+            wx.EVT_RADIOBUTTON, lambda evt: self._sync_window_size_state()
+        )
 
         # Advanced section
         self._advanced_pane = wx.CollapsiblePane(self,  wx.ID_ANY, "Advanced")
@@ -229,58 +213,48 @@ class WizardBehaviourPage(wx.Dialog):
 
         parent.Add(behaviour_box, 1, wx.EXPAND)
 
-"""
- private:
+    def _sync_window_size_state(self) -> None:
+        custom: bool = self._radio_custom_window_size.GetValue()
+        self._txt_window_width.Enable(custom)
+        self._txt_window_height.Enable(custom)
 
-    def _on_next_click_event(event: wxCommandEvent&) . None:
-        auto& opts = data_.browserLaunchOptions;
+    def _on_next_click_event(self, _event: wx.CommandEvent) -> None:
+        opts: BrowserLaunchOptions = self._data.browser_launch_options
 
-        opts.privateMode = chkPrivate_.GetValue();
-        opts.disableExtensions = chkDisableExtensions_.GetValue();
-        opts.disableNotifications = chkDisableNotifications_.GetValue();
-        opts.ignoreCertificateErrors = chkIgnoreCertErrors_.GetValue();
+        opts.private_mode = self._chk_private.GetValue()
+        opts.disable_extensions = self._chk_disable_extensions.GetValue()
+        opts.disable_notifications = self._chk_disable_notifications.GetValue()
+        opts.ignore_certificate_errors = self._chk_ignore_cert_errors.GetValue()
 
-        opts.maximised = radioMaximised_.GetValue();
-        bool customWindowSize = radioCustomWindowSize_.GetValue();
-        bool defaultWindowSize = radioDefaultWindowSize_.GetValue();
+        opts.maximised = self._radio_maximised.GetValue()
+        default_window_size: bool = self._radio_default_window_size.GetValue()
 
-        if (opts.maximised) {
-            opts.windowSize.reset();
-        } else if (defaultWindowSize) {
-            opts.maximised = false;
-            opts.windowSize.reset();
-        } else {
-            opts.windowSize = WindowSize{
-                static_cast<uint32_t>(wxAtoi(self._txt_window_width.GetValue())),
-                static_cast<uint32_t>(wxAtoi(txtWindowHeight_.GetValue()))
-            };
-            opts.maximised = false;
-        }
+        if opts.maximised:
+            opts.windowSize.reset()
 
-        const wxString userAgent = txtUserAgent_.GetValue();
-        if (!userAgent.IsEmpty()) {
-            opts.userAgent = userAgent.ToStdString();
-        } else {
-            opts.userAgent.reset();
-        }
+        elif default_window_size:
+            opts.maximised = False
+            opts.window_size.reset()
 
-        EndModal(wxID_OK);
-    }
+        else:
+            # Custom window size
 
+            try:
+                width = int(self.txtWindowWidth.GetValue())
+                height = int(self.txtWindowHeight.GetValue())
+            except ValueError:
+                wx.MessageBox("Please enter valid numeric window dimensions.",
+                              "Invalid input", wx.ICON_WARNING)
+                return
 
+            opts.window_size = WindowSize(width=width, height=height)
+            opts.maximised = False
 
-    void CreateBehaviourPanel(wxBoxSizer* parent);
-    void SyncWindowSizeState();
-};
+        user_agent: str = self._txt_user_agent.GetValue().strip()
+        if user_agent:
+            opts.userAgent = user_agent
 
+        else:
+            opts.user_agent.reset()
 
-
-
-#include <wx/artprov.h>
-
-void WizardBehaviourPage::SyncWindowSizeState() {
-    bool custom = radioCustomWindowSize_.GetValue();
-    self._txt_window_width.Enable(custom);
-    txtWindowHeight_.Enable(custom);
-}
-"""
+        self.EndModal(wx.ID_OK)
