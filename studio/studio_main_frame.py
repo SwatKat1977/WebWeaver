@@ -51,6 +51,12 @@ from studio_solution import (
 from solution_create_wizard.wizard_basic_info_page import WizardBasicInfoPage
 from solution_create_wizard.solution_create_wizard_data import \
     SolutionCreateWizardData
+from solution_create_wizard.wizard_select_browser_page import \
+    WizardSelectBrowserPage
+from solution_create_wizard.solution_creation_page import SolutionCreationPage
+from solution_create_wizard.solution_widget_ids import \
+    SOLUTION_WIZARD_BACK_BUTTON_ID
+
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -90,16 +96,12 @@ class StudioMainFrame(wx.Frame):
 
     RECENT_SOLUTION_BASE_ID: int = wx.ID_HIGHEST + 500
 
-    PAGE_NO_BASIC_INFO_PAGE: int = 0
-    PAGE_NO_SELECT_BROWSER_PAGE: int = 1
-    PAGE_NO_BEHAVIOUR_PAGE: int = 2
-    PAGE_NO_FINISH_PAGE: int = 3
-
     SOLUTION_WIZARD_PAGE_CLASSES = {
-        PAGE_NO_BASIC_INFO_PAGE: WizardBasicInfoPage,
+        SolutionCreationPage.PAGE_NO_BASIC_INFO_PAGE: WizardBasicInfoPage,
+        SolutionCreationPage.PAGE_NO_SELECT_BROWSER_PAGE:
+            WizardSelectBrowserPage,
     }
     """
-        PAGENO_SELECTBROWSERPAGE: WizardSelectBrowserPage,
         PAGENO_BEHAVIOURPAGE: WizardBehaviourPage,
         PAGENO_FINISHPAGE: WizardFinishPage,
     }
@@ -357,7 +359,7 @@ class StudioMainFrame(wx.Frame):
 
         data: SolutionCreateWizardData = SolutionCreateWizardData()
 
-        page_number: int = self.PAGE_NO_BASIC_INFO_PAGE
+        page_number = SolutionCreationPage.PAGE_NO_BASIC_INFO_PAGE
 
         while True:
             page_class = self.SOLUTION_WIZARD_PAGE_CLASSES.get(page_number)
@@ -371,10 +373,24 @@ class StudioMainFrame(wx.Frame):
             next_page = dlg.NEXT_WIZARD_PAGE
             dlg.Destroy()
 
-            if result != wx.ID_OK:
-                break
+            if result == SOLUTION_WIZARD_BACK_BUTTON_ID:
+                # Go back, clamp to first page
+                new_page: int = page_number.value - 1
+                new_page = max(
+                    SolutionCreationPage.PAGE_NO_BASIC_INFO_PAGE.value,
+                    new_page
+                )
+                page_number = SolutionCreationPage(new_page)
+                continue
 
-            page_number = next_page
+            elif result == wx.ID_OK:
+                # Go forward
+                page_number = next_page
+                continue
+
+            else:
+                # Cancel / close / ESC
+                break
 
     def _on_open_solution_event(self, _event: wx.CommandEvent):
         """
