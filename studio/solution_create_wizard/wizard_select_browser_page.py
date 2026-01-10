@@ -31,14 +31,10 @@ from solution_create_wizard.solution_widget_ids import \
     SOLUTION_WIZARD_BACK_BUTTON_ID
 
 
-#include <wx/tglbtn.h>
-#include "SolutionCreateWizard/SolutionCreateWizardBasePage.h"
-
-
 class WizardSelectBrowserPage(wx.Dialog):
     DEFAULT_URL: str = "https://www.example.com"
 
-    NEXT_WIZARD_PAGE = None
+    NEXT_WIZARD_PAGE = SolutionCreationPage.PAGE_NO_BEHAVIOUR_PAGE
 
     def __init__(self, parent: wx.Window, data: SolutionCreateWizardData,
                  steps: list):
