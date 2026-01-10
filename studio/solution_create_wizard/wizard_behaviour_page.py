@@ -105,7 +105,7 @@ class WizardBehaviourPage(wx.Dialog):
         button_sizer.Add(btn_back, 0, wx.RIGHT, 10)
 
         btn_next = wx.Button(self, wx.ID_OK, "Next")
-        ##btn_next.Bind(wx.EVT_BUTTON, self._on_next_click_event)
+        btn_next.Bind(wx.EVT_BUTTON, self._on_next_click_event)
         button_sizer.Add(btn_next, 0)
 
         main_sizer.Add(button_sizer, 0, wx.EXPAND | wx.ALL, 10)
@@ -238,10 +238,9 @@ class WizardBehaviourPage(wx.Dialog):
 
         else:
             # Custom window size
-
             try:
-                width = int(self.txtWindowWidth.GetValue())
-                height = int(self.txtWindowHeight.GetValue())
+                width = int(self._txt_window_width.GetValue())
+                height = int(self._txt_window_height.GetValue())
             except ValueError:
                 wx.MessageBox("Please enter valid numeric window dimensions.",
                               "Invalid input", wx.ICON_WARNING)
@@ -255,6 +254,6 @@ class WizardBehaviourPage(wx.Dialog):
             opts.userAgent = user_agent
 
         else:
-            opts.user_agent.reset()
+            opts.user_agent = None
 
         self.EndModal(wx.ID_OK)
