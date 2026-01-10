@@ -53,6 +53,11 @@ from solution_create_wizard.solution_create_wizard_data import \
     SolutionCreateWizardData
 from solution_create_wizard.wizard_select_browser_page import \
     WizardSelectBrowserPage
+from solution_create_wizard.wizard_behaviour_page import \
+    WizardBehaviourPage
+from solution_create_wizard.wizard_finish_page import \
+    WizardFinishPage
+
 from solution_create_wizard.solution_creation_page import SolutionCreationPage
 from solution_create_wizard.solution_widget_ids import \
     SOLUTION_WIZARD_BACK_BUTTON_ID
@@ -100,12 +105,9 @@ class StudioMainFrame(wx.Frame):
         SolutionCreationPage.PAGE_NO_BASIC_INFO_PAGE: WizardBasicInfoPage,
         SolutionCreationPage.PAGE_NO_SELECT_BROWSER_PAGE:
             WizardSelectBrowserPage,
+        SolutionCreationPage.PAGE_NO_BEHAVIOUR_PAGE: WizardBehaviourPage,
+        SolutionCreationPage.PAGE_NO_FINISH_PAGE: WizardFinishPage
     }
-    """
-        PAGENO_BEHAVIOURPAGE: WizardBehaviourPage,
-        PAGENO_FINISHPAGE: WizardFinishPage,
-    }
-    """
 
     def __init__(self, parent: Optional[wx.Window] = None):
         """
