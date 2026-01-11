@@ -45,8 +45,7 @@ class WizardFinishPage(SolutionWizardBase):
 
     def __init__(self,
                  parent: wx.Window,
-                 data: SolutionCreateWizardData,
-                 steps: list):
+                 data: SolutionCreateWizardData):
         """
         Create the final wizard page.
 

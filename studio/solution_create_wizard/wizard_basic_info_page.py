@@ -77,8 +77,7 @@ class WizardBasicInfoPage(SolutionWizardBase):
 
     def __init__(self,
                  parent: wx.Window,
-                 data: SolutionCreateWizardData,
-                 steps: list):
+                 data: SolutionCreateWizardData):
         super().__init__("Create your new solution",
                          parent, data, 0)
 

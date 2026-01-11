@@ -84,7 +84,7 @@ class WizardBehaviourPage(SolutionWizardBase):
     TITLE_STR: str = "Set up automation behaviour"
     SUBTITLE_STR: str = "How should the automation recording behave?"
 
-    def __init__(self, parent, data: SolutionCreateWizardData, steps: list):
+    def __init__(self, parent, data: SolutionCreateWizardData):
         super().__init__("Finalisation your solution",
                          parent, data, 2)
 
