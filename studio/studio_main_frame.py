@@ -350,15 +350,22 @@ class StudioMainFrame(wx.Frame):
             .Movable(False))
 
     def on_new_solution_event(self, _event: wx.CommandEvent):
+        """
+        Handle the "New Solution" command and run the solution creation wizard.
 
-        # Steps for wizard indicator
-        steps = [
-            "Basic solution info",
-            "Browser selection",
-            "Configure behaviour",
-            "Finish"
-        ]
+        This method drives the multi-page solution creation wizard by:
+          - Creating a shared SolutionCreateWizardData object
+          - Displaying wizard pages in sequence
+          - Handling Next, Back, and Cancel navigation
+          - Creating the solution if the wizard completes successfully
 
+        The wizard flow is controlled using the SolutionCreationPage enum and
+        the SOLUTION_WIZARD_PAGE_CLASSES mapping. Each page is shown modally and
+        returns a result indicating whether to proceed, go back, or cancel.
+
+        If the user completes the final page successfully, the solution is
+        created using the collected wizard data.
+        """
         data: SolutionCreateWizardData = SolutionCreateWizardData()
 
         page_number = SolutionCreationPage.PAGE_NO_BASIC_INFO_PAGE
@@ -370,7 +377,7 @@ class StudioMainFrame(wx.Frame):
                 self._create_solution(data)
                 break
 
-            dlg = page_class(self, data, steps)
+            dlg = page_class(self, data)
             result = dlg.ShowModal()
             next_page = dlg.NEXT_WIZARD_PAGE
             dlg.Destroy()

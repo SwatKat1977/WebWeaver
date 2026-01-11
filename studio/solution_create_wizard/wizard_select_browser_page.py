@@ -18,7 +18,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import wx
-from wizard_step_indicator import WizardStepIndicator
 from solution_create_wizard.solution_create_wizard_data import \
     SolutionCreateWizardData
 from solution_create_wizard.solution_creation_page import SolutionCreationPage
@@ -27,63 +26,34 @@ from solution_create_wizard.browser_logos import (
     load_browser_logo_firefox,
     load_browser_logo_google_chrome,
     load_browser_logo_microsoft_edge)
-from solution_create_wizard.solution_widget_ids import \
-    SOLUTION_WIZARD_BACK_BUTTON_ID
+from solution_create_wizard.solution_wizard_base import SolutionWizardBase
 
 
-class WizardSelectBrowserPage(wx.Dialog):
+class WizardSelectBrowserPage(SolutionWizardBase):
     # pylint: disable=too-few-public-methods
     DEFAULT_URL: str = "https://www.example.com"
 
+    TITLE_STR: str = "Set up your web test"
+    SUBTITLE_STR: str = "Which web browser do you want to test on?"
+
     NEXT_WIZARD_PAGE = SolutionCreationPage.PAGE_NO_BEHAVIOUR_PAGE
 
-    def __init__(self, parent: wx.Window, data: SolutionCreateWizardData,
-                 steps: list):
-        # pylint: disable=too-many-locals
-        super().__init__(parent, title="Set up your web test",
-                         style=wx.DEFAULT_DIALOG_STYLE)
-        self._data: SolutionCreateWizardData = data
-        self._steps: list = steps
+    def __init__(self,
+                 parent: wx.Window,
+                 data: SolutionCreateWizardData):
+        super().__init__("Solution Wizard",
+                         parent, data, 1)
         self._browser_buttons = []
 
-        main_sizer: wx.BoxSizer = wx.BoxSizer(wx.VERTICAL)
-
-        # --- Step indicator ---
-        step_indicator: WizardStepIndicator = WizardStepIndicator(self,
-                                                                  self._steps,
-                                                                  1)
-        main_sizer.Add(step_indicator, 0, wx.EXPAND | wx.ALL, 10)
-
         # --- Header ---
-        header_sizer: wx.BoxSizer = wx.BoxSizer(wx.HORIZONTAL)
-
-        # --- Wizard page icon ---
-        icon_bitmap: wx.Bitmap = wx.ArtProvider.GetBitmap(
-            wx.ART_TIP, wx.ART_OTHER, wx.Size(32, 32))
-        icon: wx.StaticBitmap = wx.StaticBitmap(self, wx.ID_ANY, icon_bitmap)
-        header_sizer.Add(icon, 0, wx.ALL, 10)
-
-        text_box: wx.BoxSizer = wx.BoxSizer(wx.VERTICAL)
-        title: wx.StaticText = wx.StaticText(self,
-                                             wx.ID_ANY,
-                                             "Set up your web test")
-        title.SetFont(wx.Font(13, wx.FONTFAMILY_DEFAULT,
-                      wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
-        subtitle: wx.StaticText = wx.StaticText(
-            self, wx.ID_ANY, "Which web browser do you want to test on?")
-        subtitle.SetForegroundColour(wx.Colour(100, 100, 100))
-        text_box.Add(title, 0)
-        text_box.Add(subtitle, 0, wx.TOP, 4)
-
-        header_sizer.Add(text_box, 1, wx.ALIGN_CENTER_VERTICAL)
-        main_sizer.Add(header_sizer, 0, wx.LEFT | wx.RIGHT, 10)
+        self._create_header(self.TITLE_STR, self.SUBTITLE_STR)
 
         # URL
         url_sizer: wx.BoxSizer = wx.BoxSizer(wx.VERTICAL)
         url_sizer.Add(wx.StaticText(self, wx.ID_ANY, "URL"), 0, wx.BOTTOM, 4)
         self._txt_base_url = wx.TextCtrl(self, wx.ID_ANY, self.DEFAULT_URL)
         url_sizer.Add(self._txt_base_url, 0, wx.EXPAND)
-        main_sizer.Add(url_sizer, 0, wx.EXPAND | wx.ALL, 10)
+        self._main_sizer.Add(url_sizer, 0, wx.EXPAND | wx.ALL, 10)
 
         # Browser label + hint
         lbl_browser: wx.StaticText = wx.StaticText(
@@ -92,13 +62,13 @@ class WizardSelectBrowserPage(wx.Dialog):
                                     wx.FONTFAMILY_DEFAULT,
                                     wx.FONTSTYLE_NORMAL,
                                     wx.FONTWEIGHT_BOLD))
-        main_sizer.Add(lbl_browser, 0, wx.LEFT | wx.RIGHT, 10)
+        self._main_sizer.Add(lbl_browser, 0, wx.LEFT | wx.RIGHT, 10)
 
         hint: wx.StaticText = wx.StaticText(
             self, wx.ID_ANY,
             "The selected browser must be installed on this system.")
         hint.SetForegroundColour(wx.Colour(120, 120, 120))
-        main_sizer.Add(hint, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        self._main_sizer.Add(hint, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
         # Scrollable browser icons(simplified)
         scroll: wx.ScrolledWindow = wx.ScrolledWindow(
@@ -137,42 +107,26 @@ class WizardSelectBrowserPage(wx.Dialog):
             self._browser_buttons.append((name, btn))
 
         scroll.SetSizer(hsizer)
-        main_sizer.Add(scroll,
-                       0,
-                       wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM,
-                       10)
+        self._main_sizer.Add(
+            scroll,
+            0,
+            wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM,
+            10)
 
-        # Checkbox
+        # Launch browser checkbox
         self._chk_launch_browser: wx.CheckBox = wx.CheckBox(
             self,
             wx.ID_ANY,
             "Launch browser automatically. Uncheck if browser is already running.")
-        main_sizer.Add(self._chk_launch_browser,
-                       0,
-                       wx.LEFT | wx.RIGHT | wx.BOTTOM,
-                       10)
+        self._main_sizer.Add(self._chk_launch_browser,
+                             0,
+                             wx.LEFT | wx.RIGHT | wx.BOTTOM,
+                             10)
 
         # Button bar
-        button_bar_sizer: wx.BoxSizer = wx.BoxSizer(wx.HORIZONTAL)
-        button_bar_sizer.AddStretchSpacer()
+        self._create_buttons_bar(self._on_next_click_event)
 
-        btn_cancel: wx.Button = wx.Button(self, wx.ID_CANCEL, "Cancel")
-        btn_cancel.Bind(wx.EVT_BUTTON, lambda evt: self.EndModal(wx.ID_CANCEL))
-        button_bar_sizer.Add(btn_cancel, 0, wx.RIGHT, 10)
-
-        btn_back: wx.Button = wx.Button(self,
-                                        SOLUTION_WIZARD_BACK_BUTTON_ID,
-                                        "Back")
-        btn_back.Bind(wx.EVT_BUTTON,
-                      lambda evt: self.EndModal(SOLUTION_WIZARD_BACK_BUTTON_ID))
-        button_bar_sizer.Add(btn_back, 0, wx.RIGHT, 10)
-
-        btn_next: wx.Button = wx.Button(self, wx.ID_OK, "Next")
-        btn_next.Bind(wx.EVT_BUTTON, self._on_next_click_event)
-        button_bar_sizer.Add(btn_next, 0)
-        main_sizer.Add(button_bar_sizer, 0, wx.EXPAND | wx.ALL, 10)
-
-        self.SetSizerAndFit(main_sizer)
+        self.SetSizerAndFit(self._main_sizer)
         self.CentreOnParent()
 
     def _on_browser_toggle_event(self, event: wx.CommandEvent) -> None:
@@ -184,7 +138,7 @@ class WizardSelectBrowserPage(wx.Dialog):
         """
         clicked: wx.Window = event.GetEventObject()
 
-        for name, btn in self._browser_buttons:
+        for _name, btn in self._browser_buttons:
             if btn is not clicked:
                 btn.SetValue(False)
 
