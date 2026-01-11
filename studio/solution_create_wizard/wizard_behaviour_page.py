@@ -29,6 +29,8 @@ from solution_create_wizard.solution_creation_page import SolutionCreationPage
 
 
 class WizardBehaviourPage(wx.Dialog):
+    # pylint: disable=too-few-public-methods
+
     NEXT_WIZARD_PAGE = SolutionCreationPage.PAGE_NO_FINISH_PAGE
 
     def __init__(self, parent, data: SolutionCreateWizardData, steps: list):

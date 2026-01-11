@@ -20,76 +20,61 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import wx
 from solution_create_wizard.solution_create_wizard_data import \
     SolutionCreateWizardData
-from wizard_step_indicator import WizardStepIndicator
-from solution_create_wizard.solution_widget_ids import \
-    SOLUTION_WIZARD_BACK_BUTTON_ID
+from solution_create_wizard.solution_wizard_base import (SolutionWizardBase,
+                                                         NextButtonType)
 
 
-class WizardFinishPage(wx.Dialog):
+class WizardFinishPage(SolutionWizardBase):
+    """
+    Final page of the solution creation wizard.
+
+    This page presents a summary / closing message to the user and provides
+    a Finish button to complete the wizard. When the user clicks Finish,
+    the wizard closes and signals successful completion.
+
+    This page does not navigate to another wizard page.
+    """
+    # pylint: disable=too-few-public-methods
+
     NEXT_WIZARD_PAGE = None
 
-    def __init__(self, parent: wx.Window, data: SolutionCreateWizardData,
+    TITLE_STR: str = "Almost there"
+    SUBTITLE_STR: str = (
+        "Read what's next and then click Finish to create "
+        "your solution and get started.")
+
+    def __init__(self,
+                 parent: wx.Window,
+                 data: SolutionCreateWizardData,
                  steps: list):
-        super().__init__(parent, title="Set up your web test",
-                         style=wx.DEFAULT_DIALOG_STYLE)
-        self._data: SolutionCreateWizardData = data
-        self._steps: list = steps
+        """
+        Create the final wizard page.
 
-        main_sizer: wx.BoxSizer =  wx.BoxSizer(wx.VERTICAL)
-
-        step_indicator: WizardStepIndicator = WizardStepIndicator(
-            self, self._steps, 3)
-        main_sizer.Add(step_indicator, 0, wx.EXPAND | wx.ALL, 10)
+        Args:
+            parent (wx.Window): The parent window that owns this wizard page.
+            data (SolutionCreateWizardData): Shared wizard data object used to
+                store and retrieve information collected throughout the wizard.
+            steps (list): List of wizard steps (used by the base wizard
+                infrastructure).
+        """
+        super().__init__("Set up your web test",
+                         parent, data, 3)
 
         # Header
-        header_sizer: wx.BoxSizer = wx.BoxSizer(wx.HORIZONTAL)
-        icon: wx.StaticBitmap = wx.StaticBitmap(
-            self,
-            wx.ID_ANY,
-            wx.ArtProvider.GetBitmap(wx.ART_TIP,
-                                     wx.ART_OTHER,
-                                     wx.Size(32, 32)))
-        header_sizer.Add(icon, 0, wx.ALL, 10)
-
-        text_sizer: wx.BoxSizer = wx.BoxSizer(wx.VERTICAL)
-        title: wx.StaticText = wx.StaticText(self, wx.ID_ANY, "Almost there")
-        title.SetFont(wx.Font(13, wx.FONTFAMILY_DEFAULT,
-            wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
-        subtitle: wx.StaticText = wx.StaticText(
-            self,
-            wx.ID_ANY,
-            "Read what's next and then click Finish to create "
-            "your solution and get started.")
-        subtitle.SetForegroundColour(wx.Colour(100, 100, 100))
-        text_sizer.Add(title, 0)
-        text_sizer.Add(subtitle, 0, wx.TOP, 4)
-
-        header_sizer.Add(text_sizer, 1, wx.ALIGN_CENTER_VERTICAL)
-        main_sizer.Add(header_sizer, 0, wx.LEFT | wx.RIGHT, 10)
+        self._create_header(self.TITLE_STR, self.SUBTITLE_STR)
 
         # Button bar
-        button_bar_sizer: wx.BoxSizer = wx.BoxSizer(wx.HORIZONTAL)
-        button_bar_sizer.AddStretchSpacer()
+        self._create_buttons_bar(self._on_next_click_event,
+                                 NextButtonType.FINISH_BUTTON)
 
-        btn_cancel: wx.Button =  wx.Button(self, wx.ID_CANCEL, "Cancel")
-        btn_cancel.Bind(wx.EVT_BUTTON, lambda evt: self.EndModal(wx.ID_CANCEL))
-        button_bar_sizer.Add(btn_cancel, 0, wx.RIGHT, 10)
-
-        btn_back: wx.Button = wx.Button(self,
-                                        SOLUTION_WIZARD_BACK_BUTTON_ID,
-                                        "Back")
-        btn_back.Bind(wx.EVT_BUTTON,
-                      lambda evt: self.EndModal(SOLUTION_WIZARD_BACK_BUTTON_ID))
-        button_bar_sizer.Add(btn_back, 0, wx.RIGHT, 10)
-
-        btn_next: wx.Button = wx.Button(self, wx.ID_OK, "Finish")
-        btn_next.Bind(wx.EVT_BUTTON, self._on_next_click_event)
-        button_bar_sizer.Add(btn_next, 0)
-
-        main_sizer.Add(button_bar_sizer, 0, wx.EXPAND | wx.ALL, 10)
-
-        self.SetSizerAndFit(main_sizer)
+        self.SetSizerAndFit(self._main_sizer)
         self.CentreOnParent()
 
     def _on_next_click_event(self, _event: wx.CommandEvent):
+        """
+        Handle the Finish button click event.
+
+        Ends the wizard dialog and signals successful completion by returning
+        wx.ID_OK to the caller.
+        """
         self.EndModal(wx.ID_OK)

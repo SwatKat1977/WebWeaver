@@ -21,10 +21,10 @@ from pathlib import Path
 import sys
 import typing
 import wx
-from wizard_step_indicator import WizardStepIndicator
 from solution_create_wizard.solution_create_wizard_data \
     import SolutionCreateWizardData
 from solution_create_wizard.solution_creation_page import SolutionCreationPage
+from solution_create_wizard.solution_wizard_base import SolutionWizardBase
 
 
 def is_directory_writable(path: Path) -> bool:
@@ -42,71 +42,33 @@ def is_directory_writable(path: Path) -> bool:
         return False
 
 
-class WizardBasicInfoPage(wx.Dialog):
+class WizardBasicInfoPage(SolutionWizardBase):
+    # pylint: disable=too-few-public-methods
 
     MIN_SOLUTION_NAME_LENGTH: int = 60
 
     NEXT_WIZARD_PAGE = SolutionCreationPage.PAGE_NO_SELECT_BROWSER_PAGE
 
-    def __init__(self, parent, data: SolutionCreateWizardData, steps: list):
-        super().__init__(parent, title="Create your new solution",
-                         style=wx.DEFAULT_DIALOG_STYLE)
+    ALLOWED_SOLUTION_NAME_CHARS = set(
+        "abcdefghijklmnopqrstuvwxyz"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "0123456789"
+        " _-")
 
-        self._data = data
-        self._steps: list = list(steps)
-        self._allowed_chars = set(
-            "abcdefghijklmnopqrstuvwxyz"
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-            "0123456789"
-            " _-")
+    def __init__(self,
+                 parent: wx.Window,
+                 data: SolutionCreateWizardData,
+                 steps: list):
+        super().__init__("Create your new solution",
+                         parent, data, 0)
 
         self._txt_solution_name: typing.Optional[wx.TextCtrl] = None
         self._txt_solution_dir: typing.Optional[wx.TextCtrl] = None
         self._chk_create_solution_dir: typing.Optional[wx.CheckBox] = None
 
-        main: wx.BoxSizer = wx.BoxSizer(wx.VERTICAL)
-
-        step_indicator: WizardStepIndicator = WizardStepIndicator(
-            self, self._steps, 0)
-        main.Add(step_indicator, 0, wx.EXPAND | wx.ALL, 10)
-
-        # --------------------------------------------------------------
         # Header
-        # --------------------------------------------------------------
-        header: wx.BoxSizer = wx.BoxSizer(wx.HORIZONTAL)
-        icon: wx.StaticBitmap = wx.StaticBitmap(
-            self,
-            wx.ID_ANY,
-            wx.ArtProvider.GetBitmap(wx.ART_TIP,
-                                     wx.ART_OTHER,
-                                     wx.Size(32, 32)))
-        header.Add(icon, 0, wx.ALL, 10)
-
-        # Text area (vertical sizer)
-        header_area: wx.BoxSizer = wx.BoxSizer(wx.VERTICAL)
-
-        # Title
-        title: wx.StaticText = wx.StaticText(
-            self,
-            wx.ID_ANY,
-            "Create your new solution")
-        title.SetFont(wx.Font(13, wx.FONTFAMILY_DEFAULT,
-                              wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
-
-        # Subtitle
-        subtitle: wx.StaticText = wx.StaticText(
-            self,
-            wx.ID_ANY,
-            "Define basic information for your first solution.")
-        subtitle.SetForegroundColour(wx.Colour(100, 100, 100))
-        header_area.Add(title, 0)
-        header_area.Add(subtitle, 0, wx.TOP, 4)
-
-        # Add text area into header sizer
-        header.Add(header_area, 1, wx.ALIGN_CENTER_VERTICAL)
-
-        # Add the whole header to main sizer
-        main.Add(header, 0, wx.LEFT | wx.RIGHT, 10)
+        self._create_header("Create your new solution",
+                            "Define basic information for your first solution.")
 
         # --------------------------------------------------------------
         # Input Area
@@ -153,7 +115,7 @@ class WizardBasicInfoPage(wx.Dialog):
         input_area_sizer.Add(btn_browse_location, 0)
 
         input_area_panel.SetSizer(input_area_sizer)
-        main.Add(input_area_panel, 0, wx.EXPAND | wx.ALL, 10)
+        self._main_sizer.Add(input_area_panel, 0, wx.EXPAND | wx.ALL, 10)
 
         # -----
         # Row 3 : Create solution directory checkbox
@@ -161,37 +123,23 @@ class WizardBasicInfoPage(wx.Dialog):
         self._chk_create_solution_dir = wx.CheckBox(
             self, wx.ID_ANY, "Create directory for solution")
         self._chk_create_solution_dir.SetValue(True)
-        main.Add(self._chk_create_solution_dir,
-                 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        self._main_sizer.Add(self._chk_create_solution_dir,
+                             0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
         # -----
         # Row 4 : Button bar
         # -----
-        button_bar_sizer: wx.BoxSizer = wx.BoxSizer(wx.HORIZONTAL)
-        # Spacer to push buttons to the right
-        button_bar_sizer.AddStretchSpacer()
+        self._create_buttons_bar(self._on_next_click, back_button=False)
 
-        # Cancel button
-        btn_cancel: wx.Button = wx.Button(self, wx.ID_CANCEL, "Cancel")
-        btn_cancel.Bind(wx.EVT_BUTTON, lambda evt: self.EndModal(wx.ID_CANCEL))
-        button_bar_sizer.Add(btn_cancel, 0, wx.RIGHT, 10)
-
-        # Next button
-        btn_next: wx.Button = wx.Button(self, wx.ID_OK, "Next")
-        btn_next.Bind(wx.EVT_BUTTON, self._on_next_click)
-        button_bar_sizer.Add(btn_next, 0)
-
-        # Add to main layout
-        main.Add(button_bar_sizer, 0, wx.EXPAND | wx.ALL, 10)
-
-        self.SetSizerAndFit(main)
+        self.SetSizerAndFit(self._main_sizer)
         self.CentreOnParent()
 
     def _on_solution_name_changed(self, event):
         ctrl = self._txt_solution_name
         value = ctrl.GetValue()
 
-        filtered = "".join(c for c in value if c in self._allowed_chars)
+        filtered = "".join(c for c in value if c in \
+                           self.ALLOWED_SOLUTION_NAME_CHARS)
 
         if filtered != value:
             pos = ctrl.GetInsertionPoint()
