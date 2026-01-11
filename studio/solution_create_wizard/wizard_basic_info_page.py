@@ -60,8 +60,6 @@ class WizardBasicInfoPage(SolutionWizardBase):
         parent (wx.Window): The parent window that owns this wizard page.
         data (SolutionCreateWizardData): Shared wizard data object used to
             store and retrieve information collected throughout the wizard.
-        steps (list): List of wizard steps (used by the base wizard
-            infrastructure).
     """
     # pylint: disable=too-few-public-methods
 

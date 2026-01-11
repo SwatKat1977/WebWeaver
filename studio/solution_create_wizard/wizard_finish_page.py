@@ -53,8 +53,6 @@ class WizardFinishPage(SolutionWizardBase):
             parent (wx.Window): The parent window that owns this wizard page.
             data (SolutionCreateWizardData): Shared wizard data object used to
                 store and retrieve information collected throughout the wizard.
-            steps (list): List of wizard steps (used by the base wizard
-                infrastructure).
         """
         super().__init__("Set up your web test",
                          parent, data, 3)
