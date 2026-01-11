@@ -34,15 +34,35 @@ def is_directory_writable(path: Path) -> bool:
     try:
         path.mkdir(parents=True, exist_ok=True)
         test_file = path / ".write_test"
-        with open(test_file, "w") as f:
+        with open(test_file, "w", encoding="utf-8") as f:
             f.write("test")
         test_file.unlink()
         return True
-    except Exception:
+
+    except OSError:
         return False
 
 
 class WizardBasicInfoPage(SolutionWizardBase):
+    """
+    Create the "Basic Information" page of the solution creation wizard.
+
+    This page allows the user to:
+      - Enter a solution name (with character validation)
+      - Choose a target directory for the solution
+      - Optionally create a subdirectory for the solution
+
+    The page validates all user input before allowing the wizard to proceed
+    and writes the collected values back into the shared
+    SolutionCreateWizardData object upon successful validation.
+
+    Args:
+        parent (wx.Window): The parent window that owns this wizard page.
+        data (SolutionCreateWizardData): Shared wizard data object used to
+            store and retrieve information collected throughout the wizard.
+        steps (list): List of wizard steps (used by the base wizard
+            infrastructure).
+    """
     # pylint: disable=too-few-public-methods
 
     MIN_SOLUTION_NAME_LENGTH: int = 60
@@ -135,6 +155,13 @@ class WizardBasicInfoPage(SolutionWizardBase):
         self.CentreOnParent()
 
     def _on_solution_name_changed(self, event):
+        """
+        Handle changes to the solution name text field.
+
+        Filters the input in real time to allow only characters defined in
+        ALLOWED_SOLUTION_NAME_CHARS. Any invalid characters are removed
+        automatically while preserving the cursor position.
+        """
         ctrl = self._txt_solution_name
         value = ctrl.GetValue()
 
@@ -149,21 +176,50 @@ class WizardBasicInfoPage(SolutionWizardBase):
         event.Skip()
 
     def _on_browse_solution_location(self, _event: wx.CommandEvent) -> None:
+        """
+        Open a directory selection dialog for choosing the solution location.
+
+        If the user selects a directory and confirms the dialog, the selected
+        path is written into the solution location text field.
+        """
         dlg = wx.DirDialog(self, "Choose solution location")
         if dlg.ShowModal() == wx.ID_OK:
             self._txtSolutionDir.SetValue(dlg.GetPath())
 
     def _on_next_click(self, _event):
+        """
+        Handle the Next button click event.
+
+        Validates all input fields and, if validation succeeds, closes the
+        wizard page and signals successful completion.
+        """
         if not self._validate_fields():
             return
 
         self.EndModal(wx.ID_OK)
 
     def _validate_fields(self) -> bool:
+        """
+        Validate all user input fields on the page.
+
+        This method checks:
+          - That a solution name is provided and contains only allowed
+            characters
+          - That a solution directory is provided
+          - That the target directory is valid and writable
+          - That the root of the C: drive is not used on Windows
+
+        If validation succeeds, the collected values are written back into the
+        shared SolutionCreateWizardData object.
+
+        Returns:
+            bool: True if all fields are valid, False otherwise.
+        """
         solution_name = self._txt_solution_name.GetValue().strip()
 
         if not solution_name:
-            wx.MessageBox("Please enter a solution name.", "Validation error", wx.ICON_WARNING)
+            wx.MessageBox("Please enter a solution name.", "Validation error",
+                          wx.ICON_WARNING)
             return False
 
         if not self._txt_solution_name.Validate():
@@ -197,7 +253,7 @@ class WizardBasicInfoPage(SolutionWizardBase):
                         wx.ICON_WARNING
                     )
                     return False
-            except Exception:
+            except OSError:
                 pass
 
         if not is_directory_writable(path):
