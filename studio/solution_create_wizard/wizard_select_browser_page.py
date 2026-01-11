@@ -18,9 +18,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import wx
+from wizard_step_indicator import WizardStepIndicator
 from solution_create_wizard.solution_create_wizard_data import \
     SolutionCreateWizardData
-from wizard_step_indicator import WizardStepIndicator
 from solution_create_wizard.solution_creation_page import SolutionCreationPage
 from solution_create_wizard.browser_logos import (
     load_browser_logo_chromium,
@@ -32,12 +32,14 @@ from solution_create_wizard.solution_widget_ids import \
 
 
 class WizardSelectBrowserPage(wx.Dialog):
+    # pylint: disable=too-few-public-methods
     DEFAULT_URL: str = "https://www.example.com"
 
     NEXT_WIZARD_PAGE = SolutionCreationPage.PAGE_NO_BEHAVIOUR_PAGE
 
     def __init__(self, parent: wx.Window, data: SolutionCreateWizardData,
                  steps: list):
+        # pylint: disable=too-many-locals
         super().__init__(parent, title="Set up your web test",
                          style=wx.DEFAULT_DIALOG_STYLE)
         self._data: SolutionCreateWizardData = data

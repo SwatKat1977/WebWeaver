@@ -38,6 +38,7 @@ class WindowSize:
     """The height of the window in pixels."""
 
     def reset(self):
+        """ Reset the window size to default values of 0,0 """
         self.width = 0
         self.height = 0
 

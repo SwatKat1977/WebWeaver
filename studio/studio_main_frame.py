@@ -385,14 +385,13 @@ class StudioMainFrame(wx.Frame):
                 page_number = SolutionCreationPage(new_page)
                 continue
 
-            elif result == wx.ID_OK:
+            if result == wx.ID_OK:
                 # Go forward
                 page_number = next_page
                 continue
 
-            else:
-                # Cancel / close / ESC
-                break
+            # Cancel / close / ESC
+            break
 
     def _create_solution(self, data):
         self._current_solution = StudioSolution(
