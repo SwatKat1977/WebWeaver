@@ -17,219 +17,199 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import typing
+from dataclasses import dataclass
 import wx
 from browser_launch_options import BrowserLaunchOptions, WindowSize
-from wizard_step_indicator import WizardStepIndicator
 from solution_create_wizard.solution_create_wizard_data import \
     SolutionCreateWizardData
-from solution_create_wizard.solution_widget_ids import \
-    SOLUTION_WIZARD_BACK_BUTTON_ID
 from solution_create_wizard.solution_creation_page import SolutionCreationPage
+from solution_create_wizard.solution_wizard_base import SolutionWizardBase
 
 
-class WizardBehaviourPage(wx.Dialog):
+@dataclass
+class BehaviourPageControls:
+    """
+    Container for all UI controls on the wizard "Behaviour" configuration page.
+
+    This dataclass groups together references to all wxPython widgets used to
+    configure browser launch and recording behaviour, including:
+
+    - Basic behaviour options (privacy, extensions, notifications, certificates)
+    - Browser window sizing options (default, maximised, or custom size)
+    - Advanced options (user agent override)
+
+    The class does not contain any logic itself; it simply serves as a structured
+    holder for the UI elements so they can be accessed, validated, and read
+    consistently from the wizard page implementation.
+    """
+    # pylint: disable=too-many-instance-attributes
+
+    # Basic behaviour
+    private: wx.CheckBox | None = None
+    disable_extensions: wx.CheckBox | None = None
+    disable_notifications: wx.CheckBox | None = None
+    ignore_cert_errors: wx.CheckBox | None = None
+
+    # Window Size behaviour
+    window_size_default: wx.RadioButton | None = None
+    window_size_maximised: wx.RadioButton | None = None
+    window_size_custom: wx.RadioButton | None = None
+    window_size_width: wx.TextCtrl | None = None
+    window_size_height: wx.TextCtrl | None = None
+
+    # Advanced behaviour
+    user_agent: wx.TextCtrl | None = None
+
+
+class WizardBehaviourPage(SolutionWizardBase):
+    """
+    Wizard page for configuring browser and recording behaviour.
+
+    This page allows the user to configure how the automation browser will be
+    launched and how recording should behave, including:
+
+    - Private / incognito mode
+    - Disabling extensions and notifications
+    - Certificate error handling
+    - Browser window sizing behaviour (default, maximised, or custom size)
+    - Optional user agent override
+
+    The selected options are written back into the shared
+    SolutionCreateWizardData object when the user proceeds to the next step.
+    """
     # pylint: disable=too-few-public-methods
 
     NEXT_WIZARD_PAGE = SolutionCreationPage.PAGE_NO_FINISH_PAGE
 
+    TITLE_STR: str = "Set up automation behaviour"
+    SUBTITLE_STR: str = "How should the automation recording behave?"
+
     def __init__(self, parent, data: SolutionCreateWizardData, steps: list):
-        super().__init__(parent, title="Create your solution",
-                         style=wx.DEFAULT_DIALOG_STYLE)
-        self._data = data
-        self._steps: list = list(steps)
-
-        main_sizer: wx.BoxSizer = wx.BoxSizer(wx.VERTICAL)
-
-        step_indicator = WizardStepIndicator(self, self._steps, 2)
-        main_sizer.Add(step_indicator, 0, wx.EXPAND | wx.ALL, 10)
+        super().__init__("Finalisation your solution",
+                         parent, data, 2)
 
         # Recording behaviour controls
-        self._chk_private: typing.Optional[wx.CheckBox] =  None
-        self._chk_disable_extensions: typing.Optional[wx.CheckBox] =  None
-        self._chk_disable_notifications: typing.Optional[wx.CheckBox] =  None
-        self._chk_ignore_cert_errors: typing.Optional[wx.CheckBox] =  None
-
-        self._radio_default_window_size: typing.Optional[wx.RadioButton] =  None
-        self._radio_maximised: typing.Optional[wx.RadioButton] =  None
-        self._radio_custom_window_size: typing.Optional[wx.RadioButton] =  None
-        self._txt_window_width: typing.Optional[wx.TextCtrl] =  None
-        self._txt_window_height: typing.Optional[wx.TextCtrl] =  None
-
-        self._advanced_pane: typing.Optional[wx.CollapsiblePane] =  None
-        self._txt_user_agent: typing.Optional[wx.wxTextCtrl] =  None
+        self._behaviour_controls = BehaviourPageControls()
 
         # Header
-        header_sizer: wx.BoxSizer = wx.BoxSizer(wx.HORIZONTAL)
-        icon = wx.StaticBitmap(
-            self,
-            wx.ID_ANY,
-            wx.ArtProvider.GetBitmap(wx.ART_TIP,
-                                     wx.ART_OTHER,
-                                     wx.Size(32, 32)))
-        header_sizer.Add(icon, 0, wx.ALL, 10)
+        self._create_header(self.TITLE_STR, self.SUBTITLE_STR)
 
-        text_box_sizer = wx.BoxSizer(wx.VERTICAL)
-        title = wx.StaticText(self,
-                              wx.ID_ANY,
-                              "Set up automation behaviour")
-        title.SetFont(wx.Font(13,
-                              wx.FONTFAMILY_DEFAULT,
-                              wx.FONTSTYLE_NORMAL,
-                              wx.FONTWEIGHT_BOLD))
-        subtitle = wx.StaticText(self,
-                                 wx.ID_ANY,
-                                 "How should the automation recording behave?")
-        subtitle.SetForegroundColour(wx.Colour(100, 100, 100))
-        text_box_sizer.Add(title, 0)
-        text_box_sizer.Add(subtitle, 0, wx.TOP, 4)
-
-        header_sizer.Add(text_box_sizer, 1, wx.ALIGN_CENTER_VERTICAL)
-        main_sizer.Add(header_sizer, 0, wx.LEFT | wx.RIGHT, 10)
-
+        # Wizard contents
         content_sizer = wx.BoxSizer(wx.VERTICAL)
         self._create_behaviour_panel(content_sizer)
-        main_sizer.Add(content_sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 20)
+        self._main_sizer.Add(content_sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 20)
 
         # Button bar
-        button_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        button_sizer.AddStretchSpacer()
+        self._create_buttons_bar(self._on_next_click_event)
 
-        btn_cancel = wx.Button(self, wx.ID_CANCEL, "Cancel")
-        btn_cancel.Bind(wx.EVT_BUTTON, lambda evt: self.EndModal(wx.ID_CANCEL))
-        button_sizer.Add(btn_cancel, 0, wx.RIGHT, 10)
-
-        btn_back = wx.Button(self,
-                             SOLUTION_WIZARD_BACK_BUTTON_ID,
-                             "Back")
-        btn_back.Bind(wx.EVT_BUTTON,
-                      lambda evt: self.EndModal(SOLUTION_WIZARD_BACK_BUTTON_ID))
-        button_sizer.Add(btn_back, 0, wx.RIGHT, 10)
-
-        btn_next = wx.Button(self, wx.ID_OK, "Next")
-        btn_next.Bind(wx.EVT_BUTTON, self._on_next_click_event)
-        button_sizer.Add(btn_next, 0)
-
-        main_sizer.Add(button_sizer, 0, wx.EXPAND | wx.ALL, 10)
-
-        self.SetSizerAndFit(main_sizer)
+        self.SetSizerAndFit(self._main_sizer)
         self.CentreOnParent()
 
     def _create_behaviour_panel(self, parent: wx.BoxSizer) -> None:
         behaviour_box = wx.StaticBoxSizer(wx.VERTICAL,
                                           self,
                                           "Recording Browser Settings")
-
-        self._chk_private = wx.CheckBox(
-            self,
-            wx.ID_ANY,
-            "Private / Incognito mode (recommended)")
-        self._chk_disable_extensions = wx.CheckBox(
-            self,
-            wx.ID_ANY,
-            "Disable extensions (recommended)")
-        self._chk_disable_notifications = wx.CheckBox(
-            self,
-            wx.ID_ANY,
-            "Disable notifications (recommended)")
-        self._chk_ignore_cert_errors = wx.CheckBox(
-            self,
-            wx.ID_ANY,
-            "Ignore certificate errors (advanced)")
-
-        self._chk_private.SetValue(True)
-        self._chk_disable_extensions.SetValue(True)
-        self._chk_disable_notifications.SetValue(True)
-
-        behaviour_box.Add(self._chk_private, 0, wx.ALL, 5)
-        behaviour_box.Add(self._chk_disable_extensions, 0, wx.ALL, 5)
-        behaviour_box.Add(self._chk_disable_notifications, 0, wx.ALL, 5)
-        behaviour_box.Add(self._chk_ignore_cert_errors, 0, wx.ALL, 5)
-
+        # =================
+        # = Basic behaviour
+        # =================
+        self._behaviour_controls.private = wx.CheckBox(
+            self, wx.ID_ANY, "Private / Incognito mode (recommended)")
+        self._behaviour_controls.disable_extensions = wx.CheckBox(
+            self, wx.ID_ANY, "Disable extensions (recommended)")
+        self._behaviour_controls.disable_notifications = wx.CheckBox(
+            self, wx.ID_ANY, "Disable notifications (recommended)")
+        self._behaviour_controls.ignore_cert_errors = wx.CheckBox(
+            self, wx.ID_ANY, "Ignore certificate errors (advanced)")
+        self._behaviour_controls.private.SetValue(True)
+        self._behaviour_controls.disable_extensions.SetValue(True)
+        self._behaviour_controls.disable_notifications.SetValue(True)
+        behaviour_box.Add(self._behaviour_controls.private, 0, wx.ALL, 5)
+        behaviour_box.Add(self._behaviour_controls.disable_extensions,
+                          0, wx.ALL, 5)
+        behaviour_box.Add(self._behaviour_controls.disable_notifications,
+                          0, wx.ALL, 5)
+        behaviour_box.Add(self._behaviour_controls.ignore_cert_errors,
+                          0, wx.ALL, 5)
         behaviour_box.AddSpacer(10)
 
-        # Window size section
+        # =====================
+        # = Window size section
+        # =====================
         window_label = wx.StaticText(self,  wx.ID_ANY, "Browser window")
         window_label.SetFont(window_label.GetFont().Bold())
-
         behaviour_box.Add(window_label, 0, wx.ALL, 5)
-
-        self._radio_default_window_size = wx.RadioButton(self,
-                                                         wx.ID_ANY,
-                                                         "Default size",
-                                                         style=wx.RB_GROUP)
-        self._radio_maximised = wx.RadioButton(self,
-                                               wx.ID_ANY,
-                                               "Maximised (Recommended)")
-        self._radio_custom_window_size = wx.RadioButton(self,
-                                                        wx.ID_ANY,
-                                                        "Custom size")
-
-        self._txt_window_width = wx.TextCtrl(self,
-                                             wx.ID_ANY,
-                                             "1280",
-                                             size=(60, -1))
-        self._txt_window_height = wx.TextCtrl(self,
-                                              wx.ID_ANY,
-                                              "800",
-                                              size=(60, -1))
+        self._behaviour_controls.window_size_default = wx.RadioButton(
+            self, wx.ID_ANY, "Default size", style=wx.RB_GROUP)
+        self._behaviour_controls.window_size_maximised = wx.RadioButton(
+            self, wx.ID_ANY, "Maximised (Recommended)")
+        self._behaviour_controls.window_size_custom = wx.RadioButton(
+            self, wx.ID_ANY, "Custom size")
+        self._behaviour_controls.window_size_width = wx.TextCtrl(
+            self, wx.ID_ANY, "1280", size=(60, -1))
+        self._behaviour_controls.window_size_height = wx.TextCtrl(
+            self, wx.ID_ANY, "800", size=(60, -1))
 
         size_sizer: wx.BoxSizer = wx.BoxSizer(wx.HORIZONTAL)
-        size_sizer.Add(self._txt_window_width, 0, wx.RIGHT, 5)
+        size_sizer.Add(self._behaviour_controls.window_size_width,
+                       0, wx.RIGHT, 5)
         size_sizer.Add(wx.StaticText(self,  wx.ID_ANY, "×"),
                        0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        size_sizer.Add(self._txt_window_height, 0)
-
-        behaviour_box.Add(self._radio_default_window_size, 0, wx.ALL, 5)
-        behaviour_box.Add(self._radio_maximised, 0, wx.ALL, 5)
-        behaviour_box.Add(self._radio_custom_window_size,
-                          0,
-                          wx.LEFT | wx.TOP,
-                          5)
+        size_sizer.Add(self._behaviour_controls.window_size_height, 0)
+        behaviour_box.Add(self._behaviour_controls.window_size_default,
+                          0, wx.ALL, 5)
+        behaviour_box.Add(self._behaviour_controls.window_size_maximised,
+                          0, wx.ALL, 5)
+        behaviour_box.Add(self._behaviour_controls.window_size_custom,
+                          0, wx.LEFT | wx.TOP, 5)
         behaviour_box.Add(size_sizer, 0, wx.LEFT | wx.BOTTOM, 10)
 
-        self._radio_maximised.SetValue(True)
+        self._behaviour_controls.window_size_maximised.SetValue(True)
         self._sync_window_size_state()
 
-        self._radio_maximised.Bind(
+        self._behaviour_controls.window_size_maximised.Bind(
             wx.EVT_RADIOBUTTON, lambda evt: self._sync_window_size_state()
         )
-        self._radio_custom_window_size.Bind(
+        self._behaviour_controls.window_size_custom.Bind(
             wx.EVT_RADIOBUTTON, lambda evt: self._sync_window_size_state()
         )
 
         # Advanced section
-        self._advanced_pane = wx.CollapsiblePane(self,  wx.ID_ANY, "Advanced")
-        pane: wx.Window = self._advanced_pane.GetPane()
+        advanced_pane = wx.CollapsiblePane(self,  wx.ID_ANY, "Advanced")
+        pane: wx.Window = advanced_pane.GetPane()
 
         adv_sizer: wx.BoxSizer = wx.BoxSizer(wx.VERTICAL)
         adv_sizer.Add(wx.StaticText(pane,
                                     wx.ID_ANY,
                                     "User agent override"),
                       0, wx.BOTTOM, 5)
-        self._txt_user_agent = wx.TextCtrl(pane,  wx.ID_ANY)
-        adv_sizer.Add(self._txt_user_agent, 0, wx.EXPAND)
+        self._behaviour_controls.user_agent = wx.TextCtrl(pane,  wx.ID_ANY)
+        adv_sizer.Add(self._behaviour_controls.user_agent, 0, wx.EXPAND)
 
         pane.SetSizer(adv_sizer)
-        behaviour_box.Add(self._advanced_pane, 0, wx.EXPAND | wx.ALL, 5)
+        behaviour_box.Add(advanced_pane, 0, wx.EXPAND | wx.ALL, 5)
 
         parent.Add(behaviour_box, 1, wx.EXPAND)
 
     def _sync_window_size_state(self) -> None:
-        custom: bool = self._radio_custom_window_size.GetValue()
-        self._txt_window_width.Enable(custom)
-        self._txt_window_height.Enable(custom)
+        custom: bool = self._behaviour_controls.window_size_custom.GetValue()
+        self._behaviour_controls.window_size_width.Enable(custom)
+        self._behaviour_controls.window_size_height.Enable(custom)
 
     def _on_next_click_event(self, _event: wx.CommandEvent) -> None:
         opts: BrowserLaunchOptions = self._data.browser_launch_options
 
-        opts.private_mode = self._chk_private.GetValue()
-        opts.disable_extensions = self._chk_disable_extensions.GetValue()
-        opts.disable_notifications = self._chk_disable_notifications.GetValue()
-        opts.ignore_certificate_errors = self._chk_ignore_cert_errors.GetValue()
+        opts.private_mode = self._behaviour_controls.private.GetValue()
+        opts.disable_extensions = \
+            self._behaviour_controls.disable_extensions.GetValue()
+        opts.disable_notifications = \
+            self._behaviour_controls.disable_notifications.GetValue()
+        opts.ignore_certificate_errors = \
+            self._behaviour_controls.ignore_cert_errors.GetValue()
 
-        opts.maximised = self._radio_maximised.GetValue()
-        default_window_size: bool = self._radio_default_window_size.GetValue()
+        opts.maximised = \
+            self._behaviour_controls.window_size_maximised.GetValue()
+        default_window_size: bool = \
+            self._behaviour_controls.window_size_default.GetValue()
 
         if opts.maximised:
             opts.window_size = None
@@ -241,8 +221,10 @@ class WizardBehaviourPage(wx.Dialog):
         else:
             # Custom window size
             try:
-                width = int(self._txt_window_width.GetValue())
-                height = int(self._txt_window_height.GetValue())
+                width = \
+                    int(self._behaviour_controls.window_size_width.GetValue())
+                height = \
+                    int(self._behaviour_controls.window_size_height.GetValue())
             except ValueError:
                 wx.MessageBox("Please enter valid numeric window dimensions.",
                               "Invalid input", wx.ICON_WARNING)
@@ -251,7 +233,7 @@ class WizardBehaviourPage(wx.Dialog):
             opts.window_size = WindowSize(width=width, height=height)
             opts.maximised = False
 
-        user_agent: str = self._txt_user_agent.GetValue().strip()
+        user_agent: str = self._behaviour_controls.user_agent.GetValue().strip()
         if user_agent:
             opts.userAgent = user_agent
 
