@@ -30,7 +30,20 @@ from solution_create_wizard.solution_wizard_base import SolutionWizardBase
 
 
 class WizardSelectBrowserPage(SolutionWizardBase):
+    """
+    Wizard page for selecting the target browser and base URL.
+
+    This page allows the user to:
+    - Enter the base URL for the web test
+    - Select which browser to use for recording and playback
+    - Choose whether the browser should be launched automatically
+
+    The selected values are validated and written back into the shared
+    SolutionCreateWizardData object before the wizard proceeds to the
+    next step.
+    """
     # pylint: disable=too-few-public-methods
+
     DEFAULT_URL: str = "https://www.example.com"
 
     TITLE_STR: str = "Set up your web test"
@@ -41,6 +54,18 @@ class WizardSelectBrowserPage(SolutionWizardBase):
     def __init__(self,
                  parent: wx.Window,
                  data: SolutionCreateWizardData):
+        """
+        Create the browser selection page of the solution creation wizard.
+
+        This page presents controls for entering the base URL, choosing a target
+        browser from the available options, and configuring whether the browser
+        should be launched automatically.
+
+        Args:
+            parent (wx.Window): The parent window that owns this wizard page.
+            data (SolutionCreateWizardData): Shared wizard data object used to
+                store and retrieve information collected throughout the wizard.
+        """
         super().__init__("Solution Wizard",
                          parent, data, 1)
         self._browser_buttons = []
@@ -189,6 +214,13 @@ class WizardSelectBrowserPage(SolutionWizardBase):
         return True
 
     def _on_next_click_event(self, _event: wx.CommandEvent) -> None:
+        """
+        Handle the Next button click event.
+
+        Validates the current page input and, if validation succeeds, closes the
+        dialog and signals successful completion so the wizard can proceed to
+        the next page.
+        """
         if not self._validate_fields():
             return
 

@@ -23,6 +23,24 @@ from browser_launch_options import BrowserLaunchOptions
 
 @dataclass(slots=True)
 class SolutionCreateWizardData:
+    """
+    Shared data container for the solution creation wizard.
+
+    This dataclass stores all information collected across the wizard pages
+    during the solution creation flow. Each wizard page reads from and writes
+    to this object to accumulate the final configuration before the solution
+    is created.
+
+    The fields are grouped logically by wizard page:
+
+    - Page 1: Basic solution information (name, directory, creation options)
+    - Page 2: Browser selection and launch behaviour
+    - Page 3: Detailed browser launch and recording behaviour
+
+    This object is created once at the start of the wizard and is passed to
+    each page in sequence.
+    """
+
     # -- PAGE 1 [Basic Info] --
     solution_name: str = ""
     solution_directory: str = ""
