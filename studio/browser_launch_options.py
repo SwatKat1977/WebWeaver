@@ -37,6 +37,11 @@ class WindowSize:
     height: int = 0
     """The height of the window in pixels."""
 
+    def reset(self):
+        """ Reset the window size to default values of 0,0 """
+        self.width = 0
+        self.height = 0
+
     def to_dict(self) -> Dict[str, int]:
         """
         Convert the window size to a JSON-serialisable dictionary.

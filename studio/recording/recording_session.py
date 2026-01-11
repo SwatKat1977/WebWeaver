@@ -31,9 +31,9 @@ def now_utc_iso() -> str:
     """
     Get the current UTC time formatted as an ISO-8601 timestamp string.
 
-    The returned string is in the format::
+    The returned string is in the format:
 
-        YYYY-MM-DDTHH:MM:SSZ
+        YYYY-MM-DDTHH-MM-SS
 
     This format is suitable for use in filenames and JSON metadata where
     a stable, timezone-independent timestamp is required.
@@ -43,7 +43,7 @@ def now_utc_iso() -> str:
     str
         The current UTC time formatted as an ISO-8601 string.
     """
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
 
 
 class RecordingSession:
@@ -73,6 +73,12 @@ class RecordingSession:
         self._next_index: int = 0
         self._start_time: typing.Optional[float] = None
         self._solution = solution
+        self._last_error: typing.Optional[str] = None
+
+    @property
+    def last_error(self) -> typing.Optional[str]:
+        """ Get the last error message, or None if no message """
+        return self._last_error
 
     def is_recording(self) -> bool:
         """
@@ -104,7 +110,10 @@ class RecordingSession:
             True if the recording session was started successfully, or False
             if a session is already active or the file could not be created.
         """
+        self._last_error = None
+
         if self._active:
+            self._last_error = "A recording session is already active."
             return False
 
         recordings_dir = self._solution.get_recordings_directory()
@@ -130,7 +139,8 @@ class RecordingSession:
         try:
             self._flush_to_disk()
 
-        except OSError:
+        except OSError as ex:
+            self._last_error = f"Failed to create recording file:\n{ex}"
             return False
 
         self._active = True
@@ -139,7 +149,7 @@ class RecordingSession:
 
         return True
 
-    def stop(self):
+    def stop(self) -> bool:
         """
         Stop the active recording session.
 
@@ -148,13 +158,15 @@ class RecordingSession:
         nothing.
         """
         if not self._active:
-            return
+            return False
 
         self._recording_json["recording"]["endedAt"] = now_utc_iso()
 
         # Persist final state
         self._flush_to_disk()
         self._active = False
+
+        return True
 
     def append_event(self,
                      event_type: RecordingEventType,

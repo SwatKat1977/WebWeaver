@@ -33,8 +33,8 @@ from toolbar_icons import (
     load_toolbar_pause_record_icon,
     load_toolbar_save_solution_icon,
     load_toolbar_start_record_icon,
-    # load_toolbar_stop_record_icon,
-    # load_toolbar_resume_record_icon,
+    load_toolbar_stop_record_icon,
+    load_toolbar_resume_record_icon,
     load_toolbar_close_solution_icon)
 from workspace_panel import WorkspacePanel
 from recording.recording_events import (
@@ -48,6 +48,20 @@ from studio_solution import (
     StudioSolution,
     solution_load_error_to_str,
     SolutionDirectoryCreateStatus)
+from solution_create_wizard.wizard_basic_info_page import WizardBasicInfoPage
+from solution_create_wizard.solution_create_wizard_data import \
+    SolutionCreateWizardData
+from solution_create_wizard.wizard_select_browser_page import \
+    WizardSelectBrowserPage
+from solution_create_wizard.wizard_behaviour_page import \
+    WizardBehaviourPage
+from solution_create_wizard.wizard_finish_page import \
+    WizardFinishPage
+
+from solution_create_wizard.solution_creation_page import SolutionCreationPage
+from solution_create_wizard.solution_widget_ids import \
+    SOLUTION_WIZARD_BACK_BUTTON_ID
+
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -87,6 +101,14 @@ class StudioMainFrame(wx.Frame):
 
     RECENT_SOLUTION_BASE_ID: int = wx.ID_HIGHEST + 500
 
+    SOLUTION_WIZARD_PAGE_CLASSES = {
+        SolutionCreationPage.PAGE_NO_BASIC_INFO_PAGE: WizardBasicInfoPage,
+        SolutionCreationPage.PAGE_NO_SELECT_BROWSER_PAGE:
+            WizardSelectBrowserPage,
+        SolutionCreationPage.PAGE_NO_BEHAVIOUR_PAGE: WizardBehaviourPage,
+        SolutionCreationPage.PAGE_NO_FINISH_PAGE: WizardFinishPage
+    }
+
     def __init__(self, parent: Optional[wx.Window] = None):
         """
         Initialise the main application frame.
@@ -113,7 +135,7 @@ class StudioMainFrame(wx.Frame):
 
         self._workspace_panel: Optional[WorkspacePanel] = None
 
-        self._current_state_: StudioState = StudioState.NO_SOLUTION
+        self._current_state: StudioState = StudioState.NO_SOLUTION
         self._recording_session: Optional[RecordingSession] = None
         self._current_solution: Optional[StudioSolution] = None
         self._state_controller: Optional[StudioStateController] = None
@@ -177,6 +199,7 @@ class StudioMainFrame(wx.Frame):
         self._create_main_toolbar()
 
         self._state_controller.ui_ready = True
+        self._update_toolbar_state()
 
         self._create_solution_panel()
 
@@ -208,8 +231,8 @@ class StudioMainFrame(wx.Frame):
         wx.CallLater(1, self.SendSizeEvent)
 
     def _on_state_changed(self, new_state):
-        self._current_state_ = new_state
-        #self.update_toolbar_state()
+        self._current_state = new_state
+        self._update_toolbar_state()
 
     def _create_main_toolbar(self):
         """
@@ -288,17 +311,17 @@ class StudioMainFrame(wx.Frame):
 
         self._toolbar.Bind(
             wx.EVT_TOOL,
-            self.on_close_solution_event,
+            self._on_close_solution_event,
             id=self.TOOLBAR_ID_CLOSE_SOLUTION)
 
         self._toolbar.Bind(
             wx.EVT_TOOL,
-            self.on_open_solution_event,
+            self._on_open_solution_event,
             id=self.TOOLBAR_ID_OPEN_SOLUTION)
 
         self._toolbar.Bind(
             wx.EVT_TOOL,
-            self.on_record_start_stop_event,
+            self._on_record_start_stop_event,
             id=self.TOOLBAR_ID_START_STOP_RECORD)
 
         self._toolbar.Bind(
@@ -327,9 +350,98 @@ class StudioMainFrame(wx.Frame):
             .Movable(False))
 
     def on_new_solution_event(self, _event: wx.CommandEvent):
-        """ PLACEHOLDER """
+        """
+        Handle the "New Solution" command and run the solution creation wizard.
 
-    def on_open_solution_event(self, _event: wx.CommandEvent):
+        This method drives the multi-page solution creation wizard by:
+          - Creating a shared SolutionCreateWizardData object
+          - Displaying wizard pages in sequence
+          - Handling Next, Back, and Cancel navigation
+          - Creating the solution if the wizard completes successfully
+
+        The wizard flow is controlled using the SolutionCreationPage enum and
+        the SOLUTION_WIZARD_PAGE_CLASSES mapping. Each page is shown modally and
+        returns a result indicating whether to proceed, go back, or cancel.
+
+        If the user completes the final page successfully, the solution is
+        created using the collected wizard data.
+        """
+        data: SolutionCreateWizardData = SolutionCreateWizardData()
+
+        page_number = SolutionCreationPage.PAGE_NO_BASIC_INFO_PAGE
+
+        while True:
+            page_class = self.SOLUTION_WIZARD_PAGE_CLASSES.get(page_number)
+
+            if not page_class:
+                self._create_solution(data)
+                break
+
+            dlg = page_class(self, data)
+            result = dlg.ShowModal()
+            next_page = dlg.NEXT_WIZARD_PAGE
+            dlg.Destroy()
+
+            if result == SOLUTION_WIZARD_BACK_BUTTON_ID:
+                # Go back, clamp to first page
+                new_page: int = page_number.value - 1
+                new_page = max(
+                    SolutionCreationPage.PAGE_NO_BASIC_INFO_PAGE.value,
+                    new_page
+                )
+                page_number = SolutionCreationPage(new_page)
+                continue
+
+            if result == wx.ID_OK:
+                # Go forward
+                page_number = next_page
+                continue
+
+            # Cancel / close / ESC
+            break
+
+    def _create_solution(self, data):
+        self._current_solution = StudioSolution(
+            data.solution_name,
+            data.solution_directory,
+            data.create_solution_dir,
+            data.base_url,
+            data.browser,
+            data.browser_launch_options)
+
+        if not self._save_solution_to_disk(self._current_solution):
+            return
+
+        self._state_controller.on_solution_loaded()
+        self._solution_explorer_panel.show_solution(self._current_solution)
+
+        self._recent_solutions.add_solution(
+            self._current_solution.get_solution_file_path())
+        self._recent_solutions.save()
+
+        self._rebuild_recent_solutions_menu()
+
+        self._recording_session = RecordingSession(self._current_solution)
+
+    def _save_solution_to_disk(self, solution) -> bool:
+        # Ensure solution + subdirectories exist
+        if solution.ensure_directory_structure() != \
+                SolutionDirectoryCreateStatus.NONE_:
+            return False
+
+        solution_file = solution.get_solution_file_path()
+
+        # Serialize to JSON
+        data = solution.to_json()
+
+        try:
+            with open(solution_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=4)
+            return True
+        except OSError:
+            return False
+
+    def _on_open_solution_event(self, _event: wx.CommandEvent):
         """
         Handle the "Open Solution" command.
 
@@ -362,7 +474,7 @@ class StudioMainFrame(wx.Frame):
         finally:
             dlg.Destroy()
 
-    def on_close_solution_event(self, _event: wx.CommandEvent):
+    def _on_close_solution_event(self, _event: wx.CommandEvent):
         """
         Handle the "Close Solution" command.
 
@@ -374,11 +486,46 @@ class StudioMainFrame(wx.Frame):
 
         self._solution_explorer_panel.show_no_solution()
 
-    def on_record_start_stop_event(self, _event: wx.CommandEvent):
-        """ PLACEHOLDER """
+    def _on_record_start_stop_event(self, _event: wx.CommandEvent):
+        self._state_controller.on_record_start_stop()
+
+        if self._state_controller.state == StudioState.RECORDING_RUNNING:
+            ok = self._recording_session.start(
+                self._current_solution.generate_next_recording_name())
+            if not ok:
+                wx.MessageBox(
+                    self._recording_session.last_error or
+                    "Failed to start recording.",
+                    "Recording Error",
+                    wx.ICON_ERROR,
+                    self
+                )
+
+                # Revert state change
+                self._state_controller.on_record_start_stop()
+                return
+
+        elif self._state_controller.state == StudioState.SOLUTION_LOADED:
+            ok = self._recording_session.stop()
+            if not ok:
+                wx.MessageBox(
+                    self._recording_session.last_error or
+                    "Failed to stop recording.",
+                    "Recording Error",
+                    wx.ICON_ERROR,
+                    self
+                )
+
+                # Revert state change
+                self._state_controller.on_record_start_stop()
+                return
+
+            self._solution_explorer_panel.refresh_recordings(
+                self._current_solution)
 
     def on_record_pause_event(self, _event: wx.CommandEvent):
-        """ PLACEHOLDER """
+        """ Pause or resume a recording """
+        self._state_controller.on_record_pause()
 
     def on_inspector_event(self, _event: wx.CommandEvent):
         """ PLACEHOLDER """
@@ -524,7 +671,8 @@ class StudioMainFrame(wx.Frame):
                 self)
             return
 
-        #workspacePanel_->OnRecordingRenamedById(recording->id, newName);
+        self._workspace_panel.on_recording_renamed_by_id(recording.id,
+                                                         new_name)
         self._solution_explorer_panel.refresh_recordings(self._current_solution)
 
     def _delete_recording_event(self, evt: wx.CommandEvent) -> None:
@@ -601,3 +749,78 @@ class StudioMainFrame(wx.Frame):
     def _on_open_recent_solution_event(self, evt: wx.CommandEvent) -> None:
         index: int = evt.GetId() - self.RECENT_SOLUTION_BASE_ID
         self._open_solution(self._recent_solutions.get_solutions()[index])
+
+        self._recording_session = RecordingSession(
+            self._current_solution)
+
+    def _update_toolbar_state(self) -> None:
+        # First: disable everything that is state-dependent
+        self._toolbar.EnableTool(self.TOOLBAR_ID_SAVE_SOLUTION, False)
+        self._toolbar.EnableTool(self.TOOLBAR_ID_CLOSE_SOLUTION, False)
+        self._toolbar.EnableTool(self.TOOLBAR_ID_INSPECTOR_MODE, False)
+        self._toolbar.EnableTool(self.TOOLBAR_ID_START_STOP_RECORD, False)
+        self._toolbar.EnableTool(self.TOOLBAR_ID_PAUSE_RECORD, False)
+
+        has_active_recording: bool = False
+        is_inspecting: bool = False
+        is_paused: bool = False
+
+        # Only New/Open make sense
+        if self._current_state == StudioState.NO_SOLUTION:
+            pass
+
+        elif self._current_state == StudioState.SOLUTION_LOADED:
+            self._toolbar.EnableTool(self.TOOLBAR_ID_SAVE_SOLUTION, True)
+            self._toolbar.EnableTool(self.TOOLBAR_ID_CLOSE_SOLUTION, True)
+            self._toolbar.EnableTool(self.TOOLBAR_ID_INSPECTOR_MODE, True)
+            self._toolbar.EnableTool(self.TOOLBAR_ID_START_STOP_RECORD, True)
+
+        elif self._current_state == StudioState.RECORDING_RUNNING:
+            self._toolbar.EnableTool(self.TOOLBAR_ID_START_STOP_RECORD, True)
+            self._toolbar.EnableTool(self.TOOLBAR_ID_PAUSE_RECORD, True)
+            has_active_recording = True
+
+        elif self._current_state == StudioState.RECORDING_PAUSED:
+            self._toolbar.EnableTool(self.TOOLBAR_ID_START_STOP_RECORD, True)
+            self._toolbar.EnableTool(self.TOOLBAR_ID_PAUSE_RECORD, True)
+            has_active_recording = True
+            is_paused = True
+
+        elif self._current_state == StudioState.INSPECTING:
+            self._toolbar.EnableTool(self.TOOLBAR_ID_SAVE_SOLUTION, True)
+            self._toolbar.EnableTool(self.TOOLBAR_ID_CLOSE_SOLUTION, True)
+            self._toolbar.EnableTool(self.TOOLBAR_ID_START_STOP_RECORD, False)
+            self._toolbar.EnableTool(self.TOOLBAR_ID_INSPECTOR_MODE, True)
+            is_inspecting = True
+
+        # Handle active recording states
+        if has_active_recording:
+            self._toolbar.SetToolBitmap(self.TOOLBAR_ID_START_STOP_RECORD,
+                                        load_toolbar_stop_record_icon())
+            self._toolbar.SetToolShortHelp(self.TOOLBAR_ID_START_STOP_RECORD,
+                                           "Stop Recording")
+
+        else:
+            self._toolbar.SetToolBitmap(self.TOOLBAR_ID_START_STOP_RECORD,
+                                        load_toolbar_start_record_icon())
+            self._toolbar.SetToolShortHelp(self.TOOLBAR_ID_START_STOP_RECORD,
+                                           "Start Recording")
+
+        # Handle active recording paused states
+        if is_paused:
+            self._toolbar.SetToolBitmap(self.TOOLBAR_ID_PAUSE_RECORD,
+                                        load_toolbar_resume_record_icon())
+            self._toolbar.SetToolShortHelp(self.TOOLBAR_ID_PAUSE_RECORD,
+                                           "Resume Recording")
+
+        else:
+            self._toolbar.SetToolBitmap(self.TOOLBAR_ID_PAUSE_RECORD,
+                                        load_toolbar_pause_record_icon())
+            self._toolbar.SetToolShortHelp(self.TOOLBAR_ID_PAUSE_RECORD,
+                                           "Pause Recording")
+
+        # Handle Inspector Mode toggle button
+        self._toolbar.ToggleTool(self.TOOLBAR_ID_INSPECTOR_MODE, is_inspecting)
+
+        self._toolbar.Realize()
+        self._toolbar.Refresh()
