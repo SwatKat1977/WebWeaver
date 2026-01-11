@@ -394,6 +394,47 @@ class StudioMainFrame(wx.Frame):
                 # Cancel / close / ESC
                 break
 
+    def _create_solution(self, data):
+        self._current_solution = StudioSolution(
+            data.solution_name,
+            data.solution_directory,
+            data.create_solution_dir,
+            data.base_url,
+            data.browser,
+            data.browser_launch_options)
+
+        if not self._save_solution_to_disk(self._current_solution):
+            return
+
+        self._state_controller.on_solution_loaded()
+        self._solution_explorer_panel.show_solution(self._current_solution)
+
+        self._recent_solutions.add_solution(
+            self._current_solution.get_solution_file_path())
+        self._recent_solutions.save()
+
+        self._rebuild_recent_solutions_menu()
+
+        self._recording_session = RecordingSession(self._current_solution)
+
+    def _save_solution_to_disk(self, solution) -> bool:
+        # Ensure solution + subdirectories exist
+        if solution.ensure_directory_structure() != \
+                SolutionDirectoryCreateStatus.NONE_:
+            return False
+
+        solution_file = solution.get_solution_file_path()
+
+        # Serialize to JSON
+        data = solution.to_json()
+
+        try:
+            with open(solution_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=4)
+            return True
+        except OSError:
+            return False
+
     def _on_open_solution_event(self, _event: wx.CommandEvent):
         """
         Handle the "Open Solution" command.

@@ -230,11 +230,11 @@ class WizardBehaviourPage(wx.Dialog):
         default_window_size: bool = self._radio_default_window_size.GetValue()
 
         if opts.maximised:
-            opts.windowSize.reset()
+            opts.window_size = None
 
         elif default_window_size:
             opts.maximised = False
-            opts.window_size.reset()
+            opts.window_size = None
 
         else:
             # Custom window size
