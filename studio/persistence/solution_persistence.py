@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import enum
 import json
+from pathlib import Path
 from studio_solution import StudioSolution
 
 
@@ -93,3 +94,11 @@ class SolutionPersistence:
 
         except OSError:
             return SolutionSaveStatus.CANNOT_WRITE_SOLUTION_FILE
+
+    @staticmethod
+    def load_from_disk(solution_file: Path) -> StudioSolution:
+        with solution_file.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        # Load solution from JSON
+        return StudioSolution.from_json(data)
