@@ -23,9 +23,9 @@ from studio_solution import StudioSolution
 
 
 class SolutionSaveStatus(enum.Enum):
-    OK = 0
-    DIR_CREATE_FAILED = enum.auto()
-    CANNOT_WRITE_SOLUTION_FILE = enum.auto()
+    OK = "Ok"
+    DIR_CREATE_FAILED = "Solution directory structure creation failed"
+    CANNOT_WRITE_SOLUTION_FILE = "Cannot write Solution File"
 
 
 class SolutionDirectoryCreateStatus(enum.Enum):
@@ -75,7 +75,7 @@ class SolutionPersistence:
         return SolutionDirectoryCreateStatus.NONE_
 
     @staticmethod
-    def save_disk(solution: StudioSolution) -> SolutionSaveStatus:
+    def save_to_disk(solution: StudioSolution) -> SolutionSaveStatus:
         # Ensure solution + subdirectories exist
         if SolutionPersistence.ensure_directory_structure(solution) != \
                 SolutionDirectoryCreateStatus.NONE_:

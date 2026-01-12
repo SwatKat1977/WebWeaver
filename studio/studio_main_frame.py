@@ -26,6 +26,7 @@ import wx.aui
 from recent_solutions_manager import RecentSolutionsManager
 from recording_metadata import RecordingMetadata
 from solution_explorer_panel import SolutionExplorerPanel
+from persistence.solution_persistence import SolutionPersistence, SolutionSaveStatus
 from toolbar_icons import (
     load_toolbar_inspect_icon,
     load_toolbar_new_solution_icon,
@@ -409,7 +410,20 @@ class StudioMainFrame(wx.Frame):
             data.browser,
             data.browser_launch_options)
 
-        if not self._save_solution_to_disk(self._current_solution):
+        """
+class SolutionSaveStatus(enum.Enum):
+    OK = "Ok"
+    DIR_CREATE_FAILED = "Solution directory structure creation failed"
+    CANNOT_WRITE_SOLUTION_FILE = "Cannot write Solution File"
+
+        """
+
+        result = SolutionPersistence.save_to_disk(self._current_solution)
+        if result is not SolutionSaveStatus.OK:
+            wx.MessageBox(result.value(),
+                          "Failed to save solution",
+                          wx.ICON_ERROR,
+                          self)
             return
 
         self._state_controller.on_solution_loaded()
@@ -422,24 +436,6 @@ class StudioMainFrame(wx.Frame):
         self._rebuild_recent_solutions_menu()
 
         self._recording_session = RecordingSession(self._current_solution)
-
-    def _save_solution_to_disk(self, solution) -> bool:
-        # Ensure solution + subdirectories exist
-        if solution.ensure_directory_structure() != \
-                SolutionDirectoryCreateStatus.NONE_:
-            return False
-
-        solution_file = solution.get_solution_file_path()
-
-        # Serialize to JSON
-        data = solution.to_json()
-
-        try:
-            with open(solution_file, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=4)
-            return True
-        except OSError:
-            return False
 
     def _on_open_solution_event(self, _event: wx.CommandEvent):
         """
