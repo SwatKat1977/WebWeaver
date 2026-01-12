@@ -19,8 +19,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from browser_type import BrowserType
 from web_driver_option import WebDriverOption
-from web_driver_option_parameter import (
-    WebDriverOptionParameter, WebDriverOptionBinding)
+from web_driver_option_parameter import WebDriverOptionParameter
+from web_driver_option_binding import WebDriverOptionBinding
+from web_driver_option_target import WebDriverOptionTarget
 
 
 WebDriverOptionParameters: dict[WebDriverOption, WebDriverOptionParameter] = {

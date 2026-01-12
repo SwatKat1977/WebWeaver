@@ -50,6 +50,7 @@ class SolutionLoadError(enum.Enum):
     MISSING_SOLUTION_OBJECT = enum.auto()
     MISSING_REQUIRED_FIELD = enum.auto()
 
+
 class SolutionDirectoryCreateStatus(enum.Enum):
     """
     Enumerates possible failures when creating a solution's directory structure.
@@ -59,6 +60,7 @@ class SolutionDirectoryCreateStatus(enum.Enum):
     CANNOT_CREATE_PAGES = enum.auto()
     CANNOT_CREATE_SCRIPTS = enum.auto()
     CANNOT_CREATE_RECORDINGS = enum.auto()
+
 
 @dataclasses.dataclass
 class SolutionLoadResult:
@@ -73,6 +75,7 @@ class SolutionLoadResult:
     """
     solution: typing.Optional["StudioSolution"] = None
     error: SolutionLoadError = SolutionLoadError.NONE_
+
 
 @dataclasses.dataclass
 class StudioSolution:
