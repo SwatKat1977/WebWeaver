@@ -71,6 +71,7 @@ def create_driver_from_solution(solution: StudioSolution):
         _apply_browser_launch_options(browser, launch_opts, firefox_profile=profile)
         return Firefox(options=options, firefox_profile=profile)
 
+    return None
 
 """
 Usage
