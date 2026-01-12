@@ -21,6 +21,28 @@ import enum
 
 
 class WebDriverOptionTarget(enum.Enum):
+    """
+    Enumeration of concrete WebDriver configuration targets for launch options.
+
+    This enum describes *how* a high-level browser launch option should be applied to
+    a specific browser configuration. Each value represents a different mechanism used
+    by Selenium and the underlying browser engines to receive configuration data.
+
+    It is used by the WebDriverOptionParameters binding system to decide where and how
+    a particular option value should be written.
+
+    Targets:
+        ARGUMENT:
+            Apply the option as a command-line argument to a Chromium-based browser
+            (e.g. "--headless", "--user-data-dir=...").
+
+        CHROMIUM_PREF:
+            Apply the option as a Chromium preference via the browser's experimental
+            options dictionary (used by Chrome, Chromium, and Edge).
+
+        FIREFOX_PREF:
+            Apply the option as a Firefox profile preference.
+    """
     ARGUMENT = enum.auto()
     CHROMIUM_PREF = enum.auto()
     FIREFOX_PREF = enum.auto()

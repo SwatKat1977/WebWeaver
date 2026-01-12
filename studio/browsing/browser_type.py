@@ -49,6 +49,16 @@ class BrowserType(enum.Enum):
 
     @staticmethod
     def from_string(value: str) -> "BrowserType":
+        """
+        Parse a BrowserType from its serialized string representation.
+
+        This method is primarily used when loading StudioSolution files, where the
+        browser type is stored as a human-readable string.
+
+        :param value: Serialized browser type string (e.g. "Chrome", "Edge (Chromium)").
+        :return: The corresponding BrowserType enum value.
+        :raises ValueError: If the string does not match any known browser type.
+        """
         for b in BrowserType:
             if b.value == value:
                 return b
