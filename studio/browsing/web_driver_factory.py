@@ -23,7 +23,7 @@ from selenium.webdriver import Firefox, FirefoxOptions, FirefoxProfile
 from browsing.browser_type import BrowserType
 from browsing.studio_browser import StudioBrowser
 from browsing.web_driver_option_target import WebDriverOptionTarget
-from browsing.web_driver_option_parameters import WebDriverOptionParameters
+from browsing.web_driver_option_parameters import WEB_DRIVER_OPTION_PARAMETERS
 from browser_launch_options import BrowserLaunchOptions
 from studio_solution import StudioSolution
 
@@ -61,7 +61,7 @@ def _apply_browser_launch_options(
     generic_opts = launch_options.to_webdriver_options()
 
     for opt, value in generic_opts.items():
-        param_def = WebDriverOptionParameters.get(opt)
+        param_def = WEB_DRIVER_OPTION_PARAMETERS.get(opt)
         if not param_def:
             continue
 
@@ -98,6 +98,8 @@ def _apply_binding(binding, value, browser, chrome_options, edge_options,
     :param edge_options: EdgeOptions instance (for Edge).
     :param firefox_profile: FirefoxProfile instance (for Firefox).
     """
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
+
     chromium_options = None
     if browser in (BrowserType.CHROME, BrowserType.CHROMIUM):
         chromium_options = chrome_options
@@ -160,9 +162,9 @@ def create_driver_from_solution(solution: StudioSolution) -> StudioBrowser:
         options = FirefoxOptions()
         profile = FirefoxProfile()
         _apply_browser_launch_options(browser, launch_opts, firefox_profile=profile)
-        driver = Firefox(options=options, firefox_profile=profile)
+        driver = Firefox(options=options)
 
     else:
         raise ValueError(f"Unsupported browser: {browser}")
 
-    return StudioBrowser(browser, driver)
+    return StudioBrowser(driver)

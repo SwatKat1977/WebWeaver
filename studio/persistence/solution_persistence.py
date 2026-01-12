@@ -24,6 +24,12 @@ from studio_solution import StudioSolution
 
 
 class SolutionSaveStatus(enum.Enum):
+    """
+    Enumeration of possible outcomes when saving a StudioSolution to disk.
+
+    Each value represents either a successful save or a specific category of failure
+    that can occur during the persistence process.
+    """
     OK = "Ok"
     DIR_CREATE_FAILED = "Solution directory structure creation failed"
     CANNOT_WRITE_SOLUTION_FILE = "Cannot write Solution File"
@@ -31,7 +37,10 @@ class SolutionSaveStatus(enum.Enum):
 
 class SolutionDirectoryCreateStatus(enum.Enum):
     """
-    Enumerates possible failures when creating a solution's directory structure.
+    Enumeration of possible outcomes when creating a solution's directory structure.
+
+    This enum is used to precisely describe which stage of directory creation failed,
+    allowing the caller to present accurate diagnostics or recovery options.
     """
     NONE_ = 0
     CANNOT_CREATE_ROOT = enum.auto()
@@ -41,6 +50,19 @@ class SolutionDirectoryCreateStatus(enum.Enum):
 
 
 class SolutionPersistence:
+    """
+    Handles loading and saving StudioSolution instances to and from disk.
+
+    This class defines the persistence boundary for solution data and is responsible for:
+
+    - Creating and validating the on-disk directory structure for a solution
+    - Serialising StudioSolution objects to JSON files
+    - Deserialising StudioSolution objects from JSON files
+
+    All file system and I/O concerns related to solution persistence are intentionally
+    isolated in this class to keep the rest of the application free from low-level
+    storage logic.
+    """
 
     @staticmethod
     def ensure_directory_structure(solution: StudioSolution) \
@@ -77,6 +99,21 @@ class SolutionPersistence:
 
     @staticmethod
     def save_to_disk(solution: StudioSolution) -> SolutionSaveStatus:
+        """
+        Save a StudioSolution to disk.
+
+        This method:
+
+        - Ensures the solution's directory structure exists
+        - Serialises the solution to JSON
+        - Writes the solution file to disk
+
+        If any step fails, an appropriate SolutionSaveStatus is returned to allow the
+        caller to present a meaningful error message to the user.
+
+        :param solution: The solution to save.
+        :return: A SolutionSaveStatus indicating success or the type of failure.
+        """
         # Ensure solution + subdirectories exist
         if SolutionPersistence.ensure_directory_structure(solution) != \
                 SolutionDirectoryCreateStatus.NONE_:
@@ -97,6 +134,18 @@ class SolutionPersistence:
 
     @staticmethod
     def load_from_disk(solution_file: Path) -> StudioSolution:
+        """
+        Load a StudioSolution from disk.
+
+        This method reads the specified solution file, parses the JSON content, and
+        constructs a StudioSolution instance from it.
+
+        :param solution_file: Path to the solution file to load.
+        :return: A fully constructed StudioSolution instance.
+        :raises OSError: If the file cannot be read.
+        :raises json.JSONDecodeError: If the file does not contain valid JSON.
+        :raises ValueError: If the file content is not a valid solution format.
+        """
         with solution_file.open("r", encoding="utf-8") as f:
             data = json.load(f)
 
