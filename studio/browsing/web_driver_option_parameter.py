@@ -18,9 +18,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from typing import Dict, List, Optional
-from browser_type import BrowserType
-from web_driver_option import WebDriverOption
-from web_driver_option_binding import WebDriverOptionBinding
+from browsing.browser_type import BrowserType
+from browsing.web_driver_option import WebDriverOption
+from browsing.web_driver_option_binding import WebDriverOptionBinding
 
 
 class WebDriverOptionParameter:

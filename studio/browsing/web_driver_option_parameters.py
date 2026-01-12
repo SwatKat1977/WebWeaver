@@ -17,11 +17,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from browser_type import BrowserType
-from web_driver_option import WebDriverOption
-from web_driver_option_parameter import WebDriverOptionParameter
-from web_driver_option_binding import WebDriverOptionBinding
-from web_driver_option_target import WebDriverOptionTarget
+from browsing.browser_type import BrowserType
+from browsing.web_driver_option import WebDriverOption
+from browsing.web_driver_option_parameter import WebDriverOptionParameter
+from browsing.web_driver_option_binding import WebDriverOptionBinding
+from browsing.web_driver_option_target import WebDriverOptionTarget
 
 
 WebDriverOptionParameters: dict[WebDriverOption, WebDriverOptionParameter] = {

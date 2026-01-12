@@ -1,8 +1,11 @@
 from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver import Edge, EdgeOptions
 from selenium.webdriver import Firefox, FirefoxOptions, FirefoxProfile
-from browser_type import BrowserType
-from web_driver_option_target import WebDriverOptionTarget
+from browsing.browser_type import BrowserType
+from browsing.studio_browser import StudioBrowser
+from browsing.web_driver_option_target import WebDriverOptionTarget
+from browsing.web_driver_option_parameters import WebDriverOptionParameters
+from browser_launch_options import BrowserLaunchOptions
 from studio_solution import StudioSolution
 
 
@@ -51,27 +54,30 @@ def _apply_binding(binding, value, browser, chrome_options, edge_options, firefo
         firefox_profile.set_preference(binding.key, value if value is not None else True)
 
 
-def create_driver_from_solution(solution: StudioSolution):
+def create_driver_from_solution(solution: StudioSolution) -> StudioBrowser:
     browser = solution.selected_browser
     launch_opts = solution.browser_launch_options
 
     if browser == BrowserType.CHROME:
         options = ChromeOptions()
         _apply_browser_launch_options(browser, launch_opts, chrome_options=options)
-        return Chrome(options=options)
+        driver = Chrome(options=options)
 
     if browser == BrowserType.EDGE:
         options = EdgeOptions()
         _apply_browser_launch_options(browser, launch_opts, edge_options=options)
-        return Edge(options=options)
+        driver = Edge(options=options)
 
     if browser == BrowserType.FIREFOX:
         options = FirefoxOptions()
         profile = FirefoxProfile()
         _apply_browser_launch_options(browser, launch_opts, firefox_profile=profile)
-        return Firefox(options=options, firefox_profile=profile)
+        driver = Firefox(options=options, firefox_profile=profile)
 
-    return None
+    else:
+        raise ValueError(f"Unsupported browser: {browser}")
+
+    return StudioBrowser(browser, driver)
 
 """
 Usage

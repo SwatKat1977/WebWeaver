@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from dataclasses import dataclass
-from web_driver_option_target import WebDriverOptionTarget
+from browsing.web_driver_option_target import WebDriverOptionTarget
 
 
 @dataclass(frozen=True)
