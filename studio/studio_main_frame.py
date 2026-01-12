@@ -408,15 +408,8 @@ class StudioMainFrame(wx.Frame):
             data.create_solution_dir,
             data.base_url,
             data.browser,
+            data.launch_browser_automatically,
             data.browser_launch_options)
-
-        """
-class SolutionSaveStatus(enum.Enum):
-    OK = "Ok"
-    DIR_CREATE_FAILED = "Solution directory structure creation failed"
-    CANNOT_WRITE_SOLUTION_FILE = "Cannot write Solution File"
-
-        """
 
         result = SolutionPersistence.save_to_disk(self._current_solution)
         if result is not SolutionSaveStatus.OK:

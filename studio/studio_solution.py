@@ -90,6 +90,7 @@ class StudioSolution:
     create_directory_for_solution: bool
     base_url: str
     selected_browser: str
+    launch_browser_automatically: bool
     browser_launch_options: BrowserLaunchOptions
 
     def to_json(self):
@@ -106,7 +107,8 @@ class StudioSolution:
                 "solutionDirectory": self.solution_directory,
                 "solutionDirectoryCreated": self.create_directory_for_solution,
                 "baseUrl": self.base_url,
-                "browser": self.selected_browser
+                "browser": self.selected_browser,
+                "launchBrowserAutomatically": self.launch_browser_automatically
             },
             "browserLaunchOptions": self.browser_launch_options.to_json(),
         }
@@ -148,6 +150,7 @@ class StudioSolution:
             "solutionDirectoryCreated",
             "baseUrl",
             "browser",
+            "launchBrowserAutomatically",
         ]
 
         if any(k not in raw_solution for k in required):
@@ -166,6 +169,7 @@ class StudioSolution:
             create_directory_for_solution=bool(raw_solution["solutionDirectoryCreated"]),
             base_url=str(raw_solution["baseUrl"]),
             selected_browser=str(raw_solution["browser"]),
+            launch_browser_automatically=bool(raw_solution["launchBrowserAutomatically"]),
             browser_launch_options=launch_options,
         )
 
