@@ -22,6 +22,12 @@ import json
 from studio_solution import StudioSolution
 
 
+class SolutionSaveStatus(enum.Enum):
+    OK = 0
+    DIR_CREATE_FAILED = enum.auto()
+    CANNOT_WRITE_SOLUTION_FILE = enum.auto()
+
+
 class SolutionDirectoryCreateStatus(enum.Enum):
     """
     Enumerates possible failures when creating a solution's directory structure.
@@ -69,11 +75,11 @@ class SolutionPersistence:
         return SolutionDirectoryCreateStatus.NONE_
 
     @staticmethod
-    def save_disk(solution: StudioSolution) -> bool:
+    def save_disk(solution: StudioSolution) -> SolutionSaveStatus:
         # Ensure solution + subdirectories exist
         if SolutionPersistence.ensure_directory_structure(solution) != \
                 SolutionDirectoryCreateStatus.NONE_:
-            return False
+            return SolutionSaveStatus.DIR_CREATE_FAILED
 
         solution_file = solution.get_solution_file_path()
 
@@ -83,6 +89,7 @@ class SolutionPersistence:
         try:
             with open(solution_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=4)
-            return True
+            return SolutionSaveStatus.OK
+
         except OSError:
-            return False
+            return SolutionSaveStatus.CANNOT_WRITE_SOLUTION_FILE
