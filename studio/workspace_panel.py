@@ -160,3 +160,9 @@ class WorkspacePanel(wx.Panel):
 
         sizer.Add(self._notebook, 1, wx.EXPAND)
         self.SetSizer(sizer)
+
+    def clear(self):
+        if not self._notebook:
+            return
+
+        self._notebook.DeleteAllPages()

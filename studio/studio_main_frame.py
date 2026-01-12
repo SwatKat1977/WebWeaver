@@ -414,7 +414,7 @@ class StudioMainFrame(wx.Frame):
 
         result = SolutionPersistence.save_to_disk(self._current_solution)
         if result is not SolutionSaveStatus.OK:
-            wx.MessageBox(result.value(),
+            wx.MessageBox(result.value,
                           "Failed to save solution",
                           wx.ICON_ERROR,
                           self)
@@ -475,6 +475,8 @@ class StudioMainFrame(wx.Frame):
         self._state_controller.on_solution_closed()
 
         self._solution_explorer_panel.show_no_solution()
+
+        self._workspace_panel.clear()
 
     def _on_record_start_stop_event(self, _event: wx.CommandEvent):
         self._state_controller.on_record_start_stop()
