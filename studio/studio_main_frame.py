@@ -27,6 +27,7 @@ from recent_solutions_manager import RecentSolutionsManager
 from recording_metadata import RecordingMetadata
 from solution_explorer_panel import SolutionExplorerPanel
 from persistence.solution_persistence import SolutionPersistence, SolutionSaveStatus
+from browsing.web_driver_factory import create_driver_from_solution
 from toolbar_icons import (
     load_toolbar_inspect_icon,
     load_toolbar_new_solution_icon,
@@ -602,6 +603,8 @@ class StudioMainFrame(wx.Frame):
         self._recent_solutions.add_solution(solution_file)
         self._recent_solutions.save()
         wx.CallAfter(self._rebuild_recent_solutions_menu)
+
+        studio_browser = create_driver_from_solution(self._current_solution)
 
         return True
 

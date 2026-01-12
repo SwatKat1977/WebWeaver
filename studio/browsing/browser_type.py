@@ -42,7 +42,14 @@ class BrowserType(enum.Enum):
             Mozilla Firefox browser.
     """
 
-    CHROME = enum.auto()
-    CHROMIUM = enum.auto()
-    EDGE = enum.auto()
-    FIREFOX = enum.auto()
+    CHROME = "Chrome"
+    CHROMIUM = "Chromium"
+    EDGE = "Edge (Chromium)"
+    FIREFOX = "Firefox"
+
+    @staticmethod
+    def from_string(value: str) -> "BrowserType":
+        for b in BrowserType:
+            if b.value == value:
+                return b
+        raise ValueError(f"Unknown browser type: {value}")

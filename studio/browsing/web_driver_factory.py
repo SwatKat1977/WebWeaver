@@ -31,31 +31,42 @@ def _apply_browser_launch_options(
             continue
 
         for binding in bindings:
-            _apply_binding(binding, value, browser, chrome_options, edge_options, firefox_profile)
+            _apply_binding(binding, value, browser, chrome_options,
+                           edge_options, firefox_profile)
 
 
-def _apply_binding(binding, value, browser, chrome_options, edge_options, firefox_profile):
+def _apply_binding(binding, value, browser, chrome_options, edge_options,
+                   firefox_profile):
+    chromium_options = None
+    if browser in (BrowserType.CHROME, BrowserType.CHROMIUM):
+        chromium_options = chrome_options
+    elif browser == BrowserType.EDGE:
+        chromium_options = edge_options
+
     if binding.target == WebDriverOptionTarget.ARGUMENT:
         arg = binding.key
         if value is not None:
             arg = f"{arg}={value}"
 
-        if browser in (BrowserType.CHROME, BrowserType.CHROMIUM):
-            chrome_options.add_argument(arg)
-        elif browser == BrowserType.EDGE:
-            edge_options.add_argument(arg)
+        if chromium_options is not None:
+            chromium_options.add_argument(arg)
 
     elif binding.target == WebDriverOptionTarget.CHROMIUM_PREF:
-        prefs = chrome_options.experimental_options.get("prefs", {})
+        if chromium_options is None:
+            return
+
+        prefs = chromium_options.experimental_options.get("prefs", {})
         prefs[binding.key] = value if value is not None else 0
-        chrome_options.add_experimental_option("prefs", prefs)
+        chromium_options.add_experimental_option("prefs", prefs)
 
     elif binding.target == WebDriverOptionTarget.FIREFOX_PREF:
-        firefox_profile.set_preference(binding.key, value if value is not None else True)
-
+        if firefox_profile is None:
+            return
+        firefox_profile.set_preference(binding.key,
+                                       value if value is not None else True)
 
 def create_driver_from_solution(solution: StudioSolution) -> StudioBrowser:
-    browser = solution.selected_browser
+    browser = BrowserType.from_string(solution.selected_browser)
     launch_opts = solution.browser_launch_options
 
     if browser == BrowserType.CHROME:
@@ -63,12 +74,12 @@ def create_driver_from_solution(solution: StudioSolution) -> StudioBrowser:
         _apply_browser_launch_options(browser, launch_opts, chrome_options=options)
         driver = Chrome(options=options)
 
-    if browser == BrowserType.EDGE:
+    elif browser == BrowserType.EDGE:
         options = EdgeOptions()
         _apply_browser_launch_options(browser, launch_opts, edge_options=options)
         driver = Edge(options=options)
 
-    if browser == BrowserType.FIREFOX:
+    elif browser == BrowserType.FIREFOX:
         options = FirefoxOptions()
         profile = FirefoxProfile()
         _apply_browser_launch_options(browser, launch_opts, firefox_profile=profile)
@@ -78,11 +89,3 @@ def create_driver_from_solution(solution: StudioSolution) -> StudioBrowser:
         raise ValueError(f"Unsupported browser: {browser}")
 
     return StudioBrowser(browser, driver)
-
-"""
-Usage
-from webweaver.studio.browser.driver_factory import create_driver_from_solution
-
-driver = create_driver_from_solution(current_solution)
-
-"""
