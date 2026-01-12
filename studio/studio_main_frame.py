@@ -17,6 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import enum
 import json
 from pathlib import Path
 import sys
@@ -64,10 +65,17 @@ from solution_create_wizard.solution_creation_page import SolutionCreationPage
 from solution_create_wizard.solution_widget_ids import \
     SOLUTION_WIZARD_BACK_BUTTON_ID
 
-
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
     else wx.DefaultPosition
+
+
+class StatusBarElement(enum.Enum):
+    STATUS_MESSAGE = 0
+    SOLUTION_NAME = 1
+    CURRENT_MODE = 2
+    SAVE_STATUS = 3
+    BROWSER_STATUS = 4
 
 
 class StudioMainFrame(wx.Frame):
@@ -131,6 +139,10 @@ class StudioMainFrame(wx.Frame):
         """The main application toolbar (AUI-managed)."""
 
         self._solution_explorer_panel = None
+        """Solution explorer panel part of the UI."""
+
+        self._status_bar = None
+        """Status bar part of the UI"""
 
         self._aui_mgr: wx.aui.AuiManager = wx.aui.AuiManager(self)
         """AUI manager responsible for dockable panes and toolbars."""
@@ -213,6 +225,11 @@ class StudioMainFrame(wx.Frame):
         self._aui_mgr.Update()
 
         # --------------------------------------------------------------
+        # Create status bar
+        # --------------------------------------------------------------
+        self._create_status_bar()
+
+        # --------------------------------------------------------------
         # Recordings events
         # --------------------------------------------------------------
 
@@ -231,6 +248,41 @@ class StudioMainFrame(wx.Frame):
 
         wx.CallLater(1, self._aui_mgr.Update)
         wx.CallLater(1, self.SendSizeEvent)
+
+    def set_status_bar_status_message(self, msg: str):
+        self._status_bar.SetStatusText(msg,
+                                       StatusBarElement.STATUS_MESSAGE.value)
+
+    def set_status_bar_current_solution(self, solution_name: Optional[str]):
+        if not solution_name:
+            self._status_bar.SetStatusText("No solution loaded",
+                                           StatusBarElement.SOLUTION_NAME.value)
+        else:
+            self._status_bar.SetStatusText(f"Solution: {solution_name}",
+                                           StatusBarElement.SOLUTION_NAME.value)
+
+    def set_status_bar_mode(self, mode_name: str, is_recording: bool):
+        text = f"Mode: {mode_name}"
+        if is_recording:
+            text += "  ● Recording"
+        self._status_bar.SetStatusText(text,
+                                       StatusBarElement.CURRENT_MODE.value)
+
+    def set_status_bar_dirty(self, is_dirty: bool):
+        if is_dirty:
+            self._status_bar.SetStatusText("Unsaved changes",
+                                           StatusBarElement.SAVE_STATUS.value)
+        else:
+            self._status_bar.SetStatusText("All changes saved",
+                                           StatusBarElement.SAVE_STATUS.value)
+
+    def set_status_bar_browser_running(self, is_running: bool):
+        if is_running:
+            self._status_bar.SetStatusText(
+                "Browser: Running", StatusBarElement.BROWSER_STATUS.value)
+        else:
+            self._status_bar.SetStatusText(
+                "Browser: Stopped", StatusBarElement.BROWSER_STATUS.value)
 
     def _on_state_changed(self, new_state):
         self._current_state = new_state
@@ -431,6 +483,30 @@ class StudioMainFrame(wx.Frame):
 
         self._recording_session = RecordingSession(self._current_solution)
 
+    def _create_status_bar(self):
+        self._status_bar = self.CreateStatusBar(5)
+
+        # Relative widths
+        self._status_bar.SetStatusWidths([
+            -2,  # General
+            -3,  # Solution
+            -2,  # Mode / Recording
+            -1,  # Save state
+            -1,  # Browser
+        ])
+
+        # Initial values
+        self._status_bar.SetStatusText(
+            "Ready", StatusBarElement.STATUS_MESSAGE.value)
+        self._status_bar.SetStatusText("No solution loaded",
+                                       StatusBarElement.SOLUTION_NAME.value)
+        self._status_bar.SetStatusText("Mode: Editing",
+                                       StatusBarElement.CURRENT_MODE.value)
+        self._status_bar.SetStatusText("All changes saved",
+                                       StatusBarElement.SAVE_STATUS.value)
+        self._status_bar.SetStatusText("Browser: Stopped",
+                                       StatusBarElement.BROWSER_STATUS.value)
+
     def _on_open_solution_event(self, _event: wx.CommandEvent):
         """
         Handle the "Open Solution" command.
@@ -475,6 +551,8 @@ class StudioMainFrame(wx.Frame):
         self._state_controller.on_solution_closed()
 
         self._solution_explorer_panel.show_no_solution()
+
+        self.set_status_bar_current_solution(None)
 
     def _on_record_start_stop_event(self, _event: wx.CommandEvent):
         self._state_controller.on_record_start_stop()
@@ -605,6 +683,8 @@ class StudioMainFrame(wx.Frame):
         wx.CallAfter(self._rebuild_recent_solutions_menu)
 
         studio_browser = create_driver_from_solution(self._current_solution)
+
+        self.set_status_bar_current_solution(self._current_solution.solution_name)
 
         return True
 
