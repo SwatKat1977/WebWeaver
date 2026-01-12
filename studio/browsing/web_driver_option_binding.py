@@ -23,5 +23,24 @@ from browsing.web_driver_option_target import WebDriverOptionTarget
 
 @dataclass(frozen=True)
 class WebDriverOptionBinding:
+    """
+    Represents a single concrete binding between an abstract WebDriver option and a
+    browser-specific configuration mechanism.
+
+    A binding describes:
+
+    - Where an option should be applied (the target)
+    - The concrete key, flag, or preference name to use
+
+    This is the smallest unit in the WebDriver option translation system. Higher-level
+    structures (such as WebDriverOptionParameter and the WebDriverOptionParameters
+    registry) combine multiple bindings to describe how a single abstract option should
+    be applied across different browsers.
+
+    Examples:
+        - (ARGUMENT, "--disable-extensions")
+        - (CHROMIUM_PREF, "profile.default_content_setting_values.notifications")
+        - (FIREFOX_PREF, "permissions.default.desktop-notification")
+    """
     target: WebDriverOptionTarget
     key: str
