@@ -571,8 +571,7 @@ class SolutionSaveStatus(enum.Enum):
             return False
 
         try:
-            with solution_file.open("r", encoding="utf-8") as f:
-                data = json.load(f)
+            result = SolutionPersistence.load_from_disk(solution_file)
         except (OSError, json.JSONDecodeError) as e:
             wx.MessageBox(
                 f"Failed to read solution file:\n{e}",
@@ -580,9 +579,6 @@ class SolutionSaveStatus(enum.Enum):
                 wx.ICON_ERROR
             )
             return False
-
-        # Load solution from JSON
-        result = StudioSolution.from_json(data)
 
         if result.solution is None:
             wx.MessageBox(
