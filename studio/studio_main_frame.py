@@ -71,6 +71,35 @@ INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
 
 
 class StatusBarElement(enum.Enum):
+    """
+    Enumeration of status bar field indices.
+
+    This enum defines the logical layout of the main application status bar.
+    Each value corresponds to a fixed field index in the wx status bar and
+    should be used instead of hard-coded integers when updating status text.
+
+    Fields:
+
+        STATUS_MESSAGE (0):
+            General-purpose status messages (e.g. "Ready", progress updates,
+            or short-lived operation feedback).
+
+        SOLUTION_NAME (1):
+            Displays the name of the currently loaded solution, or indicates
+            that no solution is loaded.
+
+        CURRENT_MODE (2):
+            Shows the current application mode and recording state
+            (e.g. "Mode: Editing", "Mode: Recording ●").
+
+        SAVE_STATUS (3):
+            Indicates whether there are unsaved changes or whether all changes
+            are safely saved.
+
+        BROWSER_STATUS (4):
+            Indicates whether the controlled browser instance is currently
+            running or stopped.
+    """
     STATUS_MESSAGE = 0
     SOLUTION_NAME = 1
     CURRENT_MODE = 2
@@ -250,10 +279,27 @@ class StudioMainFrame(wx.Frame):
         wx.CallLater(1, self.SendSizeEvent)
 
     def set_status_bar_status_message(self, msg: str):
+        """
+        Set the general-purpose status message in the status bar.
+
+        This field is intended for short-lived feedback such as "Ready",
+        progress updates, or the result of user actions.
+
+        :param msg: The message text to display.
+        """
         self._status_bar.SetStatusText(msg,
                                        StatusBarElement.STATUS_MESSAGE.value)
 
     def set_status_bar_current_solution(self, solution_name: Optional[str]):
+        """
+        Update the status bar to reflect the currently loaded solution.
+
+        If no solution name is provided, the status bar will indicate that
+        no solution is currently loaded.
+
+        :param solution_name: The solution file name, or None if no solution
+                              is loaded.
+        """
         if not solution_name:
             self._status_bar.SetStatusText("No solution loaded",
                                            StatusBarElement.SOLUTION_NAME.value)
@@ -262,6 +308,17 @@ class StudioMainFrame(wx.Frame):
                                            StatusBarElement.SOLUTION_NAME.value)
 
     def set_status_bar_mode(self, mode_name: str, is_recording: bool):
+        """
+        Update the status bar to show the current application mode and
+        recording state.
+
+        When recording is active, a recording indicator is appended to the
+        mode text.
+
+        :param mode_name: Human-readable name of the current mode
+                          (e.g. "Editing", "Recording", "Playback").
+        :param is_recording: True if a recording session is currently active.
+        """
         text = f"Mode: {mode_name}"
         if is_recording:
             text += "  ● Recording"
@@ -269,6 +326,12 @@ class StudioMainFrame(wx.Frame):
                                        StatusBarElement.CURRENT_MODE.value)
 
     def set_status_bar_dirty(self, is_dirty: bool):
+        """
+        Update the status bar to reflect whether there are unsaved changes.
+
+        :param is_dirty: True if the current solution has unsaved changes,
+                         False if all changes are saved.
+        """
         if is_dirty:
             self._status_bar.SetStatusText("Unsaved changes",
                                            StatusBarElement.SAVE_STATUS.value)
@@ -277,6 +340,12 @@ class StudioMainFrame(wx.Frame):
                                            StatusBarElement.SAVE_STATUS.value)
 
     def set_status_bar_browser_running(self, is_running: bool):
+        """
+        Update the status bar to reflect the current browser runtime state.
+
+        :param is_running: True if the controlled browser instance is currently
+                           running, False if it is stopped.
+        """
         if is_running:
             self._status_bar.SetStatusText(
                 "Browser: Running", StatusBarElement.BROWSER_STATUS.value)
@@ -285,6 +354,14 @@ class StudioMainFrame(wx.Frame):
                 "Browser: Stopped", StatusBarElement.BROWSER_STATUS.value)
 
     def _on_state_changed(self, new_state):
+        """
+        Handle a change in the application state.
+
+        This method updates the internally stored state and refreshes any
+        UI elements (such as toolbars) that depend on the current state.
+
+        :param new_state: The new application state object.
+        """
         self._current_state = new_state
         self._update_toolbar_state()
 
@@ -483,10 +560,30 @@ class StudioMainFrame(wx.Frame):
 
         self._recording_session = RecordingSession(self._current_solution)
 
+        # Update solution name in the status bar.
         self.set_status_bar_current_solution(
             self._current_solution.solution_name)
 
     def _create_status_bar(self):
+        """
+        Create and initialize the main application status bar.
+
+        The status bar is divided into five fields that provide high-level,
+        always-visible information about the current state of WebWeaver Studio:
+
+            0. General status messages (e.g. "Ready", operation feedback)
+            1. Currently loaded solution name
+            2. Current mode and recording state (e.g. "Mode: Editing",
+               "● Recording")
+            3. Save state / dirty flag (e.g. "All changes saved", "Unsaved
+               changes")
+            4. Browser state (e.g. "Browser: Running", "Browser: Stopped")
+
+        Each field is given a relative width so that more important contextual
+        information (such as the solution name) has more space.
+
+        This method should be called once during main frame initialization.
+        """
         self._status_bar = self.CreateStatusBar(5)
 
         # Relative widths
