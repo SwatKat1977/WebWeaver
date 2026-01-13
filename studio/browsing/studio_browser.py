@@ -17,6 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from selenium.common.exceptions import WebDriverException
 
 
 class StudioBrowser:
@@ -79,3 +80,23 @@ class StudioBrowser:
         :return: The raw Selenium WebDriver instance.
         """
         return self._driver
+
+    def is_alive(self) -> bool:
+        """
+        Check whether the underlying browser session is still alive.
+
+        This method performs a trivial operation against the WebDriver to determine
+        whether the browser process and session are still valid. If the browser has
+        been closed, crashed, or the session has become invalid, Selenium will raise
+        an exception which is caught and interpreted as the browser being not alive.
+
+        :return: True if the browser session is still active and responsive,
+                 False if the browser is no longer available.
+        """
+        try:
+            # Any trivial call that touches the browser
+            _ = self._driver.title
+            return True
+
+        except WebDriverException:
+            return False
