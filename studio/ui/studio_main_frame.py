@@ -30,7 +30,7 @@ from ui.solution_explorer_panel import SolutionExplorerPanel
 from persistence.solution_persistence import SolutionPersistence, SolutionSaveStatus
 from browsing.web_driver_factory import create_driver_from_solution
 from browsing.studio_browser import StudioBrowser
-from workspace_panel import WorkspacePanel
+from ui.workspace_panel import WorkspacePanel
 from recording.recording_events import (
     OpenRecordingEvent,
     RenameRecordingEvent,

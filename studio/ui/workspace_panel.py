@@ -21,7 +21,7 @@ from pathlib import Path
 import wx
 import wx.aui
 from recording_view_context import RecordingViewContext
-from recording_viewer_panel import RecordingViewerPanel
+from ui.recording_viewer_panel import RecordingViewerPanel
 
 
 class WorkspacePanel(wx.Panel):
