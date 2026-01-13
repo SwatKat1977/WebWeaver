@@ -25,6 +25,7 @@ import wx
 from browser_launch_options import BrowserLaunchOptions
 from recording_metadata import RecordingMetadata, recording_load_error_to_str
 from recording_view_context import RecordingViewContext
+from persistence.solution_persistence import SolutionDirectoryCreateStatus
 
 #: Current .WWS version number
 JSON_VERSION: int = 1
@@ -50,15 +51,6 @@ class SolutionLoadError(enum.Enum):
     MISSING_SOLUTION_OBJECT = enum.auto()
     MISSING_REQUIRED_FIELD = enum.auto()
 
-class SolutionDirectoryCreateStatus(enum.Enum):
-    """
-    Enumerates possible failures when creating a solution's directory structure.
-    """
-    NONE_ = 0
-    CANNOT_CREATE_ROOT = enum.auto()
-    CANNOT_CREATE_PAGES = enum.auto()
-    CANNOT_CREATE_SCRIPTS = enum.auto()
-    CANNOT_CREATE_RECORDINGS = enum.auto()
 
 @dataclasses.dataclass
 class SolutionLoadResult:
@@ -74,6 +66,7 @@ class SolutionLoadResult:
     solution: typing.Optional["StudioSolution"] = None
     error: SolutionLoadError = SolutionLoadError.NONE_
 
+
 @dataclasses.dataclass
 class StudioSolution:
     """
@@ -87,6 +80,7 @@ class StudioSolution:
     create_directory_for_solution: bool
     base_url: str
     selected_browser: str
+    launch_browser_automatically: bool
     browser_launch_options: BrowserLaunchOptions
 
     def to_json(self):
@@ -103,7 +97,8 @@ class StudioSolution:
                 "solutionDirectory": self.solution_directory,
                 "solutionDirectoryCreated": self.create_directory_for_solution,
                 "baseUrl": self.base_url,
-                "browser": self.selected_browser
+                "browser": self.selected_browser,
+                "launchBrowserAutomatically": self.launch_browser_automatically
             },
             "browserLaunchOptions": self.browser_launch_options.to_json(),
         }
@@ -145,6 +140,7 @@ class StudioSolution:
             "solutionDirectoryCreated",
             "baseUrl",
             "browser",
+            "launchBrowserAutomatically",
         ]
 
         if any(k not in raw_solution for k in required):
@@ -163,6 +159,7 @@ class StudioSolution:
             create_directory_for_solution=bool(raw_solution["solutionDirectoryCreated"]),
             base_url=str(raw_solution["baseUrl"]),
             selected_browser=str(raw_solution["browser"]),
+            launch_browser_automatically=bool(raw_solution["launchBrowserAutomatically"]),
             browser_launch_options=launch_options,
         )
 

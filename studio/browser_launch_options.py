@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional, Dict, Any
+from browsing.web_driver_option import WebDriverOption
 
 
 @dataclass
@@ -193,3 +194,35 @@ class BrowserLaunchOptions:
             opts.window_size = parsed_ws
 
         return opts
+
+    def to_webdriver_options(self) -> dict[WebDriverOption, object | None]:
+        """
+        Convert this BrowserLaunchOptions object into a set of generic
+        WebDriverOption values with optional parameters.
+        """
+        result: dict[WebDriverOption, object | None] = {}
+
+        if self.private_mode:
+            result[WebDriverOption.PRIVATE] = None
+
+        if self.disable_extensions:
+            result[WebDriverOption.DISABLE_EXTENSIONS] = None
+
+        if self.disable_notifications:
+            result[WebDriverOption.DISABLE_NOTIFICATIONS] = None
+
+        if self.ignore_certificate_errors:
+            result[WebDriverOption.IGNORE_CERTIFICATE_ERROR] = None
+
+        if self.maximised:
+            result[WebDriverOption.MAXIMISED] = None
+
+        if self.user_agent:
+            result[WebDriverOption.USER_AGENT] = self.user_agent
+
+        if self.window_size and self.window_size.width > 0 and \
+                self.window_size.height > 0:
+            result[WebDriverOption.WINDOW_SIZE] = \
+                f"{self.window_size.width},{self.window_size.height}"
+
+        return result

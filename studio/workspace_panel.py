@@ -155,7 +155,17 @@ class WorkspacePanel(wx.Panel):
             wx.ID_ANY,
             wx.DefaultPosition,
             wx.DefaultSize,
-            wx.aui.AUI_NB_TOP | wx.aui.AUI_NB_TAB_MOVE)
+            wx.aui.AUI_NB_TOP | wx.aui.AUI_NB_TAB_MOVE |
+            wx.aui.AUI_NB_CLOSE_ON_ALL_TABS)
 
         sizer.Add(self._notebook, 1, wx.EXPAND)
         self.SetSizer(sizer)
+
+    def clear(self):
+        """"
+        Clear any notebook pages, if a notebook exists.
+        """
+        if not self._notebook:
+            return
+
+        self._notebook.DeleteAllPages()

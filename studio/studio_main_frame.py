@@ -17,6 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import enum
 import json
 from pathlib import Path
 import sys
@@ -26,6 +27,8 @@ import wx.aui
 from recent_solutions_manager import RecentSolutionsManager
 from recording_metadata import RecordingMetadata
 from solution_explorer_panel import SolutionExplorerPanel
+from persistence.solution_persistence import SolutionPersistence, SolutionSaveStatus
+from browsing.web_driver_factory import create_driver_from_solution
 from toolbar_icons import (
     load_toolbar_inspect_icon,
     load_toolbar_new_solution_icon,
@@ -62,10 +65,46 @@ from solution_create_wizard.solution_creation_page import SolutionCreationPage
 from solution_create_wizard.solution_widget_ids import \
     SOLUTION_WIZARD_BACK_BUTTON_ID
 
-
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
     else wx.DefaultPosition
+
+
+class StatusBarElement(enum.Enum):
+    """
+    Enumeration of status bar field indices.
+
+    This enum defines the logical layout of the main application status bar.
+    Each value corresponds to a fixed field index in the wx status bar and
+    should be used instead of hard-coded integers when updating status text.
+
+    Fields:
+
+        STATUS_MESSAGE (0):
+            General-purpose status messages (e.g. "Ready", progress updates,
+            or short-lived operation feedback).
+
+        SOLUTION_NAME (1):
+            Displays the name of the currently loaded solution, or indicates
+            that no solution is loaded.
+
+        CURRENT_MODE (2):
+            Shows the current application mode and recording state
+            (e.g. "Mode: Editing", "Mode: Recording ●").
+
+        SAVE_STATUS (3):
+            Indicates whether there are unsaved changes or whether all changes
+            are safely saved.
+
+        BROWSER_STATUS (4):
+            Indicates whether the controlled browser instance is currently
+            running or stopped.
+    """
+    STATUS_MESSAGE = 0
+    SOLUTION_NAME = 1
+    CURRENT_MODE = 2
+    SAVE_STATUS = 3
+    BROWSER_STATUS = 4
 
 
 class StudioMainFrame(wx.Frame):
@@ -129,6 +168,10 @@ class StudioMainFrame(wx.Frame):
         """The main application toolbar (AUI-managed)."""
 
         self._solution_explorer_panel = None
+        """Solution explorer panel part of the UI."""
+
+        self._status_bar = None
+        """Status bar part of the UI"""
 
         self._aui_mgr: wx.aui.AuiManager = wx.aui.AuiManager(self)
         """AUI manager responsible for dockable panes and toolbars."""
@@ -211,6 +254,11 @@ class StudioMainFrame(wx.Frame):
         self._aui_mgr.Update()
 
         # --------------------------------------------------------------
+        # Create status bar
+        # --------------------------------------------------------------
+        self._create_status_bar()
+
+        # --------------------------------------------------------------
         # Recordings events
         # --------------------------------------------------------------
 
@@ -230,7 +278,90 @@ class StudioMainFrame(wx.Frame):
         wx.CallLater(1, self._aui_mgr.Update)
         wx.CallLater(1, self.SendSizeEvent)
 
+    def set_status_bar_status_message(self, msg: str):
+        """
+        Set the general-purpose status message in the status bar.
+
+        This field is intended for short-lived feedback such as "Ready",
+        progress updates, or the result of user actions.
+
+        :param msg: The message text to display.
+        """
+        self._status_bar.SetStatusText(msg,
+                                       StatusBarElement.STATUS_MESSAGE.value)
+
+    def set_status_bar_current_solution(self, solution_name: Optional[str]):
+        """
+        Update the status bar to reflect the currently loaded solution.
+
+        If no solution name is provided, the status bar will indicate that
+        no solution is currently loaded.
+
+        :param solution_name: The solution file name, or None if no solution
+                              is loaded.
+        """
+        if not solution_name:
+            self._status_bar.SetStatusText("No solution loaded",
+                                           StatusBarElement.SOLUTION_NAME.value)
+        else:
+            self._status_bar.SetStatusText(f"Solution: {solution_name}",
+                                           StatusBarElement.SOLUTION_NAME.value)
+
+    def set_status_bar_mode(self, mode_name: str, is_recording: bool):
+        """
+        Update the status bar to show the current application mode and
+        recording state.
+
+        When recording is active, a recording indicator is appended to the
+        mode text.
+
+        :param mode_name: Human-readable name of the current mode
+                          (e.g. "Editing", "Recording", "Playback").
+        :param is_recording: True if a recording session is currently active.
+        """
+        text = f"Mode: {mode_name}"
+        if is_recording:
+            text += "  ● Recording"
+        self._status_bar.SetStatusText(text,
+                                       StatusBarElement.CURRENT_MODE.value)
+
+    def set_status_bar_dirty(self, is_dirty: bool):
+        """
+        Update the status bar to reflect whether there are unsaved changes.
+
+        :param is_dirty: True if the current solution has unsaved changes,
+                         False if all changes are saved.
+        """
+        if is_dirty:
+            self._status_bar.SetStatusText("Unsaved changes",
+                                           StatusBarElement.SAVE_STATUS.value)
+        else:
+            self._status_bar.SetStatusText("All changes saved",
+                                           StatusBarElement.SAVE_STATUS.value)
+
+    def set_status_bar_browser_running(self, is_running: bool):
+        """
+        Update the status bar to reflect the current browser runtime state.
+
+        :param is_running: True if the controlled browser instance is currently
+                           running, False if it is stopped.
+        """
+        if is_running:
+            self._status_bar.SetStatusText(
+                "Browser: Running", StatusBarElement.BROWSER_STATUS.value)
+        else:
+            self._status_bar.SetStatusText(
+                "Browser: Stopped", StatusBarElement.BROWSER_STATUS.value)
+
     def _on_state_changed(self, new_state):
+        """
+        Handle a change in the application state.
+
+        This method updates the internally stored state and refreshes any
+        UI elements (such as toolbars) that depend on the current state.
+
+        :param new_state: The new application state object.
+        """
         self._current_state = new_state
         self._update_toolbar_state()
 
@@ -407,9 +538,15 @@ class StudioMainFrame(wx.Frame):
             data.create_solution_dir,
             data.base_url,
             data.browser,
+            data.launch_browser_automatically,
             data.browser_launch_options)
 
-        if not self._save_solution_to_disk(self._current_solution):
+        result = SolutionPersistence.save_to_disk(self._current_solution)
+        if result is not SolutionSaveStatus.OK:
+            wx.MessageBox(result.value,
+                          "Failed to save solution",
+                          wx.ICON_ERROR,
+                          self)
             return
 
         self._state_controller.on_solution_loaded()
@@ -423,23 +560,52 @@ class StudioMainFrame(wx.Frame):
 
         self._recording_session = RecordingSession(self._current_solution)
 
-    def _save_solution_to_disk(self, solution) -> bool:
-        # Ensure solution + subdirectories exist
-        if solution.ensure_directory_structure() != \
-                SolutionDirectoryCreateStatus.NONE_:
-            return False
+        # Update solution name in the status bar.
+        self.set_status_bar_current_solution(
+            self._current_solution.solution_name)
 
-        solution_file = solution.get_solution_file_path()
+    def _create_status_bar(self):
+        """
+        Create and initialize the main application status bar.
 
-        # Serialize to JSON
-        data = solution.to_json()
+        The status bar is divided into five fields that provide high-level,
+        always-visible information about the current state of WebWeaver Studio:
 
-        try:
-            with open(solution_file, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=4)
-            return True
-        except OSError:
-            return False
+            0. General status messages (e.g. "Ready", operation feedback)
+            1. Currently loaded solution name
+            2. Current mode and recording state (e.g. "Mode: Editing",
+               "● Recording")
+            3. Save state / dirty flag (e.g. "All changes saved", "Unsaved
+               changes")
+            4. Browser state (e.g. "Browser: Running", "Browser: Stopped")
+
+        Each field is given a relative width so that more important contextual
+        information (such as the solution name) has more space.
+
+        This method should be called once during main frame initialization.
+        """
+        self._status_bar = self.CreateStatusBar(5)
+
+        # Relative widths
+        self._status_bar.SetStatusWidths([
+            -2,  # General
+            -3,  # Solution
+            -2,  # Mode / Recording
+            -1,  # Save state
+            -1,  # Browser
+        ])
+
+        # Initial values
+        self._status_bar.SetStatusText(
+            "Ready", StatusBarElement.STATUS_MESSAGE.value)
+        self._status_bar.SetStatusText("No solution loaded",
+                                       StatusBarElement.SOLUTION_NAME.value)
+        self._status_bar.SetStatusText("Mode: Editing",
+                                       StatusBarElement.CURRENT_MODE.value)
+        self._status_bar.SetStatusText("All changes saved",
+                                       StatusBarElement.SAVE_STATUS.value)
+        self._status_bar.SetStatusText("Browser: Stopped",
+                                       StatusBarElement.BROWSER_STATUS.value)
 
     def _on_open_solution_event(self, _event: wx.CommandEvent):
         """
@@ -484,7 +650,13 @@ class StudioMainFrame(wx.Frame):
         self._current_solution = None
         self._state_controller.on_solution_closed()
 
+        # Clear down solution explorer panel on close
         self._solution_explorer_panel.show_no_solution()
+
+        # Clear down workspace panel on close
+        self._workspace_panel.clear()
+
+        self.set_status_bar_current_solution(None)
 
     def _on_record_start_stop_event(self, _event: wx.CommandEvent):
         self._state_controller.on_record_start_stop()
@@ -575,8 +747,7 @@ class StudioMainFrame(wx.Frame):
             return False
 
         try:
-            with solution_file.open("r", encoding="utf-8") as f:
-                data = json.load(f)
+            result = SolutionPersistence.load_from_disk(solution_file)
         except (OSError, json.JSONDecodeError) as e:
             wx.MessageBox(
                 f"Failed to read solution file:\n{e}",
@@ -584,9 +755,6 @@ class StudioMainFrame(wx.Frame):
                 wx.ICON_ERROR
             )
             return False
-
-        # Load solution from JSON
-        result = StudioSolution.from_json(data)
 
         if result.solution is None:
             wx.MessageBox(
@@ -617,6 +785,10 @@ class StudioMainFrame(wx.Frame):
         self._recent_solutions.add_solution(solution_file)
         self._recent_solutions.save()
         wx.CallAfter(self._rebuild_recent_solutions_menu)
+
+        studio_browser = create_driver_from_solution(self._current_solution)
+
+        self.set_status_bar_current_solution(self._current_solution.solution_name)
 
         return True
 
