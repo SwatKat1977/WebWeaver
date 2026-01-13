@@ -55,11 +55,13 @@ from solution_create_wizard.solution_creation_page import SolutionCreationPage
 from solution_create_wizard.solution_widget_ids import \
     SOLUTION_WIZARD_BACK_BUTTON_ID
 from ui.main_toolbar import create_main_toolbar
+from ui.main_menu import create_main_menu
 from toolbar_icons import (
     load_toolbar_pause_record_icon,
     load_toolbar_start_record_icon,
     load_toolbar_stop_record_icon,
     load_toolbar_resume_record_icon)
+
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -172,6 +174,8 @@ class StudioMainFrame(wx.Frame):
         self._web_browser: Optional[StudioBrowser] = None
         """Web browser application"""
 
+        self.recent_solutions_menu: Optional[wx.Menu] = None
+
         # Create web browser 'is alive' timer
         self._web_browser_heartbeat_timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER,
@@ -196,42 +200,18 @@ class StudioMainFrame(wx.Frame):
         if sys.platform == "darwin":
             self.EnableFullScreenView(False)
 
-        # --------------------------------------------------------------
         # Menu Bar
-        # --------------------------------------------------------------
-        menubar = wx.MenuBar()
-
-        # -- File Menu --
-        file_menu = wx.Menu()
-        file_menu.Append(wx.ID_NEW, "New Project\tCtrl+N")
-        file_menu.Append(wx.ID_OPEN, "Open Project\tCtrl+O")
-
-        self._recent_solutions_menu = wx.Menu()
-        self._recent_solutions_menu_item = file_menu.AppendSubMenu(
-            self._recent_solutions_menu,
-            "Recent Solutions")
-
-        file_menu.Append(wx.ID_SAVE, "Save Project\tCtrl+S")
-        file_menu.AppendSeparator()
-        file_menu.Append(wx.ID_EXIT, "Exit\tCtrl-X")
-        menubar.Append(file_menu, "File")
-        self.SetMenuBar(menubar)
-
-        # Help menu (actual help items only)
-        help_menu = wx.Menu()
-        help_menu.Append(wx.ID_ANY, "WebWeaver Help")
-        help_menu.Append(wx.ID_ABOUT, "About WebWeaver")
-        menubar.Append(help_menu, "Help")
-
-        self.SetMenuBar(menubar)
-
-        self._recent_solutions.load()
-        self._rebuild_recent_solutions_menu()
+        create_main_menu(self)
 
     @property
     def aui_manager(self) -> wx.aui.AuiManager:
         """Property Accessor for aui manager"""
         return self._aui_mgr
+
+    @property
+    def recent_solutions(self) -> RecentSolutionsManager:
+        """Property Accessor for recent solutions menu"""
+        return self._recent_solutions
 
     def init_aui(self) -> None:
         """
@@ -705,7 +685,7 @@ class StudioMainFrame(wx.Frame):
         # Recent solutions
         self._recent_solutions.add_solution(solution_file)
         self._recent_solutions.save()
-        wx.CallAfter(self._rebuild_recent_solutions_menu)
+        wx.CallAfter(self.rebuild_recent_solutions_menu)
 
         self._web_browser = create_driver_from_solution(self._current_solution)
         self.set_status_bar_browser_running(True)
@@ -812,20 +792,20 @@ class StudioMainFrame(wx.Frame):
 
         self._solution_explorer_panel.refresh_recordings(self._current_solution)
 
-    def _rebuild_recent_solutions_menu(self) -> None:
+    def rebuild_recent_solutions_menu(self) -> None:
         """
         Rebuild the "Recent Solutions" menu from the current recent solutions list.
         """
 
         # Remove all existing items
-        while self._recent_solutions_menu.GetMenuItemCount() > 0:
-            item = self._recent_solutions_menu.FindItemByPosition(0)
-            self._recent_solutions_menu.Delete(item)
+        while self.recent_solutions_menu.GetMenuItemCount() > 0:
+            item = self.recent_solutions_menu.FindItemByPosition(0)
+            self.recent_solutions_menu.Delete(item)
 
         menu_id = self.RECENT_SOLUTION_BASE_ID
 
         for path in self._recent_solutions.get_solutions():
-            self._recent_solutions_menu.Append(menu_id, str(path))
+            self.recent_solutions_menu.Append(menu_id, str(path))
 
             self.Bind(
                 wx.EVT_MENU,
@@ -835,8 +815,8 @@ class StudioMainFrame(wx.Frame):
 
             menu_id += 1
 
-        if self._recent_solutions_menu.GetMenuItemCount() == 0:
-            item = self._recent_solutions_menu.Append(
+        if self.recent_solutions_menu.GetMenuItemCount() == 0:
+            item = self.recent_solutions_menu.Append(
                 self.RECENT_SOLUTION_BASE_ID, "(empty)")
             item.Enable(False)
 
