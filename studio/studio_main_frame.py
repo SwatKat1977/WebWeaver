@@ -483,6 +483,9 @@ class StudioMainFrame(wx.Frame):
 
         self._recording_session = RecordingSession(self._current_solution)
 
+        self.set_status_bar_current_solution(
+            self._current_solution.solution_name)
+
     def _create_status_bar(self):
         self._status_bar = self.CreateStatusBar(5)
 
