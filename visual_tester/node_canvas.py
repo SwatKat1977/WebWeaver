@@ -10,7 +10,7 @@ import wx
 from connection import Connection
 from node import Node, NodeCategory
 from node_picker import NodePicker
-from node_types import NodeShape
+from node_type import NodeShape
 
 
 class ExecutionNode:
@@ -80,9 +80,8 @@ class NodeCanvas(wx.Panel):
         self.hovered_node = None
 
         self.nodes = [
-            Node(1, "Start", (80, 80)),
-            Node(2, "Condition", (360, 160)),
-            Node(3, "End", (700, 120)),
+            Node(1, "Execute Test", (80, 80)),
+            Node(2, "Condition", (360, 160))
         ]
         self.connections = []
 
@@ -335,37 +334,37 @@ class NodeCanvas(wx.Panel):
 
     def __draw_nodes(self, gc):
         for node in self.nodes:
+            node.auto_size(gc)
             r = node.rect()
 
             self.__draw_node_shadow_and_glow(gc, node, r)
 
-            # ---- Body ----
-            border = wx.Colour(255, 140, 0) \
-                if node.selected else wx.Colour(60, 62, 68)
-            gc.SetBrush(wx.Brush(node.color))
+            # ----- BODY -----
+            body_col = wx.Colour(*node.type.colour)
+            header_col = wx.Colour(*node.type.header_colour)
+
+            border = wx.Colour(255, 140, 0) if node.selected else wx.Colour(60, 62, 68)
+
+            # --- Draw main rounded body ---
             gc.SetPen(wx.Pen(border, 2))
-            if node.shape == NodeShape.CIRCLE:
-                gc.DrawEllipse(r.x, r.y, r.width, r.height)
-            else:
-                gc.DrawRoundedRectangle(r.x, r.y, r.width, r.height, 10)
+            gc.SetBrush(wx.Brush(body_col))
+            gc.DrawRoundedRectangle(r.x, r.y, r.width, r.height, 10)
 
-            # ---- Label ----
-            gc.SetFont(wx.Font(10,
-                               wx.FONTFAMILY_DEFAULT,
-                               wx.FONTSTYLE_NORMAL,
-                               wx.FONTWEIGHT_BOLD),
-                       node.label_color)
-            if node.category not in [NodeCategory.START,]:
-                text_w, text_h, _, _ = gc.GetFullTextExtent(node.name)
-                if node.shape == NodeShape.CIRCLE:
-                    gc.DrawText(node.name,
-                                r.x + (r.width - text_w) / 2,
-                                r.y + (r.height - text_h) / 2)
+            header_height = 24
+            self._draw_header(gc,
+                              r,
+                              header_height,
+                              node.type.header_colour,
+                              radius=10)
 
-                else:
-                    gc.DrawText(node.name, r.x + 10, r.y + 8)
+            # ----- TITLE TEXT -----
+            gc.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD),
+                       node.type.label_colour)
 
-            # ---- Pins ----
+            text_w, text_h, _, _ = gc.GetFullTextExtent(node.title)
+            gc.DrawText(node.title, r.x + 10, r.y + (header_height - text_h) / 2)
+
+            # ----- Draw pins -----
             self.__draw_pins(gc, node)
 
     def __draw_node_shadow_and_glow(self, gc, node, rect):
@@ -412,6 +411,36 @@ class NodeCanvas(wx.Panel):
                                         rect.width + 8,
                                         rect.height + 8, 12)
 
+    def _draw_header(self, gc, r, header_h, colour, radius):
+        gc.SetBrush(wx.Brush(colour))
+        gc.SetPen(wx.TRANSPARENT_PEN)
+
+        path = gc.CreatePath()
+
+        # Start top-left (after radius)
+        path.MoveToPoint(r.x + radius, r.y)
+
+        # Top edge to radius before top-right
+        path.AddLineToPoint(r.x + r.width - radius, r.y)
+
+        # Top-right corner arc
+        path.AddArcToPoint(r.x + r.width, r.y, r.x + r.width, r.y + radius, radius)
+
+        # Right edge straight down to bottom of header
+        path.AddLineToPoint(r.x + r.width, r.y + header_h)
+
+        # Bottom edge (square)
+        path.AddLineToPoint(r.x, r.y + header_h)
+
+        # Left edge up to arc start
+        path.AddLineToPoint(r.x, r.y + radius)
+
+        # Top-left corner arc
+        path.AddArcToPoint(r.x, r.y, r.x + radius, r.y, radius)
+
+        path.CloseSubpath()
+        gc.DrawPath(path)
+
     def __draw_pins(self, gc, n: Node):
         """
         Draw input and output pins for a node.
@@ -434,7 +463,8 @@ class NodeCanvas(wx.Panel):
         # NORMAL: inputs
         gc.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL),
                    wx.Colour(255, 255, 255))
-        for i, label in enumerate(n.inputs):
+        for i, pin in enumerate(n.inputs):
+            label = pin.name
             p = self.__calculate_pin_position(n, 'in', i)
             gc.SetBrush(wx.Brush(wx.Colour(255, 100, 60)))
             gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
@@ -443,7 +473,8 @@ class NodeCanvas(wx.Panel):
                 gc.DrawText(label, p.x + text_offset - 10, p.y - 7)
 
         # NORMAL: outputs
-        for i, label in enumerate(n.outputs):
+        for i, pin in enumerate(n.outputs):
+            label = pin.name
             p = self.__calculate_pin_position(n, 'out', i)
             gc.SetBrush(wx.Brush(wx.Colour(90, 210, 120)))
             gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 0)))
@@ -824,22 +855,18 @@ class NodeCanvas(wx.Panel):
         self.Refresh(False)
 
     def __calculate_pin_position(self, n, kind: str, index: int) -> wx.RealPoint:
-        """
-        Return the world-space position of a pin.
-        kind: 'in' or 'out'
-        index: pin index on that side
-        """
-        # horizontal anchor
+        r = n.rect()
+
+        # Center pin *on* border
         if kind == "in":
-            x = n.pos.x - 10
+            x = r.x  # dead center on border
         else:
-            x = n.pos.x + n.size.width + 10
+            x = r.x + r.width
 
-        # vertical anchor
+        # Vertical placement
         if n.category == NodeCategory.START and kind == "out":
-            y = n.pos.y + n.size.height / 2
-
+            y = r.y + r.height / 2
         else:
-            y = n.pos.y + 30 + index * 20
+            y = r.y + 30 + index * 20
 
         return wx.RealPoint(x, y)

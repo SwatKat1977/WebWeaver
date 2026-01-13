@@ -13,6 +13,7 @@ from node_canvas import NodeCanvas
 from preferences_dialog import PreferencesDialog
 from node import Node
 from connection import Connection
+from node_registry import register_default_nodes
 
 
 class NodeEditorFrame(wx.Frame):
@@ -29,6 +30,9 @@ class NodeEditorFrame(wx.Frame):
     def __init__(self):
         """Initialize the node editor frame and UI layout."""
         super().__init__(None, title="Node Editor", size=(1200, 720))
+
+        register_default_nodes()
+
         self.settings = self.load_settings()
         splitter = wx.SplitterWindow(self)
         self.canvas = NodeCanvas(splitter, self.on_node_selected, self.settings)
@@ -61,6 +65,7 @@ class NodeEditorFrame(wx.Frame):
 
         self._create_menu_bar()
 
+
     def update_snap_status(self):
         """Update the window title and status bar with the current snap state."""
 
@@ -77,9 +82,13 @@ class NodeEditorFrame(wx.Frame):
         self.pg.GetPage(0).Clear()
         if not node:
             return
-        self.pg.Append(wxpg.StringProperty("Name", value=node.name))
-        p_in = self.pg.Append(wxpg.LongStringProperty("Inputs", value="\n".join(node.inputs)))
-        p_out = self.pg.Append(wxpg.LongStringProperty("Outputs", value="\n".join(node.outputs)))
+        self.pg.Append(wxpg.StringProperty("Name", value=node.title))
+        p_in = self.pg.Append(wxpg.LongStringProperty(
+            "Inputs",
+            value="\n".join(pin.name for pin in node.inputs)))
+        p_out = self.pg.Append(wxpg.LongStringProperty(
+            "Outputs",
+            value="\n".join(pin.name for pin in node.outputs)))
         p_in.ChangeFlag(wxpg.PG_PROP_READONLY, True)
         p_out.ChangeFlag(wxpg.PG_PROP_READONLY, True)
 

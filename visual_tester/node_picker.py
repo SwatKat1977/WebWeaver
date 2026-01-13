@@ -6,8 +6,8 @@ This file is part of Web Weaver (https://github.com/SwatKat1977/WebWeaver).
 See the LICENSE file in the project root for full license details.
 """
 import wx
-from node_types import NODE_TYPES
-from node_types import NodeCategory
+from node_type import NodeCategory
+from node_registry import NodeRegistry
 
 
 # ----------------------------
@@ -33,7 +33,7 @@ class NodeList(wx.VListBox):
         self.on_select = on_select
         # Exclude special node types (e.g. Start, End) from picker
         self.nodes = [
-            name for name, t in NODE_TYPES.items()
+            name for name, t in NodeRegistry.all()
             if t.category == NodeCategory.NORMAL
         ]
         self.filtered = self.nodes
@@ -74,24 +74,41 @@ class NodeList(wx.VListBox):
         # pylint: disable=invalid-name
         if n < 0 or n >= len(self.filtered):
             return
+
         name = self.filtered[n]
-        t = NODE_TYPES[name]
+        t = NodeRegistry.get(name)
+
+        # --- Row background (this removes the white) ---
+        dc.SetBrush(wx.Brush(wx.Colour(30, 30, 35)))
+        dc.SetPen(wx.TRANSPARENT_PEN)
+        dc.DrawRectangle(rect.x, rect.y, rect.width, rect.height)
 
         # Selection highlight
         if self.IsSelected(n):
-            dc.SetBrush(wx.Brush(wx.Colour(255, 140, 0, 60)))
+            dc.SetBrush(wx.Brush(wx.Colour(255, 140, 0, 160)))
             dc.SetPen(wx.TRANSPARENT_PEN)
             dc.DrawRoundedRectangle(rect.x, rect.y, rect.width, rect.height, 4)
 
         # Colour swatch
-        colour = wx.Colour(*t.color)
-        dc.SetBrush(wx.Brush(colour))
-        dc.SetPen(wx.Pen(wx.Colour(0, 0, 0), 1))
+        swatch = wx.Colour(*t.colour)
+        dc.SetBrush(wx.Brush(swatch))
+        dc.SetPen(wx.Pen(wx.Colour(0, 0, 0)))
         dc.DrawRectangle(rect.x + 8, rect.y + 5, 16, rect.height - 10)
 
+        # Text style - make disabled options a muted text
+        is_disabled = (t.category != NodeCategory.NORMAL)
+
+        if is_disabled:
+            text_colour = wx.Colour(110, 110, 110)
+        else:
+            text_colour = wx.Colour(240, 240, 240)
+
         # Label
-        dc.SetTextForeground(wx.Colour(240, 240, 240))
-        dc.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+        dc.SetTextForeground(text_colour)
+        dc.SetFont(wx.Font(10,
+                           wx.FONTFAMILY_DEFAULT,
+                           wx.FONTSTYLE_NORMAL,
+                           wx.FONTWEIGHT_NORMAL))
         dc.DrawText(name, rect.x + 30, rect.y + 5)
 
     def on_double_click(self, _event):
@@ -107,147 +124,136 @@ class NodeList(wx.VListBox):
 #  Node Picker Popup
 # ----------------------------
 
-class NodePicker(wx.MiniFrame):
-    """Popup dialog for creating new nodes.
-
-    Cross-platform version of the Unreal-style node picker.
-    Provides a searchable list of node types with gradient background,
-    proper focus handling, and consistent positioning.
-    """
+class NodePicker(wx.Frame):
+    """Popup dialog for creating new nodes with full keyboard support."""
 
     def __init__(self, parent, position, add_callback):
-        """Initialise the popup window and its UI components.
+        style = wx.FRAME_NO_TASKBAR | wx.STAY_ON_TOP | wx.BORDER_NONE
 
-        Args:
-            parent (wx.Window): Parent window to attach the popup to.
-            position (wx.Point | wx.RealPoint): Screen position where the popup appears.
-            add_callback (Callable): Function called when a node type is chosen.
-        """
-        super().__init__(
-            parent,
-            title="",
-            style=wx.FRAME_NO_TASKBAR | wx.STAY_ON_TOP | wx.BORDER_NONE
-        )
+        super().__init__(parent, title="", style=style)
         self.add_callback = add_callback
-        self._parent = parent
 
-        # Ensure proper background and paint handling
-        self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
-        self.Bind(wx.EVT_PAINT, self._on_paint)
-
-        # position is already in screen coordinates — just move
+        # MOVE TO POSITION
         if isinstance(position, wx.RealPoint):
             position = wx.Point(int(position.x), int(position.y))
         elif isinstance(position, tuple):
             position = wx.Point(int(position[0]), int(position[1]))
         self.Move(position)
 
-        # --- Main layout ---
-        panel = wx.Panel(self, style=wx.TAB_TRAVERSAL)
-        panel.SetBackgroundColour(wx.Colour(0, 0, 0, 0))
+        # PANEL + BACKGROUND
+        bg = wx.Colour(30, 30, 35)
+        panel = wx.Panel(self, style=wx.BORDER_NONE | wx.FULL_REPAINT_ON_RESIZE)
+        panel.SetBackgroundColour(bg)
+
         vbox = wx.BoxSizer(wx.VERTICAL)
 
-        # Search box
+        # SEARCH BOX
         self.search = wx.SearchCtrl(panel, style=wx.TE_PROCESS_ENTER)
-        self.search.ShowCancelButton(True)
+        self.search.SetForegroundColour(wx.Colour(230, 230, 230))
+        self.search.SetBackgroundColour(bg)
         vbox.Add(self.search, 0, wx.EXPAND | wx.ALL, 6)
 
-        # Node list
-        self.listbox = NodeList(panel, self.on_pick)
-        vbox.Add(self.listbox, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
+        # LIST
+        self.scroller = wx.ScrolledWindow(panel, style=wx.BORDER_NONE)
+        self.scroller.SetBackgroundColour(bg)
+        self.scroller.SetScrollRate(0, 10)
+
+        # IMPORTANT: listbox parent must be scroller, not panel
+        self.listbox = NodeList(self.scroller, self.on_pick)
+
+        s2 = wx.BoxSizer(wx.VERTICAL)
+        s2.Add(self.listbox, 1, wx.EXPAND)
+        self.scroller.SetSizer(s2)
+
+        vbox.Add(self.scroller, 1, wx.EXPAND)
 
         panel.SetSizer(vbox)
+        panel.SetAutoLayout(True)
+
+        # SIZING
         panel.Layout()
-
-        self.listbox.update_filter("")
-        panel.FitInside()
-        panel.SetMinSize((260, 220))
         panel.Fit()
-        self.SetClientSize(panel.GetSize())
-        self.Layout()
+        self.Fit()
 
-        # --- Bindings ---
+        w, h = panel.GetSize()
+        self.SetClientSize(wx.Size(max(260, w), h))  # enforce min width but allow growing
+
+        wx.CallAfter(self._resize_to_content)
+
+        self.Bind(wx.EVT_SIZE, self._on_resize)
+
+        # FILTERING
         self.search.Bind(wx.EVT_TEXT, self.on_filter)
-        self.search.Bind(wx.EVT_KEY_DOWN, self.on_key)
-        self.listbox.Bind(wx.EVT_KEY_DOWN, self.on_key)
-        self.Bind(wx.EVT_SHOW, self.on_show)
-        self.Bind(wx.EVT_ACTIVATE, self.on_activate)
+        self.Bind(wx.EVT_KEY_DOWN, self.on_key)
 
-        # Track clicks outside window (to dismiss)
-        self.Bind(wx.EVT_KILL_FOCUS, self._on_focus_lost)
+        # CLOSE WHEN LOSING FOCUS
+        self.Bind(wx.EVT_ACTIVATE, self._on_activate)
 
-        # Give focus to the search box once shown
-        wx.CallLater(50, self.search.SetFocus)
+        # Give focus
+        wx.CallLater(10, self.search.SetFocus)
 
-    # ---- Drawing rounded popup background ----
-    def _on_paint(self, _event):
-        """Handle paint events for the popup background."""
-        dc = wx.AutoBufferedPaintDC(self)
-        gc = wx.GraphicsContext.Create(dc)
+    def _on_activate(self, event):
+        """Close when clicking outside (behaves like popup)"""
+        if not event.GetActive():
+            self.Close()
+        event.Skip()
 
-        w, h = self.GetClientSize()
-        path = gc.CreatePath()
-        path.AddRoundedRectangle(0, 0, w, h, 8)
+    def _resize_to_content(self):
+        """Resize popup height based on number of items."""
+        row_height = self.listbox.OnMeasureItem(0)
+        rows = len(self.listbox.filtered)
+        max_rows = 8
 
-        # Shadow
-        gc.SetBrush(wx.Brush(wx.Colour(0, 0, 0, 80)))
-        gc.DrawRoundedRectangle(4, 4, w - 4, h - 4, 8)
+        visible_rows = min(rows, max_rows)
 
-        # Gradient background
-        grad = gc.CreateLinearGradientBrush(
-            0, 0, 0, h,
-            wx.Colour(45, 46, 50),
-            wx.Colour(35, 36, 40)
-        )
-        gc.SetBrush(grad)
-        gc.SetPen(wx.Pen(wx.Colour(80, 80, 80)))
-        gc.DrawPath(path)
+        search_h = self.search.GetSize().height
 
-    # ---- Logic ----
+        height = search_h + (visible_rows * row_height) + 12  # tight margin
+
+        self.SetClientSize(wx.Size(300, height))
+
+        # ensure scroller knows full height if scrolling needed
+        total_height = (rows * row_height) + 6
+        self.scroller.SetVirtualSize(wx.Size(-1, total_height))
+
     def on_filter(self, _event):
-        """Filter node types as the user types into the search box."""
         self.listbox.update_filter(self.search.GetValue())
+        self._resize_to_content()
 
     def on_key(self, event):
-        """Handle keyboard navigation and selection."""
         code = event.GetKeyCode()
-        sel = self.listbox.GetSelection()
 
+        # ENTER selects
         if code in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
+            sel = self.listbox.GetSelection()
             self.on_pick(sel)
-        elif code == wx.WXK_UP and sel > 0:
-            self.listbox.SetSelection(sel - 1)
-        elif code == wx.WXK_DOWN and sel < len(self.listbox.filtered) - 1:
-            self.listbox.SetSelection(sel + 1)
+
+        # ESC closes
         elif code == wx.WXK_ESCAPE:
             self.Close()
+
+        # Otherwise allow normal typing
         else:
             event.Skip()
 
     def on_pick(self, sel):
-        """Handle node selection and trigger the add callback."""
         if isinstance(sel, int):
             if sel < 0 or sel >= len(self.listbox.filtered):
                 return
             node_type = self.listbox.filtered[sel]
         else:
             node_type = sel
+
         self.add_callback(node_type, self.GetPosition())
         self.Close()
 
-    def on_show(self, event):
-        """Ensure search box focus after showing."""
-        if event.IsShown():
-            wx.CallLater(50, self.search.SetFocus)
-        event.Skip()
+    def _on_resize(self, _event):
+        size = self.GetClientSize()
 
-    def on_activate(self, event):
-        """Refocus when reactivated."""
-        if event.GetActive():
-            wx.CallLater(50, self.search.SetFocus)
-        event.Skip()
+        panel = self.GetChildren()[0]
+        panel.SetSize(size)
 
-    def _on_focus_lost(self, _event):
-        """Dismiss when losing focus (simulate transient popup behaviour)."""
-        if not self.IsActive():
-            self.Close()
+        # resize listbox explicitly
+        self.listbox.SetSize(size)
+
+        self.Layout()
