@@ -18,8 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import wx
-
-from studio_main_frame import StudioMainFrame
+from ui.studio_main_frame import StudioMainFrame
 
 
 class WebWeaverStudioApp(wx.App):
