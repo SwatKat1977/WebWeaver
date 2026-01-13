@@ -30,16 +30,6 @@ from solution_explorer_panel import SolutionExplorerPanel
 from persistence.solution_persistence import SolutionPersistence, SolutionSaveStatus
 from browsing.web_driver_factory import create_driver_from_solution
 from browsing.studio_browser import StudioBrowser
-from toolbar_icons import (
-    load_toolbar_inspect_icon,
-    load_toolbar_new_solution_icon,
-    load_toolbar_open_solution_icon,
-    load_toolbar_pause_record_icon,
-    load_toolbar_save_solution_icon,
-    load_toolbar_start_record_icon,
-    load_toolbar_stop_record_icon,
-    load_toolbar_resume_record_icon,
-    load_toolbar_close_solution_icon)
 from workspace_panel import WorkspacePanel
 from recording.recording_events import (
     OpenRecordingEvent,
@@ -64,7 +54,12 @@ from solution_create_wizard.wizard_finish_page import \
 from solution_create_wizard.solution_creation_page import SolutionCreationPage
 from solution_create_wizard.solution_widget_ids import \
     SOLUTION_WIZARD_BACK_BUTTON_ID
-
+from ui.main_toolbar import create_main_toolbar
+from toolbar_icons import (
+    load_toolbar_pause_record_icon,
+    load_toolbar_start_record_icon,
+    load_toolbar_stop_record_icon,
+    load_toolbar_resume_record_icon)
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -233,6 +228,11 @@ class StudioMainFrame(wx.Frame):
         self._recent_solutions.load()
         self._rebuild_recent_solutions_menu()
 
+    @property
+    def aui_manager(self) -> wx.aui.AuiManager:
+        """Property Accessor for aui manager"""
+        return self._aui_mgr
+
     def init_aui(self) -> None:
         """
         Initialise AUI-managed components for the frame.
@@ -251,7 +251,7 @@ class StudioMainFrame(wx.Frame):
         # --------------------------------------------------------------
         # TOOLBAR (top, dockable)
         # --------------------------------------------------------------
-        self._create_main_toolbar()
+        self._toolbar = create_main_toolbar(self)
 
         self._state_controller.ui_ready = True
         self._update_toolbar_state()
@@ -376,121 +376,6 @@ class StudioMainFrame(wx.Frame):
         """
         self._current_state = new_state
         self._update_toolbar_state()
-
-    def _create_main_toolbar(self):
-        """
-        Create and configure the main application toolbar.
-
-        The toolbar is docked at the top of the frame and contains
-        commands for solution management, inspection mode, and
-        recording control.
-        """
-        self._toolbar = wx.aui.AuiToolBar(
-            self,
-            wx.ID_ANY,
-            wx.DefaultPosition,
-            wx.DefaultSize,
-            wx.NO_BORDER
-            | wx.aui.AUI_TB_DEFAULT_STYLE
-            | wx.aui.AUI_TB_TEXT
-            | wx.aui.AUI_TB_HORZ_LAYOUT)
-
-        self._toolbar.SetToolBitmapSize(wx.Size(32, 32))
-        self._toolbar.SetToolPacking(5)
-        self._toolbar.SetToolSeparation(5)
-
-        self._toolbar.AddTool(
-            self.TOOLBAR_ID_NEW_SOLUTION,
-            "",
-            load_toolbar_new_solution_icon(),
-            "Create New Solution",)
-
-        self._toolbar.AddTool(
-            self.TOOLBAR_ID_OPEN_SOLUTION,
-            "",
-            load_toolbar_open_solution_icon(),
-            "Open Solution")
-
-        self._toolbar.AddTool(
-            self.TOOLBAR_ID_SAVE_SOLUTION,
-            "",
-            load_toolbar_save_solution_icon(),
-            "Save Solution")
-
-        self._toolbar.AddTool(
-            self.TOOLBAR_ID_CLOSE_SOLUTION,
-            "",
-            load_toolbar_close_solution_icon(),
-            "Close Solution")
-
-        self._toolbar.AddSeparator()
-
-        self._toolbar.AddTool(
-            self.TOOLBAR_ID_INSPECTOR_MODE,
-            "",
-            load_toolbar_inspect_icon(),
-            "Inspector Mode",
-            wx.ITEM_CHECK)
-
-        self._toolbar.AddTool(
-            self.TOOLBAR_ID_START_STOP_RECORD,
-            "",
-            load_toolbar_start_record_icon(),
-            "Record")
-
-        self._toolbar.AddTool(
-            self.TOOLBAR_ID_PAUSE_RECORD,
-            "",
-            load_toolbar_pause_record_icon(),
-            "Pause Recording")
-
-        self._toolbar.Realize()
-
-        # --- Bind toolbar events ---
-        self._toolbar.Bind(
-            wx.EVT_TOOL,
-            self.on_new_solution_event,
-            id=self.TOOLBAR_ID_NEW_SOLUTION)
-
-        self._toolbar.Bind(
-            wx.EVT_TOOL,
-            self._on_close_solution_event,
-            id=self.TOOLBAR_ID_CLOSE_SOLUTION)
-
-        self._toolbar.Bind(
-            wx.EVT_TOOL,
-            self._on_open_solution_event,
-            id=self.TOOLBAR_ID_OPEN_SOLUTION)
-
-        self._toolbar.Bind(
-            wx.EVT_TOOL,
-            self._on_record_start_stop_event,
-            id=self.TOOLBAR_ID_START_STOP_RECORD)
-
-        self._toolbar.Bind(
-            wx.EVT_TOOL,
-            self.on_record_pause_event,
-            id=self.TOOLBAR_ID_PAUSE_RECORD)
-
-        self._toolbar.Bind(
-            wx.EVT_TOOL,
-            self.on_inspector_event,
-            id=self.TOOLBAR_ID_INSPECTOR_MODE)
-
-        self._aui_mgr.AddPane(
-            self._toolbar,
-            wx.aui.AuiPaneInfo()
-            .Name("MainToolbar")
-            .ToolbarPane()
-            .Top()
-            .Row(0)
-            .Position(0)
-            .LeftDockable(False)
-            .RightDockable(False)
-            .BottomDockable(False)
-            .Gripper(False)
-            .Floatable(False)
-            .Movable(False))
 
     def on_new_solution_event(self, _event: wx.CommandEvent):
         """
@@ -619,7 +504,7 @@ class StudioMainFrame(wx.Frame):
         self._status_bar.SetStatusText("Browser: Stopped",
                                        StatusBarElement.BROWSER_STATUS.value)
 
-    def _on_open_solution_event(self, _event: wx.CommandEvent):
+    def on_open_solution_event(self, _event: wx.CommandEvent):
         """
         Handle the "Open Solution" command.
 
@@ -652,7 +537,7 @@ class StudioMainFrame(wx.Frame):
         finally:
             dlg.Destroy()
 
-    def _on_close_solution_event(self, _event: wx.CommandEvent):
+    def on_close_solution_event(self, _event: wx.CommandEvent):
         """
         Handle the "Close Solution" command.
 
@@ -670,7 +555,29 @@ class StudioMainFrame(wx.Frame):
 
         self.set_status_bar_current_solution(None)
 
-    def _on_record_start_stop_event(self, _event: wx.CommandEvent):
+    def on_record_start_stop_event(self, _event: wx.CommandEvent):
+        """
+        Handle the toolbar/menu command to start or stop recording.
+
+        This method toggles the recording state via the state controller and then
+        performs the corresponding action:
+
+        - If recording is being started:
+            * A new recording session is created using the next available
+              recording name from the current solution.
+            * If starting the recording fails, an error is shown and the state
+              change is reverted.
+
+        - If recording is being stopped:
+            * The active recording session is stopped.
+            * If stopping the recording fails, an error is shown and the state
+              change is reverted.
+            * If stopping succeeds, the solution explorer is refreshed to show
+              the new recording.
+
+        Any failure during start or stop will leave the application in its
+        previous state.
+        """
         self._state_controller.on_record_start_stop()
 
         if self._state_controller.state == StudioState.RECORDING_RUNNING:
