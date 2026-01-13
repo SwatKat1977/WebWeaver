@@ -29,6 +29,7 @@ from recording_metadata import RecordingMetadata
 from solution_explorer_panel import SolutionExplorerPanel
 from persistence.solution_persistence import SolutionPersistence, SolutionSaveStatus
 from browsing.web_driver_factory import create_driver_from_solution
+from browsing.studio_browser import StudioBrowser
 from toolbar_icons import (
     load_toolbar_inspect_icon,
     load_toolbar_new_solution_icon,
@@ -63,7 +64,7 @@ from solution_create_wizard.wizard_finish_page import \
 from solution_create_wizard.solution_creation_page import SolutionCreationPage
 from solution_create_wizard.solution_widget_ids import \
     SOLUTION_WIZARD_BACK_BUTTON_ID
-from browsing.studio_browser import StudioBrowser
+
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
