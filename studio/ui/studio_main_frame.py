@@ -26,11 +26,9 @@ import wx
 import wx.aui
 from recent_solutions_manager import RecentSolutionsManager
 from recording_metadata import RecordingMetadata
-from ui.solution_explorer_panel import SolutionExplorerPanel
 from persistence.solution_persistence import SolutionPersistence, SolutionSaveStatus
 from browsing.web_driver_factory import create_driver_from_solution
 from browsing.studio_browser import StudioBrowser
-from ui.workspace_panel import WorkspacePanel
 from recording.recording_events import (
     OpenRecordingEvent,
     RenameRecordingEvent,
@@ -54,6 +52,8 @@ from solution_create_wizard.wizard_finish_page import \
 from solution_create_wizard.solution_creation_page import SolutionCreationPage
 from solution_create_wizard.solution_widget_ids import \
     SOLUTION_WIZARD_BACK_BUTTON_ID
+from ui.solution_explorer_panel import SolutionExplorerPanel
+from ui.workspace_panel import WorkspacePanel
 from ui.main_toolbar import create_main_toolbar
 from ui.main_menu import create_main_menu
 from toolbar_icons import (
