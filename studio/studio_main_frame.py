@@ -60,10 +60,10 @@ from solution_create_wizard.wizard_behaviour_page import \
     WizardBehaviourPage
 from solution_create_wizard.wizard_finish_page import \
     WizardFinishPage
-
 from solution_create_wizard.solution_creation_page import SolutionCreationPage
 from solution_create_wizard.solution_widget_ids import \
     SOLUTION_WIZARD_BACK_BUTTON_ID
+from browsing.studio_browser import StudioBrowser
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -172,6 +172,17 @@ class StudioMainFrame(wx.Frame):
 
         self._status_bar = None
         """Status bar part of the UI"""
+
+        self._web_browser: Optional[StudioBrowser] = None
+        """Web browser application"""
+
+        # Create web browser 'is alive' timer
+        self._web_browser_heartbeat_timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER,
+                  self._on_browser_heartbeat_tick,
+                  self._web_browser_heartbeat_timer)
+        # Run the heartbeat time every one second.
+        self._web_browser_heartbeat_timer.Start(1000)
 
         self._aui_mgr: wx.aui.AuiManager = wx.aui.AuiManager(self)
         """AUI manager responsible for dockable panes and toolbars."""
@@ -747,7 +758,9 @@ class StudioMainFrame(wx.Frame):
             return False
 
         try:
-            result = SolutionPersistence.load_from_disk(solution_file)
+            raw_data = SolutionPersistence.load_from_disk(solution_file)
+            result = StudioSolution.from_json(raw_data)
+
         except (OSError, json.JSONDecodeError) as e:
             wx.MessageBox(
                 f"Failed to read solution file:\n{e}",
@@ -786,7 +799,8 @@ class StudioMainFrame(wx.Frame):
         self._recent_solutions.save()
         wx.CallAfter(self._rebuild_recent_solutions_menu)
 
-        studio_browser = create_driver_from_solution(self._current_solution)
+        self._web_browser = create_driver_from_solution(self._current_solution)
+        self.set_status_bar_browser_running(True)
 
         self.set_status_bar_current_solution(self._current_solution.solution_name)
 
@@ -996,3 +1010,18 @@ class StudioMainFrame(wx.Frame):
 
         self._toolbar.Realize()
         self._toolbar.Refresh()
+
+    def _on_browser_heartbeat_tick(self, _event):
+        if self._web_browser and not self._web_browser.is_alive():
+            self._on_browser_closed_by_user()
+
+    def _on_browser_closed_by_user(self):
+        self._web_browser = None
+
+        wx.MessageBox(
+            "The browser was closed.",
+            "Browser Closed",
+            wx.ICON_INFORMATION
+        )
+
+        self.set_status_bar_browser_running(False)

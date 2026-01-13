@@ -79,3 +79,12 @@ class StudioBrowser:
         :return: The raw Selenium WebDriver instance.
         """
         return self._driver
+
+    def is_alive(self) -> bool:
+        try:
+            # Any trivial call that touches the browser
+            _ = self._driver.title
+            return True
+
+        except Exception:
+            return False

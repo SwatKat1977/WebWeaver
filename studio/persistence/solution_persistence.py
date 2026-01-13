@@ -20,7 +20,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import enum
 import json
 from pathlib import Path
-from studio_solution import StudioSolution
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from studio_solution import StudioSolutions
 
 
 class SolutionSaveStatus(enum.Enum):
@@ -65,7 +68,7 @@ class SolutionPersistence:
     """
 
     @staticmethod
-    def ensure_directory_structure(solution: StudioSolution) \
+    def ensure_directory_structure(solution:  "StudioSolution") \
             -> SolutionDirectoryCreateStatus:
         """
         Ensure all required directories for this solution exist.
@@ -98,7 +101,7 @@ class SolutionPersistence:
         return SolutionDirectoryCreateStatus.NONE_
 
     @staticmethod
-    def save_to_disk(solution: StudioSolution) -> SolutionSaveStatus:
+    def save_to_disk(solution:  "StudioSolution") -> SolutionSaveStatus:
         """
         Save a StudioSolution to disk.
 
@@ -133,7 +136,7 @@ class SolutionPersistence:
             return SolutionSaveStatus.CANNOT_WRITE_SOLUTION_FILE
 
     @staticmethod
-    def load_from_disk(solution_file: Path) -> StudioSolution:
+    def load_from_disk(solution_file: Path) ->  dict:
         """
         Load a StudioSolution from disk.
 
@@ -147,7 +150,4 @@ class SolutionPersistence:
         :raises ValueError: If the file content is not a valid solution format.
         """
         with solution_file.open("r", encoding="utf-8") as f:
-            data = json.load(f)
-
-        # Load solution from JSON
-        return StudioSolution.from_json(data)
+            return json.load(f)
