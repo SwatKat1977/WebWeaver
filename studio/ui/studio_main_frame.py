@@ -26,7 +26,7 @@ import wx
 import wx.aui
 from recent_solutions_manager import RecentSolutionsManager
 from recording_metadata import RecordingMetadata
-from solution_explorer_panel import SolutionExplorerPanel
+from ui.solution_explorer_panel import SolutionExplorerPanel
 from persistence.solution_persistence import SolutionPersistence, SolutionSaveStatus
 from browsing.web_driver_factory import create_driver_from_solution
 from browsing.studio_browser import StudioBrowser
