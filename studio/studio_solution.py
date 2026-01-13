@@ -25,6 +25,7 @@ import wx
 from browser_launch_options import BrowserLaunchOptions
 from recording_metadata import RecordingMetadata, recording_load_error_to_str
 from recording_view_context import RecordingViewContext
+from persistence.solution_persistence import SolutionDirectoryCreateStatus
 
 #: Current .WWS version number
 JSON_VERSION: int = 1
@@ -49,17 +50,6 @@ class SolutionLoadError(enum.Enum):
     UNSUPPORTED_VERSION = enum.auto()
     MISSING_SOLUTION_OBJECT = enum.auto()
     MISSING_REQUIRED_FIELD = enum.auto()
-
-
-class SolutionDirectoryCreateStatus(enum.Enum):
-    """
-    Enumerates possible failures when creating a solution's directory structure.
-    """
-    NONE_ = 0
-    CANNOT_CREATE_ROOT = enum.auto()
-    CANNOT_CREATE_PAGES = enum.auto()
-    CANNOT_CREATE_SCRIPTS = enum.auto()
-    CANNOT_CREATE_RECORDINGS = enum.auto()
 
 
 @dataclasses.dataclass
