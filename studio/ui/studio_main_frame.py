@@ -961,7 +961,7 @@ class StudioMainFrame(wx.Frame):
             self._toolbar.SetToolShortHelp(self.TOOLBAR_ID_WEB_BROWSER,
                                            "Close Web Browser")
         else:
-           self._toolbar.SetToolShortHelp(self.TOOLBAR_ID_WEB_BROWSER,
+            self._toolbar.SetToolShortHelp(self.TOOLBAR_ID_WEB_BROWSER,
                                            "Open Web Browser")
 
         self._toolbar.Realize()
