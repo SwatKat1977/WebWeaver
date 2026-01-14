@@ -10,3 +10,6 @@ Save Icon
 
 Resume Icon
 <a href="https://www.flaticon.com/free-icons/step" title="step icons">Step icons created by Pixelmeetup - Flaticon</a>
+
+Web Browser Icon
+<a href="https://www.flaticon.com/free-icons/www" title="www icons">Www icons created by Freepik - Flaticon</a>
