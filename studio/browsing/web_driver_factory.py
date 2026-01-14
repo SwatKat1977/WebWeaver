@@ -150,11 +150,23 @@ def create_driver_from_solution(solution: StudioSolution) -> StudioBrowser:
 
     if browser == BrowserType.CHROME:
         options = ChromeOptions()
+
+        # Silence Chrome noise
+        options.add_argument("--log-level=3")
+        options.add_argument("--disable-logging")
+        options.add_experimental_option("excludeSwitches", ["enable-logging"])
+
         _apply_browser_launch_options(browser, launch_opts, chrome_options=options)
         driver = Chrome(options=options)
 
     elif browser == BrowserType.EDGE:
         options = EdgeOptions()
+
+        # Silence Edge/Chromium noise
+        options.add_argument("--log-level=3")
+        options.add_argument("--disable-logging")
+        options.add_experimental_option("excludeSwitches", ["enable-logging"])
+
         _apply_browser_launch_options(browser, launch_opts, edge_options=options)
         driver = Edge(options=options)
 
