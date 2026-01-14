@@ -610,6 +610,12 @@ class StudioMainFrame(wx.Frame):
 
     def on_inspector_event(self, _event: wx.CommandEvent):
         """ PLACEHOLDER """
+        if self._web_browser:
+            if self._web_browser.inspect_active:
+                self._web_browser.disable_inspect_mode()
+
+            else:
+                self._web_browser.enable_inspect_mode()
 
     def on_web_browser_event(self, _event: wx.CommandEvent):
         if not self._web_browser:

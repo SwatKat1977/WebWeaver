@@ -199,6 +199,17 @@ class StudioBrowser:
         self._driver = driver
         self._logger = logger.getChild(__name__)
 
+        self._inspect_active = False
+        self._record_active = False
+
+    @property
+    def inspect_active(self):
+        return self._inspect_active
+
+    @property
+    def record_active(self):
+        return self._record_active
+
     def open_page(self, url: str):
         """
         Navigate the browser to the specified URL.
@@ -258,6 +269,32 @@ class StudioBrowser:
 
         except WebDriverException:
             return False
+
+    def enable_inspect_mode(self):
+        """
+        Enables DOM inspection mode.
+
+        When active:
+        - Clicking an element stores metadata in
+          `window.__selenium_clicked_element`.
+        - Record mode is disabled.
+        """
+        self._inspect_active = True
+        self._record_active = False
+
+        self._driver.execute_script("window.__INSPECT_MODE = true;")
+        self._driver.execute_script("window.__RECORD_MODE = false;")
+        self._driver.execute_script("window.__FORCE_INSPECT_MODE = true;")
+
+    def disable_inspect_mode(self):
+        """
+        Disables DOM inspection mode.
+
+        Clears inspector-related state flags in the page.
+        """
+        self._inspect_active = False
+        self._driver.execute_script("window.__INSPECT_MODE = false;")
+        self._driver.execute_script("window.__FORCE_INSPECT_MODE = false;")
 
     def _inject_inspector_js(self, initial=False):
         """
