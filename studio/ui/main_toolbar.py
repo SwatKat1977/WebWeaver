@@ -137,6 +137,11 @@ def create_main_toolbar(frame: "StudioMainFrame") -> wx.aui.AuiToolBar:
         frame.on_inspector_event,
         id=frame.TOOLBAR_ID_INSPECTOR_MODE)
 
+    toolbar.Bind(
+        wx.EVT_TOOL,
+        frame.on_web_browser_event,
+        id=frame.TOOLBAR_ID_WEB_BROWSER)
+
     frame.aui_manager.AddPane(
         toolbar,
         wx.aui.AuiPaneInfo()

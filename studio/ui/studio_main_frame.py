@@ -604,6 +604,17 @@ class StudioMainFrame(wx.Frame):
     def on_inspector_event(self, _event: wx.CommandEvent):
         """ PLACEHOLDER """
 
+    def on_web_browser_event(self, _event: wx.CommandEvent):
+        if not self._web_browser:
+            self._web_browser = create_driver_from_solution(self._current_solution)
+
+        else:
+            if self._web_browser.is_alive():
+                self._web_browser.quit()
+                self._web_browser = None
+
+        self._update_toolbar_state()
+
     def _create_solution_panel(self) -> None:
         # Solution panel (left top)
         self._solution_explorer_panel = SolutionExplorerPanel(self)
