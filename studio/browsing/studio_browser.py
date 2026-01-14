@@ -72,13 +72,13 @@ function getXPath(el) {
 // Hover highlight (INSPECT MODE ONLY)
 // --------------------
 function hoverListener(e) {
-    if (!window.__INSPECT_MODE) return;
+    if (!window.__INSPECT_MODE && !window.__RECORD_MODE) return;
     e.target.__old_outline = e.target.style.outline;
     e.target.style.outline = "2px solid red";
 }
 
 function outListener(e) {
-    if (!window.__INSPECT_MODE) return;
+    if (!window.__INSPECT_MODE && !window.__RECORD_MODE) return;
     e.target.style.outline = e.target.__old_outline || "";
     delete e.target.__old_outline;
 }
@@ -295,6 +295,30 @@ class StudioBrowser:
         self._inspect_active = False
         self._driver.execute_script("window.__INSPECT_MODE = false;")
         self._driver.execute_script("window.__FORCE_INSPECT_MODE = false;")
+
+    def enable_record_mode(self):
+        """
+        Enables event recording mode.
+
+        When active:
+        - UI interaction events are collected into `window.__recorded_outgoing`.
+        - Inspect mode is disabled.
+        """
+        self._record_active = True
+        self._inspect_active = False
+
+        self._driver.execute_script("window.__RECORD_MODE = true;")
+        self._driver.execute_script("window.__INSPECT_MODE = false;")
+        self._driver.execute_script("window.__FORCE_INSPECT_MODE = false;")
+
+    def disable_record_mode(self):
+        """
+        Disables event recording mode.
+
+        Stops pushing events into the recording buffer.
+        """
+        self._record_active = False
+        self._driver.execute_script("window.__RECORD_MODE = false;")
 
     def _inject_inspector_js(self, initial=False):
         """
