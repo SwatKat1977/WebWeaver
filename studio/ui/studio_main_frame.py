@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import enum
 import json
+import logging
 from pathlib import Path
 import sys
 from typing import Optional
@@ -164,6 +165,12 @@ class StudioMainFrame(wx.Frame):
             size=wx.Size(1024, 768),
             style=wx.DEFAULT_FRAME_STYLE,
         )
+
+        self._logger = logging.getLogger("webweaver_studio")
+        self._logger.setLevel(logging.DEBUG)
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
+        self._logger.addHandler(handler)
 
         self._toolbar = None
         """The main application toolbar (AUI-managed)."""
@@ -606,7 +613,9 @@ class StudioMainFrame(wx.Frame):
 
     def on_web_browser_event(self, _event: wx.CommandEvent):
         if not self._web_browser:
-            self._web_browser = create_driver_from_solution(self._current_solution)
+            self._web_browser = create_driver_from_solution(
+                self._current_solution, self._logger)
+            self._web_browser.open_page(self._current_solution.base_url)
 
         else:
             if self._web_browser.is_alive():
@@ -692,7 +701,9 @@ class StudioMainFrame(wx.Frame):
             self._current_solution = None
             return False
 
-        self._web_browser = create_driver_from_solution(self._current_solution)
+        self._web_browser = create_driver_from_solution(self._current_solution,
+                                                        self._logger)
+        self._web_browser.open_page(self._current_solution.base_url)
 
         # Update state + UI
         self._state_controller.on_solution_loaded()
