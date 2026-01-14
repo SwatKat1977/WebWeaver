@@ -26,7 +26,8 @@ from toolbar_icons import (
     load_toolbar_pause_record_icon,
     load_toolbar_save_solution_icon,
     load_toolbar_start_record_icon,
-    load_toolbar_close_solution_icon)
+    load_toolbar_close_solution_icon,
+    load_toolbar_web_browser_icon)
 
 
 def create_main_toolbar(frame: "StudioMainFrame") -> wx.aui.AuiToolBar:
@@ -95,6 +96,12 @@ def create_main_toolbar(frame: "StudioMainFrame") -> wx.aui.AuiToolBar:
         "",
         load_toolbar_pause_record_icon(),
         "Pause Recording")
+
+    toolbar.AddTool(
+        frame.TOOLBAR_ID_WEB_BROWSER,
+        "",
+        load_toolbar_web_browser_icon(),
+        "Open Web Browser")
 
     toolbar.Realize()
 

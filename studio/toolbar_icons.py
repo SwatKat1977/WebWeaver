@@ -29,6 +29,7 @@ from resources.toolbar.toolbar_save_project import SAVE_PROJECT_ICON
 from resources.toolbar.toolbar_start_record import START_RECORD_ICON
 from resources.toolbar.toolbar_stop_record import STOP_RECORD_ICON
 from resources.toolbar.toolbar_resume_record import RESUME_RECORD_ICON
+from resources.toolbar.toolbar_browser_button import BROWSER_BUTTON_ICON
 
 
 def _load_toolbar_icon(png_bytes: bytes) -> wx.Bitmap:
@@ -163,3 +164,15 @@ def load_toolbar_close_solution_icon() -> wx.Bitmap:
         The 'close solution' toolbar icon.
     """
     return _load_toolbar_icon(CLOSE_SOLUTION_ICON)
+
+
+def load_toolbar_web_browser_icon() -> wx.Bitmap:
+    """
+    Load the toolbar icon used to open/close the web browser.
+
+    Returns
+    -------
+    wx.Bitmap
+        The 'web browser' toolbar icon.
+    """
+    return _load_toolbar_icon(BROWSER_BUTTON_ICON)
