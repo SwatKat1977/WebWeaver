@@ -136,6 +136,9 @@ class StudioMainFrame(wx.Frame):
     TOOLBAR_ID_PAUSE_RECORD: int = wx.ID_HIGHEST + 7
     """Toolbar command ID for pausing an active recording."""
 
+    TOOLBAR_ID_WEB_BROWSER: int = wx.ID_HIGHEST + 8
+    """Toolbar command ID for web browser control."""
+
     RECENT_SOLUTION_BASE_ID: int = wx.ID_HIGHEST + 500
 
     SOLUTION_WIZARD_PAGE_CLASSES = {
@@ -234,7 +237,6 @@ class StudioMainFrame(wx.Frame):
         self._toolbar = create_main_toolbar(self)
 
         self._state_controller.ui_ready = True
-        self._update_toolbar_state()
 
         self._create_solution_panel()
 
@@ -249,6 +251,7 @@ class StudioMainFrame(wx.Frame):
         # Create status bar
         # --------------------------------------------------------------
         self._create_status_bar()
+        self._update_toolbar_state()
 
         # --------------------------------------------------------------
         # Recordings events
@@ -678,6 +681,8 @@ class StudioMainFrame(wx.Frame):
             self._current_solution = None
             return False
 
+        self._web_browser = create_driver_from_solution(self._current_solution)
+
         # Update state + UI
         self._state_controller.on_solution_loaded()
         self._solution_explorer_panel.show_solution(self._current_solution)
@@ -686,9 +691,6 @@ class StudioMainFrame(wx.Frame):
         self._recent_solutions.add_solution(solution_file)
         self._recent_solutions.save()
         wx.CallAfter(self.rebuild_recent_solutions_menu)
-
-        self._web_browser = create_driver_from_solution(self._current_solution)
-        self.set_status_bar_browser_running(True)
 
         self.set_status_bar_current_solution(self._current_solution.solution_name)
 
@@ -834,10 +836,13 @@ class StudioMainFrame(wx.Frame):
         self._toolbar.EnableTool(self.TOOLBAR_ID_INSPECTOR_MODE, False)
         self._toolbar.EnableTool(self.TOOLBAR_ID_START_STOP_RECORD, False)
         self._toolbar.EnableTool(self.TOOLBAR_ID_PAUSE_RECORD, False)
+        self._toolbar.EnableTool(self.TOOLBAR_ID_WEB_BROWSER, False)
 
         has_active_recording: bool = False
         is_inspecting: bool = False
         is_paused: bool = False
+
+        self._manage_browser_status()
 
         # Only New/Open make sense
         if self._current_state == StudioState.NO_SOLUTION:
@@ -848,6 +853,7 @@ class StudioMainFrame(wx.Frame):
             self._toolbar.EnableTool(self.TOOLBAR_ID_CLOSE_SOLUTION, True)
             self._toolbar.EnableTool(self.TOOLBAR_ID_INSPECTOR_MODE, True)
             self._toolbar.EnableTool(self.TOOLBAR_ID_START_STOP_RECORD, True)
+            self._toolbar.EnableTool(self.TOOLBAR_ID_WEB_BROWSER, True)
 
         elif self._current_state == StudioState.RECORDING_RUNNING:
             self._toolbar.EnableTool(self.TOOLBAR_ID_START_STOP_RECORD, True)
@@ -912,4 +918,23 @@ class StudioMainFrame(wx.Frame):
             wx.ICON_INFORMATION
         )
 
-        self.set_status_bar_browser_running(False)
+        self._manage_browser_status()
+
+    def _manage_browser_status(self):
+        if not self._web_browser:
+            state = False
+        else:
+            state = self._web_browser.is_alive()
+
+        self.set_status_bar_browser_running(state)
+        self._toolbar.ToggleTool(self.TOOLBAR_ID_WEB_BROWSER, state)
+
+        if state:
+            self._toolbar.SetToolShortHelp(self.TOOLBAR_ID_WEB_BROWSER,
+                                           "Close Web Browser")
+        else:
+           self._toolbar.SetToolShortHelp(self.TOOLBAR_ID_WEB_BROWSER,
+                                           "Open Web Browser")
+
+        self._toolbar.Realize()
+        self._toolbar.Refresh()

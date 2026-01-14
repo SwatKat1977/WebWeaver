@@ -101,7 +101,8 @@ def create_main_toolbar(frame: "StudioMainFrame") -> wx.aui.AuiToolBar:
         frame.TOOLBAR_ID_WEB_BROWSER,
         "",
         load_toolbar_web_browser_icon(),
-        "Open Web Browser")
+        "Open Web Browser",
+        wx.ITEM_CHECK)
 
     toolbar.Realize()
 
