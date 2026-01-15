@@ -36,6 +36,7 @@ from recording.recording_events import (
     DeleteRecordingEvent)
 from recording.recording_session import RecordingSession
 from recording_view_context import RecordingViewContext
+from recording.recording_event_type import RecordingEventType
 from studio_state_controller import StudioState, StudioStateController
 from studio_solution import (
     StudioSolution,
@@ -156,6 +157,10 @@ class StudioMainFrame(wx.Frame):
         """Web browser application"""
 
         self.recent_solutions_menu: Optional[wx.Menu] = None
+
+        # Recording timer for capturing elements.
+        self._recording_timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self._on_recording_tick, self._recording_timer)
 
         # Create web browser 'is alive' timer
         self._web_browser_heartbeat_timer = wx.Timer(self)
@@ -557,6 +562,10 @@ class StudioMainFrame(wx.Frame):
                 self._state_controller.on_record_start_stop()
                 return
 
+            self._web_browser.enable_record_mode()
+            # 100ms polling for elements
+            self._recording_timer.Start(100)
+
         elif self._state_controller.state == StudioState.SOLUTION_LOADED:
             ok = self._recording_session.stop()
             if not ok:
@@ -574,6 +583,9 @@ class StudioMainFrame(wx.Frame):
 
             self._solution_explorer_panel.refresh_recordings(
                 self._current_solution)
+
+            self._web_browser.disable_record_mode()
+            self._recording_timer.Stop()
 
     def on_record_pause_event(self, _event: wx.CommandEvent):
         """ Pause or resume a recording """
@@ -862,10 +874,11 @@ class StudioMainFrame(wx.Frame):
                                  can_browse=True)
 
         elif self._current_state == StudioState.RECORDING_RUNNING:
-            state = ToolbarState(can_record=True, can_pause=True)
+            state = ToolbarState(can_record=True, can_pause=True, is_recording=True)
 
         elif self._current_state == StudioState.RECORDING_PAUSED:
-            state = ToolbarState(can_record=True, can_pause=True)
+            state = ToolbarState(can_record=True, can_pause=True,
+                                 is_recording=True, is_paused=True)
 
         elif self._current_state == StudioState.INSPECTING:
             state = ToolbarState(can_save=True, can_close=True,
@@ -918,3 +931,20 @@ class StudioMainFrame(wx.Frame):
         self.set_status_bar_browser_running(state)
 
         MainToolbar.manage_browser_status(self._toolbar, state)
+
+    def _on_recording_tick(self, _evt):
+        if not self._recording_session or not self._recording_session.is_recording():
+            return
+
+        if not self._web_browser:
+            return
+
+        self._web_browser.poll()
+        events = self._web_browser.pop_recorded_events()
+
+        for ev in events:
+            # For now, just store raw events
+            self._recording_session.append_event(
+                RecordingEventType.DOM_CLICK,
+                payload=ev
+            )

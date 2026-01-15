@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import logging
 from selenium.common.exceptions import WebDriverException
+from selenium.webdriver.support.ui import WebDriverWait
 
 
 BROWSER_JS_INJECTION: str = r"""
@@ -50,6 +51,12 @@ function getCssSelector(el) {
         return el.tagName.toLowerCase() + "." +
                el.className.trim().replace(/\s+/g, ".");
     return el.tagName.toLowerCase();
+}
+
+window.__drain_recorded_events = function() {
+    const out = window.__recorded_outgoing || [];
+    window.__recorded_outgoing = [];
+    return out;
 }
 
 function getXPath(el) {
@@ -201,6 +208,7 @@ class StudioBrowser:
 
         self._inspect_active = False
         self._record_active = False
+        self._last_url = None
 
     @property
     def inspect_active(self):
@@ -218,6 +226,7 @@ class StudioBrowser:
         """
         self._driver.get(url)
 
+        self._last_url = url
         # inject immediately on first load
         self._inject_inspector_js(initial=True)
 
@@ -320,6 +329,30 @@ class StudioBrowser:
         self._record_active = False
         self._driver.execute_script("window.__RECORD_MODE = false;")
 
+    def pop_recorded_events(self) -> list[dict]:
+        """
+        Retrieve and clear any recorded user interaction events from the page.
+        """
+        try:
+            return self._driver.execute_script(
+                "return window.__drain_recorded_events ? window.__drain_recorded_events() : [];"
+            )
+        except Exception:
+            return []
+
+    def poll(self) -> None:
+        """
+        Poll the browser for navigation changes and reinject scripts if needed.
+        """
+        try:
+            current_url = self._driver.current_url
+        except Exception:
+            return
+
+        if current_url != self._last_url:
+            self._last_url = current_url
+            self._handle_navigation()
+
     def _inject_inspector_js(self, initial=False):
         """
         Injects the inspector.js script into the browser context.
@@ -348,3 +381,21 @@ class StudioBrowser:
             self._driver.execute_script(BROWSER_JS_INJECTION)
 
         self._logger.info("Injecting web browser javascript: Completed")
+
+    def _handle_navigation(self) -> None:
+        # Wait for DOM ready
+        try:
+            WebDriverWait(self._driver, 10).until(
+                lambda d: d.execute_script("return document.readyState") == "complete"
+            )
+        except Exception:
+            pass
+
+        # Re-inject JS
+        self._inject_inspector_js(initial=False)
+
+        # Restore active mode
+        if self._record_active:
+            self.enable_record_mode()
+        elif self._inspect_active:
+            self.enable_inspect_mode()
