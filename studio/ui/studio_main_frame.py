@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import enum
 import json
+import logging
 from pathlib import Path
 import sys
 from typing import Optional
@@ -54,13 +55,8 @@ from solution_create_wizard.solution_widget_ids import \
     SOLUTION_WIZARD_BACK_BUTTON_ID
 from ui.solution_explorer_panel import SolutionExplorerPanel
 from ui.workspace_panel import WorkspacePanel
-from ui.main_toolbar import create_main_toolbar
+from ui.main_toolbar import MainToolbar, ToolbarState
 from ui.main_menu import create_main_menu
-from toolbar_icons import (
-    load_toolbar_pause_record_icon,
-    load_toolbar_start_record_icon,
-    load_toolbar_stop_record_icon,
-    load_toolbar_resume_record_icon)
 
 
 # macOS menu bar offset
@@ -115,27 +111,6 @@ class StudioMainFrame(wx.Frame):
     """
     # pylint: disable=too-few-public-methods, too-many-instance-attributes
 
-    TOOLBAR_ID_NEW_SOLUTION: int = wx.ID_HIGHEST + 1
-    """Toolbar command ID for creating a new solution."""
-
-    TOOLBAR_ID_OPEN_SOLUTION: int = wx.ID_HIGHEST + 2
-    """Toolbar command ID for opening an existing solution."""
-
-    TOOLBAR_ID_SAVE_SOLUTION: int = wx.ID_HIGHEST + 3
-    """Toolbar command ID for saving the current solution."""
-
-    TOOLBAR_ID_CLOSE_SOLUTION: int = wx.ID_HIGHEST + 4
-    """Toolbar command ID for closing the current solution."""
-
-    TOOLBAR_ID_INSPECTOR_MODE: int = wx.ID_HIGHEST + 5
-    """Toolbar command ID for toggling Inspector mode."""
-
-    TOOLBAR_ID_START_STOP_RECORD: int = wx.ID_HIGHEST + 6
-    """Toolbar command ID for starting or stopping recording."""
-
-    TOOLBAR_ID_PAUSE_RECORD: int = wx.ID_HIGHEST + 7
-    """Toolbar command ID for pausing an active recording."""
-
     RECENT_SOLUTION_BASE_ID: int = wx.ID_HIGHEST + 500
 
     SOLUTION_WIZARD_PAGE_CLASSES = {
@@ -161,6 +136,12 @@ class StudioMainFrame(wx.Frame):
             size=wx.Size(1024, 768),
             style=wx.DEFAULT_FRAME_STYLE,
         )
+
+        self._logger = logging.getLogger("webweaver_studio")
+        self._logger.setLevel(logging.DEBUG)
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
+        self._logger.addHandler(handler)
 
         self._toolbar = None
         """The main application toolbar (AUI-managed)."""
@@ -231,10 +212,9 @@ class StudioMainFrame(wx.Frame):
         # --------------------------------------------------------------
         # TOOLBAR (top, dockable)
         # --------------------------------------------------------------
-        self._toolbar = create_main_toolbar(self)
+        self._toolbar = MainToolbar.create(self)
 
         self._state_controller.ui_ready = True
-        self._update_toolbar_state()
 
         self._create_solution_panel()
 
@@ -249,6 +229,7 @@ class StudioMainFrame(wx.Frame):
         # Create status bar
         # --------------------------------------------------------------
         self._create_status_bar()
+        self._update_toolbar_state()
 
         # --------------------------------------------------------------
         # Recordings events
@@ -600,6 +581,25 @@ class StudioMainFrame(wx.Frame):
 
     def on_inspector_event(self, _event: wx.CommandEvent):
         """ PLACEHOLDER """
+        if self._web_browser:
+            if self._web_browser.inspect_active:
+                self._web_browser.disable_inspect_mode()
+
+            else:
+                self._web_browser.enable_inspect_mode()
+
+    def on_web_browser_event(self, _event: wx.CommandEvent):
+        if not self._web_browser:
+            self._web_browser = create_driver_from_solution(
+                self._current_solution, self._logger)
+            self._web_browser.open_page(self._current_solution.base_url)
+
+        else:
+            if self._web_browser.is_alive():
+                self._web_browser.quit()
+                self._web_browser = None
+
+        self._update_toolbar_state()
 
     def _create_solution_panel(self) -> None:
         # Solution panel (left top)
@@ -678,6 +678,10 @@ class StudioMainFrame(wx.Frame):
             self._current_solution = None
             return False
 
+        self._web_browser = create_driver_from_solution(self._current_solution,
+                                                        self._logger)
+        self._web_browser.open_page(self._current_solution.base_url)
+
         # Update state + UI
         self._state_controller.on_solution_loaded()
         self._solution_explorer_panel.show_solution(self._current_solution)
@@ -686,9 +690,6 @@ class StudioMainFrame(wx.Frame):
         self._recent_solutions.add_solution(solution_file)
         self._recent_solutions.save()
         wx.CallAfter(self.rebuild_recent_solutions_menu)
-
-        self._web_browser = create_driver_from_solution(self._current_solution)
-        self.set_status_bar_browser_running(True)
 
         self.set_status_bar_current_solution(self._current_solution.solution_name)
 
@@ -821,6 +822,13 @@ class StudioMainFrame(wx.Frame):
             item.Enable(False)
 
     def _on_open_recent_solution_event(self, evt: wx.CommandEvent) -> None:
+        """
+        Handle selection of an entry from the "Recent Solutions" menu.
+
+        The menu item ID is mapped back to an index in the recent solutions list.
+        The selected solution is opened, and a new recording session is created
+        for the newly opened solution.
+        """
         index: int = evt.GetId() - self.RECENT_SOLUTION_BASE_ID
         self._open_solution(self._recent_solutions.get_solutions()[index])
 
@@ -828,82 +836,62 @@ class StudioMainFrame(wx.Frame):
             self._current_solution)
 
     def _update_toolbar_state(self) -> None:
-        # First: disable everything that is state-dependent
-        self._toolbar.EnableTool(self.TOOLBAR_ID_SAVE_SOLUTION, False)
-        self._toolbar.EnableTool(self.TOOLBAR_ID_CLOSE_SOLUTION, False)
-        self._toolbar.EnableTool(self.TOOLBAR_ID_INSPECTOR_MODE, False)
-        self._toolbar.EnableTool(self.TOOLBAR_ID_START_STOP_RECORD, False)
-        self._toolbar.EnableTool(self.TOOLBAR_ID_PAUSE_RECORD, False)
+        """
+        Recompute and apply the toolbar UI state based on the current studio state.
 
-        has_active_recording: bool = False
-        is_inspecting: bool = False
-        is_paused: bool = False
+        This method translates the application's logical state (e.g. no solution,
+        solution loaded, recording, paused, inspecting) into a ToolbarState model
+        and applies it to the main toolbar.
+
+        All toolbar buttons are first reset to a disabled state, then selectively
+        enabled and updated according to the current StudioState. Browser-related
+        toolbar state is updated separately.
+        """
+        # First: disable everything that is state-dependent
+        MainToolbar.set_all_disabled(self._toolbar)
+
+        state = ToolbarState()
 
         # Only New/Open make sense
         if self._current_state == StudioState.NO_SOLUTION:
             pass
 
         elif self._current_state == StudioState.SOLUTION_LOADED:
-            self._toolbar.EnableTool(self.TOOLBAR_ID_SAVE_SOLUTION, True)
-            self._toolbar.EnableTool(self.TOOLBAR_ID_CLOSE_SOLUTION, True)
-            self._toolbar.EnableTool(self.TOOLBAR_ID_INSPECTOR_MODE, True)
-            self._toolbar.EnableTool(self.TOOLBAR_ID_START_STOP_RECORD, True)
+            state = ToolbarState(can_save=True, can_close=True,
+                                 can_inspect=True, can_record=True,
+                                 can_browse=True)
 
         elif self._current_state == StudioState.RECORDING_RUNNING:
-            self._toolbar.EnableTool(self.TOOLBAR_ID_START_STOP_RECORD, True)
-            self._toolbar.EnableTool(self.TOOLBAR_ID_PAUSE_RECORD, True)
-            has_active_recording = True
+            state = ToolbarState(can_record=True, can_pause=True)
 
         elif self._current_state == StudioState.RECORDING_PAUSED:
-            self._toolbar.EnableTool(self.TOOLBAR_ID_START_STOP_RECORD, True)
-            self._toolbar.EnableTool(self.TOOLBAR_ID_PAUSE_RECORD, True)
-            has_active_recording = True
-            is_paused = True
+            state = ToolbarState(can_record=True, can_pause=True)
 
         elif self._current_state == StudioState.INSPECTING:
-            self._toolbar.EnableTool(self.TOOLBAR_ID_SAVE_SOLUTION, True)
-            self._toolbar.EnableTool(self.TOOLBAR_ID_CLOSE_SOLUTION, True)
-            self._toolbar.EnableTool(self.TOOLBAR_ID_START_STOP_RECORD, False)
-            self._toolbar.EnableTool(self.TOOLBAR_ID_INSPECTOR_MODE, True)
-            is_inspecting = True
+            state = ToolbarState(can_save=True, can_close=True,
+                                 can_record=True, can_inspect=True)
 
-        # Handle active recording states
-        if has_active_recording:
-            self._toolbar.SetToolBitmap(self.TOOLBAR_ID_START_STOP_RECORD,
-                                        load_toolbar_stop_record_icon())
-            self._toolbar.SetToolShortHelp(self.TOOLBAR_ID_START_STOP_RECORD,
-                                           "Stop Recording")
-
-        else:
-            self._toolbar.SetToolBitmap(self.TOOLBAR_ID_START_STOP_RECORD,
-                                        load_toolbar_start_record_icon())
-            self._toolbar.SetToolShortHelp(self.TOOLBAR_ID_START_STOP_RECORD,
-                                           "Start Recording")
-
-        # Handle active recording paused states
-        if is_paused:
-            self._toolbar.SetToolBitmap(self.TOOLBAR_ID_PAUSE_RECORD,
-                                        load_toolbar_resume_record_icon())
-            self._toolbar.SetToolShortHelp(self.TOOLBAR_ID_PAUSE_RECORD,
-                                           "Resume Recording")
-
-        else:
-            self._toolbar.SetToolBitmap(self.TOOLBAR_ID_PAUSE_RECORD,
-                                        load_toolbar_pause_record_icon())
-            self._toolbar.SetToolShortHelp(self.TOOLBAR_ID_PAUSE_RECORD,
-                                           "Pause Recording")
-
-        # Handle Inspector Mode toggle button
-        self._toolbar.ToggleTool(self.TOOLBAR_ID_INSPECTOR_MODE, is_inspecting)
-
-        self._toolbar.Realize()
-        self._toolbar.Refresh()
+        MainToolbar.apply_state(self._toolbar, state)
+        self._manage_browser_state()
 
     def _on_browser_heartbeat_tick(self, _event):
+        """
+        Periodic timer callback used to detect if the browser has been closed externally.
+
+        If a browser instance exists but is no longer alive, this method treats it
+        as having been closed by the user and triggers the appropriate cleanup and
+        UI updates.
+        """
         if self._web_browser and not self._web_browser.is_alive():
             self._on_browser_closed_by_user()
 
     def _on_browser_closed_by_user(self):
+        """
+        Handle the case where the browser was closed outside of the application.
+
+        Clears the internal browser reference, notifies the user, and updates the
+        UI to reflect that no browser is currently running.
+        """
         self._web_browser = None
 
         wx.MessageBox(
@@ -912,4 +900,21 @@ class StudioMainFrame(wx.Frame):
             wx.ICON_INFORMATION
         )
 
-        self.set_status_bar_browser_running(False)
+        self._manage_browser_state()
+
+    def _manage_browser_state(self):
+        """
+        Synchronize the UI with the current browser running state.
+
+        This method checks whether a browser instance exists and is alive, updates
+        the status bar indicator, and updates the toolbar browser toggle button to
+        reflect the current state.
+        """
+        if not self._web_browser:
+            state = False
+        else:
+            state = self._web_browser.is_alive()
+
+        self.set_status_bar_browser_running(state)
+
+        MainToolbar.manage_browser_status(self._toolbar, state)

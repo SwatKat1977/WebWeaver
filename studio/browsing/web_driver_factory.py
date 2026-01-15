@@ -17,6 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import logging
 from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver import Edge, EdgeOptions
 from selenium.webdriver import Firefox, FirefoxOptions, FirefoxProfile
@@ -128,7 +129,8 @@ def _apply_binding(binding, value, browser, chrome_options, edge_options,
         firefox_profile.set_preference(binding.key,
                                        value if value is not None else True)
 
-def create_driver_from_solution(solution: StudioSolution) -> StudioBrowser:
+def create_driver_from_solution(solution: StudioSolution,
+                                logger: logging.Logger) -> StudioBrowser:
     """
     Create and configure a StudioBrowser instance from a StudioSolution.
 
@@ -150,11 +152,23 @@ def create_driver_from_solution(solution: StudioSolution) -> StudioBrowser:
 
     if browser == BrowserType.CHROME:
         options = ChromeOptions()
+
+        # Silence Chrome noise
+        options.add_argument("--log-level=3")
+        options.add_argument("--disable-logging")
+        options.add_experimental_option("excludeSwitches", ["enable-logging"])
+
         _apply_browser_launch_options(browser, launch_opts, chrome_options=options)
         driver = Chrome(options=options)
 
     elif browser == BrowserType.EDGE:
         options = EdgeOptions()
+
+        # Silence Edge/Chromium noise
+        options.add_argument("--log-level=3")
+        options.add_argument("--disable-logging")
+        options.add_experimental_option("excludeSwitches", ["enable-logging"])
+
         _apply_browser_launch_options(browser, launch_opts, edge_options=options)
         driver = Edge(options=options)
 
@@ -167,4 +181,4 @@ def create_driver_from_solution(solution: StudioSolution) -> StudioBrowser:
     else:
         raise ValueError(f"Unsupported browser: {browser}")
 
-    return StudioBrowser(driver)
+    return StudioBrowser(driver, logger)

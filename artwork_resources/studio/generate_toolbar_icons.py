@@ -54,3 +54,7 @@ png_to_header("toolbar/resume-button.png",
 png_to_header("toolbar/close-button.png",
               "toolbar/toolbar_close_solution.py",
               "close_solution_icon")
+
+png_to_header("toolbar/browser-button.png",
+              "toolbar/toolbar_browser_button.py",
+              "browser_button_icon")
