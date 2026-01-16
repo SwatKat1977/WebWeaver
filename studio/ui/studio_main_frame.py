@@ -871,8 +871,11 @@ class StudioMainFrame(wx.Frame):
             pass
 
         elif self._current_state == StudioState.SOLUTION_LOADED:
+            can_start_recording = self._web_browser is not None and \
+                self._web_browser.is_alive()
             state = ToolbarState(can_save=True, can_close=True,
-                                 can_inspect=True, can_record=True,
+                                 can_inspect=True,
+                                 can_record=can_start_recording,
                                  can_browse=True)
 
         elif self._current_state == StudioState.RECORDING_RUNNING:
