@@ -309,7 +309,7 @@ class StudioMainFrame(wx.Frame):
             self._current_solution.get_solution_file_path())
         self._recent_solutions.save()
 
-        self._rebuild_recent_solutions_menu()
+        self.rebuild_recent_solutions_menu()
 
         self._recording_session = RecordingSession(self._current_solution)
 
