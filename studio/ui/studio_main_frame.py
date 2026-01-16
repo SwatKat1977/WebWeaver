@@ -1007,7 +1007,8 @@ class StudioMainFrame(wx.Frame):
         # Close browser if open
         if self._web_browser:
             try:
-                self._web_browser.close()
+                self._web_browser.quit()
+
             except Exception:
                 pass
             self._web_browser = None
