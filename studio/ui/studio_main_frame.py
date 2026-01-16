@@ -189,6 +189,8 @@ class StudioMainFrame(wx.Frame):
         # Menu Bar
         create_main_menu(self)
 
+        self.Bind(wx.EVT_CLOSE, self._on_close_app)
+
     @property
     def aui_manager(self) -> wx.aui.AuiManager:
         """Property Accessor for aui manager"""
@@ -958,3 +960,18 @@ class StudioMainFrame(wx.Frame):
                 RecordingEventType.DOM_CLICK,
                 payload=ev
             )
+
+    def _on_close_app(self, event):
+        # Stop recording cleanly
+        if self._recording_session and self._recording_session.is_recording():
+            self._recording_session.stop()
+
+        # Close browser if open
+        if self._web_browser:
+            try:
+                self._web_browser.close()
+            except Exception:
+                pass
+            self._web_browser = None
+
+        event.Skip()  # allow window to close
