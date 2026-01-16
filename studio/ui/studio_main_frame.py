@@ -907,6 +907,15 @@ class StudioMainFrame(wx.Frame):
         """
         self._web_browser = None
 
+        was_recording: bool = (
+                self._recording_session and
+                self._recording_session.is_recording())
+
+        if was_recording:
+            self._recording_session.stop()
+            # force state back
+            self._state_controller.on_record_start_stop()
+
         wx.MessageBox(
             "The browser was closed.",
             "Browser Closed",
@@ -914,6 +923,7 @@ class StudioMainFrame(wx.Frame):
         )
 
         self._manage_browser_state()
+        self._update_toolbar_state()
 
     def _manage_browser_state(self):
         """
