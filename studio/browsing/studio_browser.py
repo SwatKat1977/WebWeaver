@@ -376,7 +376,7 @@ class StudioBrowser:
                 ("return window.__drain_recorded_events ? "
                  "window.__drain_recorded_events() : [];"))
 
-        except Exception:
+        except WebDriverException:
             return []
 
     def poll(self) -> None:
@@ -397,7 +397,7 @@ class StudioBrowser:
         try:
             current_url = self._driver.current_url
 
-        except Exception:
+        except WebDriverException:
             return
 
         if current_url != self._last_url:
@@ -452,7 +452,7 @@ class StudioBrowser:
                 lambda d: d.execute_script(
                     "return document.readyState") == "complete")
 
-        except Exception:
+        except WebDriverException:
             pass
 
         # Re-inject JS
