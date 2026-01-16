@@ -590,11 +590,31 @@ class StudioMainFrame(wx.Frame):
             self._recording_timer.Stop()
 
     def on_record_pause_event(self, _event: wx.CommandEvent):
-        """ Pause or resume a recording """
+        """
+        Handle the Record/Pause toolbar or menu action.
+
+        This toggles the recording state via the central state controller.
+        Depending on the current state, this will either:
+
+        - Pause an active recording session, or
+        - Resume a paused recording session
+
+        The actual state transition logic is owned by the state controller;
+        this method only forwards the user intent.
+        """
         self._state_controller.on_record_pause()
 
     def on_inspector_event(self, _event: wx.CommandEvent):
-        """ PLACEHOLDER """
+        """
+        Handle the Inspect Mode toggle action.
+
+        This enables or disables DOM inspection mode in the active browser
+        session. When inspection mode is enabled, user clicks in the browser
+        are intercepted and element metadata is captured instead of being
+        treated as normal interactions.
+
+        If no browser is currently active, this action has no effect.
+        """
         if self._web_browser:
             if self._web_browser.inspect_active:
                 self._web_browser.disable_inspect_mode()
@@ -603,6 +623,21 @@ class StudioMainFrame(wx.Frame):
                 self._web_browser.enable_inspect_mode()
 
     def on_web_browser_event(self, _event: wx.CommandEvent):
+        """
+        Handle the Start/Stop Browser action.
+
+        This toggles the lifecycle of the integrated web browser:
+
+        - If no browser is currently running, a new WebDriver instance is
+          created from the current solution configuration and navigated to
+          the solution's base URL.
+
+        - If a browser is already running and still alive, it is shut down
+          and the session is destroyed.
+
+        After changing the browser state, the toolbar UI is updated to
+        reflect the new state.
+        """
         if not self._web_browser:
             self._web_browser = create_driver_from_solution(
                 self._current_solution, self._logger)
