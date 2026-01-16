@@ -17,12 +17,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import enum
 import json
 import logging
 from pathlib import Path
 import sys
 from typing import Optional
+from selenium.common.exceptions import WebDriverException
 import wx
 import wx.aui
 from recent_solutions_manager import RecentSolutionsManager
@@ -30,12 +30,13 @@ from recording_metadata import RecordingMetadata
 from persistence.solution_persistence import SolutionPersistence, SolutionSaveStatus
 from browsing.web_driver_factory import create_driver_from_solution
 from browsing.studio_browser import StudioBrowser
+from recording_view_context import RecordingViewContext
 from recording.recording_events import (
     OpenRecordingEvent,
     RenameRecordingEvent,
     DeleteRecordingEvent)
 from recording.recording_session import RecordingSession
-from recording_view_context import RecordingViewContext
+from recording.recording_event_type import RecordingEventType
 from studio_state_controller import StudioState, StudioStateController
 from studio_solution import (
     StudioSolution,
@@ -57,48 +58,11 @@ from ui.solution_explorer_panel import SolutionExplorerPanel
 from ui.workspace_panel import WorkspacePanel
 from ui.main_toolbar import MainToolbar, ToolbarState
 from ui.main_menu import create_main_menu
-
+from ui.main_status_bar import MainStatusBar
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
     else wx.DefaultPosition
-
-
-class StatusBarElement(enum.Enum):
-    """
-    Enumeration of status bar field indices.
-
-    This enum defines the logical layout of the main application status bar.
-    Each value corresponds to a fixed field index in the wx status bar and
-    should be used instead of hard-coded integers when updating status text.
-
-    Fields:
-
-        STATUS_MESSAGE (0):
-            General-purpose status messages (e.g. "Ready", progress updates,
-            or short-lived operation feedback).
-
-        SOLUTION_NAME (1):
-            Displays the name of the currently loaded solution, or indicates
-            that no solution is loaded.
-
-        CURRENT_MODE (2):
-            Shows the current application mode and recording state
-            (e.g. "Mode: Editing", "Mode: Recording ●").
-
-        SAVE_STATUS (3):
-            Indicates whether there are unsaved changes or whether all changes
-            are safely saved.
-
-        BROWSER_STATUS (4):
-            Indicates whether the controlled browser instance is currently
-            running or stopped.
-    """
-    STATUS_MESSAGE = 0
-    SOLUTION_NAME = 1
-    CURRENT_MODE = 2
-    SAVE_STATUS = 3
-    BROWSER_STATUS = 4
 
 
 class StudioMainFrame(wx.Frame):
@@ -157,6 +121,10 @@ class StudioMainFrame(wx.Frame):
 
         self.recent_solutions_menu: Optional[wx.Menu] = None
 
+        # Recording timer for capturing elements.
+        self._recording_timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self._on_recording_tick, self._recording_timer)
+
         # Create web browser 'is alive' timer
         self._web_browser_heartbeat_timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER,
@@ -183,6 +151,8 @@ class StudioMainFrame(wx.Frame):
 
         # Menu Bar
         create_main_menu(self)
+
+        self.Bind(wx.EVT_CLOSE, self._on_close_app)
 
     @property
     def aui_manager(self) -> wx.aui.AuiManager:
@@ -228,7 +198,7 @@ class StudioMainFrame(wx.Frame):
         # --------------------------------------------------------------
         # Create status bar
         # --------------------------------------------------------------
-        self._create_status_bar()
+        self._status_bar = MainStatusBar(self)
         self._update_toolbar_state()
 
         # --------------------------------------------------------------
@@ -250,81 +220,6 @@ class StudioMainFrame(wx.Frame):
 
         wx.CallLater(1, self._aui_mgr.Update)
         wx.CallLater(1, self.SendSizeEvent)
-
-    def set_status_bar_status_message(self, msg: str):
-        """
-        Set the general-purpose status message in the status bar.
-
-        This field is intended for short-lived feedback such as "Ready",
-        progress updates, or the result of user actions.
-
-        :param msg: The message text to display.
-        """
-        self._status_bar.SetStatusText(msg,
-                                       StatusBarElement.STATUS_MESSAGE.value)
-
-    def set_status_bar_current_solution(self, solution_name: Optional[str]):
-        """
-        Update the status bar to reflect the currently loaded solution.
-
-        If no solution name is provided, the status bar will indicate that
-        no solution is currently loaded.
-
-        :param solution_name: The solution file name, or None if no solution
-                              is loaded.
-        """
-        if not solution_name:
-            self._status_bar.SetStatusText("No solution loaded",
-                                           StatusBarElement.SOLUTION_NAME.value)
-        else:
-            self._status_bar.SetStatusText(f"Solution: {solution_name}",
-                                           StatusBarElement.SOLUTION_NAME.value)
-
-    def set_status_bar_mode(self, mode_name: str, is_recording: bool):
-        """
-        Update the status bar to show the current application mode and
-        recording state.
-
-        When recording is active, a recording indicator is appended to the
-        mode text.
-
-        :param mode_name: Human-readable name of the current mode
-                          (e.g. "Editing", "Recording", "Playback").
-        :param is_recording: True if a recording session is currently active.
-        """
-        text = f"Mode: {mode_name}"
-        if is_recording:
-            text += "  ● Recording"
-        self._status_bar.SetStatusText(text,
-                                       StatusBarElement.CURRENT_MODE.value)
-
-    def set_status_bar_dirty(self, is_dirty: bool):
-        """
-        Update the status bar to reflect whether there are unsaved changes.
-
-        :param is_dirty: True if the current solution has unsaved changes,
-                         False if all changes are saved.
-        """
-        if is_dirty:
-            self._status_bar.SetStatusText("Unsaved changes",
-                                           StatusBarElement.SAVE_STATUS.value)
-        else:
-            self._status_bar.SetStatusText("All changes saved",
-                                           StatusBarElement.SAVE_STATUS.value)
-
-    def set_status_bar_browser_running(self, is_running: bool):
-        """
-        Update the status bar to reflect the current browser runtime state.
-
-        :param is_running: True if the controlled browser instance is currently
-                           running, False if it is stopped.
-        """
-        if is_running:
-            self._status_bar.SetStatusText(
-                "Browser: Running", StatusBarElement.BROWSER_STATUS.value)
-        else:
-            self._status_bar.SetStatusText(
-                "Browser: Stopped", StatusBarElement.BROWSER_STATUS.value)
 
     def _on_state_changed(self, new_state):
         """
@@ -414,56 +309,13 @@ class StudioMainFrame(wx.Frame):
             self._current_solution.get_solution_file_path())
         self._recent_solutions.save()
 
-        self._rebuild_recent_solutions_menu()
+        self.rebuild_recent_solutions_menu()
 
         self._recording_session = RecordingSession(self._current_solution)
 
         # Update solution name in the status bar.
-        self.set_status_bar_current_solution(
+        self._status_bar.set_status_bar_current_solution(
             self._current_solution.solution_name)
-
-    def _create_status_bar(self):
-        """
-        Create and initialize the main application status bar.
-
-        The status bar is divided into five fields that provide high-level,
-        always-visible information about the current state of WebWeaver Studio:
-
-            0. General status messages (e.g. "Ready", operation feedback)
-            1. Currently loaded solution name
-            2. Current mode and recording state (e.g. "Mode: Editing",
-               "● Recording")
-            3. Save state / dirty flag (e.g. "All changes saved", "Unsaved
-               changes")
-            4. Browser state (e.g. "Browser: Running", "Browser: Stopped")
-
-        Each field is given a relative width so that more important contextual
-        information (such as the solution name) has more space.
-
-        This method should be called once during main frame initialization.
-        """
-        self._status_bar = self.CreateStatusBar(5)
-
-        # Relative widths
-        self._status_bar.SetStatusWidths([
-            -2,  # General
-            -3,  # Solution
-            -2,  # Mode / Recording
-            -1,  # Save state
-            -1,  # Browser
-        ])
-
-        # Initial values
-        self._status_bar.SetStatusText(
-            "Ready", StatusBarElement.STATUS_MESSAGE.value)
-        self._status_bar.SetStatusText("No solution loaded",
-                                       StatusBarElement.SOLUTION_NAME.value)
-        self._status_bar.SetStatusText("Mode: Editing",
-                                       StatusBarElement.CURRENT_MODE.value)
-        self._status_bar.SetStatusText("All changes saved",
-                                       StatusBarElement.SAVE_STATUS.value)
-        self._status_bar.SetStatusText("Browser: Stopped",
-                                       StatusBarElement.BROWSER_STATUS.value)
 
     def on_open_solution_event(self, _event: wx.CommandEvent):
         """
@@ -514,7 +366,7 @@ class StudioMainFrame(wx.Frame):
         # Clear down workspace panel on close
         self._workspace_panel.clear()
 
-        self.set_status_bar_current_solution(None)
+        self._status_bar.set_status_bar_current_solution(None)
 
     def on_record_start_stop_event(self, _event: wx.CommandEvent):
         """
@@ -557,6 +409,10 @@ class StudioMainFrame(wx.Frame):
                 self._state_controller.on_record_start_stop()
                 return
 
+            self._web_browser.enable_record_mode()
+            # 100ms polling for elements
+            self._recording_timer.Start(100)
+
         elif self._state_controller.state == StudioState.SOLUTION_LOADED:
             ok = self._recording_session.stop()
             if not ok:
@@ -575,12 +431,35 @@ class StudioMainFrame(wx.Frame):
             self._solution_explorer_panel.refresh_recordings(
                 self._current_solution)
 
+            self._web_browser.disable_record_mode()
+            self._recording_timer.Stop()
+
     def on_record_pause_event(self, _event: wx.CommandEvent):
-        """ Pause or resume a recording """
+        """
+        Handle the Record/Pause toolbar or menu action.
+
+        This toggles the recording state via the central state controller.
+        Depending on the current state, this will either:
+
+        - Pause an active recording session, or
+        - Resume a paused recording session
+
+        The actual state transition logic is owned by the state controller;
+        this method only forwards the user intent.
+        """
         self._state_controller.on_record_pause()
 
     def on_inspector_event(self, _event: wx.CommandEvent):
-        """ PLACEHOLDER """
+        """
+        Handle the Inspect Mode toggle action.
+
+        This enables or disables DOM inspection mode in the active browser
+        session. When inspection mode is enabled, user clicks in the browser
+        are intercepted and element metadata is captured instead of being
+        treated as normal interactions.
+
+        If no browser is currently active, this action has no effect.
+        """
         if self._web_browser:
             if self._web_browser.inspect_active:
                 self._web_browser.disable_inspect_mode()
@@ -589,6 +468,21 @@ class StudioMainFrame(wx.Frame):
                 self._web_browser.enable_inspect_mode()
 
     def on_web_browser_event(self, _event: wx.CommandEvent):
+        """
+        Handle the Start/Stop Browser action.
+
+        This toggles the lifecycle of the integrated web browser:
+
+        - If no browser is currently running, a new WebDriver instance is
+          created from the current solution configuration and navigated to
+          the solution's base URL.
+
+        - If a browser is already running and still alive, it is shut down
+          and the session is destroyed.
+
+        After changing the browser state, the toolbar UI is updated to
+        reflect the new state.
+        """
         if not self._web_browser:
             self._web_browser = create_driver_from_solution(
                 self._current_solution, self._logger)
@@ -691,7 +585,8 @@ class StudioMainFrame(wx.Frame):
         self._recent_solutions.save()
         wx.CallAfter(self.rebuild_recent_solutions_menu)
 
-        self.set_status_bar_current_solution(self._current_solution.solution_name)
+        self._status_bar.set_status_bar_current_solution(
+            self._current_solution.solution_name)
 
         return True
 
@@ -857,15 +752,19 @@ class StudioMainFrame(wx.Frame):
             pass
 
         elif self._current_state == StudioState.SOLUTION_LOADED:
+            can_start_recording = self._web_browser is not None and \
+                self._web_browser.is_alive()
             state = ToolbarState(can_save=True, can_close=True,
-                                 can_inspect=True, can_record=True,
+                                 can_inspect=True,
+                                 can_record=can_start_recording,
                                  can_browse=True)
 
         elif self._current_state == StudioState.RECORDING_RUNNING:
-            state = ToolbarState(can_record=True, can_pause=True)
+            state = ToolbarState(can_record=True, can_pause=True, is_recording=True)
 
         elif self._current_state == StudioState.RECORDING_PAUSED:
-            state = ToolbarState(can_record=True, can_pause=True)
+            state = ToolbarState(can_record=True, can_pause=True,
+                                 is_recording=True, is_paused=True)
 
         elif self._current_state == StudioState.INSPECTING:
             state = ToolbarState(can_save=True, can_close=True,
@@ -894,6 +793,15 @@ class StudioMainFrame(wx.Frame):
         """
         self._web_browser = None
 
+        was_recording: bool = (
+                self._recording_session and
+                self._recording_session.is_recording())
+
+        if was_recording:
+            self._recording_session.stop()
+            # force state back
+            self._state_controller.on_record_start_stop()
+
         wx.MessageBox(
             "The browser was closed.",
             "Browser Closed",
@@ -901,6 +809,7 @@ class StudioMainFrame(wx.Frame):
         )
 
         self._manage_browser_state()
+        self._update_toolbar_state()
 
     def _manage_browser_state(self):
         """
@@ -915,6 +824,39 @@ class StudioMainFrame(wx.Frame):
         else:
             state = self._web_browser.is_alive()
 
-        self.set_status_bar_browser_running(state)
+        self._status_bar.set_status_bar_browser_running(state)
 
         MainToolbar.manage_browser_status(self._toolbar, state)
+
+    def _on_recording_tick(self, _evt):
+        if not self._recording_session or not self._recording_session.is_recording():
+            return
+
+        if not self._web_browser:
+            return
+
+        self._web_browser.poll()
+        events = self._web_browser.pop_recorded_events()
+
+        for ev in events:
+            # For now, just store raw events
+            self._recording_session.append_event(
+                RecordingEventType.DOM_CLICK,
+                payload=ev
+            )
+
+    def _on_close_app(self, event):
+        # Stop recording cleanly
+        if self._recording_session and self._recording_session.is_recording():
+            self._recording_session.stop()
+
+        # Close browser if open
+        if self._web_browser:
+            try:
+                self._web_browser.quit()
+
+            except WebDriverException:
+                pass
+            self._web_browser = None
+
+        event.Skip()  # allow window to close

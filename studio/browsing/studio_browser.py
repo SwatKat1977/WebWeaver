@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import logging
 from selenium.common.exceptions import WebDriverException
+from selenium.webdriver.support.ui import WebDriverWait
 
 
 BROWSER_JS_INJECTION: str = r"""
@@ -50,6 +51,12 @@ function getCssSelector(el) {
         return el.tagName.toLowerCase() + "." +
                el.className.trim().replace(/\s+/g, ".");
     return el.tagName.toLowerCase();
+}
+
+window.__drain_recorded_events = function() {
+    const out = window.__recorded_outgoing || [];
+    window.__recorded_outgoing = [];
+    return out;
 }
 
 function getXPath(el) {
@@ -201,13 +208,32 @@ class StudioBrowser:
 
         self._inspect_active = False
         self._record_active = False
+        self._last_url = None
 
     @property
     def inspect_active(self):
+        """
+        Check whether DOM inspection mode is currently active.
+
+        When inspection mode is enabled, user clicks in the browser will be
+        intercepted and metadata about the clicked element will be written
+        into the page context for retrieval by the Studio application.
+
+        :return: True if inspection mode is active, False otherwise.
+        """
         return self._inspect_active
 
     @property
     def record_active(self):
+        """
+        Check whether event recording mode is currently active.
+
+        When recording mode is enabled, user interaction events (clicks, inputs,
+        navigation, etc) are captured inside the page and buffered for later
+        retrieval via `pop_recorded_events()`.
+
+        :return: True if recording mode is active, False otherwise.
+        """
         return self._record_active
 
     def open_page(self, url: str):
@@ -218,6 +244,7 @@ class StudioBrowser:
         """
         self._driver.get(url)
 
+        self._last_url = url
         # inject immediately on first load
         self._inject_inspector_js(initial=True)
 
@@ -236,6 +263,16 @@ class StudioBrowser:
         self._driver.save_screenshot(path)
 
     def execute_script(self, script):
+        """
+        Execute arbitrary JavaScript in the context of the currently loaded page.
+
+        This is a thin passthrough to Selenium's `execute_script` API and should
+        be used sparingly. Prefer adding higher-level methods to StudioBrowser
+        instead of scattering raw JavaScript calls throughout the codebase.
+
+        :param script: JavaScript source code to execute.
+        :return: The value returned by the executed script, if any.
+        """
         return self._driver.execute_script(script)
 
     @property
@@ -320,6 +357,53 @@ class StudioBrowser:
         self._record_active = False
         self._driver.execute_script("window.__RECORD_MODE = false;")
 
+    def pop_recorded_events(self) -> list[dict]:
+        """
+        Retrieve and clear any recorded user interaction events from the page.
+
+        This calls into the injected recording script and drains its internal
+        event buffer. If recording is not active, or if the page does not yet
+        have the recording infrastructure injected, this returns an empty list.
+
+        This method is designed to be safe to call repeatedly and will never
+        raise if the browser or page is in a transient state.
+
+        :return: A list of event dictionaries describing recorded user actions.
+        """
+
+        try:
+            return self._driver.execute_script(
+                ("return window.__drain_recorded_events ? "
+                 "window.__drain_recorded_events() : [];"))
+
+        except WebDriverException:
+            return []
+
+    def poll(self) -> None:
+        """
+        Poll the browser for navigation changes and reinject scripts if needed.
+
+        This method is intended to be called periodically by the Studio application
+        (e.g. from a timer or main loop). It checks whether the browser has navigated
+        to a different URL since the last poll, and if so:
+
+        - Waits for the new document to finish loading
+        - Re-injects the inspector/recorder JavaScript
+        - Restores the previously active mode (inspect or record)
+
+        If the browser is no longer reachable or is in an invalid state, this
+        method fails silently.
+        """
+        try:
+            current_url = self._driver.current_url
+
+        except WebDriverException:
+            return
+
+        if current_url != self._last_url:
+            self._last_url = current_url
+            self._handle_navigation()
+
     def _inject_inspector_js(self, initial=False):
         """
         Injects the inspector.js script into the browser context.
@@ -348,3 +432,34 @@ class StudioBrowser:
             self._driver.execute_script(BROWSER_JS_INJECTION)
 
         self._logger.info("Injecting web browser javascript: Completed")
+
+    def _handle_navigation(self) -> None:
+        """
+        Handle post-navigation setup after the browser changes page.
+
+        This method:
+
+        - Waits (briefly) for the DOM to reach the 'complete' ready state
+        - Re-injects the inspector/recorder JavaScript into the new page
+        - Restores whichever mode (inspect or record) was active before navigation
+
+        This is called automatically by `poll()` when a URL change is detected.
+        """
+
+        # Wait for DOM ready
+        try:
+            WebDriverWait(self._driver, 10).until(
+                lambda d: d.execute_script(
+                    "return document.readyState") == "complete")
+
+        except WebDriverException:
+            pass
+
+        # Re-inject JS
+        self._inject_inspector_js(initial=False)
+
+        # Restore active mode
+        if self._record_active:
+            self.enable_record_mode()
+        elif self._inspect_active:
+            self.enable_inspect_mode()

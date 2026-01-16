@@ -1,0 +1,20 @@
+name: Validate Branch (lint & unittests)
+
+on:
+  pull_request:
+
+jobs:
+  setup:
+    runs-on: ubuntu-24.04
+    steps:
+      # Step 1: Checkout code with full history
+      - name: Checkout code with full history
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for all branches and tags
+
+      # Step 2: Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'  # Adjust to your Python version
