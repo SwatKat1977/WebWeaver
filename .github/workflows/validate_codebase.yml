@@ -31,3 +31,21 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: ${{ github.event.pull_request.head.sha }}  # Checkout the head commit of the PR
+
+      - name: Fetch base branch
+        run: |
+          git fetch origin ${{ github.event.pull_request.base.ref }}  # Fetch the base branch
+
+      - name: Detect changes in directories
+        id: detect
+        run: |
+          git fetch origin ${{ github.event.pull_request.base.ref }} --depth=1
+          changed_files=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }} ${{ github.event.pull_request.head.sha }})
+
+          echo "Checking for changes in studio"
+          if echo "$changed_files" | grep -qE '^(services|unit_tests)/studio/'; then
+            echo "studio_changed=true" >> $GITHUB_OUTPUT
+            echo "[INFO] Studio or unit tests have changed"
+          else
+            echo "studio_changed=false" >> $GITHUB_OUTPUT
+          fi
