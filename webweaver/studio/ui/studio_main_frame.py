@@ -59,6 +59,7 @@ from ui.workspace_panel import WorkspacePanel
 from ui.main_toolbar import MainToolbar, ToolbarState
 from ui.main_menu import create_main_menu
 from ui.main_status_bar import MainStatusBar
+from ui.inspector_panel import InspectorPanel
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -119,6 +120,8 @@ class StudioMainFrame(wx.Frame):
         self._web_browser: Optional[StudioBrowser] = None
         """Web browser application"""
 
+        self._inspector_panel: Optional[wx.Panel] = None
+
         self.recent_solutions_menu: Optional[wx.Menu] = None
 
         # Recording timer for capturing elements.
@@ -132,6 +135,11 @@ class StudioMainFrame(wx.Frame):
                   self._web_browser_heartbeat_timer)
         # Run the heartbeat time every one second.
         self._web_browser_heartbeat_timer.Start(1000)
+
+        # Create web browser 'inspect' timer
+        self._inspector_timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self._on_inspector_timer, self._inspector_timer)
+        self._inspector_timer.Start(200)
 
         self._aui_mgr: wx.aui.AuiManager = wx.aui.AuiManager(self)
         """AUI manager responsible for dockable panes and toolbars."""
@@ -200,6 +208,8 @@ class StudioMainFrame(wx.Frame):
         # --------------------------------------------------------------
         self._status_bar = MainStatusBar(self)
         self._update_toolbar_state()
+
+        self._create_inspector_panel()
 
         # --------------------------------------------------------------
         # Recordings events
@@ -463,29 +473,13 @@ class StudioMainFrame(wx.Frame):
         if self._web_browser:
             if self._web_browser.inspect_active:
                 self._web_browser.disable_inspect_mode()
+                self._state_controller.on_inspector_toggle(False)
+                self._show_inspector_panel(False)
 
             else:
                 self._web_browser.enable_inspect_mode()
-
-        '''
-
-        // Register as a dockable pane on the right
-        auiMgr_.AddPane(
-            inspectorPanel,
-            wxAuiPaneInfo()
-            .Name("InspectorPanel")
-            .Caption("WebWeaver Inspector")
-            .Right()
-            .Row(1)
-            .BestSize(350, 600)
-            .CloseButton(true)
-            .MaximizeButton(true)
-            .MinimizeButton(true)
-            .Floatable(true)
-            .Movable(true)
-            .Dockable(true)
-            .Hide());
-        '''
+                self._state_controller.on_inspector_toggle(True)
+                self._show_inspector_panel(True)
 
     def on_web_browser_event(self, _event: wx.CommandEvent):
         """
@@ -875,3 +869,42 @@ class StudioMainFrame(wx.Frame):
             self._web_browser = None
 
         event.Skip()  # allow window to close
+
+    def _on_inspector_timer(self, _event):
+        if self._state_controller.state != StudioState.INSPECTING:
+            return
+
+        if not self._web_browser:
+            return
+
+        el = self._web_browser.poll_inspected_element()
+        if not el:
+            return
+
+        self._inspector_panel.append_element(el)
+
+    def _create_inspector_panel(self):
+        self._inspector_panel: InspectorPanel = InspectorPanel(self)
+
+        # Register as a dockable pane on the right
+        self._aui_mgr.AddPane(
+            self._inspector_panel,
+            wx.aui.AuiPaneInfo()
+            .Name("InspectorPanel")
+            .Caption("WebWeaver Inspector")
+            .Right()
+            .Row(1)
+            .BestSize(350, 600)
+            .CloseButton(False)
+            .MaximizeButton(True)
+            .MinimizeButton(True)
+            .Floatable(True)
+            .Movable(True)
+            .Dockable(True)
+            .Hide())
+
+    def _show_inspector_panel(self, show: bool):
+        pane = self._aui_mgr.GetPane("InspectorPanel")
+        if pane.IsOk():
+            pane.Show(show)
+            self._aui_mgr.Update()
