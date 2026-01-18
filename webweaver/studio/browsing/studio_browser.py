@@ -404,6 +404,18 @@ class StudioBrowser:
             self._last_url = current_url
             self._handle_navigation()
 
+    def poll_inspected_element(self):
+        try:
+            el = self._driver.execute_script(
+                "return window.__selenium_clicked_element || null;")
+            if el:
+                self._driver.execute_script("window.__selenium_clicked_element = null;")
+
+            return el
+
+        except Exception:
+            return None
+
     def _inject_inspector_js(self, initial=False):
         """
         Injects the inspector.js script into the browser context.
