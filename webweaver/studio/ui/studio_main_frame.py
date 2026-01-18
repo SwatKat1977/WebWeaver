@@ -467,6 +467,26 @@ class StudioMainFrame(wx.Frame):
             else:
                 self._web_browser.enable_inspect_mode()
 
+        '''
+
+        // Register as a dockable pane on the right
+        auiMgr_.AddPane(
+            inspectorPanel,
+            wxAuiPaneInfo()
+            .Name("InspectorPanel")
+            .Caption("WebWeaver Inspector")
+            .Right()
+            .Row(1)
+            .BestSize(350, 600)
+            .CloseButton(true)
+            .MaximizeButton(true)
+            .MinimizeButton(true)
+            .Floatable(true)
+            .Movable(true)
+            .Dockable(true)
+            .Hide());
+        '''
+
     def on_web_browser_event(self, _event: wx.CommandEvent):
         """
         Handle the Start/Stop Browser action.
@@ -752,11 +772,12 @@ class StudioMainFrame(wx.Frame):
             pass
 
         elif self._current_state == StudioState.SOLUTION_LOADED:
-            can_start_recording = self._web_browser is not None and \
+            browser_is_alive = self._web_browser is not None and \
                 self._web_browser.is_alive()
+
             state = ToolbarState(can_save=True, can_close=True,
-                                 can_inspect=True,
-                                 can_record=can_start_recording,
+                                 can_inspect=browser_is_alive,
+                                 can_record=browser_is_alive,
                                  can_browse=True)
 
         elif self._current_state == StudioState.RECORDING_RUNNING:
