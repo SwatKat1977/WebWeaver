@@ -26,3 +26,13 @@ class InspectorPanel(wx.Panel):
                        5)
 
         self.SetSizer(main_sizer)
+
+    def append_element(self, el: dict):
+        self._log.AppendText(
+            f"Picked element:\n"
+            f"  tag: {el.get('tag')}\n"
+            f"  id: {el.get('id')}\n"
+            f"  class: {el.get('class')}\n"
+            f"  text: {el.get('text')}\n"
+            f"  css: {el.get('css')}\n"
+            f"  xpath: {el.get('xpath')}\n\n")
