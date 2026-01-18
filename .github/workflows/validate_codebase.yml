@@ -78,5 +78,5 @@ jobs:
         env:
           PYTHONPATH: webweaver/studio:unit_tests/studio
         run: |
-          coverage run --rcfile=.github/workflows/.coveragerc_accounts_svc -m unittest -v main
+          coverage run --rcfile=.github/workflows/.coveragerc_studio -m unittest -v main
           coverage report -m --fail-under=100
