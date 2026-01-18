@@ -140,7 +140,7 @@ class StudioStateController:
         elif self._state == StudioState.RECORDING_PAUSED:
             self._set_state(StudioState.RECORDING_RUNNING)
 
-    def on_inspector_toggle(self, shown: bool ) -> None:
+    def on_inspector_toggle(self, shown: bool) -> None:
         """
         Notify the controller that the inspector panel has been shown or hidden.
 
