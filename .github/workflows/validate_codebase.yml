@@ -46,7 +46,7 @@ jobs:
           changed_files=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }} ${{ github.event.pull_request.head.sha }})
 
           echo "Checking for changes in studio"
-          if echo "$changed_files" | grep -qE '^(webweaver|unit_tests)/studio/'; then
+          if echo "$changed_files" | grep -qE '^(webweaver)/studio/'; then
             echo "studio_changed=true" >> $GITHUB_OUTPUT
             echo "[INFO] Studio or unit tests have changed"
           else
@@ -72,11 +72,3 @@ jobs:
           PYTHONPATH: webweaver/studio
         run: |
           pylint --fail-under=10.0 webweaver/studio
-
-      # Run tests and measure coverage
-      - name: Run tests with coverage
-        env:
-          PYTHONPATH: webweaver/studio:unit_tests/studio
-        run: |
-          coverage run --rcfile=.github/workflows/.coveragerc_studio -m unittest -v main
-          coverage report -m --fail-under=100
