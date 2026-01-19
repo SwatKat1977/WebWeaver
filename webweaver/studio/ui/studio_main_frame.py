@@ -817,6 +817,12 @@ class StudioMainFrame(wx.Frame):
             # force state back
             self._state_controller.on_record_start_stop()
 
+        # If 'inspecting' and the browser is closed then make sure we
+        # cleanly drop out of inspecting.
+        if self._state_controller.state == StudioState.INSPECTING:
+            self._show_inspector_panel(False)
+            self._state_controller.on_solution_loaded()
+
         self._manage_browser_state()
         self._update_toolbar_state()
 
