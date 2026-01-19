@@ -1,0 +1,12 @@
+
+Playback Play
+<a href="https://www.flaticon.com/free-icons/playback" title="playback icons">Playback icons created by bsd - Flaticon</a>
+
+Playback Pause
+<a href="https://www.flaticon.com/free-icons/playback" title="playback icons">Playback icons created by meaicon - Flaticon</a>
+
+Playback Stop
+<a href="https://www.flaticon.com/free-icons/ui" title="ui icons">Ui icons created by Karacis - Flaticon</a>
+
+Playback Step
+<a href="https://www.flaticon.com/free-icons/next-page" title="next page icons">Next page icons created by Andy Horvath - Flaticon</a>
