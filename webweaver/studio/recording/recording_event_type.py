@@ -29,8 +29,10 @@ class RecordingEventType(enum.Enum):
     to the serialized form used in recording files.
     """
 
-    NAV_GOTO = "nav.goto"
+    DOM_CHECK = "dom.check"
     DOM_CLICK = "dom.click"
+    NAV_GOTO = "nav.goto"
+    DOM_SELECT = "dom.select"
     DOM_TYPE = "dom.type"
     WAIT = "wait"
     UNKNOWN = "unknown"
@@ -57,11 +59,18 @@ def event_type_from_str(value: str) -> RecordingEventType:
         The corresponding enum value, or :data:`RecordingEventType.UNKNOWN`
         if the string is not recognized.
     """
-    if value == "nav.goto":
-        return RecordingEventType.NAV_GOTO
+
+    if value == "dom.check":
+        return RecordingEventType.DOM_CHECK
 
     if value == "dom.click":
         return RecordingEventType.DOM_CLICK
+
+    if value == "nav.goto":
+        return RecordingEventType.NAV_GOTO
+
+    if value == "dom.select":
+        return RecordingEventType.DOM_SELECT
 
     if value == "dom.type":
         return RecordingEventType.DOM_TYPE

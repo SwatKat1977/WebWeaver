@@ -855,17 +855,15 @@ class StudioMainFrame(wx.Frame):
 
         for ev in events:
 
-            # Infer event type from payload shape
-            if "value" in ev:
-                event_type = RecordingEventType.DOM_TYPE
+            kind = ev.pop("__kind", None)
+            if not kind:
+                self._logger.warning("Recorded event missing __kind: %r", ev)
+                continue
 
-            elif "x" in ev and "y" in ev:
-                event_type = RecordingEventType.DOM_CLICK
-
-            else:
-                # Unknown / future event type
-                # You can log and skip or handle later
-                self._logger.warning("Unknown recorded event shape: %r", ev)
+            try:
+                event_type = RecordingEventType["DOM_" + kind.upper()]
+            except KeyError:
+                self._logger.warning("Unknown recorded event kind: %s", kind)
                 continue
 
             self._recording_session.append_event(

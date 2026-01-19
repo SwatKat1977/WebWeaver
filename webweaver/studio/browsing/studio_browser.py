@@ -57,6 +57,7 @@ function __flush_typing(el) {
     const value = __typing_last_value.get(el);
 
     const ev = {
+        __kind: "type",
         selector: getCssSelector(el),
         xpath: getXPath(el),
         value: value,
@@ -68,7 +69,7 @@ function __flush_typing(el) {
     const last = arr.length > 0 ? arr[arr.length - 1] : null;
 
     if (last &&
-        last.type === "dom.type" &&
+        last.__kind === "type" &&
         last.selector === ev.selector) {
 
         // Replace last event
@@ -79,7 +80,7 @@ function __flush_typing(el) {
         const out = window.__recorded_outgoing;
         if (out.length > 0) {
             const lastOut = out[out.length - 1];
-            if (lastOut.type === "dom.type" && lastOut.selector === ev.selector) {
+            if (lastOut.__kind === "type" && lastOut.selector === ev.selector) {
                 lastOut.value = ev.value;
                 lastOut.time = ev.time;
             } else {
@@ -146,10 +147,7 @@ function outListener(e) {
 }
 
 // --------------------
-// CLICK listener
-// --------------------
-// --------------------
-// CLICK listener
+// INPUT listener (RECORD MODE ONLY, DEBOUNCED)
 // --------------------
 document.addEventListener("input", function(e) {
     if (!window.__RECORD_MODE) return;
@@ -157,10 +155,16 @@ document.addEventListener("input", function(e) {
     const el = e.target;
     if (!el) return;
 
-    if (!(el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return;
-
-    // Optionally skip passwords
-    // if (el.type === "password") return;
+    if (el.tagName === "TEXTAREA") {
+        // ok
+    } else if (el.tagName === "INPUT") {
+        const t = (el.type || "").toLowerCase();
+        if (t !== "text" && t !== "email" && t !== "password" && t !== "search" && t !== "url" && t !== "number") {
+            return; // not a text field
+        }
+    } else {
+        return;
+    }
 
     // Remember latest value
     __typing_last_value.set(el, el.value);
@@ -180,43 +184,47 @@ document.addEventListener("input", function(e) {
 }, true);
 
 // --------------------
-// INPUT listener (RECORD MODE ONLY, DEBOUNCED)
+// CHANGE listener (checkbox, radio, select)
 // --------------------
-document.addEventListener("input", function(e) {
+document.addEventListener("change", function(e) {
     if (!window.__RECORD_MODE) return;
 
     const el = e.target;
     if (!el) return;
 
-    if (!(el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return;
+    // Checkbox / radio
+    if (el.tagName === "INPUT") {
+        const t = (el.type || "").toLowerCase();
+        if (t === "checkbox" || t === "radio") {
 
-    // Ignore password fields or mark them specially if you want
-    let value = el.value;
-    if (el.type === "password") {
-        value = el.value; // or "***" or skip entirely
+            const ev = {
+                __kind: "check",
+                selector: getCssSelector(el),
+                xpath: getXPath(el),
+                checked: el.checked,
+                time: now()
+            };
+
+            window.__recorded_actions.push(ev);
+            window.__recorded_outgoing.push(ev);
+            return;
+        }
     }
 
-    // Clear existing timer for this element
-    if (__typing_timers.has(el)) {
-        clearTimeout(__typing_timers.get(el));
-    }
-
-    // Start / restart debounce timer
-    const timer = setTimeout(() => {
+    // Select dropdown
+    if (el.tagName === "SELECT") {
         const ev = {
+            __kind: "select",
             selector: getCssSelector(el),
             xpath: getXPath(el),
-            value: value,
+            value: el.value,
             time: now()
         };
 
         window.__recorded_actions.push(ev);
         window.__recorded_outgoing.push(ev);
-
-        __typing_timers.delete(el);
-    }, 400);  // 300–500ms is a good value
-
-    __typing_timers.set(el, timer);
+        return;
+    }
 
 }, true);
 
