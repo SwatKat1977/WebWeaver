@@ -17,71 +17,79 @@ Copyright 2025 SwatKat1977
     You should have received a copy of the GNU General Public License
     along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
+import asyncio
 import functools
 from webweaver.executor.executor_exceptions import TestFailure
 from webweaver.executor.test_status import TestStatus
 
+data_providers = {}
+
+
+def data_provider(name):
+    """
+    Registers a function as a named data provider.
+
+    A data provider is a function that supplies test data to parameterized
+    tests. The decorated function will be stored in the global `data_providers`
+    registry under the given name.
+
+    Args:
+        name: The name under which to register the data provider.
+
+    Returns:
+        A decorator that registers the decorated function as a data provider.
+    """
+    def wrapper(func):
+        data_providers[name] = func
+        return func
+
+    return wrapper
+
 
 # === Decorator to mark test methods ===
-def test(parallel: bool = False,
-         enabled: bool = True):
+def test(provider=None, parallel=False, enabled=True):
     """
-    Decorator to mark a function as a test case.
+    Marks a function as a test case.
 
-    This decorator wraps the target function and executes it safely,
-    capturing any exceptions raised during execution. It records the
-    outcome as either a success or a failure and attaches metadata
-    used by the test runner.
+    This decorator wraps the function in a test execution harness that:
+    - Handles synchronous and asynchronous test functions.
+    - Catches test failures and unexpected exceptions.
+    - Returns a standardized (TestStatus, exception) tuple.
+    - Attaches metadata to the function for the test runner.
 
-    Parameters
-    ----------
-    parallel : bool, optional
-        If True, the test is marked to be run in parallel (default: False).
+    Args:
+        provider:
+            Optional data provider function or name used to supply test data.
+        parallel:
+            If True, this test is allowed to run in parallel with others.
+        enabled:
+            If False, the test will be skipped.
 
-    Returns
-    -------
-    decorator : Callable
-        A decorator function that can be applied to test functions.
-
-    Notes
-    -----
-    - The decorated function is wrapped in a try/except block.
-    - If the function executes without raising an exception, the status
-      will be ``TestStatus.SUCCESS``.
-    - If the function raises a ``TestFailure`` or any other exception,
-      the status will be ``TestStatus.FAILURE`` and the exception will
-      be returned alongside the status.
-    - The wrapper attaches two attributes to the decorated function:
-        * ``is_test``: Marks the function as a test (True).
-        * ``run_in_parallel``: Indicates whether it should run in parallel.
+    Returns:
+        A decorator that transforms a function into a managed test case.
     """
     def decorator(func):
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs):
             if not enabled:
-                # You could introduce a SKIPPED status if you have one,
-                # or just return SUCCESS with a note.
                 return TestStatus.SKIPPED, None
 
-            caught_exception = None
-
             try:
-                func(*args, **kwargs)
-                status = TestStatus.SUCCESS
+                result = func(*args, **kwargs)
+                if asyncio.iscoroutine(result):
+                    await result
+                return TestStatus.SUCCESS, None
 
             except TestFailure as ex:
-                caught_exception = ex
-                status = TestStatus.FAILURE
+                return TestStatus.FAILURE, ex
 
-            except Exception as ex:  # pylint: disable=broad-exception-caught
-                caught_exception = ex
-                status = TestStatus.FAILURE
-
-            return status, caught_exception
+            except Exception as ex:
+                return TestStatus.FAILURE, ex
 
         wrapper.is_test = True
         wrapper.run_in_parallel = parallel
         wrapper.enabled = enabled
+        wrapper.data_provider = provider  # store provider function!
         return wrapper
     return decorator
 
