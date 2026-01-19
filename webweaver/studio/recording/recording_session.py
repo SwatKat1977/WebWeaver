@@ -178,6 +178,9 @@ class RecordingSession:
         - Events are always appended in chronological order.
         - Each call immediately persists the updated recording to disk.
 
+        This method also coalesces consecutive events of the same type
+        on the same element (e.g. repeated DOM_TYPE while editing a field).
+
         If no recording session is currently active, this method does nothing.
 
         Parameters
@@ -192,6 +195,34 @@ class RecordingSession:
 
         elapsed_ms: int = int((time.monotonic() - self._start_time) * 1000)
 
+        events = self._recording_json["recording"]["events"]
+
+        # ----------------------------
+        # Coalesce logic
+        # ----------------------------
+        if events:
+            last = events[-1]
+
+            # Only coalesce certain event types
+            if event_type in (
+                    RecordingEventType.DOM_TYPE,
+                    RecordingEventType.DOM_SELECT,
+                    RecordingEventType.DOM_CHECK,
+            ):
+                if (
+                        last["type"] == event_type.value and
+                        last["payload"].get("selector") == payload.get("selector")
+                ):
+                    # Replace last event instead of appending
+                    last["timestamp"] = elapsed_ms
+                    last["payload"] = payload
+
+                    self._flush_to_disk()
+                    return
+
+        # ----------------------------
+        # Normal append
+        # ----------------------------
         event = {
             "index": self._next_index,
             "timestamp": elapsed_ms,
@@ -200,7 +231,7 @@ class RecordingSession:
         }
 
         self._next_index += 1
-        self._recording_json["recording"]["events"].append(event)
+        events.append(event)
 
         self._flush_to_disk()
 

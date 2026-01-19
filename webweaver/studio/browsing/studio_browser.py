@@ -313,6 +313,28 @@ document.addEventListener("mousedown", function() {
 }, true);
 
 // --------------------
+// CLICK listener
+// --------------------
+document.addEventListener("click", function(e) {
+    if (!window.__RECORD_MODE) return;
+
+    const el = e.target;
+    if (!el) return;
+
+    const ev = {
+        __kind: "click",
+        selector: getCssSelector(el),
+        xpath: getXPath(el),
+        x: e.clientX,
+        y: e.clientY,
+        time: now()
+    };
+
+    window.__recorded_actions.push(ev);
+    window.__recorded_outgoing.push(ev);
+}, true);
+
+// --------------------
 // Hover listeners
 // --------------------
 document.addEventListener("mouseover", hoverListener, true);
