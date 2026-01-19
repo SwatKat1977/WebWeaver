@@ -772,10 +772,12 @@ class StudioMainFrame(wx.Frame):
             state = ToolbarState(can_save=True, can_close=True,
                                  can_inspect=browser_is_alive,
                                  can_record=browser_is_alive,
-                                 can_browse=True)
+                                 can_browse=True,
+                                 can_playback_recording=True)  # TEMP
 
         elif self._current_state == StudioState.RECORDING_RUNNING:
-            state = ToolbarState(can_record=True, can_pause=True, is_recording=True)
+            state = ToolbarState(can_record=True, can_pause=True,
+                                 is_recording=True)
 
         elif self._current_state == StudioState.RECORDING_PAUSED:
             state = ToolbarState(can_record=True, can_pause=True,
@@ -784,6 +786,16 @@ class StudioMainFrame(wx.Frame):
         elif self._current_state == StudioState.INSPECTING:
             state = ToolbarState(can_save=True, can_close=True,
                                  can_record=True, can_inspect=True)
+
+        elif self._current_state == StudioState.RECORDING_PLAYBACK_IDLE:
+            state = ToolbarState(can_save=True, can_close=True,
+                                 can_playback_recording=True)
+
+        elif self._current_state == StudioState.RECORDING_PLAYBACK_RUNNING:
+            pass
+
+        elif self._current_state == StudioState.RECORDING_PLAYBACK_PAUSED:
+            state = ToolbarState(can_playback_recording=True)
 
         MainToolbar.apply_state(self._toolbar, state)
         self._manage_browser_state()

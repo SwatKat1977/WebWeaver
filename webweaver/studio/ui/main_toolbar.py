@@ -81,6 +81,7 @@ class ToolbarState:
     can_record: bool = False
     can_pause: bool = False
     can_browse: bool = False
+    can_playback_recording: bool = False
     is_recording: bool = False
     is_paused: bool = False
     is_inspecting: bool = False
@@ -262,6 +263,8 @@ class MainToolbar:
         toolbar.EnableTool(TOOLBAR_ID_START_STOP_RECORD, state.can_record)
         toolbar.EnableTool(TOOLBAR_ID_PAUSE_RECORD, state.can_pause)
         toolbar.EnableTool(TOOLBAR_ID_WEB_BROWSER, state.can_browse)
+        toolbar.EnableTool(TOOLBAR_ID_PLAY_RECORDING,
+                           state.can_playback_recording)
 
         # Recording button appearance
         if state.is_recording:
