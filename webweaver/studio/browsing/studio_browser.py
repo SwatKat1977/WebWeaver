@@ -51,10 +51,22 @@ if (window.__FORCE_INSPECT_MODE === false) {
     window.__INSPECT_MODE = false;
 }
 
-function __flush_typing(el) {
-    if (!__typing_last_value.has(el)) return;
+function __record_type_if_text_input(el) {
+    if (!el) return;
 
-    const value = __typing_last_value.get(el);
+    if (el.tagName === "TEXTAREA") {
+        // ok
+    } else if (el.tagName === "INPUT") {
+        const t = (el.type || "").toLowerCase();
+        if (!["text","email","password","search","url","number"].includes(t)) {
+            return;
+        }
+    } else {
+        return;
+    }
+
+    const value = (typeof el.value === "string") ? el.value : "";
+    if (!value) return;
 
     const ev = {
         __kind: "type",
@@ -64,30 +76,65 @@ function __flush_typing(el) {
         time: now()
     };
 
-    // COALESCE LOGIC HERE
+    window.__recorded_actions.push(ev);
+    window.__recorded_outgoing.push(ev);
+}
+
+function __is_text_input(el) {
+    if (!el) return false;
+
+    if (el.tagName === "TEXTAREA") return true;
+
+    if (el.tagName === "INPUT") {
+        const t = (el.type || "").toLowerCase();
+        return ["text", "email", "password", "search", "url", "number"].includes(t);
+    }
+
+    return false;
+}
+
+function __flush_typing(el) {
+    // Only ever flush REAL text inputs
+    if (!__is_text_input(el)) return;
+
+    // Always trust the live DOM value
+    const value = (typeof el.value === "string") ? el.value : "";
+    if (value === "") return; // don't record empty garbage
+
+    const ev = {
+        __kind: "type",
+        selector: getCssSelector(el),
+        xpath: getXPath(el),
+        value: value,
+        time: now()
+    };
+
+    // ---- coalesce ----
     const arr = window.__recorded_actions;
     const last = arr.length > 0 ? arr[arr.length - 1] : null;
 
-    if (last &&
+    if (
+        last &&
         last.__kind === "type" &&
-        last.selector === ev.selector) {
-
-        // Replace last event
+        last.selector === ev.selector
+    ) {
+        // Replace last
         last.value = ev.value;
         last.time = ev.time;
 
-        // Also update outgoing queue
         const out = window.__recorded_outgoing;
         if (out.length > 0) {
             const lastOut = out[out.length - 1];
-            if (lastOut.__kind === "type" && lastOut.selector === ev.selector) {
+            if (
+                lastOut.__kind === "type" &&
+                lastOut.selector === ev.selector
+            ) {
                 lastOut.value = ev.value;
                 lastOut.time = ev.time;
             } else {
                 out.push(ev);
             }
         }
-
     } else {
         window.__recorded_actions.push(ev);
         window.__recorded_outgoing.push(ev);
@@ -184,7 +231,7 @@ document.addEventListener("input", function(e) {
 }, true);
 
 // --------------------
-// CHANGE listener (checkbox, radio, select)
+// CHANGE listener (text inputs, checkbox, radio, select)
 // --------------------
 document.addEventListener("change", function(e) {
     if (!window.__RECORD_MODE) return;
@@ -192,7 +239,10 @@ document.addEventListener("change", function(e) {
     const el = e.target;
     if (!el) return;
 
-    // Checkbox / radio
+    // TEXT INPUTS
+    __record_type_if_text_input(el);
+
+    // CHECKBOX / RADIO
     if (el.tagName === "INPUT") {
         const t = (el.type || "").toLowerCase();
         if (t === "checkbox" || t === "radio") {
@@ -211,7 +261,7 @@ document.addEventListener("change", function(e) {
         }
     }
 
-    // Select dropdown
+    // SELECT
     if (el.tagName === "SELECT") {
         const ev = {
             __kind: "select",
@@ -226,6 +276,40 @@ document.addEventListener("change", function(e) {
         return;
     }
 
+}, true);
+
+document.addEventListener("submit", function(e) {
+    if (!window.__RECORD_MODE) return;
+
+    const form = e.target;
+    if (!form) return;
+
+    const inputs = form.querySelectorAll("input, textarea");
+    for (const el of inputs) {
+        __record_type_if_text_input(el);
+    }
+}, true);
+
+// --------------------
+// BLUR listener (force flush typing immediately)
+// --------------------
+document.addEventListener("blur", function(e) {
+    if (!window.__RECORD_MODE) return;
+    __record_type_if_text_input(e.target);
+}, true);
+
+// --------------------
+// MOUSEDOWN listener: flush pending typing before clicks
+// --------------------
+document.addEventListener("mousedown", function() {
+    if (!window.__RECORD_MODE) return;
+
+    for (const el of __typing_last_value.keys()) {
+        if (!__is_text_input(el)) continue;
+
+        __flush_typing(el);
+        setTimeout(() => __flush_typing(el), 250);
+    }
 }, true);
 
 // --------------------
