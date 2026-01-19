@@ -240,6 +240,7 @@ class MainToolbar:
         toolbar.EnableTool(TOOLBAR_ID_START_STOP_RECORD, False)
         toolbar.EnableTool(TOOLBAR_ID_PAUSE_RECORD, False)
         toolbar.EnableTool(TOOLBAR_ID_WEB_BROWSER, False)
+        toolbar.EnableTool(TOOLBAR_ID_PLAY_RECORDING, False)
 
     @staticmethod
     def apply_state(toolbar: wx.aui.AuiToolBar, state: ToolbarState) -> None:
