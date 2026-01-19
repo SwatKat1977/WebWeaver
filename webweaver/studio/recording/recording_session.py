@@ -178,20 +178,82 @@ class RecordingSession:
         - Events are always appended in chronological order.
         - Each call immediately persists the updated recording to disk.
 
-        If no recording session is currently active, this method does nothing.
+        This method also:
+        - Coalesces consecutive DOM_TYPE / DOM_SELECT / DOM_CHECK on same element
+        - Suppresses useless layout clicks
+        - Removes click events that are immediately followed by select/check
 
-        Parameters
-        ----------
-        event_type : RecordingEventType
-            The type of event being recorded.
-        payload : dict
-            Event-specific data to attach to the event.
+        If no recording session is currently active, this method does nothing.
         """
         if not self._active or self._start_time is None:
             return
 
         elapsed_ms: int = int((time.monotonic() - self._start_time) * 1000)
 
+        events = self._recording_json["recording"]["events"]
+
+        selector = (payload.get("selector") or "").lower()
+
+        # ------------------------------------------------------------
+        # 1) Drop useless clicks on layout / non-interactive elements
+        # ------------------------------------------------------------
+        if event_type == RecordingEventType.DOM_CLICK:
+            # Very simple heuristic for now (we can refine later)
+            if (
+                    selector.startswith("div") or
+                    selector.startswith("span") or
+                    selector.startswith("h") or
+                    selector.startswith("p")
+            ):
+                return
+
+            # Only keep clicks that look like real actions
+            if not (
+                    selector.startswith("button") or
+                    selector.startswith("a") or
+                    "button" in selector
+            ):
+                return
+
+        # ------------------------------------------------------------
+        # 2) If this is SELECT or CHECK, and last event was CLICK
+        #    on same element -> remove the click
+        # ------------------------------------------------------------
+        if event_type in (RecordingEventType.DOM_SELECT, RecordingEventType.DOM_CHECK):
+            if events:
+                last = events[-1]
+                if (
+                        last["type"] == RecordingEventType.DOM_CLICK.value and
+                        last["payload"].get("selector") == payload.get("selector")
+                ):
+                    events.pop()
+                    self._next_index -= 1
+
+        # ------------------------------------------------------------
+        # 3) Coalesce logic (your existing logic, unchanged)
+        # ------------------------------------------------------------
+        if events:
+            last = events[-1]
+
+            if event_type in (
+                    RecordingEventType.DOM_TYPE,
+                    RecordingEventType.DOM_SELECT,
+                    RecordingEventType.DOM_CHECK,
+            ):
+                if (
+                        last["type"] == event_type.value and
+                        last["payload"].get("selector") == payload.get("selector")
+                ):
+                    # Replace last event instead of appending
+                    last["timestamp"] = elapsed_ms
+                    last["payload"] = payload
+
+                    self._flush_to_disk()
+                    return
+
+        # ------------------------------------------------------------
+        # 4) Normal append
+        # ------------------------------------------------------------
         event = {
             "index": self._next_index,
             "timestamp": elapsed_ms,
@@ -200,7 +262,7 @@ class RecordingSession:
         }
 
         self._next_index += 1
-        self._recording_json["recording"]["events"].append(event)
+        events.append(event)
 
         self._flush_to_disk()
 

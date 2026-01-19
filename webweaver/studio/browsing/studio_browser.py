@@ -25,6 +25,12 @@ from selenium.webdriver.support.ui import WebDriverWait
 BROWSER_JS_INJECTION: str = r"""
 console.log("Inspector script injected.");
 
+// --------------------
+// Typing debounce state
+// --------------------
+const __typing_timers = new Map();
+const __typing_last_value = new Map();
+
 // Global buffered state
 window.__INSPECT_MODE = window.__INSPECT_MODE || false;
 window.__FORCE_INSPECT_MODE = window.__FORCE_INSPECT_MODE || false;
@@ -43,6 +49,103 @@ if (window.__FORCE_INSPECT_MODE === true) {
 // Disable inspect mode if not used
 if (window.__FORCE_INSPECT_MODE === false) {
     window.__INSPECT_MODE = false;
+}
+
+function __record_type_if_text_input(el) {
+    if (!el) return;
+
+    if (el.tagName === "TEXTAREA") {
+        // ok
+    } else if (el.tagName === "INPUT") {
+        const t = (el.type || "").toLowerCase();
+        if (!["text","email","password","search","url","number"].includes(t)) {
+            return;
+        }
+    } else {
+        return;
+    }
+
+    const value = (typeof el.value === "string") ? el.value : "";
+    if (!value) return;
+
+    const ev = {
+        __kind: "type",
+        selector: getCssSelector(el),
+        xpath: getXPath(el),
+        value: value,
+        time: now()
+    };
+
+    window.__recorded_actions.push(ev);
+    window.__recorded_outgoing.push(ev);
+}
+
+function __is_text_input(el) {
+    if (!el) return false;
+
+    if (el.tagName === "TEXTAREA") return true;
+
+    if (el.tagName === "INPUT") {
+        const t = (el.type || "").toLowerCase();
+        return ["text", "email", "password", "search", "url", "number"].includes(t);
+    }
+
+    return false;
+}
+
+function __flush_typing(el) {
+    // Only ever flush REAL text inputs
+    if (!__is_text_input(el)) return;
+
+    // Always trust the live DOM value
+    const value = (typeof el.value === "string") ? el.value : "";
+    if (value === "") return; // don't record empty garbage
+
+    const ev = {
+        __kind: "type",
+        selector: getCssSelector(el),
+        xpath: getXPath(el),
+        value: value,
+        time: now()
+    };
+
+    // ---- coalesce ----
+    const arr = window.__recorded_actions;
+    const last = arr.length > 0 ? arr[arr.length - 1] : null;
+
+    if (
+        last &&
+        last.__kind === "type" &&
+        last.selector === ev.selector
+    ) {
+        // Replace last
+        last.value = ev.value;
+        last.time = ev.time;
+
+        const out = window.__recorded_outgoing;
+        if (out.length > 0) {
+            const lastOut = out[out.length - 1];
+            if (
+                lastOut.__kind === "type" &&
+                lastOut.selector === ev.selector
+            ) {
+                lastOut.value = ev.value;
+                lastOut.time = ev.time;
+            } else {
+                out.push(ev);
+            }
+        }
+    } else {
+        window.__recorded_actions.push(ev);
+        window.__recorded_outgoing.push(ev);
+    }
+
+    __typing_last_value.delete(el);
+
+    if (__typing_timers.has(el)) {
+        clearTimeout(__typing_timers.get(el));
+        __typing_timers.delete(el);
+    }
 }
 
 function getCssSelector(el) {
@@ -91,65 +194,7 @@ function outListener(e) {
 }
 
 // --------------------
-// CLICK listener
-// --------------------
-// --------------------
-// CLICK listener
-// --------------------
-document.addEventListener("click", function(e) {
-
-    // INSPECT MODE → block click + send element info
-    if (window.__INSPECT_MODE === true) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const el = e.target;
-
-        window.__selenium_clicked_element = {
-            tag: el.tagName.toLowerCase(),
-            id: el.id,
-            class: el.className,
-            text: el.innerText,
-            css: getCssSelector(el),
-            xpath: getXPath(el)
-        };
-    }
-
-    // RECORD MODE → record, and for links delay navigation slightly
-    if (window.__RECORD_MODE === true) {
-        const el = e.target;
-        const ev = {
-            type: "click",
-            selector: getCssSelector(el),
-            xpath: getXPath(el),
-            x: e.clientX,
-            y: e.clientY,
-            time: now()
-        };
-
-        window.__recorded_actions.push(ev);
-        window.__recorded_outgoing.push(ev);
-
-        // If the click was on (or inside) a link, delay navigation
-        const link = el.closest ? el.closest("a[href]") : null;
-        if (link && link.href) {
-            // Stop the browser from navigating *right now*
-            e.preventDefault();
-            const url = link.href;
-
-            console.log("Recorded link click, delaying navigation to:", url);
-
-            // Give Python's 100ms poll loop time to read __recorded_outgoing
-            setTimeout(() => {
-                window.location.href = url;
-            }, 200);
-        }
-    }
-
-}, true);
-
-// --------------------
-// INPUT listener (RECORD MODE ONLY)
+// INPUT listener (RECORD MODE ONLY, DEBOUNCED)
 // --------------------
 document.addEventListener("input", function(e) {
     if (!window.__RECORD_MODE) return;
@@ -157,17 +202,136 @@ document.addEventListener("input", function(e) {
     const el = e.target;
     if (!el) return;
 
-    if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
+    if (el.tagName === "TEXTAREA") {
+        // ok
+    } else if (el.tagName === "INPUT") {
+        const t = (el.type || "").toLowerCase();
+        if (t !== "text" && t !== "email" && t !== "password" && t !== "search" && t !== "url" && t !== "number") {
+            return; // not a text field
+        }
+    } else {
+        return;
+    }
+
+    // Remember latest value
+    __typing_last_value.set(el, el.value);
+
+    // Clear existing timer
+    if (__typing_timers.has(el)) {
+        clearTimeout(__typing_timers.get(el));
+    }
+
+    // Start / restart debounce timer
+    const timer = setTimeout(() => {
+        __flush_typing(el);
+    }, 400);
+
+    __typing_timers.set(el, timer);
+
+}, true);
+
+// --------------------
+// CHANGE listener (text inputs, checkbox, radio, select)
+// --------------------
+document.addEventListener("change", function(e) {
+    if (!window.__RECORD_MODE) return;
+
+    const el = e.target;
+    if (!el) return;
+
+    // TEXT INPUTS
+    __record_type_if_text_input(el);
+
+    // CHECKBOX / RADIO
+    if (el.tagName === "INPUT") {
+        const t = (el.type || "").toLowerCase();
+        if (t === "checkbox" || t === "radio") {
+
+            const ev = {
+                __kind: "check",
+                selector: getCssSelector(el),
+                xpath: getXPath(el),
+                checked: el.checked,
+                time: now()
+            };
+
+            window.__recorded_actions.push(ev);
+            window.__recorded_outgoing.push(ev);
+            return;
+        }
+    }
+
+    // SELECT
+    if (el.tagName === "SELECT") {
         const ev = {
-            type: "input",
+            __kind: "select",
             selector: getCssSelector(el),
             xpath: getXPath(el),
             value: el.value,
             time: now()
         };
+
         window.__recorded_actions.push(ev);
         window.__recorded_outgoing.push(ev);
+        return;
     }
+
+}, true);
+
+document.addEventListener("submit", function(e) {
+    if (!window.__RECORD_MODE) return;
+
+    const form = e.target;
+    if (!form) return;
+
+    const inputs = form.querySelectorAll("input, textarea");
+    for (const el of inputs) {
+        __record_type_if_text_input(el);
+    }
+}, true);
+
+// --------------------
+// BLUR listener (force flush typing immediately)
+// --------------------
+document.addEventListener("blur", function(e) {
+    if (!window.__RECORD_MODE) return;
+    __record_type_if_text_input(e.target);
+}, true);
+
+// --------------------
+// MOUSEDOWN listener: flush pending typing before clicks
+// --------------------
+document.addEventListener("mousedown", function() {
+    if (!window.__RECORD_MODE) return;
+
+    for (const el of __typing_last_value.keys()) {
+        if (!__is_text_input(el)) continue;
+
+        __flush_typing(el);
+        setTimeout(() => __flush_typing(el), 250);
+    }
+}, true);
+
+// --------------------
+// CLICK listener
+// --------------------
+document.addEventListener("click", function(e) {
+    if (!window.__RECORD_MODE) return;
+
+    const el = e.target;
+    if (!el) return;
+
+    const ev = {
+        __kind: "click",
+        selector: getCssSelector(el),
+        xpath: getXPath(el),
+        x: e.clientX,
+        y: e.clientY,
+        time: now()
+    };
+
+    window.__recorded_actions.push(ev);
+    window.__recorded_outgoing.push(ev);
 }, true);
 
 // --------------------

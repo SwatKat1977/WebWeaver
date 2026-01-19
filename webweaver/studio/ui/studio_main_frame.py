@@ -854,9 +854,20 @@ class StudioMainFrame(wx.Frame):
         events = self._web_browser.pop_recorded_events()
 
         for ev in events:
-            # For now, just store raw events
+
+            kind = ev.pop("__kind", None)
+            if not kind:
+                self._logger.warning("Recorded event missing __kind: %r", ev)
+                continue
+
+            try:
+                event_type = RecordingEventType["DOM_" + kind.upper()]
+            except KeyError:
+                self._logger.warning("Unknown recorded event kind: %s", kind)
+                continue
+
             self._recording_session.append_event(
-                RecordingEventType.DOM_CLICK,
+                event_type,
                 payload=ev
             )
 
