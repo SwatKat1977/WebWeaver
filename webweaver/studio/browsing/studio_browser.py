@@ -25,6 +25,12 @@ from selenium.webdriver.support.ui import WebDriverWait
 BROWSER_JS_INJECTION: str = r"""
 console.log("Inspector script injected.");
 
+// --------------------
+// Typing debounce state
+// --------------------
+const __typing_timers = new Map();
+const __typing_last_value = new Map();
+
 // Global buffered state
 window.__INSPECT_MODE = window.__INSPECT_MODE || false;
 window.__FORCE_INSPECT_MODE = window.__FORCE_INSPECT_MODE || false;
@@ -43,6 +49,55 @@ if (window.__FORCE_INSPECT_MODE === true) {
 // Disable inspect mode if not used
 if (window.__FORCE_INSPECT_MODE === false) {
     window.__INSPECT_MODE = false;
+}
+
+function __flush_typing(el) {
+    if (!__typing_last_value.has(el)) return;
+
+    const value = __typing_last_value.get(el);
+
+    const ev = {
+        selector: getCssSelector(el),
+        xpath: getXPath(el),
+        value: value,
+        time: now()
+    };
+
+    // COALESCE LOGIC HERE
+    const arr = window.__recorded_actions;
+    const last = arr.length > 0 ? arr[arr.length - 1] : null;
+
+    if (last &&
+        last.type === "dom.type" &&
+        last.selector === ev.selector) {
+
+        // Replace last event
+        last.value = ev.value;
+        last.time = ev.time;
+
+        // Also update outgoing queue
+        const out = window.__recorded_outgoing;
+        if (out.length > 0) {
+            const lastOut = out[out.length - 1];
+            if (lastOut.type === "dom.type" && lastOut.selector === ev.selector) {
+                lastOut.value = ev.value;
+                lastOut.time = ev.time;
+            } else {
+                out.push(ev);
+            }
+        }
+
+    } else {
+        window.__recorded_actions.push(ev);
+        window.__recorded_outgoing.push(ev);
+    }
+
+    __typing_last_value.delete(el);
+
+    if (__typing_timers.has(el)) {
+        clearTimeout(__typing_timers.get(el));
+        __typing_timers.delete(el);
+    }
 }
 
 function getCssSelector(el) {
@@ -96,60 +151,36 @@ function outListener(e) {
 // --------------------
 // CLICK listener
 // --------------------
-document.addEventListener("click", function(e) {
+document.addEventListener("input", function(e) {
+    if (!window.__RECORD_MODE) return;
 
-    // INSPECT MODE → block click + send element info
-    if (window.__INSPECT_MODE === true) {
-        e.preventDefault();
-        e.stopPropagation();
+    const el = e.target;
+    if (!el) return;
 
-        const el = e.target;
+    if (!(el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return;
 
-        window.__selenium_clicked_element = {
-            tag: el.tagName.toLowerCase(),
-            id: el.id,
-            class: el.className,
-            text: el.innerText,
-            css: getCssSelector(el),
-            xpath: getXPath(el)
-        };
+    // Optionally skip passwords
+    // if (el.type === "password") return;
+
+    // Remember latest value
+    __typing_last_value.set(el, el.value);
+
+    // Clear existing timer
+    if (__typing_timers.has(el)) {
+        clearTimeout(__typing_timers.get(el));
     }
 
-    // RECORD MODE → record, and for links delay navigation slightly
-    if (window.__RECORD_MODE === true) {
-        const el = e.target;
-        const ev = {
-            type: "click",
-            selector: getCssSelector(el),
-            xpath: getXPath(el),
-            x: e.clientX,
-            y: e.clientY,
-            time: now()
-        };
+    // Start / restart debounce timer
+    const timer = setTimeout(() => {
+        __flush_typing(el);
+    }, 400);
 
-        window.__recorded_actions.push(ev);
-        window.__recorded_outgoing.push(ev);
-
-        // If the click was on (or inside) a link, delay navigation
-        const link = el.closest ? el.closest("a[href]") : null;
-        if (link && link.href) {
-            // Stop the browser from navigating *right now*
-            e.preventDefault();
-            const url = link.href;
-
-            console.log("Recorded link click, delaying navigation to:", url);
-
-            // Give Python's 100ms poll loop time to read __recorded_outgoing
-            setTimeout(() => {
-                window.location.href = url;
-            }, 200);
-        }
-    }
+    __typing_timers.set(el, timer);
 
 }, true);
 
 // --------------------
-// INPUT listener (RECORD MODE ONLY)
+// INPUT listener (RECORD MODE ONLY, DEBOUNCED)
 // --------------------
 document.addEventListener("input", function(e) {
     if (!window.__RECORD_MODE) return;
@@ -157,17 +188,36 @@ document.addEventListener("input", function(e) {
     const el = e.target;
     if (!el) return;
 
-    if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
+    if (!(el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return;
+
+    // Ignore password fields or mark them specially if you want
+    let value = el.value;
+    if (el.type === "password") {
+        value = el.value; // or "***" or skip entirely
+    }
+
+    // Clear existing timer for this element
+    if (__typing_timers.has(el)) {
+        clearTimeout(__typing_timers.get(el));
+    }
+
+    // Start / restart debounce timer
+    const timer = setTimeout(() => {
         const ev = {
-            type: "input",
             selector: getCssSelector(el),
             xpath: getXPath(el),
-            value: el.value,
+            value: value,
             time: now()
         };
+
         window.__recorded_actions.push(ev);
         window.__recorded_outgoing.push(ev);
-    }
+
+        __typing_timers.delete(el);
+    }, 400);  // 300–500ms is a good value
+
+    __typing_timers.set(el, timer);
+
 }, true);
 
 // --------------------

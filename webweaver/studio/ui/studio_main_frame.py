@@ -854,9 +854,22 @@ class StudioMainFrame(wx.Frame):
         events = self._web_browser.pop_recorded_events()
 
         for ev in events:
-            # For now, just store raw events
+
+            # Infer event type from payload shape
+            if "value" in ev:
+                event_type = RecordingEventType.DOM_TYPE
+
+            elif "x" in ev and "y" in ev:
+                event_type = RecordingEventType.DOM_CLICK
+
+            else:
+                # Unknown / future event type
+                # You can log and skip or handle later
+                self._logger.warning("Unknown recorded event shape: %r", ev)
+                continue
+
             self._recording_session.append_event(
-                RecordingEventType.DOM_CLICK,
+                event_type,
                 payload=ev
             )
 
