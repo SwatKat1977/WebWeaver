@@ -60,6 +60,7 @@ from ui.main_toolbar import MainToolbar, ToolbarState
 from ui.main_menu import create_main_menu
 from ui.main_status_bar import MainStatusBar
 from ui.inspector_panel import InspectorPanel
+from ui.playback_toolbar import PlaybackToolbarState, PlaybackToolbar
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -123,6 +124,8 @@ class StudioMainFrame(wx.Frame):
         self._inspector_panel: Optional[wx.Panel] = None
 
         self.recent_solutions_menu: Optional[wx.Menu] = None
+
+        self._playback_toolbar: Optional[PlaybackToolbar] = None
 
         # Recording timer for capturing elements.
         self._recording_timer = wx.Timer(self)
@@ -210,6 +213,8 @@ class StudioMainFrame(wx.Frame):
         self._update_toolbar_state()
 
         self._create_inspector_panel()
+
+        self._playback_toolbar = PlaybackToolbar(self, self._aui_mgr)
 
         # --------------------------------------------------------------
         # Recordings events
@@ -743,6 +748,43 @@ class StudioMainFrame(wx.Frame):
 
         self._recording_session = RecordingSession(
             self._current_solution)
+
+    def _update_playback_toolbar_state(self):
+        # Hide unless in playback
+        in_playback = self._current_state in {
+            StudioState.RECORDING_PLAYBACK_IDLE,
+            StudioState.RECORDING_PLAYBACK_RUNNING,
+            StudioState.RECORDING_PLAYBACK_PAUSED,
+        }
+
+        self._aui_mgr.GetPane("PlaybackToolbar").Show(in_playback)
+
+        state = PlaybackToolbarState()
+
+        if self._current_state == StudioState.RECORDING_PLAYBACK_IDLE:
+            state = PlaybackToolbarState(
+                can_play=True,
+                can_step=True,
+                can_stop=True
+            )
+
+        elif self._current_state == StudioState.RECORDING_PLAYBACK_RUNNING:
+            state = PlaybackToolbarState(
+                can_pause=True,
+                can_stop=True,
+                is_running=True
+            )
+
+        elif self._current_state == StudioState.RECORDING_PLAYBACK_PAUSED:
+            state = PlaybackToolbarState(
+                can_play=True,
+                can_step=True,
+                can_stop=True,
+                is_paused=True
+            )
+
+        PlaybackToolbar.apply_state(self._playback_toolbar, state)
+        self._aui_mgr.Update()
 
     def _update_toolbar_state(self) -> None:
         """
