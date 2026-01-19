@@ -58,3 +58,7 @@ png_to_header("toolbar/close-button.png",
 png_to_header("toolbar/browser-button.png",
               "toolbar/toolbar_browser_button.py",
               "browser_button_icon")
+
+png_to_header("toolbar/play-button.png",
+              "toolbar/toolbar_play_button.py",
+              "play_button_icon")
