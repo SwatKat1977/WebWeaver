@@ -82,7 +82,6 @@ class ApiClient:
                 # Dynamically get the aiohttp method (get, post, delete, etc.)
                 http_method = getattr(session, method.lower())
                 async with http_method(url, json=json_data) as resp:
-                    print("Final URL:", resp.url)
                     if resp.content_type == self.CONTENT_TYPE_JSON:
                         body = await resp.json()
                     else:
