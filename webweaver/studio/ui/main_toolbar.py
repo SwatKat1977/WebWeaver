@@ -25,6 +25,7 @@ from toolbar_icons import (
     load_toolbar_new_solution_icon,
     load_toolbar_open_solution_icon,
     load_toolbar_pause_record_icon,
+    load_toolbar_play_icon,
     load_toolbar_resume_record_icon,
     load_toolbar_save_solution_icon,
     load_toolbar_close_solution_icon,
@@ -57,6 +58,8 @@ TOOLBAR_ID_PAUSE_RECORD: int = wx.ID_HIGHEST + 7
 TOOLBAR_ID_WEB_BROWSER: int = wx.ID_HIGHEST + 8
 """Toolbar command ID for web browser control."""
 
+TOOLBAR_ID_PLAY_RECORDING: int = wx.ID_HIGHEST + 9
+"""Toolbar command ID for playing a recording."""
 
 @dataclass(frozen=True)
 class ToolbarState:
@@ -159,6 +162,12 @@ class MainToolbar:
             "",
             load_toolbar_pause_record_icon(),
             "Pause Recording")
+
+        toolbar.AddTool(
+            TOOLBAR_ID_PLAY_RECORDING,
+            "",
+            load_toolbar_play_icon(),
+            "Play A Recording")
 
         toolbar.AddTool(
             TOOLBAR_ID_WEB_BROWSER,
