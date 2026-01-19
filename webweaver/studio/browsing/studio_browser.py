@@ -404,6 +404,36 @@ class StudioBrowser:
             self._last_url = current_url
             self._handle_navigation()
 
+    def poll_inspected_element(self):
+        """
+        Poll the browser for a newly inspected (clicked) DOM element.
+
+        This method checks for the presence of a temporary JavaScript-side variable
+        (`window.__selenium_clicked_element`) which is set by the injected inspector
+        script when the user clicks an element in the page.
+
+        If an element is found, the variable is immediately cleared in the page so
+        the same element is not returned again on the next poll.
+
+        Returns:
+            The Selenium WebElement if a new element was picked, otherwise None.
+
+        This method is safe to call repeatedly (e.g. from a timer or idle handler).
+        If the browser is not available, the page has navigated, or script execution
+        fails, None is returned.
+        """
+
+        try:
+            el = self._driver.execute_script(
+                "return window.__selenium_clicked_element || null;")
+            if el:
+                self._driver.execute_script("window.__selenium_clicked_element = null;")
+
+            return el
+
+        except WebDriverException:
+            return None
+
     def _inject_inspector_js(self, initial=False):
         """
         Injects the inspector.js script into the browser context.

@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import enum
 from typing import Callable, Optional
 
+
 class StudioState(enum.Enum):
     """
     Represents the high-level state of the Studio application.
@@ -30,7 +31,9 @@ class StudioState(enum.Enum):
     RECORDING_PAUSED = enum.auto()
     INSPECTING = enum.auto()
 
+
 StateChangedCallback = Callable[[StudioState], None]
+
 
 class StudioStateController:
     """
@@ -137,7 +140,7 @@ class StudioStateController:
         elif self._state == StudioState.RECORDING_PAUSED:
             self._set_state(StudioState.RECORDING_RUNNING)
 
-    def on_inspector_toggle(self, shown: bool ) -> None:
+    def on_inspector_toggle(self, shown: bool) -> None:
         """
         Notify the controller that the inspector panel has been shown or hidden.
 
