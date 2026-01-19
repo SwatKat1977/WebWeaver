@@ -60,25 +60,27 @@ def event_type_from_str(value: str) -> RecordingEventType:
         if the string is not recognized.
     """
 
+    event_type: RecordingEventType = RecordingEventType.UNKNOWN
+
     if value == "dom.check":
-        return RecordingEventType.DOM_CHECK
+        event_type = RecordingEventType.DOM_CHECK
 
-    if value == "dom.click":
-        return RecordingEventType.DOM_CLICK
+    elif value == "dom.click":
+        event_type = RecordingEventType.DOM_CLICK
 
-    if value == "nav.goto":
-        return RecordingEventType.NAV_GOTO
+    elif value == "nav.goto":
+        event_type = RecordingEventType.NAV_GOTO
 
-    if value == "dom.select":
-        return RecordingEventType.DOM_SELECT
+    elif value == "dom.select":
+        event_type = RecordingEventType.DOM_SELECT
 
-    if value == "dom.type":
-        return RecordingEventType.DOM_TYPE
+    elif value == "dom.type":
+        event_type = RecordingEventType.DOM_TYPE
 
-    if value == "wait":
-        return RecordingEventType.WAIT
+    elif value == "wait":
+        event_type = RecordingEventType.WAIT
 
-    return RecordingEventType.UNKNOWN
+    return event_type
 
 
 def event_type_to_str(event_type: RecordingEventType) -> str:
