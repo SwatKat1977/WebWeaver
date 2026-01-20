@@ -39,6 +39,9 @@ window.__RECORD_MODE = window.__RECORD_MODE || false;
 window.__recorded_actions = window.__recorded_actions || [];
 window.__recorded_outgoing = window.__recorded_outgoing || [];
 
+// Global inspect buffer (shared with Selenium)
+window.top.__selenium_clicked_element = null;
+
 function now() { return Date.now(); }
 
 // Restore Inspect Mode after navigation only if requested
@@ -275,6 +278,26 @@ document.addEventListener("change", function(e) {
         window.__recorded_outgoing.push(ev);
         return;
     }
+
+}, true);
+
+// --------------------
+// CLICK listener (INSPECT MODE)
+// --------------------
+document.addEventListener("click", function(e) {
+    if (!window.__INSPECT_MODE) return;
+
+    const el = e.target;
+    if (!el) return;
+
+    // Store the clicked element for Selenium to retrieve
+    window.top.__selenium_clicked_element = el;
+
+    console.log("INSPECT picked element:", el);
+
+    // Prevent the page from actually handling the click
+    e.preventDefault();
+    e.stopPropagation();
 
 }, true);
 
@@ -589,9 +612,13 @@ class StudioBrowser:
 
         try:
             el = self._driver.execute_script(
-                "return window.__selenium_clicked_element || null;")
+                "return window.top.__selenium_clicked_element || null;"
+            )
+
             if el:
-                self._driver.execute_script("window.__selenium_clicked_element = null;")
+                self._driver.execute_script(
+                    "window.top.__selenium_clicked_element = null;"
+                )
 
             return el
 
@@ -657,3 +684,62 @@ class StudioBrowser:
             self.enable_record_mode()
         elif self._inspect_active:
             self.enable_inspect_mode()
+
+    def describe_element(self, el):
+        """
+        Convert a Selenium WebElement into a serialisable description dictionary.
+
+        :param el: Selenium WebElement
+        :return: dict with tag, id, class, text, css, xpath
+        """
+        try:
+            tag = el.tag_name
+            el_id = el.get_attribute("id")
+            cls = el.get_attribute("class")
+            text = el.text
+
+            css = self._driver.execute_script(
+                "return arguments[0].id ? '#' + arguments[0].id : arguments[0].tagName.toLowerCase();",
+                el
+            )
+
+            xpath = self._driver.execute_script(
+                """
+                function getXPath(el) {
+                    if (el.id) return '//*[@id="' + el.id + '"]';
+                    const parts = [];
+                    while (el && el.nodeType === 1) {
+                        let index = 1;
+                        let sibling = el.previousSibling;
+                        while (sibling) {
+                            if (sibling.nodeType === 1 && sibling.nodeName === el.nodeName) index++;
+                            sibling = sibling.previousSibling;
+                        }
+                        parts.unshift(el.nodeName + "[" + index + "]");
+                        el = el.parentNode;
+                    }
+                    return "/" + parts.join("/");
+                }
+                return getXPath(arguments[0]);
+                """,
+                el
+            )
+
+            return {
+                "tag": tag,
+                "id": el_id,
+                "class": cls,
+                "text": text,
+                "css": css,
+                "xpath": xpath,
+            }
+
+        except Exception:
+            return {
+                "tag": None,
+                "id": None,
+                "class": None,
+                "text": None,
+                "css": None,
+                "xpath": None,
+            }

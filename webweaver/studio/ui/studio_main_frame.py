@@ -1021,7 +1021,8 @@ class StudioMainFrame(wx.Frame):
         if not el:
             return
 
-        self._inspector_panel.append_element(el)
+        info = self._web_browser.describe_element(el)
+        self._inspector_panel.append_element(info)
 
     def _create_inspector_panel(self):
         self._inspector_panel: InspectorPanel = InspectorPanel(self)
