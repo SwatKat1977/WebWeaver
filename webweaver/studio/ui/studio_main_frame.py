@@ -809,26 +809,20 @@ class StudioMainFrame(wx.Frame):
         state = PlaybackToolbarState()
 
         if self._current_state == StudioState.RECORDING_PLAYBACK_IDLE:
-            state = PlaybackToolbarState(
-                can_play=True,
-                can_step=True,
-                can_stop=True
-            )
+            state = PlaybackToolbarState(can_play=True,
+                                         can_step=True,
+                                         can_stop=True)
 
         elif self._current_state == StudioState.RECORDING_PLAYBACK_RUNNING:
-            state = PlaybackToolbarState(
-                can_pause=True,
-                can_stop=True,
-                is_running=True
-            )
+            state = PlaybackToolbarState(can_pause=True,
+                                         can_stop=True,
+                                         is_running=True)
 
         elif self._current_state == StudioState.RECORDING_PLAYBACK_PAUSED:
-            state = PlaybackToolbarState(
-                can_play=True,
-                can_step=True,
-                can_stop=True,
-                is_paused=True
-            )
+            state = PlaybackToolbarState(can_play=True,
+                                         can_step=True,
+                                         can_stop=True,
+                                         is_paused=True)
 
         PlaybackToolbar.apply_state(self._playback_toolbar, state)
         self._aui_mgr.Update()
