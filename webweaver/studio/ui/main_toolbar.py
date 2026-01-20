@@ -25,6 +25,7 @@ from toolbar_icons import (
     load_toolbar_new_solution_icon,
     load_toolbar_open_solution_icon,
     load_toolbar_pause_record_icon,
+    load_toolbar_play_icon,
     load_toolbar_resume_record_icon,
     load_toolbar_save_solution_icon,
     load_toolbar_close_solution_icon,
@@ -57,6 +58,8 @@ TOOLBAR_ID_PAUSE_RECORD: int = wx.ID_HIGHEST + 7
 TOOLBAR_ID_WEB_BROWSER: int = wx.ID_HIGHEST + 8
 """Toolbar command ID for web browser control."""
 
+TOOLBAR_ID_PLAY_RECORDING: int = wx.ID_HIGHEST + 9
+"""Toolbar command ID for playing a recording."""
 
 @dataclass(frozen=True)
 class ToolbarState:
@@ -78,6 +81,7 @@ class ToolbarState:
     can_record: bool = False
     can_pause: bool = False
     can_browse: bool = False
+    can_playback_recording: bool = False
     is_recording: bool = False
     is_paused: bool = False
     is_inspecting: bool = False
@@ -161,6 +165,12 @@ class MainToolbar:
             "Pause Recording")
 
         toolbar.AddTool(
+            TOOLBAR_ID_PLAY_RECORDING,
+            "",
+            load_toolbar_play_icon(),
+            "Play A Recording")
+
+        toolbar.AddTool(
             TOOLBAR_ID_WEB_BROWSER,
             "",
             load_toolbar_web_browser_icon(),
@@ -202,6 +212,11 @@ class MainToolbar:
 
         toolbar.Bind(
             wx.EVT_TOOL,
+            frame.on_playback_mode_event,
+            id=TOOLBAR_ID_PLAY_RECORDING)
+
+        toolbar.Bind(
+            wx.EVT_TOOL,
             frame.on_web_browser_event,
             id=TOOLBAR_ID_WEB_BROWSER)
 
@@ -231,6 +246,7 @@ class MainToolbar:
         toolbar.EnableTool(TOOLBAR_ID_START_STOP_RECORD, False)
         toolbar.EnableTool(TOOLBAR_ID_PAUSE_RECORD, False)
         toolbar.EnableTool(TOOLBAR_ID_WEB_BROWSER, False)
+        toolbar.EnableTool(TOOLBAR_ID_PLAY_RECORDING, False)
 
     @staticmethod
     def apply_state(toolbar: wx.aui.AuiToolBar, state: ToolbarState) -> None:
@@ -252,6 +268,8 @@ class MainToolbar:
         toolbar.EnableTool(TOOLBAR_ID_START_STOP_RECORD, state.can_record)
         toolbar.EnableTool(TOOLBAR_ID_PAUSE_RECORD, state.can_pause)
         toolbar.EnableTool(TOOLBAR_ID_WEB_BROWSER, state.can_browse)
+        toolbar.EnableTool(TOOLBAR_ID_PLAY_RECORDING,
+                           state.can_playback_recording)
 
         # Recording button appearance
         if state.is_recording:

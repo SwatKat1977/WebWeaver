@@ -25,6 +25,7 @@ from resources.toolbar.toolbar_new_project import NEW_PROJECT_ICON
 from resources.toolbar.toolbar_open_project import OPEN_PROJECT_ICON
 from resources.toolbar.toolbar_close_solution import CLOSE_SOLUTION_ICON
 from resources.toolbar.toolbar_pause_record import PAUSE_RECORD_ICON
+from resources.toolbar.toolbar_play_button import PLAY_BUTTON_ICON
 from resources.toolbar.toolbar_save_project import SAVE_PROJECT_ICON
 from resources.toolbar.toolbar_start_record import START_RECORD_ICON
 from resources.toolbar.toolbar_stop_record import STOP_RECORD_ICON
@@ -104,6 +105,18 @@ def load_toolbar_pause_record_icon() -> wx.Bitmap:
         The 'pause recording' toolbar icon.
     """
     return _load_toolbar_icon(PAUSE_RECORD_ICON)
+
+
+def load_toolbar_play_icon() -> wx.Bitmap:
+    """
+    Load the toolbar icon used to play a recording.
+
+    Returns
+    -------
+    wx.Bitmap
+        The 'play recording' toolbar icon.
+    """
+    return _load_toolbar_icon(PLAY_BUTTON_ICON)
 
 
 def load_toolbar_save_solution_icon() -> wx.Bitmap:

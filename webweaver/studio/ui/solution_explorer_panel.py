@@ -212,6 +212,7 @@ class SolutionExplorerPanel(wx.Panel):
             style=wx.TR_HAS_BUTTONS | wx.TR_LINES_AT_ROOT # | wx.TR_HIDE_ROOT
         )
 
+        self._tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self._on_item_activated)
         self.Bind(wx.EVT_TREE_ITEM_MENU, self._on_item_context_menu)
         self.Bind(wx.EVT_MENU,
                   self._on_open_recording,
@@ -380,5 +381,33 @@ class SolutionExplorerPanel(wx.Panel):
 
         evt: wx.CommandEvent = wx.CommandEvent(EVT_DELETE_RECORDING)
         evt.SetClientData(Path(data.metadata.file_path))
+
+        wx.PostEvent(self.GetParent(), evt)
+
+    def _on_item_activated(self, event: wx.TreeEvent) -> None:
+        """
+        Handle double-click / Enter on tree items.
+
+        If a recording item is activated, open it.
+        """
+        item = event.GetItem()
+        if not item.IsOk():
+            return
+
+        data = self._tree.GetItemData(item)
+        if not data:
+            return
+
+        if data.node_type != ExplorerNodeType.RECORDING_ITEM:
+            return
+
+        # Reuse the same logic path as the context menu
+        recording = data.metadata
+        if not recording:
+            return
+
+        evt = wx.CommandEvent(EVT_OPEN_RECORDING)
+        evt.SetClientData(recording)
+        evt.SetEventObject(self)
 
         wx.PostEvent(self.GetParent(), evt)

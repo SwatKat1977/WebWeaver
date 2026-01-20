@@ -30,6 +30,9 @@ class StudioState(enum.Enum):
     RECORDING_RUNNING = enum.auto()
     RECORDING_PAUSED = enum.auto()
     INSPECTING = enum.auto()
+    RECORDING_PLAYBACK_IDLE = enum.auto()
+    RECORDING_PLAYBACK_RUNNING = enum.auto()
+    RECORDING_PLAYBACK_PAUSED = enum.auto()
 
 
 StateChangedCallback = Callable[[StudioState], None]
@@ -153,6 +156,33 @@ class StudioStateController:
 
         else:
             self._set_state(StudioState.SOLUTION_LOADED)
+
+    def on_recording_playback_idle(self) -> None:
+        """
+        Notify the controller that recording playback mode has been entered.
+
+        Transitions the studio into the RECORDING_PLAYBACK_IDLE state, indicating
+        that playback mode is active but execution is not currently running.
+        """
+        self._set_state(StudioState.RECORDING_PLAYBACK_IDLE)
+
+    def on_recording_playback_running(self) -> None:
+        """
+        Notify the controller that recording playback has started or resumed.
+
+        Transitions the studio into the RECORDING_PLAYBACK_RUNNING state,
+        indicating that playback execution is currently in progress.
+        """
+        self._set_state(StudioState.RECORDING_PLAYBACK_RUNNING)
+
+    def on_recording_playback_pause(self) -> None:
+        """
+        Notify the controller that recording playback has been paused.
+
+        Transitions the studio into the RECORDING_PLAYBACK_PAUSED state,
+        indicating that playback execution is suspended but can be resumed.
+        """
+        self._set_state(StudioState.RECORDING_PLAYBACK_PAUSED)
 
     def _set_state(self, new_state: StudioState) -> None:
         """

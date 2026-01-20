@@ -2,6 +2,9 @@
 New Project Icon
 <a href="https://www.flaticon.com/free-icons/new-project" title="new project icons">New project icons created by Vectors Tank - Flaticon</a>
 
+Play Icon
+<a href="https://www.flaticon.com/free-icons/pause-play" title="pause play icons">Pause play icons created by Hilmy Abiyyu A. - Flaticon</a>
+
 Stop Icon
 <a href="https://www.flaticon.com/free-icons/stop-sign" title="stop sign icons">Stop sign icons created by Bartama Graphic - Flaticon</a>
 
