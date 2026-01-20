@@ -62,6 +62,10 @@ class RecordingViewerPanel(wx.Panel):
 
         self._create_ui()
 
+    @property
+    def context(self) -> RecordingViewContext:
+        return self._context
+
     def get_recording_id(self) -> str:
         """
         Retrieve the unique identifier of the recording.

@@ -62,6 +62,7 @@ from ui.main_menu import create_main_menu
 from ui.main_status_bar import MainStatusBar
 from ui.inspector_panel import InspectorPanel
 from ui.playback_toolbar import PlaybackToolbarState, PlaybackToolbar
+from ui.events import EVT_WORKSPACE_ACTIVE_CHANGED
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -229,6 +230,9 @@ class StudioMainFrame(wx.Frame):
 
         # Rename recording event.
         self.Bind(RenameRecordingEvent, self._rename_recording_event)
+
+        self.Bind(EVT_WORKSPACE_ACTIVE_CHANGED,
+                  self._on_workspace_active_changed)
 
         # Force wxAUI to compute sizes/paint.
         self.Layout()
@@ -844,6 +848,8 @@ class StudioMainFrame(wx.Frame):
 
         state = ToolbarState()
 
+        has_recording = self._workspace_panel.has_active_recording()
+
         # Only New/Open make sense
         if self._current_state == StudioState.NO_SOLUTION:
             pass
@@ -856,7 +862,7 @@ class StudioMainFrame(wx.Frame):
                                  can_inspect=browser_is_alive,
                                  can_record=browser_is_alive,
                                  can_browse=True,
-                                 can_playback_recording=True)  # TEMP
+                                 can_playback_recording=has_recording)
 
         elif self._current_state == StudioState.RECORDING_RUNNING:
             state = ToolbarState(can_record=True, can_pause=True,
@@ -878,7 +884,7 @@ class StudioMainFrame(wx.Frame):
             pass
 
         elif self._current_state == StudioState.RECORDING_PLAYBACK_PAUSED:
-            state = ToolbarState(can_playback_recording=True)
+            state = ToolbarState(can_playback_recording=has_recording)
 
         MainToolbar.apply_state(self._toolbar, state)
         self._manage_browser_state()
@@ -1020,3 +1026,6 @@ class StudioMainFrame(wx.Frame):
         if pane.IsOk():
             pane.Show(show)
             self._aui_mgr.Update()
+
+    def _on_workspace_active_changed(self, _evt):
+        self._update_toolbar_state()
