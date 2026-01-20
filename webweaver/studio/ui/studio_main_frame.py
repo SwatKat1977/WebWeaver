@@ -61,7 +61,10 @@ from ui.main_toolbar import MainToolbar, ToolbarState
 from ui.main_menu import create_main_menu
 from ui.main_status_bar import MainStatusBar
 from ui.inspector_panel import InspectorPanel
-from ui.playback_toolbar import PlaybackToolbarState, PlaybackToolbar
+from ui.playback_toolbar import (PlaybackToolbarState,
+                                 PlaybackToolbar,
+                                 PlaybackToolID)
+from ui.events import EVT_WORKSPACE_ACTIVE_CHANGED
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -230,6 +233,22 @@ class StudioMainFrame(wx.Frame):
         # Rename recording event.
         self.Bind(RenameRecordingEvent, self._rename_recording_event)
 
+        self.Bind(EVT_WORKSPACE_ACTIVE_CHANGED,
+                  self._on_workspace_active_changed)
+
+        # --------------------------------------------------------------
+        # Recording playback events
+        # --------------------------------------------------------------
+        self.Bind(wx.EVT_TOOL,
+                  self._on_start_recording_playback,
+                  id=PlaybackToolID.START_PLAYBACK)
+        self.Bind(wx.EVT_TOOL,
+                  self._on_pause_recording_playback,
+                  id=PlaybackToolID.PAUSE_PLAYBACK)
+        self.Bind(wx.EVT_TOOL,
+                  self._on_stop_recording_playback,
+                  id=PlaybackToolID.STOP_PLAYBACK)
+
         # Force wxAUI to compute sizes/paint.
         self.Layout()
         self.SendSizeEvent()
@@ -248,6 +267,7 @@ class StudioMainFrame(wx.Frame):
         """
         self._current_state = new_state
         self._update_toolbar_state()
+        self._update_playback_toolbar_state()
 
     def on_new_solution_event(self, _event: wx.CommandEvent):
         """
@@ -527,10 +547,12 @@ class StudioMainFrame(wx.Frame):
         pane = self._aui_mgr.GetPane("PlaybackToolbar")
 
         if not pane.IsOk():
-            wx.LogWarning("PlaybackToolbar pane not found in AUI manager")
+            print("PlaybackToolbar pane not found in AUI manager")
+            #wx.LogWarning("PlaybackToolbar pane not found in AUI manager")
             return
 
         pane.Show(show)
+
         self._aui_mgr.Update()
 
     def on_web_browser_event(self, _event: wx.CommandEvent):
@@ -638,9 +660,10 @@ class StudioMainFrame(wx.Frame):
             self._current_solution = None
             return False
 
-        self._web_browser = create_driver_from_solution(self._current_solution,
-                                                        self._logger)
-        self._web_browser.open_page(self._current_solution.base_url)
+        if self._current_solution.launch_browser_automatically:
+            self._web_browser = create_driver_from_solution(
+                self._current_solution,self._logger)
+            self._web_browser.open_page(self._current_solution.base_url)
 
         # Update state + UI
         self._state_controller.on_solution_loaded()
@@ -797,6 +820,9 @@ class StudioMainFrame(wx.Frame):
             self._current_solution)
 
     def _update_playback_toolbar_state(self):
+
+        PlaybackToolbar.set_all_disabled(self._playback_toolbar)
+
         # Hide unless in playback
         in_playback = self._current_state in {
             StudioState.RECORDING_PLAYBACK_IDLE,
@@ -809,26 +835,20 @@ class StudioMainFrame(wx.Frame):
         state = PlaybackToolbarState()
 
         if self._current_state == StudioState.RECORDING_PLAYBACK_IDLE:
-            state = PlaybackToolbarState(
-                can_play=True,
-                can_step=True,
-                can_stop=True
-            )
+            state = PlaybackToolbarState(can_play=True,
+                                         can_step=False,
+                                         can_stop=False)
 
         elif self._current_state == StudioState.RECORDING_PLAYBACK_RUNNING:
-            state = PlaybackToolbarState(
-                can_pause=True,
-                can_stop=True,
-                is_running=True
-            )
+            state = PlaybackToolbarState(can_pause=True,
+                                         can_stop=True,
+                                         is_running=True)
 
         elif self._current_state == StudioState.RECORDING_PLAYBACK_PAUSED:
-            state = PlaybackToolbarState(
-                can_play=True,
-                can_step=True,
-                can_stop=True,
-                is_paused=True
-            )
+            state = PlaybackToolbarState(can_play=True,
+                                         can_step=True,
+                                         can_stop=True,
+                                         is_paused=True)
 
         PlaybackToolbar.apply_state(self._playback_toolbar, state)
         self._aui_mgr.Update()
@@ -850,6 +870,8 @@ class StudioMainFrame(wx.Frame):
 
         state = ToolbarState()
 
+        has_recording = self._workspace_panel.has_active_recording()
+
         # Only New/Open make sense
         if self._current_state == StudioState.NO_SOLUTION:
             pass
@@ -862,7 +884,7 @@ class StudioMainFrame(wx.Frame):
                                  can_inspect=browser_is_alive,
                                  can_record=browser_is_alive,
                                  can_browse=True,
-                                 can_playback_recording=True)  # TEMP
+                                 can_playback_recording=has_recording)
 
         elif self._current_state == StudioState.RECORDING_RUNNING:
             state = ToolbarState(can_record=True, can_pause=True,
@@ -884,7 +906,7 @@ class StudioMainFrame(wx.Frame):
             pass
 
         elif self._current_state == StudioState.RECORDING_PLAYBACK_PAUSED:
-            state = ToolbarState(can_playback_recording=True)
+            state = ToolbarState(can_playback_recording=has_recording)
 
         MainToolbar.apply_state(self._toolbar, state)
         self._manage_browser_state()
@@ -1026,3 +1048,38 @@ class StudioMainFrame(wx.Frame):
         if pane.IsOk():
             pane.Show(show)
             self._aui_mgr.Update()
+            PlaybackToolbar.set_all_disabled(self._playback_toolbar)
+
+    def _on_workspace_active_changed(self, _evt):
+
+        if not self._workspace_panel.has_active_recording():
+            self._show_playback_toolbar(False)
+            self._state_controller.on_solution_loaded()
+
+        self._update_toolbar_state()
+        self._update_playback_toolbar_state()
+
+    def _on_start_recording_playback(self, _evt):
+        """
+        Handle the recording playback 'play' button being pressed.
+        """
+        ctx = self._workspace_panel.get_active_recording_context()
+        if not ctx:
+            return
+
+        self._state_controller.on_recording_playback_running()
+        # self._start_playback(ctx)
+
+    def _on_pause_recording_playback(self, _evt):
+        """
+        Handle the recording playback 'pause' button being pressed.
+        """
+        self._state_controller.on_recording_playback_pause()
+        # self._pause_playback(ctx)
+
+    def _on_stop_recording_playback(self, _evt):
+        """
+        Handle the recording playback 'stop' button being pressed.
+        """
+        self._state_controller.on_recording_playback_idle()
+        # self._stop_playback()

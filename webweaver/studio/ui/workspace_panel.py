@@ -18,10 +18,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from pathlib import Path
+from typing import Optional
 import wx
 import wx.aui
 from recording_view_context import RecordingViewContext
 from ui.recording_viewer_panel import RecordingViewerPanel
+from ui.events import WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE
 
 
 class WorkspacePanel(wx.Panel):
@@ -41,9 +43,14 @@ class WorkspacePanel(wx.Panel):
         """
         super().__init__(parent)
 
-        self._notebook: wx.aui.AuiNotebook = None
+        self._notebook: Optional[wx.aui.AuiNotebook] = None
 
         self._create_ui()
+
+        self._notebook.Bind(wx.aui.EVT_AUINOTEBOOK_PAGE_CHANGED,
+                            self._on_page_changed)
+        self._notebook.Bind(wx.aui.EVT_AUINOTEBOOK_PAGE_CLOSED,
+                            self._on_page_changed)
 
     def open_recording(self, ctx: RecordingViewContext):
         """
@@ -169,3 +176,38 @@ class WorkspacePanel(wx.Panel):
             return
 
         self._notebook.DeleteAllPages()
+
+    def get_active_recording_context(self) -> Optional[RecordingViewContext]:
+        """
+        Return the RecordingViewContext for the currently active tab,
+        or None if the active tab is not a recording.
+        """
+        if not self._notebook:
+            return None
+
+        page = self._notebook.GetCurrentPage()
+        if isinstance(page, RecordingViewerPanel):
+            return page.context
+
+        return None
+
+    def has_active_recording(self) -> bool:
+        """
+        Return whether there is currently an active recording open in the workspace.
+
+        This is a convenience helper that checks whether an active
+        RecordingViewContext exists.
+        """
+        return self.get_active_recording_context() is not None
+
+    def _on_page_changed(self, _evt):
+        """
+        Handle notebook page change events and notify the parent window.
+
+        This method is called when the active tab in the workspace notebook
+        changes. It emits a WORKSPACE_ACTIVE_CHANGED event to the parent so
+        that other parts of the UI can update their state accordingly
+        (e.g. toolbars, menus, inspectors).
+        """
+        evt = wx.CommandEvent(WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE)
+        wx.PostEvent(self.GetParent(), evt)

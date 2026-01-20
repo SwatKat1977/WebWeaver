@@ -26,17 +26,30 @@ from ui.playback_toolbar_icons import (
     load_playback_toolbar_stop_icon)
 
 
-TOOLBAR_ID_START_PLAYBACK: int = wx.ID_HIGHEST + 2001
-"""Toolbar command ID for starting playback."""
+class PlaybackToolID:
+    """
+    Namespace container for command IDs used by the playback toolbar.
 
-TOOLBAR_ID_PAUSE_PLAYBACK: int = wx.ID_HIGHEST + 2002
-"""Toolbar command ID for pausing playback."""
+    This class defines unique wxWidgets command identifiers for all playback-
+    related toolbar actions (start, pause, stop, step). These IDs are used when
+    creating toolbar tools and binding their corresponding event handlers.
 
-TOOLBAR_ID_STOP_PLAYBACK: int = wx.ID_HIGHEST + 2003
-"""Toolbar command ID for stopping playback."""
+    The values are allocated relative to wx.ID_HIGHEST to avoid collisions with
+    built-in wxWidgets command IDs.
+    """
+    # pylint: disable=too-few-public-methods
 
-TOOLBAR_ID_STEP_PLAYBACK: int = wx.ID_HIGHEST + 2004
-"""Toolbar command ID for stepping playback."""
+    START_PLAYBACK: int = wx.ID_HIGHEST + 2001
+    """Toolbar command ID for starting playback."""
+
+    PAUSE_PLAYBACK: int = wx.ID_HIGHEST + 2002
+    """Toolbar command ID for pausing playback."""
+
+    STOP_PLAYBACK: int = wx.ID_HIGHEST + 2003
+    """Toolbar command ID for stopping playback."""
+
+    STEP_PLAYBACK: int = wx.ID_HIGHEST + 2004
+    """Toolbar command ID for stepping playback."""
 
 
 @dataclass(slots=True)
@@ -132,49 +145,23 @@ class PlaybackToolbar:
         (play, pause, stop). Additional controls such as step may be added in
         the future.
         """
-        self._btn_play = self._toolbar.AddTool(TOOLBAR_ID_START_PLAYBACK,
+        self._btn_play = self._toolbar.AddTool(PlaybackToolID.START_PLAYBACK,
                                                "",
                                                load_playback_toolbar_play_icon(),
                                                "Start Playback")
-        self._btn_pause = self._toolbar.AddTool(TOOLBAR_ID_PAUSE_PLAYBACK,
+        self._btn_pause = self._toolbar.AddTool(PlaybackToolID.PAUSE_PLAYBACK,
                                                 "",
                                                 load_playback_toolbar_pause_icon(),
                                                 "Pause Playback")
-        self._btn_stop = self._toolbar.AddTool(TOOLBAR_ID_STOP_PLAYBACK,
+        self._btn_stop = self._toolbar.AddTool(PlaybackToolID.STOP_PLAYBACK,
                                                "",
                                                load_playback_toolbar_stop_icon(),
                                                "Stop Playback")
-
         # --- This is a future feature ---
         # self._btn_step = self._toolbar.AddTool(
         #    TOOLBAR_ID_STEP_PLAYBACK, "Step", PlaybackIcons.STEP, kind=wx.ITEM_NORMAL)
 
-        self._toolbar.Bind(wx.EVT_TOOL, self._on_play, self._btn_play)
-        self._toolbar.Bind(wx.EVT_TOOL, self._on_pause, self._btn_pause)
-        self._toolbar.Bind(wx.EVT_TOOL, self._on_stop, self._btn_stop)
-        # self._toolbar.Bind(wx.EVT_TOOL, self._on_step, self._btn_step)
-
     # Event handlers (PLACEHOLDERS FOR NOW)
-    def _on_play(self, _evt):
-        """
-        Handle the Play button being pressed.
-
-        This will eventually start or resume playback via the playback controller.
-        """
-
-    def _on_pause(self, _evt):
-        """
-        Handle the Pause button being pressed.
-
-        This will eventually pause playback via the playback controller.
-        """
-
-    def _on_stop(self, _evt):
-        """
-        Handle the Stop button being pressed.
-
-        This will eventually stop playback and return to the idle playback state.
-        """
 
     def _on_step(self, _evt):
         """
@@ -184,18 +171,19 @@ class PlaybackToolbar:
         """
 
     @staticmethod
-    def set_all_disabled(toolbar: wx.aui.AuiToolBar):
+    def set_all_disabled(toolbar):
         """
         Disable all tools in the given toolbar.
 
         This is used as the first step when applying a new PlaybackToolbarState,
         after which only the appropriate buttons are re-enabled.
         """
-        for tool in toolbar.GetTools():
-            toolbar.EnableTool(tool.GetId(), False)
+        toolbar.toolbar.EnableTool(PlaybackToolID.START_PLAYBACK, False)
+        toolbar.toolbar.EnableTool(PlaybackToolID.PAUSE_PLAYBACK, False)
+        toolbar.toolbar.EnableTool(PlaybackToolID.STOP_PLAYBACK, False)
 
     @staticmethod
-    def apply_state(toolbar: "PlaybackToolbar", state: PlaybackToolbarState):
+    def apply_state(toolbar, state: PlaybackToolbarState):
         """
         Apply a PlaybackToolbarState to the given PlaybackToolbar.
 
@@ -205,18 +193,18 @@ class PlaybackToolbar:
         :param toolbar: The PlaybackToolbar instance to update.
         :param state: The desired UI state for the playback toolbar.
         """
-        PlaybackToolbar.set_all_disabled(toolbar.toolbar)
+        PlaybackToolbar.set_all_disabled(toolbar)
 
         if state.can_play:
-            toolbar.toolbar.EnableTool(TOOLBAR_ID_START_PLAYBACK, True)
+            toolbar.toolbar.EnableTool(PlaybackToolID.START_PLAYBACK, True)
 
         if state.can_pause:
-            toolbar.toolbar.EnableTool(TOOLBAR_ID_PAUSE_PLAYBACK, True)
+            toolbar.toolbar.EnableTool(PlaybackToolID.PAUSE_PLAYBACK, True)
 
         if state.can_stop:
-            toolbar.toolbar.EnableTool(TOOLBAR_ID_STOP_PLAYBACK, True)
+            toolbar.toolbar.EnableTool(PlaybackToolID.STOP_PLAYBACK, True)
 
-        if state.can_step:
-            toolbar.toolbar.EnableTool(TOOLBAR_ID_STEP_PLAYBACK, True)
+        # if state.can_step:
+        #    toolbar.toolbar.EnableTool(PlaybackToolID.TOOLBAR_ID_STEP_PLAYBACK, True)
 
         toolbar.toolbar.Realize()
