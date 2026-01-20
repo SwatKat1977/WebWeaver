@@ -184,18 +184,19 @@ class PlaybackToolbar:
         """
 
     @staticmethod
-    def set_all_disabled(toolbar: wx.aui.AuiToolBar):
+    def set_all_disabled(toolbar):
         """
         Disable all tools in the given toolbar.
 
         This is used as the first step when applying a new PlaybackToolbarState,
         after which only the appropriate buttons are re-enabled.
         """
-        for tool in toolbar.GetTools():
-            toolbar.EnableTool(tool.GetId(), False)
+        toolbar.toolbar.EnableTool(TOOLBAR_ID_START_PLAYBACK, False)
+        toolbar.toolbar.EnableTool(TOOLBAR_ID_PAUSE_PLAYBACK, False)
+        toolbar.toolbar.EnableTool(TOOLBAR_ID_STOP_PLAYBACK, False)
 
     @staticmethod
-    def apply_state(toolbar: "PlaybackToolbar", state: PlaybackToolbarState):
+    def apply_state(toolbar, state: PlaybackToolbarState):
         """
         Apply a PlaybackToolbarState to the given PlaybackToolbar.
 
@@ -205,7 +206,7 @@ class PlaybackToolbar:
         :param toolbar: The PlaybackToolbar instance to update.
         :param state: The desired UI state for the playback toolbar.
         """
-        PlaybackToolbar.set_all_disabled(toolbar.toolbar)
+        PlaybackToolbar.set_all_disabled(toolbar)
 
         if state.can_play:
             toolbar.toolbar.EnableTool(TOOLBAR_ID_START_PLAYBACK, True)

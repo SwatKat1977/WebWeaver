@@ -531,10 +531,12 @@ class StudioMainFrame(wx.Frame):
         pane = self._aui_mgr.GetPane("PlaybackToolbar")
 
         if not pane.IsOk():
-            wx.LogWarning("PlaybackToolbar pane not found in AUI manager")
+            print("PlaybackToolbar pane not found in AUI manager")
+            #wx.LogWarning("PlaybackToolbar pane not found in AUI manager")
             return
 
         pane.Show(show)
+
         self._aui_mgr.Update()
 
     def on_web_browser_event(self, _event: wx.CommandEvent):
@@ -642,9 +644,10 @@ class StudioMainFrame(wx.Frame):
             self._current_solution = None
             return False
 
-        self._web_browser = create_driver_from_solution(self._current_solution,
-                                                        self._logger)
-        self._web_browser.open_page(self._current_solution.base_url)
+        if self._current_solution.launch_browser_automatically:
+            self._web_browser = create_driver_from_solution(
+                self._current_solution,self._logger)
+            self._web_browser.open_page(self._current_solution.base_url)
 
         # Update state + UI
         self._state_controller.on_solution_loaded()
@@ -801,6 +804,9 @@ class StudioMainFrame(wx.Frame):
             self._current_solution)
 
     def _update_playback_toolbar_state(self):
+
+        PlaybackToolbar.set_all_disabled(self._playback_toolbar)
+
         # Hide unless in playback
         in_playback = self._current_state in {
             StudioState.RECORDING_PLAYBACK_IDLE,
@@ -814,8 +820,8 @@ class StudioMainFrame(wx.Frame):
 
         if self._current_state == StudioState.RECORDING_PLAYBACK_IDLE:
             state = PlaybackToolbarState(can_play=True,
-                                         can_step=True,
-                                         can_stop=True)
+                                         can_step=False,
+                                         can_stop=False)
 
         elif self._current_state == StudioState.RECORDING_PLAYBACK_RUNNING:
             state = PlaybackToolbarState(can_pause=True,
@@ -1026,6 +1032,13 @@ class StudioMainFrame(wx.Frame):
         if pane.IsOk():
             pane.Show(show)
             self._aui_mgr.Update()
+            PlaybackToolbar.set_all_disabled(self._playback_toolbar)
 
     def _on_workspace_active_changed(self, _evt):
+
+        if not self._workspace_panel.has_active_recording():
+            self._show_playback_toolbar(False)
+            self._state_controller.on_solution_loaded()
+
         self._update_toolbar_state()
+        self._update_playback_toolbar_state()
