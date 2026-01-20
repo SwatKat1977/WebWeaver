@@ -1042,3 +1042,27 @@ class StudioMainFrame(wx.Frame):
 
         self._update_toolbar_state()
         self._update_playback_toolbar_state()
+
+    def _on_start_recording_playback(self, _evt):
+        """
+        Handle the recording playback 'play' button being pressed.
+        """
+        wx.PostEvent(self._frame,
+                     wx.CommandEvent(wx.EVT_TOOL.typeId,
+                                     TOOLBAR_ID_START_PLAYBACK))
+
+    def _on_pause_recording_playback(self, _evt):
+        """
+        Handle the recording playback 'pause' button being pressed.
+        """
+        wx.PostEvent(self._frame,
+                     wx.CommandEvent(wx.EVT_TOOL.typeId,
+                                     TOOLBAR_ID_PAUSE_PLAYBACK))
+
+    def _on_stop_recording_playback(self, _evt):
+        """
+        Handle the recording playback 'stop' button being pressed.
+        """
+        wx.PostEvent(self._frame,
+                     wx.CommandEvent(wx.EVT_TOOL.typeId,
+                                     TOOLBAR_ID_STOP_PLAYBACK))

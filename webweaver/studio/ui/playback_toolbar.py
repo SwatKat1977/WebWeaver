@@ -25,18 +25,18 @@ from ui.playback_toolbar_icons import (
     # load_playback_toolbar_step_icon,   FUTURE FEATURE
     load_playback_toolbar_stop_icon)
 
+class PlaybackToolID:
+    START_PLAYBACK: int = wx.ID_HIGHEST + 2001
+    """Toolbar command ID for starting playback."""
 
-TOOLBAR_ID_START_PLAYBACK: int = wx.ID_HIGHEST + 2001
-"""Toolbar command ID for starting playback."""
+    PAUSE_PLAYBACK: int = wx.ID_HIGHEST + 2002
+    """Toolbar command ID for pausing playback."""
 
-TOOLBAR_ID_PAUSE_PLAYBACK: int = wx.ID_HIGHEST + 2002
-"""Toolbar command ID for pausing playback."""
+    STOP_PLAYBACK: int = wx.ID_HIGHEST + 2003
+    """Toolbar command ID for stopping playback."""
 
-TOOLBAR_ID_STOP_PLAYBACK: int = wx.ID_HIGHEST + 2003
-"""Toolbar command ID for stopping playback."""
-
-TOOLBAR_ID_STEP_PLAYBACK: int = wx.ID_HIGHEST + 2004
-"""Toolbar command ID for stepping playback."""
+    STEP_PLAYBACK: int = wx.ID_HIGHEST + 2004
+    """Toolbar command ID for stepping playback."""
 
 
 @dataclass(slots=True)
@@ -132,49 +132,23 @@ class PlaybackToolbar:
         (play, pause, stop). Additional controls such as step may be added in
         the future.
         """
-        self._btn_play = self._toolbar.AddTool(TOOLBAR_ID_START_PLAYBACK,
+        self._btn_play = self._toolbar.AddTool(PlaybackToolID.START_PLAYBACK,
                                                "",
                                                load_playback_toolbar_play_icon(),
                                                "Start Playback")
-        self._btn_pause = self._toolbar.AddTool(TOOLBAR_ID_PAUSE_PLAYBACK,
+        self._btn_pause = self._toolbar.AddTool(PlaybackToolID.PAUSE_PLAYBACK,
                                                 "",
                                                 load_playback_toolbar_pause_icon(),
                                                 "Pause Playback")
-        self._btn_stop = self._toolbar.AddTool(TOOLBAR_ID_STOP_PLAYBACK,
+        self._btn_stop = self._toolbar.AddTool(PlaybackToolID.STOP_PLAYBACK,
                                                "",
                                                load_playback_toolbar_stop_icon(),
                                                "Stop Playback")
-
         # --- This is a future feature ---
         # self._btn_step = self._toolbar.AddTool(
         #    TOOLBAR_ID_STEP_PLAYBACK, "Step", PlaybackIcons.STEP, kind=wx.ITEM_NORMAL)
 
-        self._toolbar.Bind(wx.EVT_TOOL, self._on_play, self._btn_play)
-        self._toolbar.Bind(wx.EVT_TOOL, self._on_pause, self._btn_pause)
-        self._toolbar.Bind(wx.EVT_TOOL, self._on_stop, self._btn_stop)
-        # self._toolbar.Bind(wx.EVT_TOOL, self._on_step, self._btn_step)
-
     # Event handlers (PLACEHOLDERS FOR NOW)
-    def _on_play(self, _evt):
-        """
-        Handle the Play button being pressed.
-
-        This will eventually start or resume playback via the playback controller.
-        """
-
-    def _on_pause(self, _evt):
-        """
-        Handle the Pause button being pressed.
-
-        This will eventually pause playback via the playback controller.
-        """
-
-    def _on_stop(self, _evt):
-        """
-        Handle the Stop button being pressed.
-
-        This will eventually stop playback and return to the idle playback state.
-        """
 
     def _on_step(self, _evt):
         """
@@ -191,9 +165,9 @@ class PlaybackToolbar:
         This is used as the first step when applying a new PlaybackToolbarState,
         after which only the appropriate buttons are re-enabled.
         """
-        toolbar.toolbar.EnableTool(TOOLBAR_ID_START_PLAYBACK, False)
-        toolbar.toolbar.EnableTool(TOOLBAR_ID_PAUSE_PLAYBACK, False)
-        toolbar.toolbar.EnableTool(TOOLBAR_ID_STOP_PLAYBACK, False)
+        toolbar.toolbar.EnableTool(PlaybackToolID.START_PLAYBACK, False)
+        toolbar.toolbar.EnableTool(PlaybackToolID.PAUSE_PLAYBACK, False)
+        toolbar.toolbar.EnableTool(PlaybackToolID.STOP_PLAYBACK, False)
 
     @staticmethod
     def apply_state(toolbar, state: PlaybackToolbarState):
