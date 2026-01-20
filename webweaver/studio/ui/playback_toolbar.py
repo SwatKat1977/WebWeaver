@@ -89,17 +89,17 @@ class PlaybackToolbar:
 
     def _create_controls(self):
         self._btn_play = self._toolbar.AddTool(TOOLBAR_ID_START_PLAYBACK,
-                                               "Play",
+                                               "",
                                                load_playback_toolbar_play_icon(),
-                                               kind=wx.ITEM_NORMAL)
+                                               "Start Playback")
         self._btn_pause = self._toolbar.AddTool(TOOLBAR_ID_PAUSE_PLAYBACK,
-                                                "Pause",
+                                                "",
                                                 load_playback_toolbar_pause_icon(),
-                                                kind=wx.ITEM_NORMAL)
+                                                "Pause Playback")
         self._btn_stop = self._toolbar.AddTool(TOOLBAR_ID_STOP_PLAYBACK,
-                                               "Stop",
+                                               "",
                                                load_playback_toolbar_stop_icon(),
-                                               kind=wx.ITEM_NORMAL)
+                                               "Stop Playback")
 
         """ This is a future feature """
         # self._btn_step = self._toolbar.AddTool(

@@ -486,6 +486,38 @@ class StudioMainFrame(wx.Frame):
                 self._state_controller.on_inspector_toggle(True)
                 self._show_inspector_panel(True)
 
+    def on_playback_mode_event(self, _event: wx.CommandEvent):
+        in_playback = self._current_state in {
+            StudioState.RECORDING_PLAYBACK_IDLE,
+            StudioState.RECORDING_PLAYBACK_RUNNING,
+            StudioState.RECORDING_PLAYBACK_PAUSED}
+
+        if not in_playback:
+            self._state_controller.on_recording_playback_idle()
+        else:
+            self._state_controller.on_solution_loaded()
+
+        self._show_playback_toolbar(not in_playback)
+
+    def _show_playback_toolbar(self, show: bool) -> None:
+        """
+        Show or hide the playback toolbar pane.
+
+        This method controls the visibility of the secondary playback toolbar
+        managed by the AUI layout system. Callers should not manipulate the
+        AUI pane directly.
+
+        :param show: True to show the playback toolbar, False to hide it.
+        """
+        pane = self._aui_mgr.GetPane("PlaybackToolbar")
+
+        if not pane.IsOk():
+            wx.LogWarning("PlaybackToolbar pane not found in AUI manager")
+            return
+
+        pane.Show(show)
+        self._aui_mgr.Update()
+
     def on_web_browser_event(self, _event: wx.CommandEvent):
         """
         Handle the Start/Stop Browser action.

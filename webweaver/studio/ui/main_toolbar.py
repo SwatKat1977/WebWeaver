@@ -212,6 +212,11 @@ class MainToolbar:
 
         toolbar.Bind(
             wx.EVT_TOOL,
+            frame.on_playback_mode_event,
+            id=TOOLBAR_ID_PLAY_RECORDING)
+
+        toolbar.Bind(
+            wx.EVT_TOOL,
             frame.on_web_browser_event,
             id=TOOLBAR_ID_WEB_BROWSER)
 
