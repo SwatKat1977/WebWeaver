@@ -61,7 +61,9 @@ from ui.main_toolbar import MainToolbar, ToolbarState
 from ui.main_menu import create_main_menu
 from ui.main_status_bar import MainStatusBar
 from ui.inspector_panel import InspectorPanel
-from ui.playback_toolbar import PlaybackToolbarState, PlaybackToolbar
+from ui.playback_toolbar import (PlaybackToolbarState,
+                                 PlaybackToolbar,
+                                 PlaybackToolID)
 from ui.events import EVT_WORKSPACE_ACTIVE_CHANGED
 
 # macOS menu bar offset
@@ -234,6 +236,19 @@ class StudioMainFrame(wx.Frame):
         self.Bind(EVT_WORKSPACE_ACTIVE_CHANGED,
                   self._on_workspace_active_changed)
 
+        # --------------------------------------------------------------
+        # Recording playback events
+        # --------------------------------------------------------------
+        self.Bind(wx.EVT_TOOL,
+                  self._on_start_recording_playback,
+                  id=PlaybackToolID.START_PLAYBACK)
+        self.Bind(wx.EVT_TOOL,
+                  self._on_pause_recording_playback,
+                  id=PlaybackToolID.PAUSE_PLAYBACK)
+        self.Bind(wx.EVT_TOOL,
+                  self._on_stop_recording_playback,
+                  id=PlaybackToolID.STOP_PLAYBACK)
+
         # Force wxAUI to compute sizes/paint.
         self.Layout()
         self.SendSizeEvent()
@@ -252,6 +267,7 @@ class StudioMainFrame(wx.Frame):
         """
         self._current_state = new_state
         self._update_toolbar_state()
+        self._update_playback_toolbar_state()
 
     def on_new_solution_event(self, _event: wx.CommandEvent):
         """
@@ -1047,22 +1063,23 @@ class StudioMainFrame(wx.Frame):
         """
         Handle the recording playback 'play' button being pressed.
         """
-        wx.PostEvent(self._frame,
-                     wx.CommandEvent(wx.EVT_TOOL.typeId,
-                                     TOOLBAR_ID_START_PLAYBACK))
+        ctx = self._workspace_panel.get_active_recording_context()
+        if not ctx:
+            return
+
+        self._state_controller.on_recording_playback_running()
+        # self._start_playback(ctx)
 
     def _on_pause_recording_playback(self, _evt):
         """
         Handle the recording playback 'pause' button being pressed.
         """
-        wx.PostEvent(self._frame,
-                     wx.CommandEvent(wx.EVT_TOOL.typeId,
-                                     TOOLBAR_ID_PAUSE_PLAYBACK))
+        self._state_controller.on_recording_playback_pause()
+        # self._pause_playback(ctx)
 
     def _on_stop_recording_playback(self, _evt):
         """
         Handle the recording playback 'stop' button being pressed.
         """
-        wx.PostEvent(self._frame,
-                     wx.CommandEvent(wx.EVT_TOOL.typeId,
-                                     TOOLBAR_ID_STOP_PLAYBACK))
+        self._state_controller.on_recording_playback_idle()
+        # self._stop_playback()

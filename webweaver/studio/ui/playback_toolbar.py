@@ -183,15 +183,15 @@ class PlaybackToolbar:
         PlaybackToolbar.set_all_disabled(toolbar)
 
         if state.can_play:
-            toolbar.toolbar.EnableTool(TOOLBAR_ID_START_PLAYBACK, True)
+            toolbar.toolbar.EnableTool(PlaybackToolID.START_PLAYBACK, True)
 
         if state.can_pause:
-            toolbar.toolbar.EnableTool(TOOLBAR_ID_PAUSE_PLAYBACK, True)
+            toolbar.toolbar.EnableTool(PlaybackToolID.PAUSE_PLAYBACK, True)
 
         if state.can_stop:
-            toolbar.toolbar.EnableTool(TOOLBAR_ID_STOP_PLAYBACK, True)
+            toolbar.toolbar.EnableTool(PlaybackToolID.STOP_PLAYBACK, True)
 
-        if state.can_step:
-            toolbar.toolbar.EnableTool(TOOLBAR_ID_STEP_PLAYBACK, True)
+        # if state.can_step:
+        #    toolbar.toolbar.EnableTool(PlaybackToolID.TOOLBAR_ID_STEP_PLAYBACK, True)
 
         toolbar.toolbar.Realize()
