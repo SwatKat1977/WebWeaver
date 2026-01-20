@@ -17,6 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+# pylint: disable=too-many-lines
 import json
 import logging
 from pathlib import Path
@@ -487,6 +488,20 @@ class StudioMainFrame(wx.Frame):
                 self._show_inspector_panel(True)
 
     def on_playback_mode_event(self, _event: wx.CommandEvent):
+        """
+        Handle the user toggling playback mode from the main toolbar.
+
+        This method acts as a mode switch between normal editing mode and
+        playback mode:
+
+        - If the studio is not currently in any playback state, playback mode
+          is entered by transitioning to RECORDING_PLAYBACK_IDLE.
+        - If the studio is already in a playback state, playback mode is exited
+          and the studio returns to the SOLUTION_LOADED state.
+
+        The visibility of the playback toolbar is also updated to match the new
+        mode.
+        """
         in_playback = self._current_state in {
             StudioState.RECORDING_PLAYBACK_IDLE,
             StudioState.RECORDING_PLAYBACK_RUNNING,
