@@ -192,8 +192,22 @@ class WorkspacePanel(wx.Panel):
         return None
 
     def has_active_recording(self) -> bool:
+        """
+        Return whether there is currently an active recording open in the workspace.
+
+        This is a convenience helper that checks whether an active
+        RecordingViewContext exists.
+        """
         return self.get_active_recording_context() is not None
 
     def _on_page_changed(self, _evt):
+        """
+        Handle notebook page change events and notify the parent window.
+
+        This method is called when the active tab in the workspace notebook
+        changes. It emits a WORKSPACE_ACTIVE_CHANGED event to the parent so
+        that other parts of the UI can update their state accordingly
+        (e.g. toolbars, menus, inspectors).
+        """
         evt = wx.CommandEvent(WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE)
         wx.PostEvent(self.GetParent(), evt)

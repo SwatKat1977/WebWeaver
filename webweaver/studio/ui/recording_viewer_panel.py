@@ -64,6 +64,13 @@ class RecordingViewerPanel(wx.Panel):
 
     @property
     def context(self) -> RecordingViewContext:
+        """
+        Return the view context associated with this recording viewer.
+
+        The RecordingViewContext provides access to the recording's metadata,
+        file path, and other information required by the viewer to display and
+        interact with the recording.
+        """
         return self._context
 
     def get_recording_id(self) -> str:
