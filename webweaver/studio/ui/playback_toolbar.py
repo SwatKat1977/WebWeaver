@@ -25,7 +25,20 @@ from ui.playback_toolbar_icons import (
     # load_playback_toolbar_step_icon,   FUTURE FEATURE
     load_playback_toolbar_stop_icon)
 
+
 class PlaybackToolID:
+    """
+    Namespace container for command IDs used by the playback toolbar.
+
+    This class defines unique wxWidgets command identifiers for all playback-
+    related toolbar actions (start, pause, stop, step). These IDs are used when
+    creating toolbar tools and binding their corresponding event handlers.
+
+    The values are allocated relative to wx.ID_HIGHEST to avoid collisions with
+    built-in wxWidgets command IDs.
+    """
+    # pylint: disable=too-few-public-methods
+
     START_PLAYBACK: int = wx.ID_HIGHEST + 2001
     """Toolbar command ID for starting playback."""
 
