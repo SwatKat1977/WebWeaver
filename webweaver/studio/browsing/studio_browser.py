@@ -17,10 +17,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from dataclasses import dataclass
 import logging
-from selenium.common.exceptions import WebDriverException
+from selenium.common.exceptions import (WebDriverException,
+                                        TimeoutException,
+                                        NoSuchElementException)
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from browsing.inspection_js import INSPECTOR_JS
+
 
 BROWSER_JS_INJECTION: str = r"""
 console.log("Inspector script injected.");
@@ -28,13 +34,18 @@ console.log("Inspector script injected.");
 // --------------------
 // Typing debounce state
 // --------------------
-const __typing_timers = new Map();
-const __typing_last_value = new Map();
+var __typing_timers = new Map();
+var __typing_last_value = new Map();
 
-// Global buffered state
-window.__INSPECT_MODE = window.__INSPECT_MODE || false;
-window.__FORCE_INSPECT_MODE = window.__FORCE_INSPECT_MODE || false;
-window.__RECORD_MODE = window.__RECORD_MODE || false;
+// Read persisted mode
+var __wwMode = "none";
+try {
+    __wwMode = window.sessionStorage.getItem("__WW_MODE__") || "none";
+} catch (e) {}
+
+window.__RECORD_MODE = (__wwMode === "record");
+window.__INSPECT_MODE = (__wwMode === "inspect");
+window.__FORCE_INSPECT_MODE = (__wwMode === "inspect");
 
 window.__recorded_actions = window.__recorded_actions || [];
 window.__recorded_outgoing = window.__recorded_outgoing || [];
@@ -339,6 +350,9 @@ document.addEventListener("mousedown", function() {
 // CLICK listener
 // --------------------
 document.addEventListener("click", function(e) {
+
+    console.log("WEBWEAVER CLICK HANDLER FIRED, RECORD_MODE =", window.__RECORD_MODE);
+
     if (!window.__RECORD_MODE) return;
 
     const el = e.target;
@@ -363,6 +377,12 @@ document.addEventListener("click", function(e) {
 document.addEventListener("mouseover", hoverListener, true);
 document.addEventListener("mouseout", outListener, true);
 """
+
+
+@dataclass
+class PlaybackStepResult:
+    ok: bool
+    error: str | None = None
 
 
 class StudioBrowser:
@@ -396,6 +416,7 @@ class StudioBrowser:
         self._inspect_active = False
         self._record_active = False
         self._last_url = None
+        self._cdp_script_installed = False
 
     @property
     def inspect_active(self):
@@ -433,7 +454,7 @@ class StudioBrowser:
 
         self._last_url = url
         # inject immediately on first load
-        self._inject_inspector_js(initial=True)
+        self._inject_inspector_js(execute_in_current_page=True)
 
     def quit(self):
         """
@@ -495,30 +516,18 @@ class StudioBrowser:
             return False
 
     def enable_inspect_mode(self):
-        """
-        Enables DOM inspection mode.
-
-        When active:
-        - Clicking an element stores metadata in
-          `window.__selenium_clicked_element`.
-        - Record mode is disabled.
-        """
         self._inspect_active = True
         self._record_active = False
-
-        self._driver.execute_script("window.__INSPECT_MODE = true;")
-        self._driver.execute_script("window.__RECORD_MODE = false;")
-        self._driver.execute_script("window.__FORCE_INSPECT_MODE = true;")
+        self._driver.execute_script(INSPECTOR_JS)
 
     def disable_inspect_mode(self):
         """
         Disables DOM inspection mode.
-
-        Clears inspector-related state flags in the page.
         """
         self._inspect_active = False
-        self._driver.execute_script("window.__INSPECT_MODE = false;")
-        self._driver.execute_script("window.__FORCE_INSPECT_MODE = false;")
+        self._driver.execute_script(
+            "window.__WEBWEAVER_INSPECT_CLEANUP__ && "
+            "window.__WEBWEAVER_INSPECT_CLEANUP__();")
 
     def enable_record_mode(self):
         """
@@ -531,6 +540,10 @@ class StudioBrowser:
         self._record_active = True
         self._inspect_active = False
 
+        # Persist across navigation's
+        self._driver.execute_script(
+            "window.sessionStorage.setItem('__WW_MODE__', 'record');")
+
         self._driver.execute_script("window.__RECORD_MODE = true;")
         self._driver.execute_script("window.__INSPECT_MODE = false;")
         self._driver.execute_script("window.__FORCE_INSPECT_MODE = false;")
@@ -542,9 +555,20 @@ class StudioBrowser:
         Stops pushing events into the recording buffer.
         """
         self._record_active = False
+        self._driver.execute_script(
+            "window.sessionStorage.setItem('__WW_MODE__', 'none');")
         self._driver.execute_script("window.__RECORD_MODE = false;")
 
-    def pop_recorded_events(self) -> list[dict]:
+    def pop_recorded_events(self):
+        try:
+            return self._driver.execute_script(
+                "return window.__ww_pop ? window.__ww_pop() : [];"
+            )
+        except Exception as e:
+            print("POP ERROR:", e)
+            return []
+
+    def pop_recorded_events______(self) -> list[dict]:
         """
         Retrieve and clear any recorded user interaction events from the page.
 
@@ -625,31 +649,19 @@ class StudioBrowser:
         except WebDriverException:
             return None
 
-    def _inject_inspector_js(self, initial=False):
-        """
-        Injects the inspector.js script into the browser context.
-
-        The script is:
-        - Registered with Chrome DevTools Protocol so that it automatically runs
-          on every new document load.
-        - Optionally executed immediately in the currently loaded page.
-
-        Parameters
-        ----------
-        initial : bool
-            If True, the script is executed immediately in the current DOM.
-            If False, only CDP registration is performed.
-        """
-
+    def _inject_inspector_js(self, execute_in_current_page: bool) -> None:
         self._logger.info("Injecting web browser javascript: Started")
 
-        # Always register CDP script so it loads on EVERY navigation
-        self._driver.execute_cdp_cmd(
-            "Page.addScriptToEvaluateOnNewDocument",
-            {"source": BROWSER_JS_INJECTION})
+        if not self._cdp_script_installed:
+            self._driver.execute_cdp_cmd(
+                "Page.addScriptToEvaluateOnNewDocument",
+                {"source": BROWSER_JS_INJECTION}
+            )
+            self._cdp_script_installed = True
 
-        # Inject into CURRENT document ONLY during the initial load
-        if initial:
+        # Only run the full script in the current DOM when we *must*.
+        # After navigation, CDP already ran it for the new document.
+        if execute_in_current_page:
             self._driver.execute_script(BROWSER_JS_INJECTION)
 
         self._logger.info("Injecting web browser javascript: Completed")
@@ -677,7 +689,7 @@ class StudioBrowser:
             pass
 
         # Re-inject JS
-        self._inject_inspector_js(initial=False)
+        self._inject_inspector_js(execute_in_current_page=False)
 
         # Restore active mode
         if self._record_active:
@@ -706,7 +718,7 @@ class StudioBrowser:
             xpath = self._driver.execute_script(
                 """
                 function getXPath(el) {
-                    if (el.id) return '//*[@id="' + el.id + '"]';
+                    if (el.id) return '//*\[@id="' + el.id + '"]';
                     const parts = [];
                     while (el && el.nodeType === 1) {
                         let index = 1;
@@ -744,10 +756,43 @@ class StudioBrowser:
                 "xpath": None,
             }
 
-    def playback_click(self, ev: dict):
-        if ev.get("css"):
-            el = self._driver.find_element(By.CSS_SELECTOR, ev["css"])
-        else:
-            el = self._driver.find_element(By.XPATH, ev["xpath"])
+    def playback_click(self, payload: dict) -> PlaybackStepResult:
+        xpath = payload.get("xpath")
+        selector = payload.get("selector")
 
-        el.click()
+        wait = WebDriverWait(self._driver, 10)
+
+        try:
+            if xpath:
+                el = wait.until(
+                    EC.element_to_be_clickable((By.XPATH, xpath))
+                )
+            elif selector:
+                el = wait.until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, selector))
+                )
+            else:
+                return PlaybackStepResult(
+                    ok=False,
+                    error="No selector or xpath in event payload"
+                )
+
+            el.click()
+            return PlaybackStepResult(ok=True)
+
+        except TimeoutException:
+            return PlaybackStepResult(
+                ok=False,
+                error="Timed out waiting for element to become clickable"
+            )
+
+        except NoSuchElementException:
+            return PlaybackStepResult(
+                ok=False,
+                error="Element not found"
+            )
+
+        except Exception as e:
+            return PlaybackStepResult(
+                ok=False,
+                error=str(e))
