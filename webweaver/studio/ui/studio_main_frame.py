@@ -65,6 +65,8 @@ from ui.playback_toolbar import (PlaybackToolbarState,
                                  PlaybackToolbar,
                                  PlaybackToolID)
 from ui.events import EVT_WORKSPACE_ACTIVE_CHANGED
+from playback.recording_playback_session import RecordingPlaybackSession
+from recording.recording_loader import load_recording_from_context
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -130,6 +132,13 @@ class StudioMainFrame(wx.Frame):
         self.recent_solutions_menu: Optional[wx.Menu] = None
 
         self._playback_toolbar: Optional[PlaybackToolbar] = None
+
+        # --------------------------------------------------------------
+        # Recording Playback Parameters
+        # --------------------------------------------------------------
+        self._playback_session: Optional[RecordingPlaybackSession] = None
+        self._playback_timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self._on_playback_timer, self._playback_timer)
 
         # Recording timer for capturing elements.
         self._recording_timer = wx.Timer(self)
@@ -1069,7 +1078,12 @@ class StudioMainFrame(wx.Frame):
             return
 
         self._state_controller.on_recording_playback_running()
-        # self._start_playback(ctx)
+
+        recording = load_recording_from_context(ctx)
+
+        self._playback_session = RecordingPlaybackSession(self._web_browser, recording)
+        self._playback_session.start()
+        self._playback_timer.Start(200)
 
     def _on_pause_recording_playback(self, _evt):
         """
@@ -1084,3 +1098,14 @@ class StudioMainFrame(wx.Frame):
         """
         self._state_controller.on_recording_playback_idle()
         # self._stop_playback()
+
+    def _on_playback_timer(self, _evt):
+        print("[CALL] _on_playback_timer")
+
+        if not self._playback_session:
+            return
+
+        still_running = self._playback_session.step()
+        if not still_running:
+            self._playback_timer.Stop()
+            self._state_controller.on_recording_playback_idle()

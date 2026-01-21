@@ -17,7 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from browsing.studio_browser import StudioBrowser
+from browsing.studio_browser import PlaybackStepResult, StudioBrowser
 from recording.recording import Recording
 
 
@@ -39,26 +39,47 @@ class RecordingPlaybackSession:
     def stop(self):
         self._running = False
 
-    def step(self):
+    def step(self) -> bool:
         if not self._running:
-            return
+            return False
 
         if self._index >= len(self._recording.events):
             self.stop()
-            return
+            return False
 
-        ev = self._recording.events[self._index]
-        self._execute_event(ev)
+        event = self._recording.events[self._index]
+        result = self._execute_event(event)
+
+        if not result.ok:
+            print("Playback failed:", result.error)
+            self.stop()
+            return False
+
         self._index += 1
 
-    def _execute_event(self, ev: dict):
-        kind = ev.get("__kind")
+        return True
 
-        if kind == "click":
-            self._browser.playback_click(ev)
+    def _execute_event(self, event: dict):
+        event_type = event.get("type")
+        payload = event.get("payload", {})
 
-        elif kind == "nav.goto":
-            self._browser.open_page(ev["url"])
+        if event_type == "dom.check":
+            print(f"[EVENT] Check: {payload}")
+
+        elif event_type == "dom.click":
+            print(f"=> Clicking: {payload}")
+            return self._browser.playback_click(payload)
+
+        elif event_type == "nav.goto":
+            self._browser.open_page(event["url"])
+
+        elif event_type == "dom.select":
+            print(f"[EVENT] Select: {payload}")
+
+        elif event_type == "dom.type":
+            print(f"[EVENT] Type: {payload}")
 
         else:
-            print("Unknown event:", kind)
+            print("Unknown event:", event_type)
+
+        return PlaybackStepResult(ok=True, error="")
