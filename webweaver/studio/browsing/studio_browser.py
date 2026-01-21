@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import logging
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.support.ui import WebDriverWait
-
+from selenium.webdriver.common.by import By
 
 BROWSER_JS_INJECTION: str = r"""
 console.log("Inspector script injected.");
@@ -743,3 +743,11 @@ class StudioBrowser:
                 "css": None,
                 "xpath": None,
             }
+
+    def playback_click(self, ev: dict):
+        if ev.get("css"):
+            el = self._driver.find_element(By.CSS_SELECTOR, ev["css"])
+        else:
+            el = self._driver.find_element(By.XPATH, ev["xpath"])
+
+        el.click()
