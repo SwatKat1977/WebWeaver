@@ -192,31 +192,12 @@ class RecordingSession:
 
         events = self._recording_json["recording"]["events"]
 
-        selector = (payload.get("selector") or "").lower()
+        xpath = payload.get("xpath")
+        if not xpath:
+            return  # malformed event, ignore
 
         # ------------------------------------------------------------
-        # 1) Drop useless clicks on layout / non-interactive elements
-        # ------------------------------------------------------------
-        if event_type == RecordingEventType.DOM_CLICK:
-            # Very simple heuristic for now (we can refine later)
-            if (
-                    selector.startswith("div") or
-                    selector.startswith("span") or
-                    selector.startswith("h") or
-                    selector.startswith("p")
-            ):
-                return
-
-            # Only keep clicks that look like real actions
-            if not (
-                    selector.startswith("button") or
-                    selector.startswith("a") or
-                    "button" in selector
-            ):
-                return
-
-        # ------------------------------------------------------------
-        # 2) If this is SELECT or CHECK, and last event was CLICK
+        # If this is SELECT or CHECK, and last event was CLICK
         #    on same element -> remove the click
         # ------------------------------------------------------------
         if event_type in (RecordingEventType.DOM_SELECT, RecordingEventType.DOM_CHECK):
@@ -224,7 +205,7 @@ class RecordingSession:
                 last = events[-1]
                 if (
                         last["type"] == RecordingEventType.DOM_CLICK.value and
-                        last["payload"].get("selector") == payload.get("selector")
+                        last["payload"].get("xpath") == payload.get("xpath")
                 ):
                     events.pop()
                     self._next_index -= 1
@@ -242,7 +223,7 @@ class RecordingSession:
             ):
                 if (
                         last["type"] == event_type.value and
-                        last["payload"].get("selector") == payload.get("selector")
+                        last["payload"].get("xpath") == payload.get("xpath")
                 ):
                     # Replace last event instead of appending
                     last["timestamp"] = elapsed_ms

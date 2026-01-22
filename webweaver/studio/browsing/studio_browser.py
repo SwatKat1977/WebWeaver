@@ -26,357 +26,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from browsing.inspection_js import INSPECTOR_JS
-
-
-BROWSER_JS_INJECTION: str = r"""
-console.log("Inspector script injected.");
-
-// --------------------
-// Typing debounce state
-// --------------------
-var __typing_timers = new Map();
-var __typing_last_value = new Map();
-
-// Read persisted mode
-var __wwMode = "none";
-try {
-    __wwMode = window.sessionStorage.getItem("__WW_MODE__") || "none";
-} catch (e) {}
-
-window.__RECORD_MODE = (__wwMode === "record");
-window.__INSPECT_MODE = (__wwMode === "inspect");
-window.__FORCE_INSPECT_MODE = (__wwMode === "inspect");
-
-window.__recorded_actions = window.__recorded_actions || [];
-window.__recorded_outgoing = window.__recorded_outgoing || [];
-
-// Global inspect buffer (shared with Selenium)
-window.top.__selenium_clicked_element = null;
-
-function now() { return Date.now(); }
-
-// Restore Inspect Mode after navigation only if requested
-if (window.__FORCE_INSPECT_MODE === true) {
-    window.__INSPECT_MODE = true;
-}
-
-// Disable inspect mode if not used
-if (window.__FORCE_INSPECT_MODE === false) {
-    window.__INSPECT_MODE = false;
-}
-
-function __record_type_if_text_input(el) {
-    if (!el) return;
-
-    if (el.tagName === "TEXTAREA") {
-        // ok
-    } else if (el.tagName === "INPUT") {
-        const t = (el.type || "").toLowerCase();
-        if (!["text","email","password","search","url","number"].includes(t)) {
-            return;
-        }
-    } else {
-        return;
-    }
-
-    const value = (typeof el.value === "string") ? el.value : "";
-    if (!value) return;
-
-    const ev = {
-        __kind: "type",
-        selector: getCssSelector(el),
-        xpath: getXPath(el),
-        value: value,
-        time: now()
-    };
-
-    window.__recorded_actions.push(ev);
-    window.__recorded_outgoing.push(ev);
-}
-
-function __is_text_input(el) {
-    if (!el) return false;
-
-    if (el.tagName === "TEXTAREA") return true;
-
-    if (el.tagName === "INPUT") {
-        const t = (el.type || "").toLowerCase();
-        return ["text", "email", "password", "search", "url", "number"].includes(t);
-    }
-
-    return false;
-}
-
-function __flush_typing(el) {
-    // Only ever flush REAL text inputs
-    if (!__is_text_input(el)) return;
-
-    // Always trust the live DOM value
-    const value = (typeof el.value === "string") ? el.value : "";
-    if (value === "") return; // don't record empty garbage
-
-    const ev = {
-        __kind: "type",
-        selector: getCssSelector(el),
-        xpath: getXPath(el),
-        value: value,
-        time: now()
-    };
-
-    // ---- coalesce ----
-    const arr = window.__recorded_actions;
-    const last = arr.length > 0 ? arr[arr.length - 1] : null;
-
-    if (
-        last &&
-        last.__kind === "type" &&
-        last.selector === ev.selector
-    ) {
-        // Replace last
-        last.value = ev.value;
-        last.time = ev.time;
-
-        const out = window.__recorded_outgoing;
-        if (out.length > 0) {
-            const lastOut = out[out.length - 1];
-            if (
-                lastOut.__kind === "type" &&
-                lastOut.selector === ev.selector
-            ) {
-                lastOut.value = ev.value;
-                lastOut.time = ev.time;
-            } else {
-                out.push(ev);
-            }
-        }
-    } else {
-        window.__recorded_actions.push(ev);
-        window.__recorded_outgoing.push(ev);
-    }
-
-    __typing_last_value.delete(el);
-
-    if (__typing_timers.has(el)) {
-        clearTimeout(__typing_timers.get(el));
-        __typing_timers.delete(el);
-    }
-}
-
-function getCssSelector(el) {
-    if (el.id) return "#" + el.id;
-    if (el.className)
-        return el.tagName.toLowerCase() + "." +
-               el.className.trim().replace(/\s+/g, ".");
-    return el.tagName.toLowerCase();
-}
-
-window.__drain_recorded_events = function() {
-    const out = window.__recorded_outgoing || [];
-    window.__recorded_outgoing = [];
-    return out;
-}
-
-function getXPath(el) {
-    if (el.id) return `//*[@id="${el.id}"]`;
-    const parts = [];
-    while (el && el.nodeType === 1) {
-        let index = 1;
-        let sibling = el.previousSibling;
-        while (sibling) {
-            if (sibling.nodeType === 1 && sibling.nodeName === el.nodeName) index++;
-            sibling = sibling.previousSibling;
-        }
-        parts.unshift(el.nodeName + "[" + index + "]");
-        el = el.parentNode;
-    }
-    return "/" + parts.join("/");
-}
-
-// --------------------
-// Hover highlight (INSPECT MODE ONLY)
-// --------------------
-function hoverListener(e) {
-    if (!window.__INSPECT_MODE && !window.__RECORD_MODE) return;
-    e.target.__old_outline = e.target.style.outline;
-    e.target.style.outline = "2px solid red";
-}
-
-function outListener(e) {
-    if (!window.__INSPECT_MODE && !window.__RECORD_MODE) return;
-    e.target.style.outline = e.target.__old_outline || "";
-    delete e.target.__old_outline;
-}
-
-// --------------------
-// INPUT listener (RECORD MODE ONLY, DEBOUNCED)
-// --------------------
-document.addEventListener("input", function(e) {
-    if (!window.__RECORD_MODE) return;
-
-    const el = e.target;
-    if (!el) return;
-
-    if (el.tagName === "TEXTAREA") {
-        // ok
-    } else if (el.tagName === "INPUT") {
-        const t = (el.type || "").toLowerCase();
-        if (t !== "text" && t !== "email" && t !== "password" && t !== "search" && t !== "url" && t !== "number") {
-            return; // not a text field
-        }
-    } else {
-        return;
-    }
-
-    // Remember latest value
-    __typing_last_value.set(el, el.value);
-
-    // Clear existing timer
-    if (__typing_timers.has(el)) {
-        clearTimeout(__typing_timers.get(el));
-    }
-
-    // Start / restart debounce timer
-    const timer = setTimeout(() => {
-        __flush_typing(el);
-    }, 400);
-
-    __typing_timers.set(el, timer);
-
-}, true);
-
-// --------------------
-// CHANGE listener (text inputs, checkbox, radio, select)
-// --------------------
-document.addEventListener("change", function(e) {
-    if (!window.__RECORD_MODE) return;
-
-    const el = e.target;
-    if (!el) return;
-
-    // TEXT INPUTS
-    __record_type_if_text_input(el);
-
-    // CHECKBOX / RADIO
-    if (el.tagName === "INPUT") {
-        const t = (el.type || "").toLowerCase();
-        if (t === "checkbox" || t === "radio") {
-
-            const ev = {
-                __kind: "check",
-                selector: getCssSelector(el),
-                xpath: getXPath(el),
-                checked: el.checked,
-                time: now()
-            };
-
-            window.__recorded_actions.push(ev);
-            window.__recorded_outgoing.push(ev);
-            return;
-        }
-    }
-
-    // SELECT
-    if (el.tagName === "SELECT") {
-        const ev = {
-            __kind: "select",
-            selector: getCssSelector(el),
-            xpath: getXPath(el),
-            value: el.value,
-            time: now()
-        };
-
-        window.__recorded_actions.push(ev);
-        window.__recorded_outgoing.push(ev);
-        return;
-    }
-
-}, true);
-
-// --------------------
-// CLICK listener (INSPECT MODE)
-// --------------------
-document.addEventListener("click", function(e) {
-    if (!window.__INSPECT_MODE) return;
-
-    const el = e.target;
-    if (!el) return;
-
-    // Store the clicked element for Selenium to retrieve
-    window.top.__selenium_clicked_element = el;
-
-    console.log("INSPECT picked element:", el);
-
-    // Prevent the page from actually handling the click
-    e.preventDefault();
-    e.stopPropagation();
-
-}, true);
-
-document.addEventListener("submit", function(e) {
-    if (!window.__RECORD_MODE) return;
-
-    const form = e.target;
-    if (!form) return;
-
-    const inputs = form.querySelectorAll("input, textarea");
-    for (const el of inputs) {
-        __record_type_if_text_input(el);
-    }
-}, true);
-
-// --------------------
-// BLUR listener (force flush typing immediately)
-// --------------------
-document.addEventListener("blur", function(e) {
-    if (!window.__RECORD_MODE) return;
-    __record_type_if_text_input(e.target);
-}, true);
-
-// --------------------
-// MOUSEDOWN listener: flush pending typing before clicks
-// --------------------
-document.addEventListener("mousedown", function() {
-    if (!window.__RECORD_MODE) return;
-
-    for (const el of __typing_last_value.keys()) {
-        if (!__is_text_input(el)) continue;
-
-        __flush_typing(el);
-        setTimeout(() => __flush_typing(el), 250);
-    }
-}, true);
-
-// --------------------
-// CLICK listener
-// --------------------
-document.addEventListener("click", function(e) {
-
-    console.log("WEBWEAVER CLICK HANDLER FIRED, RECORD_MODE =", window.__RECORD_MODE);
-
-    if (!window.__RECORD_MODE) return;
-
-    const el = e.target;
-    if (!el) return;
-
-    const ev = {
-        __kind: "click",
-        selector: getCssSelector(el),
-        xpath: getXPath(el),
-        x: e.clientX,
-        y: e.clientY,
-        time: now()
-    };
-
-    window.__recorded_actions.push(ev);
-    window.__recorded_outgoing.push(ev);
-}, true);
-
-// --------------------
-// Hover listeners
-// --------------------
-document.addEventListener("mouseover", hoverListener, true);
-document.addEventListener("mouseout", outListener, true);
-"""
+from browsing.recording_js import RECORDING_JS, RECORDING_ENABLE_BOOTSTRAP
 
 
 @dataclass
@@ -416,7 +66,9 @@ class StudioBrowser:
         self._inspect_active = False
         self._record_active = False
         self._last_url = None
-        self._cdp_script_installed = False
+        self._cdp_inspect_installed = False
+        self._cdp_record_installed = False
+        self._cdp_record_enable_script_id = None
 
     @property
     def inspect_active(self):
@@ -453,8 +105,6 @@ class StudioBrowser:
         self._driver.get(url)
 
         self._last_url = url
-        # inject immediately on first load
-        self._inject_inspector_js(execute_in_current_page=True)
 
     def quit(self):
         """
@@ -515,6 +165,10 @@ class StudioBrowser:
         except WebDriverException:
             return False
 
+    # --------------------------------------------------------------
+    # Inspection functionality
+    # --------------------------------------------------------------
+
     def enable_inspect_mode(self):
         self._inspect_active = True
         self._record_active = False
@@ -528,92 +182,6 @@ class StudioBrowser:
         self._driver.execute_script(
             "window.__WEBWEAVER_INSPECT_CLEANUP__ && "
             "window.__WEBWEAVER_INSPECT_CLEANUP__();")
-
-    def enable_record_mode(self):
-        """
-        Enables event recording mode.
-
-        When active:
-        - UI interaction events are collected into `window.__recorded_outgoing`.
-        - Inspect mode is disabled.
-        """
-        self._record_active = True
-        self._inspect_active = False
-
-        # Persist across navigation's
-        self._driver.execute_script(
-            "window.sessionStorage.setItem('__WW_MODE__', 'record');")
-
-        self._driver.execute_script("window.__RECORD_MODE = true;")
-        self._driver.execute_script("window.__INSPECT_MODE = false;")
-        self._driver.execute_script("window.__FORCE_INSPECT_MODE = false;")
-
-    def disable_record_mode(self):
-        """
-        Disables event recording mode.
-
-        Stops pushing events into the recording buffer.
-        """
-        self._record_active = False
-        self._driver.execute_script(
-            "window.sessionStorage.setItem('__WW_MODE__', 'none');")
-        self._driver.execute_script("window.__RECORD_MODE = false;")
-
-    def pop_recorded_events(self):
-        try:
-            return self._driver.execute_script(
-                "return window.__ww_pop ? window.__ww_pop() : [];"
-            )
-        except Exception as e:
-            print("POP ERROR:", e)
-            return []
-
-    def pop_recorded_events______(self) -> list[dict]:
-        """
-        Retrieve and clear any recorded user interaction events from the page.
-
-        This calls into the injected recording script and drains its internal
-        event buffer. If recording is not active, or if the page does not yet
-        have the recording infrastructure injected, this returns an empty list.
-
-        This method is designed to be safe to call repeatedly and will never
-        raise if the browser or page is in a transient state.
-
-        :return: A list of event dictionaries describing recorded user actions.
-        """
-
-        try:
-            return self._driver.execute_script(
-                ("return window.__drain_recorded_events ? "
-                 "window.__drain_recorded_events() : [];"))
-
-        except WebDriverException:
-            return []
-
-    def poll(self) -> None:
-        """
-        Poll the browser for navigation changes and reinject scripts if needed.
-
-        This method is intended to be called periodically by the Studio application
-        (e.g. from a timer or main loop). It checks whether the browser has navigated
-        to a different URL since the last poll, and if so:
-
-        - Waits for the new document to finish loading
-        - Re-injects the inspector/recorder JavaScript
-        - Restores the previously active mode (inspect or record)
-
-        If the browser is no longer reachable or is in an invalid state, this
-        method fails silently.
-        """
-        try:
-            current_url = self._driver.current_url
-
-        except WebDriverException:
-            return
-
-        if current_url != self._last_url:
-            self._last_url = current_url
-            self._handle_navigation()
 
     def poll_inspected_element(self):
         """
@@ -649,53 +217,132 @@ class StudioBrowser:
         except WebDriverException:
             return None
 
-    def _inject_inspector_js(self, execute_in_current_page: bool) -> None:
-        self._logger.info("Injecting web browser javascript: Started")
+    def _inject_inspector_js(self) -> None:
+        self._logger.info("Injecting 'inspect' javascript: Started")
 
-        if not self._cdp_script_installed:
+        if not self._cdp_inspect_installed:
             self._driver.execute_cdp_cmd(
                 "Page.addScriptToEvaluateOnNewDocument",
-                {"source": BROWSER_JS_INJECTION}
+                {"source": INSPECTOR_JS})
+            self._cdp_inspect_installed = True
+
+        # Inject into current page
+        self._driver.execute_script(INSPECTOR_JS)
+
+        self._logger.info("Injecting 'inspect' javascript: Completed")
+
+    # --------------------------------------------------------------
+    # Recording functionality
+    # --------------------------------------------------------------
+
+    def _ensure_recording_js_installed(self) -> None:
+        if not self._cdp_record_installed:
+            self._driver.execute_cdp_cmd(
+                "Page.addScriptToEvaluateOnNewDocument",
+                {"source": RECORDING_JS}
             )
-            self._cdp_script_installed = True
+            self._cdp_record_installed = True
 
-        # Only run the full script in the current DOM when we *must*.
-        # After navigation, CDP already ran it for the new document.
-        if execute_in_current_page:
-            self._driver.execute_script(BROWSER_JS_INJECTION)
+        # Ensure installed in the current document too
+        self._driver.execute_script(RECORDING_JS)
 
-        self._logger.info("Injecting web browser javascript: Completed")
+    def enable_record_mode(self):
+        self._record_active = True
 
-    def _handle_navigation(self) -> None:
+        # Ensure recorder exists everywhere
+        self._ensure_recording_js_installed()
+
+        # Install ENABLE flag bootstrap for all FUTURE documents
+        if not self._cdp_record_enable_script_id:
+            result = self._driver.execute_cdp_cmd(
+                "Page.addScriptToEvaluateOnNewDocument",
+                {"source": "window.__WW_RECORD_ENABLED__ = true;"}
+            )
+            # Chrome returns an identifier sometimes, sometimes not; store anyway
+            self._cdp_record_enable_script_id = result.get("identifier")
+
+        # Enable in CURRENT document
+        self._driver.execute_script("window.__WW_RECORD_ENABLED__ = true;")
+
+        print("ENABLE CHECK:",
+              self._driver.execute_script(
+                  "return [window.__WW_REC_INSTALLED__, window.__WW_RECORD_ENABLED__];"
+              ))
+
+    def disable_record_mode(self):
         """
-        Handle post-navigation setup after the browser changes page.
-
-        This method:
-
-        - Waits (briefly) for the DOM to reach the 'complete' ready state
-        - Re-injects the inspector/recorder JavaScript into the new page
-        - Restores whichever mode (inspect or record) was active before navigation
-
-        This is called automatically by `poll()` when a URL change is detected.
+        Disables event recording mode.
         """
+        self._record_active = False
 
-        # Wait for DOM ready
+        # Disable in current page
+        try:
+            self._driver.execute_script("window.__WW_RECORD_ENABLED__ = false;")
+
+        except Exception:
+            pass
+
+        # Remove the bootstrap so future documents default to false again
+        if self._cdp_record_enable_script_id:
+            try:
+                self._driver.execute_cdp_cmd(
+                    "Page.removeScriptToEvaluateOnNewDocument",
+                    {"identifier": self._cdp_record_enable_script_id})
+            except WebDriverException:
+                pass
+
+            self._cdp_record_enable_script_id = None
+
+    def pop_recorded_events(self) -> list[dict]:
+        try:
+            return self._driver.execute_script(
+                "return window.__drain_recorded_events ? "
+                "window.__drain_recorded_events() : [];")
+
+        except Exception as e:
+            print("POP ERROR:", e)
+            return []
+
+    def poll(self) -> None:
+        """
+        Poll the browser for navigation changes and reinject scripts if needed.
+
+        This method is intended to be called periodically by the Studio application
+        (e.g. from a timer or main loop). It checks whether the browser has navigated
+        to a different URL since the last poll, and if so:
+
+        - Waits for the new document to finish loading
+        - Re-injects the inspector/recorder JavaScript
+        - Restores the previously active mode (inspect or record)
+
+        If the browser is no longer reachable or is in an invalid state, this
+        method fails silently.
+        """
+        try:
+            current_url = self._driver.current_url
+
+        except WebDriverException:
+            return
+
+        if current_url != self._last_url:
+            self._last_url = current_url
+            self._on_navigation()
+
+    def _on_navigation(self) -> None:
         try:
             WebDriverWait(self._driver, 10).until(
-                lambda d: d.execute_script(
-                    "return document.readyState") == "complete")
-
+                lambda d: d.execute_script("return document.readyState") == "complete"
+            )
         except WebDriverException:
             pass
 
-        # Re-inject JS
-        self._inject_inspector_js(execute_in_current_page=False)
-
-        # Restore active mode
         if self._record_active:
-            self.enable_record_mode()
-        elif self._inspect_active:
-            self.enable_inspect_mode()
+            # Re-enable recording flag in the new document
+            self._driver.execute_script("window.__WW_RECORD_ENABLED__ = true;")
+
+    # --------------------------------------------------------------
+    # Playback functionality
+    # --------------------------------------------------------------
 
     def describe_element(self, el):
         """
@@ -758,25 +405,11 @@ class StudioBrowser:
 
     def playback_click(self, payload: dict) -> PlaybackStepResult:
         xpath = payload.get("xpath")
-        selector = payload.get("selector")
 
         wait = WebDriverWait(self._driver, 10)
 
         try:
-            if xpath:
-                el = wait.until(
-                    EC.element_to_be_clickable((By.XPATH, xpath))
-                )
-            elif selector:
-                el = wait.until(
-                    EC.element_to_be_clickable((By.CSS_SELECTOR, selector))
-                )
-            else:
-                return PlaybackStepResult(
-                    ok=False,
-                    error="No selector or xpath in event payload"
-                )
-
+            el = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
             el.click()
             return PlaybackStepResult(ok=True)
 
@@ -796,3 +429,4 @@ class StudioBrowser:
             return PlaybackStepResult(
                 ok=False,
                 error=str(e))
+

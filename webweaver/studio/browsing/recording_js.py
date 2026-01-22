@@ -23,6 +23,10 @@ RECORDING_JS = r"""
     if (window.__WW_REC_INSTALLED__) return;
     window.__WW_REC_INSTALLED__ = true;
 
+    if (typeof window.__WW_RECORD_ENABLED__ === "undefined") {
+        window.__WW_RECORD_ENABLED__ = false;
+    }
+
     window.__recorded_outgoing = [];
 
     window.__drain_recorded_events = function () {
@@ -31,21 +35,42 @@ RECORDING_JS = r"""
         return out;
     };
 
+    function now() { return Date.now(); }
+
+    function getXPath(el) {
+        if (el.id) return '//*[@id="' + el.id + '"]';
+
+        var parts = [];
+        while (el && el.nodeType === 1) {
+            var index = 1;
+            var sibling = el.previousSibling;
+            while (sibling) {
+                if (sibling.nodeType === 1 && sibling.nodeName === el.nodeName) {
+                    index++;
+                }
+                sibling = sibling.previousSibling;
+            }
+            parts.unshift(el.nodeName.toLowerCase() + "[" + index + "]");
+            el = el.parentNode;
+        }
+        return "/" + parts.join("/");
+    }
+
     document.addEventListener("mousedown", function (e) {
         if (!window.__WW_RECORD_ENABLED__) return;
 
+        var el = e.target;
+
         var ev = {
             __kind: "click",
-            x: e.clientX,
-            y: e.clientY,
-            time: Date.now()
+            xpath: getXPath(el),
+            time: now()
         };
 
-        console.log("WW CLICK CAPTURED", ev);
         window.__recorded_outgoing.push(ev);
     }, true);
 
-    console.log("WW RECORDER INSTALLED, enabled =", window.__WW_RECORD_ENABLED__);
+    console.log("WW RECORDER INSTALLED");
 })();
 """
 

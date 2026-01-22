@@ -982,26 +982,13 @@ class StudioMainFrame(wx.Frame):
         if not self._web_browser:
             return
 
-        self._web_browser.poll()
         events = self._web_browser.pop_recorded_events()
 
         for ev in events:
-
-            kind = ev.pop("__kind", None)
-            if not kind:
-                self._logger.warning("Recorded event missing __kind: %r", ev)
-                continue
-
-            try:
-                event_type = RecordingEventType["DOM_" + kind.upper()]
-            except KeyError:
-                self._logger.warning("Unknown recorded event kind: %s", kind)
-                continue
-
             self._recording_session.append_event(
-                event_type,
-                payload=ev
-            )
+                RecordingEventType.DOM_CLICK,
+                payload=ev)
+            self._logger.debug("Recorded event: %s", ev)
 
     def _on_close_app(self, event):
         # Stop recording cleanly
