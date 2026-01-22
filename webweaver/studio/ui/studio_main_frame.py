@@ -1002,6 +1002,16 @@ class StudioMainFrame(wx.Frame):
                     RecordingEventType.DOM_TYPE,
                     payload=ev
                 )
+
+            elif kind == "check":
+                self._recording_session.append_event(
+                    RecordingEventType.DOM_CHECK,
+                    payload={
+                        "xpath": ev["xpath"],
+                        "value": ev["value"],
+                    }
+                )
+
             self._logger.debug("Recorded event: %s", ev)
 
     def _on_close_app(self, event):

@@ -61,6 +61,11 @@ RECORDING_JS = r"""
 
         var el = e.target;
 
+        // Ignore clicks on inputs (they are handled elsewhere)
+        if (isTextInput(el) || isCheckable(el) || el.tagName === "TEXTAREA") {
+            return;
+        }
+
         var ev = {
             __kind: "click",
             xpath: getXPath(el),
@@ -76,7 +81,10 @@ RECORDING_JS = r"""
         const t = e.target;
         if (!t) return;
 
-        // Only real text inputs for now
+        // Ignore checkboxes / radios (handled by change)
+        if (isCheckable(t)) return;
+
+        // Only real text inputs should be processed.
         if (!(t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
 
         const ev = {
@@ -87,6 +95,35 @@ RECORDING_JS = r"""
         };
 
         console.log("WW TYPE CAPTURED", ev);
+        window.__recorded_outgoing.push(ev);
+    }, true);
+
+    function isTextInput(el) {
+        return el && el.tagName === "INPUT" &&
+               (el.type === "text" || el.type === "password" ||
+                el.type === "email" || el.type === "search");
+    }
+
+    function isCheckable(el) {
+        return el && el.tagName === "INPUT" &&
+               (el.type === "checkbox" || el.type === "radio");
+    }
+
+    document.addEventListener("change", function (e) {
+        var el = e.target;
+        if (!isCheckable(el)) return;
+        if (!window.__WW_RECORD_ENABLED__) return;
+
+        var xpath = getXPath(el);
+
+        var ev = {
+            __kind: "check",
+            xpath: xpath,
+            value: el.checked ? 1 : 0,
+            time: Date.now()
+        };
+
+        console.log("WW CHECK SET", ev);
         window.__recorded_outgoing.push(ev);
     }, true);
 
