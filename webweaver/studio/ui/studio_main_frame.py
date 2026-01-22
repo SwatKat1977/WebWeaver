@@ -994,14 +994,12 @@ class StudioMainFrame(wx.Frame):
             if kind == "click":
                 self._recording_session.append_event(
                     RecordingEventType.DOM_CLICK,
-                    payload=ev
-                )
+                    payload=ev)
 
             elif kind == "type":
                 self._recording_session.append_event(
                     RecordingEventType.DOM_TYPE,
-                    payload=ev
-                )
+                    payload=ev)
 
             elif kind == "check":
                 self._recording_session.append_event(
@@ -1009,8 +1007,15 @@ class StudioMainFrame(wx.Frame):
                     payload={
                         "xpath": ev["xpath"],
                         "value": ev["value"],
-                    }
-                )
+                    })
+
+            elif kind == "select":
+                self._recording_session.append_event(
+                    RecordingEventType.DOM_SELECT,
+                    payload={
+                        "xpath": ev["xpath"],
+                        "value": ev["value"],
+                    })
 
             self._logger.debug("Recorded event: %s", ev)
 

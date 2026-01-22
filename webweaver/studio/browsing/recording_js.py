@@ -82,7 +82,7 @@ RECORDING_JS = r"""
         if (!t) return;
 
         // Ignore checkboxes / radios (handled by change)
-        if (isCheckable(t)) return;
+        if (isCheckable(t) || isSelect(t)) return;
 
         // Only real text inputs should be processed.
         if (!(t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
@@ -109,22 +109,39 @@ RECORDING_JS = r"""
                (el.type === "checkbox" || el.type === "radio");
     }
 
+    function isSelect(el) {
+        return el && el.tagName === "SELECT";
+    }
+
     document.addEventListener("change", function (e) {
         var el = e.target;
-        if (!isCheckable(el)) return;
         if (!window.__WW_RECORD_ENABLED__) return;
 
-        var xpath = getXPath(el);
+        // --- Checkbox / radio ---
+        if (isCheckable(el)) {
+            var ev = {
+                __kind: "check",
+                xpath: getXPath(el),
+                value: el.checked ? 1 : 0,
+                time: now()
+            };
 
-        var ev = {
-            __kind: "check",
-            xpath: xpath,
-            value: el.checked ? 1 : 0,
-            time: Date.now()
-        };
+            window.__recorded_outgoing.push(ev);
+            return;
+        }
 
-        console.log("WW CHECK SET", ev);
-        window.__recorded_outgoing.push(ev);
+        // --- Select dropdown ---
+        if (isSelect(el)) {
+            var ev = {
+                __kind: "select",
+                xpath: getXPath(el),
+                value: el.value,
+                time: now()
+            };
+
+            window.__recorded_outgoing.push(ev);
+            return;
+        }
     }, true);
 
     console.log("WW RECORDER INSTALLED");
