@@ -70,6 +70,26 @@ RECORDING_JS = r"""
         window.__recorded_outgoing.push(ev);
     }, true);
 
+    document.addEventListener("input", function (e) {
+        if (!window.__WW_RECORD_ENABLED__) return;
+
+        const t = e.target;
+        if (!t) return;
+
+        // Only real text inputs for now
+        if (!(t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
+
+        const ev = {
+            __kind: "type",
+            xpath: getXPath(t),
+            value: t.value,
+            time: Date.now()
+        };
+
+        console.log("WW TYPE CAPTURED", ev);
+        window.__recorded_outgoing.push(ev);
+    }, true);
+
     console.log("WW RECORDER INSTALLED");
 })();
 """

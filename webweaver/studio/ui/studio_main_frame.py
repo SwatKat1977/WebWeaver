@@ -985,9 +985,23 @@ class StudioMainFrame(wx.Frame):
         events = self._web_browser.pop_recorded_events()
 
         for ev in events:
-            self._recording_session.append_event(
-                RecordingEventType.DOM_CLICK,
-                payload=ev)
+            # remove it from payload, it's served its purpose after this.
+            kind = ev.pop("__kind", None)
+
+            # We are already storing a timestamp
+            ev.pop("time", None)
+
+            if kind == "click":
+                self._recording_session.append_event(
+                    RecordingEventType.DOM_CLICK,
+                    payload=ev
+                )
+
+            elif kind == "type":
+                self._recording_session.append_event(
+                    RecordingEventType.DOM_TYPE,
+                    payload=ev
+                )
             self._logger.debug("Recorded event: %s", ev)
 
     def _on_close_app(self, event):
