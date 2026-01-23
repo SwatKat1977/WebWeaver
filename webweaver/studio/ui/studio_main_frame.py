@@ -38,6 +38,7 @@ from recording.recording_events import (
     DeleteRecordingEvent)
 from recording.recording_session import RecordingSession
 from recording.recording_event_type import RecordingEventType
+from recording.recording_loader import load_recording_from_context
 from studio_state_controller import StudioState, StudioStateController
 from studio_solution import (
     StudioSolution,
@@ -66,7 +67,6 @@ from ui.playback_toolbar import (PlaybackToolbarState,
                                  PlaybackToolID)
 from ui.events import EVT_WORKSPACE_ACTIVE_CHANGED
 from playback.recording_playback_session import RecordingPlaybackSession
-from recording.recording_loader import load_recording_from_context
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \

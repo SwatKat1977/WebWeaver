@@ -25,6 +25,15 @@ from recording.recording import Recording
 class RecordingPlaybackSession:
     """
     Executes a recorded WebWeaver recording step-by-step using a StudioBrowser.
+
+    A RecordingPlaybackSession represents a single playback run over a
+    Recording. It maintains an instruction pointer into the recording's event
+    list and exposes a simple control surface for starting, stopping, and
+    stepping through events one at a time.
+
+    This class is intentionally stateful and UI-friendly: it is designed to be
+    driven by toolbar actions such as Play, Step, Pause, and Stop, and to report
+    failures immediately when an event cannot be executed.
     """
 
     def __init__(self,
@@ -36,15 +45,48 @@ class RecordingPlaybackSession:
         self._index = 0
         self._running = False
         self._logger = logger.getChild(__name__)
+        """
+        Create a new playback session for the given recording.
+
+        :param browser: StudioBrowser instance used to execute playback actions.
+        :param recording: The Recording to be played back.
+        :param logger: Base logger used for emitting playback diagnostics.
+        """
 
     def start(self):
+        """
+        Start playback from the beginning of the recording.
+
+        This resets the internal instruction pointer to the first event and
+        marks the session as running. No events are executed until step() is
+        called.
+        """
         self._running = True
         self._index = 0
 
     def stop(self):
+        """
+        Stop playback.
+
+        This halts the session and prevents any further events from being
+        executed until start() is called again.
+        """
         self._running = False
 
     def step(self) -> bool:
+        """
+        Execute the next event in the recording.
+
+        This method executes exactly one recorded event and advances the
+        internal instruction pointer if the event succeeds.
+
+        If playback is not currently running, or if the end of the recording
+        has been reached, this method returns False and performs no action.
+
+        If the event fails, playback is stopped and False is returned.
+
+        :return: True if an event was executed successfully, False otherwise.
+        """
         if not self._running:
             return False
 
@@ -65,6 +107,18 @@ class RecordingPlaybackSession:
         return True
 
     def _execute_event(self, event: dict):
+        """
+        Execute a single recorded event.
+
+        This method dispatches the event to the appropriate playback handler
+        on the StudioBrowser based on the event's type field.
+
+        Unknown or unsupported event types are ignored and treated as successful
+        no-ops.
+
+        :param event: The recorded event dictionary.
+        :return: A PlaybackStepResult indicating success or failure of the event.
+        """
         event_type = event.get("type")
         payload = event.get("payload", {})
 
@@ -72,23 +126,22 @@ class RecordingPlaybackSession:
             self._logger.debug("[PLAYBACK EVENT] Check: %s", payload)
             return self._browser.playback_check(payload)
 
-        elif event_type == "dom.click":
+        if event_type == "dom.click":
             self._logger.debug("[PLAYBACK EVENT] Button: %s", payload)
             return self._browser.playback_click(payload)
 
-        elif event_type == "nav.goto":
+        if event_type == "nav.goto":
             self._browser.open_page(event["url"])
 
-        elif event_type == "dom.select":
+        if event_type == "dom.select":
             self._logger.debug("[PLAYBACK EVENT] Dropdown: %s", payload)
             return self._browser.playback_select(payload)
 
-        elif event_type == "dom.type":
+        if event_type == "dom.type":
             self._logger.debug("[PLAYBACK EVENT] Text: %s", payload)
             return self._browser.playback_type(payload)
 
-        else:
-            self._logger.debug("[PLAYBACK EVENT] Unknown event: %s",
-                               event_type)
+        self._logger.debug("[PLAYBACK EVENT] Unknown event: %s",
+                           event_type)
 
         return PlaybackStepResult(ok=True, error="")
