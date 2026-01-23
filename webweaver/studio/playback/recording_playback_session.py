@@ -80,13 +80,15 @@ class RecordingPlaybackSession:
             self._browser.open_page(event["url"])
 
         elif event_type == "dom.select":
-            print(f"[EVENT] Select: {payload}")
+            self._logger.debug("[PLAYBACK EVENT] Dropdown: %s", payload)
+            return self._browser.playback_select(payload)
 
         elif event_type == "dom.type":
             self._logger.debug("[PLAYBACK EVENT] Text: %s", payload)
             return self._browser.playback_type(payload)
 
         else:
-            print("Unknown event:", event_type)
+            self._logger.debug("[PLAYBACK EVENT] Unknown event: %s",
+                               event_type)
 
         return PlaybackStepResult(ok=True, error="")

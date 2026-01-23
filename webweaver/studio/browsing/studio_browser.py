@@ -22,12 +22,14 @@ import logging
 from selenium.common.exceptions import (WebDriverException,
                                         TimeoutException,
                                         ElementClickInterceptedException,
-                                        StaleElementReferenceException)
+                                        StaleElementReferenceException,
+                                        NoSuchElementException)
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from browsing.inspection_js import INSPECTOR_JS
 from browsing.recording_js import RECORDING_JS, RECORDING_ENABLE_BOOTSTRAP
+from selenium.webdriver.support.ui import Select
 
 
 @dataclass
@@ -273,11 +275,6 @@ class StudioBrowser:
         # Enable in CURRENT document
         self._driver.execute_script("window.__WW_RECORD_ENABLED__ = true;")
 
-        print("ENABLE CHECK:",
-              self._driver.execute_script(
-                  "return [window.__WW_REC_INSTALLED__, window.__WW_RECORD_ENABLED__];"
-              ))
-
     def disable_record_mode(self):
         """
         Disables event recording mode.
@@ -497,6 +494,58 @@ class StudioBrowser:
 
         except TimeoutException:
             return PlaybackStepResult.fail(f"Timeout waiting for element: {xpath}")
+
+        except StaleElementReferenceException:
+            return PlaybackStepResult.fail(f"Element became stale: {xpath}")
+
+        except Exception as ex:
+            return PlaybackStepResult.fail(str(ex))
+
+    def playback_select(self, payload: dict) -> PlaybackStepResult:
+        xpath = payload.get("xpath")
+        value = payload.get("value")
+        text = payload.get("text")
+
+        try:
+            element = self.wait_for_xpath(xpath, timeout=10)
+
+            self.scroll_into_view(element)
+            self.highlight(element)
+
+            select = Select(element)
+
+            # Prefer value if available, else visible text
+            if value is not None:
+                select.select_by_value(str(value))
+            elif text is not None:
+                select.select_by_visible_text(str(text))
+            else:
+                return PlaybackStepResult.fail(
+                    f"No value/text provided for select: {xpath}"
+                )
+
+            # Optional verification
+            selected = select.first_selected_option
+            if value is not None:
+                if selected.get_attribute("value") != str(value):
+                    return PlaybackStepResult.fail(
+                        f"Select did not change to value {value}: {xpath}"
+                    )
+            elif text is not None:
+                if selected.text.strip() != str(text).strip():
+                    return PlaybackStepResult.fail(
+                        f"Select did not change to text '{text}': {xpath}"
+                    )
+
+            self.wait_for_page_settle()
+
+            return PlaybackStepResult.ok()
+
+        except TimeoutException:
+            return PlaybackStepResult.fail(f"Timeout waiting for element: {xpath}")
+
+        except NoSuchElementException:
+            return PlaybackStepResult.fail(f"Option not found in select: {xpath}")
 
         except StaleElementReferenceException:
             return PlaybackStepResult.fail(f"Element became stale: {xpath}")
