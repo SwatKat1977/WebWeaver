@@ -17,6 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from logging import Logger
 from browsing.studio_browser import PlaybackStepResult, StudioBrowser
 from recording.recording import Recording
 
@@ -26,11 +27,15 @@ class RecordingPlaybackSession:
     Executes a recorded WebWeaver recording step-by-step using a StudioBrowser.
     """
 
-    def __init__(self, browser: StudioBrowser, recording: Recording):
+    def __init__(self,
+                 browser: StudioBrowser,
+                 recording: Recording,
+                 logger: Logger):
         self._browser = browser
         self._recording = recording
         self._index = 0
         self._running = False
+        self._logger = logger.getChild(__name__)
 
     def start(self):
         self._running = True
@@ -64,11 +69,11 @@ class RecordingPlaybackSession:
         payload = event.get("payload", {})
 
         if event_type == "dom.check":
-            print(f"[EVENT] Check: {payload}")
+            self._logger.debug("[PLAYBACK EVENT] Check: %s", payload)
             return self._browser.playback_check(payload)
 
         elif event_type == "dom.click":
-            print(f"=> Clicking: {payload}")
+            self._logger.debug("[PLAYBACK EVENT] Button: %s", payload)
             return self._browser.playback_click(payload)
 
         elif event_type == "nav.goto":
@@ -78,7 +83,7 @@ class RecordingPlaybackSession:
             print(f"[EVENT] Select: {payload}")
 
         elif event_type == "dom.type":
-            print(f"[EVENT] Type: {payload}")
+            self._logger.debug("[PLAYBACK EVENT] Text: %s", payload)
             return self._browser.playback_type(payload)
 
         else:

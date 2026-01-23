@@ -1097,7 +1097,9 @@ class StudioMainFrame(wx.Frame):
 
         recording = load_recording_from_context(ctx)
 
-        self._playback_session = RecordingPlaybackSession(self._web_browser, recording)
+        self._playback_session = RecordingPlaybackSession(self._web_browser,
+                                                          recording,
+                                                          self._logger)
         self._playback_session.start()
         self._playback_timer.Start(200)
 
