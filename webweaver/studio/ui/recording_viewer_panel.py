@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from datetime import datetime
 import wx
 from recording_view_context import RecordingViewContext
+from recording.recording_loader import load_recording_from_context
 
 
 def format_time_point(dt: datetime) -> str:
@@ -59,6 +60,7 @@ class RecordingViewerPanel(wx.Panel):
         """
         super().__init__(parent)
         self._context: RecordingViewContext = ctx
+        self._step_list: wx.ListCtrl = None
 
         self._create_ui()
 
@@ -91,59 +93,63 @@ class RecordingViewerPanel(wx.Panel):
         """
         return self._context.recording_file
 
+    def _extract_step_fields(self, event: dict):
+        t = event.get("type")
+        p = event.get("payload", {})
+
+        if t == "dom.click":
+            return "Click", "", p.get("xpath")
+
+        if t == "dom.type":
+            return "Type", p.get("value"), p.get("xpath")
+
+        if t == "dom.select":
+            value = p.get("value") or p.get("text")
+            return "Select", value, p.get("xpath")
+
+        if t == "dom.check":
+            return "Check", str(p.get("value")), p.get("xpath")
+
+        if t == "nav.goto":
+            return "Navigate", event.get("url"), ""
+
+        return t, str(p), ""
+
+    def _populate_steps(self):
+        self._step_list.DeleteAllItems()
+
+        recording = load_recording_from_context(self.context)
+
+        for i, event in enumerate(recording.events):
+            idx = self._step_list.InsertItem(i, str(i))
+
+            action, value, target = self._extract_step_fields(event)
+
+            self._step_list.SetItem(idx, 1, action)
+            self._step_list.SetItem(idx, 2, value or "")
+            self._step_list.SetItem(idx, 3, target or "")
+
     def _create_ui(self):
         """
-        Build and lay out the user interface controls for the panel.
+        Build and lay out the user interface for the recording editor.
 
-        Creates the title header and a set of label/value rows
-        displaying recording metadata.
+        This initial implementation displays a simple, read-only timeline view
+        of the recording steps.
         """
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        title = wx.StaticText(
+        self._step_list = wx.ListCtrl(
             self,
-            wx.ID_ANY,
-            self._context.metadata.name
+            style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_THEME
         )
 
-        font = title.GetFont()
-        font.MakeBold()
-        font.MakeLarger()
-        title.SetFont(font)
+        self._step_list.InsertColumn(0, "#", width=50)
+        self._step_list.InsertColumn(1, "Action", width=120)
+        self._step_list.InsertColumn(2, "Value", width=200)
+        self._step_list.InsertColumn(3, "Target", width=600)
 
-        main_sizer.Add(title, 0, wx.ALL, 10)
+        main_sizer.Add(self._step_list, 1, wx.EXPAND | wx.ALL, 5)
 
-        # Helper for label/value rows
-        def add_field(label: str, value: str):
-            row = wx.BoxSizer(wx.HORIZONTAL)
+        self.SetSizer(main_sizer)
 
-            row.Add(
-                wx.StaticText(self, wx.ID_ANY, str(label)),
-                0,
-                wx.RIGHT,
-                5
-            )
-
-            row.Add(
-                wx.StaticText(self, wx.ID_ANY, str(value)),
-                1
-            )
-
-            main_sizer.Add(
-                row,
-                0,
-                wx.LEFT | wx.RIGHT | wx.BOTTOM,
-                10
-            )
-
-        # Fields
-        recording_file = self._context.recording_file
-
-        add_field("File:", recording_file.name)
-        add_field("Path:", recording_file.parent)
-        add_field(
-            "Recorded:",
-            format_time_point(self._context.metadata.created_at)
-        )
-
-        self.SetSizerAndFit(main_sizer)
+        self._populate_steps()
