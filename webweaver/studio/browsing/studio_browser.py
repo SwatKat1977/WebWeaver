@@ -24,7 +24,6 @@ from selenium.common.exceptions import (WebDriverException,
                                         TimeoutException,
                                         ElementClickInterceptedException,
                                         StaleElementReferenceException,
-                                        NoSuchElementException,
                                         JavascriptException)
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
@@ -40,15 +39,40 @@ class PlaybackActionError(RuntimeError):
 
 @dataclass
 class PlaybackStepResult:
+    """
+    Result object representing the outcome of executing a single playback step.
+
+    This class is used as the uniform return type for all playback operations
+    (e.g. click, type, select, check, navigate). It encapsulates whether the
+    operation succeeded and, if not, a human-readable error message describing
+    the failure.
+
+    PlaybackStepResult is intentionally simple and serialisable so it can be
+    easily passed between the playback engine and the UI layer.
+
+    :ivar ok: True if the playback step completed successfully, False otherwise.
+    :ivar error: Human-readable error message describing the failure. Empty if ok is True.
+    """
     ok: bool
     error: str = ""
 
     @staticmethod
     def success():
+        """
+        Create a PlaybackStepResult representing a successful playback step.
+
+        :return: A PlaybackStepResult with ok=True and an empty error message.
+        """
         return PlaybackStepResult(True, "")
 
     @staticmethod
     def fail(msg: str):
+        """
+        Create a PlaybackStepResult representing a failed playback step.
+
+        :param msg: Human-readable error message describing the failure.
+        :return: A PlaybackStepResult with ok=False and the given error message.
+        """
         return PlaybackStepResult(False, msg)
 
 
@@ -70,6 +94,7 @@ class StudioBrowser:
     The raw Selenium driver is intentionally hidden behind this wrapper. If low-level
     access is required, it can be obtained via the `raw` property.
     """
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(self, driver, logger: logging.Logger):
         """
@@ -187,6 +212,17 @@ class StudioBrowser:
     # --------------------------------------------------------------
 
     def enable_inspect_mode(self):
+        """
+        Enable DOM inspection mode in the browser.
+
+        This switches the browser into inspection-only mode by enabling the injected
+        inspector script and disabling recording. While inspection mode is active,
+        user interactions are visually highlighted and described but are not recorded
+        into the active Recording.
+
+        This operation only affects the currently loaded document; future navigations
+        will rely on the standard injection bootstrap mechanisms.
+        """
         self._inspect_active = True
         self._record_active = False
         self._driver.execute_script(INSPECTOR_JS)
@@ -253,6 +289,19 @@ class StudioBrowser:
     # --------------------------------------------------------------
 
     def _ensure_recording_js_installed(self) -> None:
+        """
+        Ensure that the recording JavaScript is installed in the browser.
+
+        This method installs the core recording script in two places:
+          1. As a CDP bootstrap script so it is automatically injected into all
+             future documents.
+          2. Directly into the currently loaded document.
+
+        This guarantees that the recording infrastructure is available both for the
+        current page and for any subsequent navigations or cross-domain transitions.
+
+        The installation is idempotent: the CDP bootstrap is only registered once.
+        """
         if not self._cdp_record_installed:
             self._driver.execute_cdp_cmd(
                 "Page.addScriptToEvaluateOnNewDocument",
@@ -264,6 +313,21 @@ class StudioBrowser:
         self._driver.execute_script(RECORDING_JS)
 
     def enable_record_mode(self):
+        """
+        Enable event recording mode in the browser.
+
+        This ensures that the recording infrastructure is installed in both the
+        current document and all future documents, and sets the global recording
+        enable flag so user interactions are captured and buffered by the injected
+        recorder.
+
+        Recording mode is enabled in two stages:
+          1. The core recording JavaScript is installed (if not already present).
+          2. A CDP bootstrap flag is registered so future documents start with
+             recording enabled, and the flag is also set in the current document.
+
+        This method is safe to call multiple times.
+        """
         self._record_active = True
 
         # Ensure recorder exists everywhere
@@ -291,7 +355,7 @@ class StudioBrowser:
         try:
             self._driver.execute_script("window.__WW_RECORD_ENABLED__ = false;")
 
-        except Exception:
+        except (WebDriverException, JavascriptException):
             pass
 
         # Remove the bootstrap so future documents default to false again
@@ -306,6 +370,23 @@ class StudioBrowser:
             self._cdp_record_enable_script_id = None
 
     def pop_recorded_events(self) -> list[dict]:
+        """
+        Retrieve and clear any recorded browser events from the injected recorder.
+
+        This method calls into the injected JavaScript bridge
+        (window.__drain_recorded_events) to atomically fetch and clear the buffered
+        list of recorded DOM events accumulated since the last call.
+
+        If the recorder is not present (e.g. the page has not yet been injected, a
+        navigation is in progress, or the browser session has ended), this method
+        fails gracefully and returns an empty list.
+
+        This method never raises an exception: failures to communicate with the
+        browser or execute the injected JavaScript are treated as "no events
+        available" and result in an empty list being returned.
+
+        :return: A list of recorded event dictionaries (possibly empty).
+        """
         try:
             return self._driver.execute_script(
                 "return window.__drain_recorded_events ? "
@@ -370,8 +451,8 @@ class StudioBrowser:
             text = el.text
 
             css = self._driver.execute_script(
-                "return arguments[0].id ? '#' + arguments[0].id : arguments[0].tagName.toLowerCase();",
-                el)
+                "return arguments[0].id ? '#' + arguments[0].id : "
+                "arguments[0].tagName.toLowerCase();", el)
 
             xpath = self._driver.execute_script(
                 r"""
@@ -506,8 +587,7 @@ class StudioBrowser:
 
             if element.is_selected() != should_be_checked:
                 raise PlaybackActionError(
-                    "Checkbox/radio state did not change as expected"
-                )
+                    "Checkbox/radio state did not change as expected")
 
         return self._playback_element(xpath, do_check)
 
@@ -593,8 +673,7 @@ class StudioBrowser:
         Wait until document.readyState == 'complete'.
         """
         WebDriverWait(self._driver, timeout).until(
-            lambda d: d.execute_script("return document.readyState") == "complete"
-        )
+            lambda d: d.execute_script("return document.readyState") == "complete")
 
     def _wait_for_dom_stable(self, timeout: float = 10.0, stable_time: float = 0.5):
         """
@@ -634,8 +713,7 @@ class StudioBrowser:
         Wait until an element exists and is visible.
         """
         return WebDriverWait(self._driver, timeout).until(
-            EC.visibility_of_element_located((By.XPATH, xpath))
-        )
+            EC.visibility_of_element_located((By.XPATH, xpath)))
 
     def _scroll_into_view(self, element):
         """
@@ -643,8 +721,7 @@ class StudioBrowser:
         """
         self._driver.execute_script(
             "arguments[0].scrollIntoView({block: 'center', inline: 'center'});",
-            element,
-        )
+            element)
 
     def _highlight(self, element, duration: float = 0.25):
         """
@@ -655,14 +732,12 @@ class StudioBrowser:
             self._driver.execute_script(
                 "arguments[0].setAttribute('style', arguments[1]);",
                 element,
-                "outline: 3px solid red; outline-offset: 2px;",
-            )
+                "outline: 3px solid red; outline-offset: 2px;")
             time.sleep(duration)
             self._driver.execute_script(
                 "arguments[0].setAttribute('style', arguments[1]);",
                 element,
-                original,
-            )
+                original)
 
-        except Exception:
+        except (StaleElementReferenceException, WebDriverException, JavascriptException):
             pass  # _highlighting must never break playback
