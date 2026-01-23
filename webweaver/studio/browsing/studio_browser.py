@@ -19,17 +19,23 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from dataclasses import dataclass
 import logging
+import time
 from selenium.common.exceptions import (WebDriverException,
                                         TimeoutException,
                                         ElementClickInterceptedException,
                                         StaleElementReferenceException,
-                                        NoSuchElementException)
+                                        NoSuchElementException,
+                                        JavascriptException)
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-from browsing.inspection_js import INSPECTOR_JS
-from browsing.recording_js import RECORDING_JS, RECORDING_ENABLE_BOOTSTRAP
 from selenium.webdriver.support.ui import Select
+from browsing.inspection_js import INSPECTOR_JS
+from browsing.recording_js import RECORDING_JS
+
+
+class PlaybackActionError(RuntimeError):
+    """Raised when a playback action fails semantically."""
 
 
 @dataclass
@@ -38,7 +44,7 @@ class PlaybackStepResult:
     error: str = ""
 
     @staticmethod
-    def ok():
+    def success():
         return PlaybackStepResult(True, "")
 
     @staticmethod
@@ -305,7 +311,7 @@ class StudioBrowser:
                 "return window.__drain_recorded_events ? "
                 "window.__drain_recorded_events() : [];")
 
-        except Exception as e:
+        except (WebDriverException, JavascriptException) as e:
             print("POP ERROR:", e)
             return []
 
@@ -365,11 +371,10 @@ class StudioBrowser:
 
             css = self._driver.execute_script(
                 "return arguments[0].id ? '#' + arguments[0].id : arguments[0].tagName.toLowerCase();",
-                el
-            )
+                el)
 
             xpath = self._driver.execute_script(
-                """
+                r"""
                 function getXPath(el) {
                     if (el.id) return '//*\[@id="' + el.id + '"]';
                     const parts = [];
@@ -387,8 +392,7 @@ class StudioBrowser:
                 }
                 return getXPath(arguments[0]);
                 """,
-                el
-            )
+                el)
 
             return {
                 "tag": tag,
@@ -399,7 +403,8 @@ class StudioBrowser:
                 "xpath": xpath,
             }
 
-        except Exception:
+        except (StaleElementReferenceException, WebDriverException,
+                JavascriptException):
             return {
                 "tag": None,
                 "id": None,
@@ -410,150 +415,180 @@ class StudioBrowser:
             }
 
     def playback_click(self, payload: dict) -> PlaybackStepResult:
+        """
+        Replay a recorded DOM click action.
+
+        This method locates the target element using the recorded XPath, scrolls it
+        into view, optionally _highlights it for visual feedback, and performs a
+        click. If the click is initially intercepted by another element, a single
+        retry is performed after re-scrolling.
+
+        After the click, the browser is allowed to settle (page load and DOM
+        stabilisation) before returning.
+
+        The operation is fully synchronous and deterministic: this method will not
+        return until either the click has completed and the page has stabilised, or
+        a failure has occurred.
+
+        :param payload: Event payload containing at least:
+                        - "xpath": XPath of the element to click.
+        :return: A PlaybackStepResult indicating success or describing the failure.
+        """
         xpath = payload.get("xpath")
 
-        try:
-            element = self.wait_for_xpath(xpath, timeout=10)
-
-            self.scroll_into_view(element)
-            self.highlight(element)
-
+        def do_click(element):
             try:
                 element.click()
             except ElementClickInterceptedException:
-                # Try once more after scroll/highlight
-                self.scroll_into_view(element)
+                # Try once more after re-scrolling
+                self._scroll_into_view(element)
                 element.click()
 
-            self.wait_for_page_settle()
-
-            return PlaybackStepResult.ok()
-
-        except TimeoutException:
-            return PlaybackStepResult.fail(
-                f"Timeout waiting for element: {xpath}")
-
-        except StaleElementReferenceException:
-            return PlaybackStepResult.fail(f"Element became stale: {xpath}")
-
-        except Exception as ex:
-            return PlaybackStepResult.fail(str(ex))
+        return self._playback_element(xpath, do_click, settle_after=True)
 
     def playback_type(self, payload: dict) -> PlaybackStepResult:
+        """
+        Replay a recorded text input action.
+
+        This method locates the target input element using the recorded XPath,
+        scrolls it into view, _highlights it for visual feedback, clears any existing
+        content, focuses the element, and sends the recorded text via synthetic
+        key events.
+
+        The operation waits for the element to become available before interacting
+        with it and fails cleanly if the element cannot be found or becomes invalid
+        due to DOM changes.
+
+        :param payload: Event payload containing:
+                        - "xpath": XPath of the input element.
+                        - "text": Text to type into the element.
+        :return: A PlaybackStepResult indicating success or describing the failure.
+        """
         xpath = payload.get("xpath")
         text = payload.get("text", "")
 
-        try:
-            element = self.wait_for_xpath(xpath, timeout=10)
-
-            self.scroll_into_view(element)
-            self.highlight(element)
-
+        def do_type(element):
             element.clear()
             element.click()
             element.send_keys(text)
 
-            return PlaybackStepResult.ok()
-
-        except TimeoutException:
-            return PlaybackStepResult.fail(f"Timeout waiting for element: {xpath}")
-
-        except StaleElementReferenceException:
-            return PlaybackStepResult.fail(f"Element became stale: {xpath}")
-
-        except Exception as ex:
-            return PlaybackStepResult.fail(str(ex))
+        return self._playback_element(xpath, do_type, settle_after=False)
 
     def playback_check(self, payload: dict) -> PlaybackStepResult:
+        """
+        Replay a recorded checkbox or radio-button state change.
+
+        This method locates the target input element using the recorded XPath and
+        ensures that its checked state matches the recorded value. The element is
+        not blindly toggled: if it is already in the desired state, no action is
+        performed.
+
+        If a click is required to change the state and the click is intercepted, a
+        single retry is performed after re-scrolling.
+
+        After interaction, the final state is verified to ensure the control
+        reflects the requested value.
+
+        :param payload: Event payload containing:
+                        - "xpath": XPath of the checkbox/radio element.
+                        - "value": Desired state (truthy for checked, falsy for unchecked).
+        :return: A PlaybackStepResult indicating success or describing the failure.
+        """
         xpath = payload.get("xpath")
         desired_value = payload.get("value")
 
-        try:
-            element = self.wait_for_xpath(xpath, timeout=10)
-
-            self.scroll_into_view(element)
-            self.highlight(element)
-
+        def do_check(element):
             should_be_checked = bool(desired_value)
             is_checked = element.is_selected()
 
             if should_be_checked != is_checked:
-                try:
-                    element.click()
-                except ElementClickInterceptedException:
-                    self.scroll_into_view(element)
-                    element.click()
+                element.click()
 
-            # Optional: verify result
             if element.is_selected() != should_be_checked:
-                return PlaybackStepResult.fail(
-                    f"Checkbox/radio state did not change as expected: {xpath}"
+                raise PlaybackActionError(
+                    "Checkbox/radio state did not change as expected"
                 )
 
-            return PlaybackStepResult.ok()
-
-        except TimeoutException:
-            return PlaybackStepResult.fail(f"Timeout waiting for element: {xpath}")
-
-        except StaleElementReferenceException:
-            return PlaybackStepResult.fail(f"Element became stale: {xpath}")
-
-        except Exception as ex:
-            return PlaybackStepResult.fail(str(ex))
+        return self._playback_element(xpath, do_check)
 
     def playback_select(self, payload: dict) -> PlaybackStepResult:
+        """
+        Replay a recorded <select> (dropdown) value change.
+
+        This method locates the target <select> element using the recorded XPath,
+        scrolls it into view, _highlights it for visual feedback, and selects the
+        requested option using Selenium's Select helper.
+
+        Selection is performed either by option value or by visible text, depending
+        on which field is present in the payload. After selection, the chosen option
+        is verified and the page is allowed to settle in case the change triggers
+        navigation or dynamic updates.
+
+        This method only supports native HTML <select> elements. Custom, script-
+        driven dropdowns should be recorded and replayed as click sequences.
+
+        :param payload: Event payload containing:
+                        - "xpath": XPath of the <select> element.
+                        - "value": (Optional) Option value to select.
+                        - "text": (Optional) Visible text of the option to select.
+        :return: A PlaybackStepResult indicating success or describing the failure.
+        """
         xpath = payload.get("xpath")
         value = payload.get("value")
         text = payload.get("text")
 
-        try:
-            element = self.wait_for_xpath(xpath, timeout=10)
-
-            self.scroll_into_view(element)
-            self.highlight(element)
-
+        def do_select(element):
             select = Select(element)
 
-            # Prefer value if available, else visible text
             if value is not None:
                 select.select_by_value(str(value))
             elif text is not None:
                 select.select_by_visible_text(str(text))
             else:
-                return PlaybackStepResult.fail(
-                    f"No value/text provided for select: {xpath}"
-                )
+                raise PlaybackActionError("No value/text provided for select")
 
-            # Optional verification
+            # Verify result
             selected = select.first_selected_option
             if value is not None:
                 if selected.get_attribute("value") != str(value):
-                    return PlaybackStepResult.fail(
-                        f"Select did not change to value {value}: {xpath}"
-                    )
-            elif text is not None:
+                    raise PlaybackActionError(
+                        f"Select did not change to value {value}")
+            else:
                 if selected.text.strip() != str(text).strip():
-                    return PlaybackStepResult.fail(
-                        f"Select did not change to text '{text}': {xpath}"
-                    )
+                    raise PlaybackActionError(
+                        f"Select did not change to text '{text}'")
 
-            self.wait_for_page_settle()
+        return self._playback_element(xpath, do_select, settle_after=True)
 
-            return PlaybackStepResult.ok()
+    def _playback_element(self,
+                          xpath: str,
+                          action,
+                          *,
+                          settle_after: bool = False,
+                          timeout: float = 10.0) -> PlaybackStepResult:
+        try:
+            element = self._wait_for_xpath(xpath, timeout=timeout)
+
+            self._scroll_into_view(element)
+            self._highlight(element)
+
+            action(element)
+
+            if settle_after:
+                self._wait_for_page_settle()
+
+            return PlaybackStepResult.success()
 
         except TimeoutException:
             return PlaybackStepResult.fail(f"Timeout waiting for element: {xpath}")
 
-        except NoSuchElementException:
-            return PlaybackStepResult.fail(f"Option not found in select: {xpath}")
-
         except StaleElementReferenceException:
             return PlaybackStepResult.fail(f"Element became stale: {xpath}")
 
-        except Exception as ex:
+        except (WebDriverException, JavascriptException, PlaybackActionError) as ex:
             return PlaybackStepResult.fail(str(ex))
 
-    def wait_for_ready_state(self, timeout: float = 10.0):
+    def _wait_for_ready_state(self, timeout: float = 10.0):
         """
         Wait until document.readyState == 'complete'.
         """
@@ -561,12 +596,10 @@ class StudioBrowser:
             lambda d: d.execute_script("return document.readyState") == "complete"
         )
 
-    def wait_for_dom_stable(self, timeout: float = 10.0, stable_time: float = 0.5):
+    def _wait_for_dom_stable(self, timeout: float = 10.0, stable_time: float = 0.5):
         """
         Wait until the DOM size stops changing for `stable_time` seconds.
         """
-        import time
-
         end_time = time.time() + timeout
         last_count = None
         stable_since = None
@@ -589,14 +622,14 @@ class StudioBrowser:
 
         raise TimeoutError("DOM did not stabilize in time")
 
-    def wait_for_page_settle(self, timeout: float = 10.0):
+    def _wait_for_page_settle(self, timeout: float = 10.0):
         """
         Wait for page load + DOM to stabilize.
         """
-        self.wait_for_ready_state(timeout)
-        self.wait_for_dom_stable(timeout)
+        self._wait_for_ready_state(timeout)
+        self._wait_for_dom_stable(timeout)
 
-    def wait_for_xpath(self, xpath: str, timeout: float = 10.0):
+    def _wait_for_xpath(self, xpath: str, timeout: float = 10.0):
         """
         Wait until an element exists and is visible.
         """
@@ -604,7 +637,7 @@ class StudioBrowser:
             EC.visibility_of_element_located((By.XPATH, xpath))
         )
 
-    def scroll_into_view(self, element):
+    def _scroll_into_view(self, element):
         """
         Scroll element into the center of the viewport.
         """
@@ -613,12 +646,10 @@ class StudioBrowser:
             element,
         )
 
-    def highlight(self, element, duration: float = 0.25):
+    def _highlight(self, element, duration: float = 0.25):
         """
-        Visually highlight an element during playback.
+        Visually _highlight an element during playback.
         """
-        import time
-
         try:
             original = element.get_attribute("style")
             self._driver.execute_script(
@@ -634,4 +665,4 @@ class StudioBrowser:
             )
 
         except Exception:
-            pass  # highlighting must never break playback
+            pass  # _highlighting must never break playback
