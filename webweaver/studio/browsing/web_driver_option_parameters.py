@@ -142,9 +142,3 @@ WEB_DRIVER_OPTION_PARAMETERS: dict[WebDriverOption, WebDriverOptionParameter] = 
             has_parameters=True
         ),
 }
-
-
-'''
-options.add_experimental_option("excludeSwitches", ["enable-automation"])
-options.add_experimental_option("useAutomationExtension", False)
-'''

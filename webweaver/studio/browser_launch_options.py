@@ -97,6 +97,7 @@ class BrowserLaunchOptions:
     mode, extension handling, window size, and user agent overrides.
     It supports round-trip serialisation to and from dictionaries.
     """
+    # pylint: disable=too-many-instance-attributes
 
     private_mode: bool = True
     """Whether the browser should be launched in private/incognito mode."""
