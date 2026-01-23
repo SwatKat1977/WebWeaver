@@ -17,12 +17,15 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
-import wx
+from dataclasses import dataclass
+from recording_metadata import RecordingMetadata
 
-EVT_OPEN_RECORDING = wx.NewEventType()
-EVT_DELETE_RECORDING = wx.NewEventType()
-EVT_RENAME_RECORDING = wx.NewEventType()
 
-OpenRecordingEvent = wx.PyEventBinder(EVT_OPEN_RECORDING, 1)
-DeleteRecordingEvent = wx.PyEventBinder(EVT_DELETE_RECORDING, 1)
-RenameRecordingEvent = wx.PyEventBinder(EVT_RENAME_RECORDING, 1)
+@dataclass
+class Recording:
+    """
+    Represents a loaded recording and its ordered list of events.
+    """
+
+    metadata: RecordingMetadata
+    events: list[dict]

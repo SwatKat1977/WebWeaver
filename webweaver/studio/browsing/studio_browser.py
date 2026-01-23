@@ -17,329 +17,63 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from dataclasses import dataclass
 import logging
-from selenium.common.exceptions import WebDriverException
+import time
+from selenium.common.exceptions import (WebDriverException,
+                                        TimeoutException,
+                                        ElementClickInterceptedException,
+                                        StaleElementReferenceException,
+                                        JavascriptException)
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import Select
+from browsing.inspection_js import INSPECTOR_JS
+from browsing.recording_js import RECORDING_JS
 
 
-BROWSER_JS_INJECTION: str = r"""
-console.log("Inspector script injected.");
+class PlaybackActionError(RuntimeError):
+    """Raised when a playback action fails semantically."""
 
-// --------------------
-// Typing debounce state
-// --------------------
-const __typing_timers = new Map();
-const __typing_last_value = new Map();
 
-// Global buffered state
-window.__INSPECT_MODE = window.__INSPECT_MODE || false;
-window.__FORCE_INSPECT_MODE = window.__FORCE_INSPECT_MODE || false;
-window.__RECORD_MODE = window.__RECORD_MODE || false;
+@dataclass
+class PlaybackStepResult:
+    """
+    Result object representing the outcome of executing a single playback step.
 
-window.__recorded_actions = window.__recorded_actions || [];
-window.__recorded_outgoing = window.__recorded_outgoing || [];
+    This class is used as the uniform return type for all playback operations
+    (e.g. click, type, select, check, navigate). It encapsulates whether the
+    operation succeeded and, if not, a human-readable error message describing
+    the failure.
 
-function now() { return Date.now(); }
+    PlaybackStepResult is intentionally simple and serialisable so it can be
+    easily passed between the playback engine and the UI layer.
 
-// Restore Inspect Mode after navigation only if requested
-if (window.__FORCE_INSPECT_MODE === true) {
-    window.__INSPECT_MODE = true;
-}
+    :ivar ok: True if the playback step completed successfully, False otherwise.
+    :ivar error: Human-readable error message describing the failure. Empty if ok is True.
+    """
+    ok: bool
+    error: str = ""
 
-// Disable inspect mode if not used
-if (window.__FORCE_INSPECT_MODE === false) {
-    window.__INSPECT_MODE = false;
-}
+    @staticmethod
+    def success():
+        """
+        Create a PlaybackStepResult representing a successful playback step.
 
-function __record_type_if_text_input(el) {
-    if (!el) return;
+        :return: A PlaybackStepResult with ok=True and an empty error message.
+        """
+        return PlaybackStepResult(True, "")
 
-    if (el.tagName === "TEXTAREA") {
-        // ok
-    } else if (el.tagName === "INPUT") {
-        const t = (el.type || "").toLowerCase();
-        if (!["text","email","password","search","url","number"].includes(t)) {
-            return;
-        }
-    } else {
-        return;
-    }
+    @staticmethod
+    def fail(msg: str):
+        """
+        Create a PlaybackStepResult representing a failed playback step.
 
-    const value = (typeof el.value === "string") ? el.value : "";
-    if (!value) return;
-
-    const ev = {
-        __kind: "type",
-        selector: getCssSelector(el),
-        xpath: getXPath(el),
-        value: value,
-        time: now()
-    };
-
-    window.__recorded_actions.push(ev);
-    window.__recorded_outgoing.push(ev);
-}
-
-function __is_text_input(el) {
-    if (!el) return false;
-
-    if (el.tagName === "TEXTAREA") return true;
-
-    if (el.tagName === "INPUT") {
-        const t = (el.type || "").toLowerCase();
-        return ["text", "email", "password", "search", "url", "number"].includes(t);
-    }
-
-    return false;
-}
-
-function __flush_typing(el) {
-    // Only ever flush REAL text inputs
-    if (!__is_text_input(el)) return;
-
-    // Always trust the live DOM value
-    const value = (typeof el.value === "string") ? el.value : "";
-    if (value === "") return; // don't record empty garbage
-
-    const ev = {
-        __kind: "type",
-        selector: getCssSelector(el),
-        xpath: getXPath(el),
-        value: value,
-        time: now()
-    };
-
-    // ---- coalesce ----
-    const arr = window.__recorded_actions;
-    const last = arr.length > 0 ? arr[arr.length - 1] : null;
-
-    if (
-        last &&
-        last.__kind === "type" &&
-        last.selector === ev.selector
-    ) {
-        // Replace last
-        last.value = ev.value;
-        last.time = ev.time;
-
-        const out = window.__recorded_outgoing;
-        if (out.length > 0) {
-            const lastOut = out[out.length - 1];
-            if (
-                lastOut.__kind === "type" &&
-                lastOut.selector === ev.selector
-            ) {
-                lastOut.value = ev.value;
-                lastOut.time = ev.time;
-            } else {
-                out.push(ev);
-            }
-        }
-    } else {
-        window.__recorded_actions.push(ev);
-        window.__recorded_outgoing.push(ev);
-    }
-
-    __typing_last_value.delete(el);
-
-    if (__typing_timers.has(el)) {
-        clearTimeout(__typing_timers.get(el));
-        __typing_timers.delete(el);
-    }
-}
-
-function getCssSelector(el) {
-    if (el.id) return "#" + el.id;
-    if (el.className)
-        return el.tagName.toLowerCase() + "." +
-               el.className.trim().replace(/\s+/g, ".");
-    return el.tagName.toLowerCase();
-}
-
-window.__drain_recorded_events = function() {
-    const out = window.__recorded_outgoing || [];
-    window.__recorded_outgoing = [];
-    return out;
-}
-
-function getXPath(el) {
-    if (el.id) return `//*[@id="${el.id}"]`;
-    const parts = [];
-    while (el && el.nodeType === 1) {
-        let index = 1;
-        let sibling = el.previousSibling;
-        while (sibling) {
-            if (sibling.nodeType === 1 && sibling.nodeName === el.nodeName) index++;
-            sibling = sibling.previousSibling;
-        }
-        parts.unshift(el.nodeName + "[" + index + "]");
-        el = el.parentNode;
-    }
-    return "/" + parts.join("/");
-}
-
-// --------------------
-// Hover highlight (INSPECT MODE ONLY)
-// --------------------
-function hoverListener(e) {
-    if (!window.__INSPECT_MODE && !window.__RECORD_MODE) return;
-    e.target.__old_outline = e.target.style.outline;
-    e.target.style.outline = "2px solid red";
-}
-
-function outListener(e) {
-    if (!window.__INSPECT_MODE && !window.__RECORD_MODE) return;
-    e.target.style.outline = e.target.__old_outline || "";
-    delete e.target.__old_outline;
-}
-
-// --------------------
-// INPUT listener (RECORD MODE ONLY, DEBOUNCED)
-// --------------------
-document.addEventListener("input", function(e) {
-    if (!window.__RECORD_MODE) return;
-
-    const el = e.target;
-    if (!el) return;
-
-    if (el.tagName === "TEXTAREA") {
-        // ok
-    } else if (el.tagName === "INPUT") {
-        const t = (el.type || "").toLowerCase();
-        if (t !== "text" && t !== "email" && t !== "password" && t !== "search" && t !== "url" && t !== "number") {
-            return; // not a text field
-        }
-    } else {
-        return;
-    }
-
-    // Remember latest value
-    __typing_last_value.set(el, el.value);
-
-    // Clear existing timer
-    if (__typing_timers.has(el)) {
-        clearTimeout(__typing_timers.get(el));
-    }
-
-    // Start / restart debounce timer
-    const timer = setTimeout(() => {
-        __flush_typing(el);
-    }, 400);
-
-    __typing_timers.set(el, timer);
-
-}, true);
-
-// --------------------
-// CHANGE listener (text inputs, checkbox, radio, select)
-// --------------------
-document.addEventListener("change", function(e) {
-    if (!window.__RECORD_MODE) return;
-
-    const el = e.target;
-    if (!el) return;
-
-    // TEXT INPUTS
-    __record_type_if_text_input(el);
-
-    // CHECKBOX / RADIO
-    if (el.tagName === "INPUT") {
-        const t = (el.type || "").toLowerCase();
-        if (t === "checkbox" || t === "radio") {
-
-            const ev = {
-                __kind: "check",
-                selector: getCssSelector(el),
-                xpath: getXPath(el),
-                checked: el.checked,
-                time: now()
-            };
-
-            window.__recorded_actions.push(ev);
-            window.__recorded_outgoing.push(ev);
-            return;
-        }
-    }
-
-    // SELECT
-    if (el.tagName === "SELECT") {
-        const ev = {
-            __kind: "select",
-            selector: getCssSelector(el),
-            xpath: getXPath(el),
-            value: el.value,
-            time: now()
-        };
-
-        window.__recorded_actions.push(ev);
-        window.__recorded_outgoing.push(ev);
-        return;
-    }
-
-}, true);
-
-document.addEventListener("submit", function(e) {
-    if (!window.__RECORD_MODE) return;
-
-    const form = e.target;
-    if (!form) return;
-
-    const inputs = form.querySelectorAll("input, textarea");
-    for (const el of inputs) {
-        __record_type_if_text_input(el);
-    }
-}, true);
-
-// --------------------
-// BLUR listener (force flush typing immediately)
-// --------------------
-document.addEventListener("blur", function(e) {
-    if (!window.__RECORD_MODE) return;
-    __record_type_if_text_input(e.target);
-}, true);
-
-// --------------------
-// MOUSEDOWN listener: flush pending typing before clicks
-// --------------------
-document.addEventListener("mousedown", function() {
-    if (!window.__RECORD_MODE) return;
-
-    for (const el of __typing_last_value.keys()) {
-        if (!__is_text_input(el)) continue;
-
-        __flush_typing(el);
-        setTimeout(() => __flush_typing(el), 250);
-    }
-}, true);
-
-// --------------------
-// CLICK listener
-// --------------------
-document.addEventListener("click", function(e) {
-    if (!window.__RECORD_MODE) return;
-
-    const el = e.target;
-    if (!el) return;
-
-    const ev = {
-        __kind: "click",
-        selector: getCssSelector(el),
-        xpath: getXPath(el),
-        x: e.clientX,
-        y: e.clientY,
-        time: now()
-    };
-
-    window.__recorded_actions.push(ev);
-    window.__recorded_outgoing.push(ev);
-}, true);
-
-// --------------------
-// Hover listeners
-// --------------------
-document.addEventListener("mouseover", hoverListener, true);
-document.addEventListener("mouseout", outListener, true);
-"""
+        :param msg: Human-readable error message describing the failure.
+        :return: A PlaybackStepResult with ok=False and the given error message.
+        """
+        return PlaybackStepResult(False, msg)
 
 
 class StudioBrowser:
@@ -360,6 +94,7 @@ class StudioBrowser:
     The raw Selenium driver is intentionally hidden behind this wrapper. If low-level
     access is required, it can be obtained via the `raw` property.
     """
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(self, driver, logger: logging.Logger):
         """
@@ -373,6 +108,9 @@ class StudioBrowser:
         self._inspect_active = False
         self._record_active = False
         self._last_url = None
+        self._cdp_inspect_installed = False
+        self._cdp_record_installed = False
+        self._cdp_record_enable_script_id = None
 
     @property
     def inspect_active(self):
@@ -409,8 +147,6 @@ class StudioBrowser:
         self._driver.get(url)
 
         self._last_url = url
-        # inject immediately on first load
-        self._inject_inspector_js(initial=True)
 
     def quit(self):
         """
@@ -471,76 +207,193 @@ class StudioBrowser:
         except WebDriverException:
             return False
 
+    # --------------------------------------------------------------
+    # Inspection functionality
+    # --------------------------------------------------------------
+
     def enable_inspect_mode(self):
         """
-        Enables DOM inspection mode.
+        Enable DOM inspection mode in the browser.
 
-        When active:
-        - Clicking an element stores metadata in
-          `window.__selenium_clicked_element`.
-        - Record mode is disabled.
+        This switches the browser into inspection-only mode by enabling the injected
+        inspector script and disabling recording. While inspection mode is active,
+        user interactions are visually highlighted and described but are not recorded
+        into the active Recording.
+
+        This operation only affects the currently loaded document; future navigations
+        will rely on the standard injection bootstrap mechanisms.
         """
         self._inspect_active = True
         self._record_active = False
-
-        self._driver.execute_script("window.__INSPECT_MODE = true;")
-        self._driver.execute_script("window.__RECORD_MODE = false;")
-        self._driver.execute_script("window.__FORCE_INSPECT_MODE = true;")
+        self._driver.execute_script(INSPECTOR_JS)
 
     def disable_inspect_mode(self):
         """
         Disables DOM inspection mode.
-
-        Clears inspector-related state flags in the page.
         """
         self._inspect_active = False
-        self._driver.execute_script("window.__INSPECT_MODE = false;")
-        self._driver.execute_script("window.__FORCE_INSPECT_MODE = false;")
+        self._driver.execute_script(
+            "window.__WEBWEAVER_INSPECT_CLEANUP__ && "
+            "window.__WEBWEAVER_INSPECT_CLEANUP__();")
+
+    def poll_inspected_element(self):
+        """
+        Poll the browser for a newly inspected (clicked) DOM element.
+
+        This method checks for the presence of a temporary JavaScript-side variable
+        (`window.__selenium_clicked_element`) which is set by the injected inspector
+        script when the user clicks an element in the page.
+
+        If an element is found, the variable is immediately cleared in the page so
+        the same element is not returned again on the next poll.
+
+        Returns:
+            The Selenium WebElement if a new element was picked, otherwise None.
+
+        This method is safe to call repeatedly (e.g. from a timer or idle handler).
+        If the browser is not available, the page has navigated, or script execution
+        fails, None is returned.
+        """
+
+        try:
+            el = self._driver.execute_script(
+                "return window.top.__selenium_clicked_element || null;"
+            )
+
+            if el:
+                self._driver.execute_script(
+                    "window.top.__selenium_clicked_element = null;"
+                )
+
+            return el
+
+        except WebDriverException:
+            return None
+
+    def _inject_inspector_js(self) -> None:
+        self._logger.info("Injecting 'inspect' javascript: Started")
+
+        if not self._cdp_inspect_installed:
+            self._driver.execute_cdp_cmd(
+                "Page.addScriptToEvaluateOnNewDocument",
+                {"source": INSPECTOR_JS})
+            self._cdp_inspect_installed = True
+
+        # Inject into current page
+        self._driver.execute_script(INSPECTOR_JS)
+
+        self._logger.info("Injecting 'inspect' javascript: Completed")
+
+    # --------------------------------------------------------------
+    # Recording functionality
+    # --------------------------------------------------------------
+
+    def _ensure_recording_js_installed(self) -> None:
+        """
+        Ensure that the recording JavaScript is installed in the browser.
+
+        This method installs the core recording script in two places:
+          1. As a CDP bootstrap script so it is automatically injected into all
+             future documents.
+          2. Directly into the currently loaded document.
+
+        This guarantees that the recording infrastructure is available both for the
+        current page and for any subsequent navigations or cross-domain transitions.
+
+        The installation is idempotent: the CDP bootstrap is only registered once.
+        """
+        if not self._cdp_record_installed:
+            self._driver.execute_cdp_cmd(
+                "Page.addScriptToEvaluateOnNewDocument",
+                {"source": RECORDING_JS}
+            )
+            self._cdp_record_installed = True
+
+        # Ensure installed in the current document too
+        self._driver.execute_script(RECORDING_JS)
 
     def enable_record_mode(self):
         """
-        Enables event recording mode.
+        Enable event recording mode in the browser.
 
-        When active:
-        - UI interaction events are collected into `window.__recorded_outgoing`.
-        - Inspect mode is disabled.
+        This ensures that the recording infrastructure is installed in both the
+        current document and all future documents, and sets the global recording
+        enable flag so user interactions are captured and buffered by the injected
+        recorder.
+
+        Recording mode is enabled in two stages:
+          1. The core recording JavaScript is installed (if not already present).
+          2. A CDP bootstrap flag is registered so future documents start with
+             recording enabled, and the flag is also set in the current document.
+
+        This method is safe to call multiple times.
         """
         self._record_active = True
-        self._inspect_active = False
 
-        self._driver.execute_script("window.__RECORD_MODE = true;")
-        self._driver.execute_script("window.__INSPECT_MODE = false;")
-        self._driver.execute_script("window.__FORCE_INSPECT_MODE = false;")
+        # Ensure recorder exists everywhere
+        self._ensure_recording_js_installed()
+
+        # Install ENABLE flag bootstrap for all FUTURE documents
+        if not self._cdp_record_enable_script_id:
+            result = self._driver.execute_cdp_cmd(
+                "Page.addScriptToEvaluateOnNewDocument",
+                {"source": "window.__WW_RECORD_ENABLED__ = true;"}
+            )
+            # Chrome returns an identifier sometimes, sometimes not; store anyway
+            self._cdp_record_enable_script_id = result.get("identifier")
+
+        # Enable in CURRENT document
+        self._driver.execute_script("window.__WW_RECORD_ENABLED__ = true;")
 
     def disable_record_mode(self):
         """
         Disables event recording mode.
-
-        Stops pushing events into the recording buffer.
         """
         self._record_active = False
-        self._driver.execute_script("window.__RECORD_MODE = false;")
+
+        # Disable in current page
+        try:
+            self._driver.execute_script("window.__WW_RECORD_ENABLED__ = false;")
+
+        except (WebDriverException, JavascriptException):
+            pass
+
+        # Remove the bootstrap so future documents default to false again
+        if self._cdp_record_enable_script_id:
+            try:
+                self._driver.execute_cdp_cmd(
+                    "Page.removeScriptToEvaluateOnNewDocument",
+                    {"identifier": self._cdp_record_enable_script_id})
+            except WebDriverException:
+                pass
+
+            self._cdp_record_enable_script_id = None
 
     def pop_recorded_events(self) -> list[dict]:
         """
-        Retrieve and clear any recorded user interaction events from the page.
+        Retrieve and clear any recorded browser events from the injected recorder.
 
-        This calls into the injected recording script and drains its internal
-        event buffer. If recording is not active, or if the page does not yet
-        have the recording infrastructure injected, this returns an empty list.
+        This method calls into the injected JavaScript bridge
+        (window.__drain_recorded_events) to atomically fetch and clear the buffered
+        list of recorded DOM events accumulated since the last call.
 
-        This method is designed to be safe to call repeatedly and will never
-        raise if the browser or page is in a transient state.
+        If the recorder is not present (e.g. the page has not yet been injected, a
+        navigation is in progress, or the browser session has ended), this method
+        fails gracefully and returns an empty list.
 
-        :return: A list of event dictionaries describing recorded user actions.
+        This method never raises an exception: failures to communicate with the
+        browser or execute the injected JavaScript are treated as "no events
+        available" and result in an empty list being returned.
+
+        :return: A list of recorded event dictionaries (possibly empty).
         """
-
         try:
             return self._driver.execute_script(
-                ("return window.__drain_recorded_events ? "
-                 "window.__drain_recorded_events() : [];"))
+                "return window.__drain_recorded_events ? "
+                "window.__drain_recorded_events() : [];")
 
-        except WebDriverException:
+        except (WebDriverException, JavascriptException) as e:
+            print("POP ERROR:", e)
             return []
 
     def poll(self) -> None:
@@ -566,94 +419,325 @@ class StudioBrowser:
 
         if current_url != self._last_url:
             self._last_url = current_url
-            self._handle_navigation()
+            self._on_navigation()
 
-    def poll_inspected_element(self):
-        """
-        Poll the browser for a newly inspected (clicked) DOM element.
-
-        This method checks for the presence of a temporary JavaScript-side variable
-        (`window.__selenium_clicked_element`) which is set by the injected inspector
-        script when the user clicks an element in the page.
-
-        If an element is found, the variable is immediately cleared in the page so
-        the same element is not returned again on the next poll.
-
-        Returns:
-            The Selenium WebElement if a new element was picked, otherwise None.
-
-        This method is safe to call repeatedly (e.g. from a timer or idle handler).
-        If the browser is not available, the page has navigated, or script execution
-        fails, None is returned.
-        """
-
-        try:
-            el = self._driver.execute_script(
-                "return window.__selenium_clicked_element || null;")
-            if el:
-                self._driver.execute_script("window.__selenium_clicked_element = null;")
-
-            return el
-
-        except WebDriverException:
-            return None
-
-    def _inject_inspector_js(self, initial=False):
-        """
-        Injects the inspector.js script into the browser context.
-
-        The script is:
-        - Registered with Chrome DevTools Protocol so that it automatically runs
-          on every new document load.
-        - Optionally executed immediately in the currently loaded page.
-
-        Parameters
-        ----------
-        initial : bool
-            If True, the script is executed immediately in the current DOM.
-            If False, only CDP registration is performed.
-        """
-
-        self._logger.info("Injecting web browser javascript: Started")
-
-        # Always register CDP script so it loads on EVERY navigation
-        self._driver.execute_cdp_cmd(
-            "Page.addScriptToEvaluateOnNewDocument",
-            {"source": BROWSER_JS_INJECTION})
-
-        # Inject into CURRENT document ONLY during the initial load
-        if initial:
-            self._driver.execute_script(BROWSER_JS_INJECTION)
-
-        self._logger.info("Injecting web browser javascript: Completed")
-
-    def _handle_navigation(self) -> None:
-        """
-        Handle post-navigation setup after the browser changes page.
-
-        This method:
-
-        - Waits (briefly) for the DOM to reach the 'complete' ready state
-        - Re-injects the inspector/recorder JavaScript into the new page
-        - Restores whichever mode (inspect or record) was active before navigation
-
-        This is called automatically by `poll()` when a URL change is detected.
-        """
-
-        # Wait for DOM ready
+    def _on_navigation(self) -> None:
         try:
             WebDriverWait(self._driver, 10).until(
-                lambda d: d.execute_script(
-                    "return document.readyState") == "complete")
-
+                lambda d: d.execute_script("return document.readyState") == "complete"
+            )
         except WebDriverException:
             pass
 
-        # Re-inject JS
-        self._inject_inspector_js(initial=False)
-
-        # Restore active mode
         if self._record_active:
-            self.enable_record_mode()
-        elif self._inspect_active:
-            self.enable_inspect_mode()
+            # Re-enable recording flag in the new document
+            self._driver.execute_script("window.__WW_RECORD_ENABLED__ = true;")
+
+    # --------------------------------------------------------------
+    # Playback functionality
+    # --------------------------------------------------------------
+
+    def describe_element(self, el):
+        """
+        Convert a Selenium WebElement into a serialisable description dictionary.
+
+        :param el: Selenium WebElement
+        :return: dict with tag, id, class, text, css, xpath
+        """
+        try:
+            tag = el.tag_name
+            el_id = el.get_attribute("id")
+            cls = el.get_attribute("class")
+            text = el.text
+
+            css = self._driver.execute_script(
+                "return arguments[0].id ? '#' + arguments[0].id : "
+                "arguments[0].tagName.toLowerCase();", el)
+
+            xpath = self._driver.execute_script(
+                r"""
+                function getXPath(el) {
+                    if (el.id) return '//*\[@id="' + el.id + '"]';
+                    const parts = [];
+                    while (el && el.nodeType === 1) {
+                        let index = 1;
+                        let sibling = el.previousSibling;
+                        while (sibling) {
+                            if (sibling.nodeType === 1 && sibling.nodeName === el.nodeName) index++;
+                            sibling = sibling.previousSibling;
+                        }
+                        parts.unshift(el.nodeName + "[" + index + "]");
+                        el = el.parentNode;
+                    }
+                    return "/" + parts.join("/");
+                }
+                return getXPath(arguments[0]);
+                """,
+                el)
+
+            return {
+                "tag": tag,
+                "id": el_id,
+                "class": cls,
+                "text": text,
+                "css": css,
+                "xpath": xpath,
+            }
+
+        except (StaleElementReferenceException, WebDriverException,
+                JavascriptException):
+            return {
+                "tag": None,
+                "id": None,
+                "class": None,
+                "text": None,
+                "css": None,
+                "xpath": None,
+            }
+
+    def playback_click(self, payload: dict) -> PlaybackStepResult:
+        """
+        Replay a recorded DOM click action.
+
+        This method locates the target element using the recorded XPath, scrolls it
+        into view, optionally _highlights it for visual feedback, and performs a
+        click. If the click is initially intercepted by another element, a single
+        retry is performed after re-scrolling.
+
+        After the click, the browser is allowed to settle (page load and DOM
+        stabilisation) before returning.
+
+        The operation is fully synchronous and deterministic: this method will not
+        return until either the click has completed and the page has stabilised, or
+        a failure has occurred.
+
+        :param payload: Event payload containing at least:
+                        - "xpath": XPath of the element to click.
+        :return: A PlaybackStepResult indicating success or describing the failure.
+        """
+        xpath = payload.get("xpath")
+
+        def do_click(element):
+            try:
+                element.click()
+            except ElementClickInterceptedException:
+                # Try once more after re-scrolling
+                self._scroll_into_view(element)
+                element.click()
+
+        return self._playback_element(xpath, do_click, settle_after=True)
+
+    def playback_type(self, payload: dict) -> PlaybackStepResult:
+        """
+        Replay a recorded text input action.
+
+        This method locates the target input element using the recorded XPath,
+        scrolls it into view, _highlights it for visual feedback, clears any existing
+        content, focuses the element, and sends the recorded text via synthetic
+        key events.
+
+        The operation waits for the element to become available before interacting
+        with it and fails cleanly if the element cannot be found or becomes invalid
+        due to DOM changes.
+
+        :param payload: Event payload containing:
+                        - "xpath": XPath of the input element.
+                        - "text": Text to type into the element.
+        :return: A PlaybackStepResult indicating success or describing the failure.
+        """
+        xpath = payload.get("xpath")
+        text = payload.get("text", "")
+
+        def do_type(element):
+            element.clear()
+            element.click()
+            element.send_keys(text)
+
+        return self._playback_element(xpath, do_type, settle_after=False)
+
+    def playback_check(self, payload: dict) -> PlaybackStepResult:
+        """
+        Replay a recorded checkbox or radio-button state change.
+
+        This method locates the target input element using the recorded XPath and
+        ensures that its checked state matches the recorded value. The element is
+        not blindly toggled: if it is already in the desired state, no action is
+        performed.
+
+        If a click is required to change the state and the click is intercepted, a
+        single retry is performed after re-scrolling.
+
+        After interaction, the final state is verified to ensure the control
+        reflects the requested value.
+
+        :param payload: Event payload containing:
+                        - "xpath": XPath of the checkbox/radio element.
+                        - "value": Desired state (truthy for checked, falsy for unchecked).
+        :return: A PlaybackStepResult indicating success or describing the failure.
+        """
+        xpath = payload.get("xpath")
+        desired_value = payload.get("value")
+
+        def do_check(element):
+            should_be_checked = bool(desired_value)
+            is_checked = element.is_selected()
+
+            if should_be_checked != is_checked:
+                element.click()
+
+            if element.is_selected() != should_be_checked:
+                raise PlaybackActionError(
+                    "Checkbox/radio state did not change as expected")
+
+        return self._playback_element(xpath, do_check)
+
+    def playback_select(self, payload: dict) -> PlaybackStepResult:
+        """
+        Replay a recorded <select> (dropdown) value change.
+
+        This method locates the target <select> element using the recorded XPath,
+        scrolls it into view, _highlights it for visual feedback, and selects the
+        requested option using Selenium's Select helper.
+
+        Selection is performed either by option value or by visible text, depending
+        on which field is present in the payload. After selection, the chosen option
+        is verified and the page is allowed to settle in case the change triggers
+        navigation or dynamic updates.
+
+        This method only supports native HTML <select> elements. Custom, script-
+        driven dropdowns should be recorded and replayed as click sequences.
+
+        :param payload: Event payload containing:
+                        - "xpath": XPath of the <select> element.
+                        - "value": (Optional) Option value to select.
+                        - "text": (Optional) Visible text of the option to select.
+        :return: A PlaybackStepResult indicating success or describing the failure.
+        """
+        xpath = payload.get("xpath")
+        value = payload.get("value")
+        text = payload.get("text")
+
+        def do_select(element):
+            select = Select(element)
+
+            if value is not None:
+                select.select_by_value(str(value))
+            elif text is not None:
+                select.select_by_visible_text(str(text))
+            else:
+                raise PlaybackActionError("No value/text provided for select")
+
+            # Verify result
+            selected = select.first_selected_option
+            if value is not None:
+                if selected.get_attribute("value") != str(value):
+                    raise PlaybackActionError(
+                        f"Select did not change to value {value}")
+            else:
+                if selected.text.strip() != str(text).strip():
+                    raise PlaybackActionError(
+                        f"Select did not change to text '{text}'")
+
+        return self._playback_element(xpath, do_select, settle_after=True)
+
+    def _playback_element(self,
+                          xpath: str,
+                          action,
+                          *,
+                          settle_after: bool = False,
+                          timeout: float = 10.0) -> PlaybackStepResult:
+        try:
+            element = self._wait_for_xpath(xpath, timeout=timeout)
+
+            self._scroll_into_view(element)
+            self._highlight(element)
+
+            action(element)
+
+            if settle_after:
+                self._wait_for_page_settle()
+
+            return PlaybackStepResult.success()
+
+        except TimeoutException:
+            return PlaybackStepResult.fail(f"Timeout waiting for element: {xpath}")
+
+        except StaleElementReferenceException:
+            return PlaybackStepResult.fail(f"Element became stale: {xpath}")
+
+        except (WebDriverException, JavascriptException, PlaybackActionError) as ex:
+            return PlaybackStepResult.fail(str(ex))
+
+    def _wait_for_ready_state(self, timeout: float = 10.0):
+        """
+        Wait until document.readyState == 'complete'.
+        """
+        WebDriverWait(self._driver, timeout).until(
+            lambda d: d.execute_script("return document.readyState") == "complete")
+
+    def _wait_for_dom_stable(self, timeout: float = 10.0, stable_time: float = 0.5):
+        """
+        Wait until the DOM size stops changing for `stable_time` seconds.
+        """
+        end_time = time.time() + timeout
+        last_count = None
+        stable_since = None
+
+        while time.time() < end_time:
+            count = self._driver.execute_script(
+                "return document.getElementsByTagName('*').length"
+            )
+
+            if count == last_count:
+                if stable_since is None:
+                    stable_since = time.time()
+                elif time.time() - stable_since >= stable_time:
+                    return
+            else:
+                stable_since = None
+
+            last_count = count
+            time.sleep(0.1)
+
+        raise TimeoutError("DOM did not stabilize in time")
+
+    def _wait_for_page_settle(self, timeout: float = 10.0):
+        """
+        Wait for page load + DOM to stabilize.
+        """
+        self._wait_for_ready_state(timeout)
+        self._wait_for_dom_stable(timeout)
+
+    def _wait_for_xpath(self, xpath: str, timeout: float = 10.0):
+        """
+        Wait until an element exists and is visible.
+        """
+        return WebDriverWait(self._driver, timeout).until(
+            EC.visibility_of_element_located((By.XPATH, xpath)))
+
+    def _scroll_into_view(self, element):
+        """
+        Scroll element into the center of the viewport.
+        """
+        self._driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center', inline: 'center'});",
+            element)
+
+    def _highlight(self, element, duration: float = 0.25):
+        """
+        Visually _highlight an element during playback.
+        """
+        try:
+            original = element.get_attribute("style")
+            self._driver.execute_script(
+                "arguments[0].setAttribute('style', arguments[1]);",
+                element,
+                "outline: 3px solid red; outline-offset: 2px;")
+            time.sleep(duration)
+            self._driver.execute_script(
+                "arguments[0].setAttribute('style', arguments[1]);",
+                element,
+                original)
+
+        except (StaleElementReferenceException, WebDriverException, JavascriptException):
+            pass  # _highlighting must never break playback

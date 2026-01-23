@@ -17,12 +17,3 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
-import wx
-
-EVT_OPEN_RECORDING = wx.NewEventType()
-EVT_DELETE_RECORDING = wx.NewEventType()
-EVT_RENAME_RECORDING = wx.NewEventType()
-
-OpenRecordingEvent = wx.PyEventBinder(EVT_OPEN_RECORDING, 1)
-DeleteRecordingEvent = wx.PyEventBinder(EVT_DELETE_RECORDING, 1)
-RenameRecordingEvent = wx.PyEventBinder(EVT_RENAME_RECORDING, 1)

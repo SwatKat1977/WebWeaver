@@ -38,6 +38,7 @@ from recording.recording_events import (
     DeleteRecordingEvent)
 from recording.recording_session import RecordingSession
 from recording.recording_event_type import RecordingEventType
+from recording.recording_loader import load_recording_from_context
 from studio_state_controller import StudioState, StudioStateController
 from studio_solution import (
     StudioSolution,
@@ -65,6 +66,7 @@ from ui.playback_toolbar import (PlaybackToolbarState,
                                  PlaybackToolbar,
                                  PlaybackToolID)
 from ui.events import EVT_WORKSPACE_ACTIVE_CHANGED
+from playback.recording_playback_session import RecordingPlaybackSession
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -130,6 +132,13 @@ class StudioMainFrame(wx.Frame):
         self.recent_solutions_menu: Optional[wx.Menu] = None
 
         self._playback_toolbar: Optional[PlaybackToolbar] = None
+
+        # --------------------------------------------------------------
+        # Recording Playback Parameters
+        # --------------------------------------------------------------
+        self._playback_session: Optional[RecordingPlaybackSession] = None
+        self._playback_timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self._on_playback_timer, self._playback_timer)
 
         # Recording timer for capturing elements.
         self._recording_timer = wx.Timer(self)
@@ -973,26 +982,42 @@ class StudioMainFrame(wx.Frame):
         if not self._web_browser:
             return
 
-        self._web_browser.poll()
         events = self._web_browser.pop_recorded_events()
 
         for ev in events:
-
+            # remove it from payload, it's served its purpose after this.
             kind = ev.pop("__kind", None)
-            if not kind:
-                self._logger.warning("Recorded event missing __kind: %r", ev)
-                continue
 
-            try:
-                event_type = RecordingEventType["DOM_" + kind.upper()]
-            except KeyError:
-                self._logger.warning("Unknown recorded event kind: %s", kind)
-                continue
+            # We are already storing a timestamp
+            ev.pop("time", None)
 
-            self._recording_session.append_event(
-                event_type,
-                payload=ev
-            )
+            if kind == "click":
+                self._recording_session.append_event(
+                    RecordingEventType.DOM_CLICK,
+                    payload=ev)
+
+            elif kind == "type":
+                self._recording_session.append_event(
+                    RecordingEventType.DOM_TYPE,
+                    payload=ev)
+
+            elif kind == "check":
+                self._recording_session.append_event(
+                    RecordingEventType.DOM_CHECK,
+                    payload={
+                        "xpath": ev["xpath"],
+                        "value": ev["value"],
+                    })
+
+            elif kind == "select":
+                self._recording_session.append_event(
+                    RecordingEventType.DOM_SELECT,
+                    payload={
+                        "xpath": ev["xpath"],
+                        "value": ev["value"],
+                    })
+
+            self._logger.debug("Recorded event: %s", ev)
 
     def _on_close_app(self, event):
         # Stop recording cleanly
@@ -1021,7 +1046,8 @@ class StudioMainFrame(wx.Frame):
         if not el:
             return
 
-        self._inspector_panel.append_element(el)
+        info = self._web_browser.describe_element(el)
+        self._inspector_panel.append_element(info)
 
     def _create_inspector_panel(self):
         self._inspector_panel: InspectorPanel = InspectorPanel(self)
@@ -1068,7 +1094,14 @@ class StudioMainFrame(wx.Frame):
             return
 
         self._state_controller.on_recording_playback_running()
-        # self._start_playback(ctx)
+
+        recording = load_recording_from_context(ctx)
+
+        self._playback_session = RecordingPlaybackSession(self._web_browser,
+                                                          recording,
+                                                          self._logger)
+        self._playback_session.start()
+        self._playback_timer.Start(200)
 
     def _on_pause_recording_playback(self, _evt):
         """
@@ -1083,3 +1116,14 @@ class StudioMainFrame(wx.Frame):
         """
         self._state_controller.on_recording_playback_idle()
         # self._stop_playback()
+
+    def _on_playback_timer(self, _evt):
+        print("[CALL] _on_playback_timer")
+
+        if not self._playback_session:
+            return
+
+        still_running = self._playback_session.step()
+        if not still_running:
+            self._playback_timer.Stop()
+            self._state_controller.on_recording_playback_idle()

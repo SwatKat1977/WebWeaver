@@ -17,12 +17,30 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
-import wx
+import json
+from typing import Optional
+from recording_view_context import RecordingViewContext
+from recording.recording import Recording
 
-EVT_OPEN_RECORDING = wx.NewEventType()
-EVT_DELETE_RECORDING = wx.NewEventType()
-EVT_RENAME_RECORDING = wx.NewEventType()
 
-OpenRecordingEvent = wx.PyEventBinder(EVT_OPEN_RECORDING, 1)
-DeleteRecordingEvent = wx.PyEventBinder(EVT_DELETE_RECORDING, 1)
-RenameRecordingEvent = wx.PyEventBinder(EVT_RENAME_RECORDING, 1)
+def load_recording_from_context(ctx: RecordingViewContext) -> Optional[Recording]:
+    """
+    Load a full recording (metadata + events) from disk.
+    """
+    try:
+        with ctx.recording_file.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None
+
+    rec = data.get("recording")
+    if not isinstance(rec, dict):
+        return None
+
+    events = rec.get("events")
+    if not isinstance(events, list):
+        return None
+
+    return Recording(
+        metadata=ctx.metadata,
+        events=events)
