@@ -645,28 +645,40 @@ class StudioBrowser:
                           action,
                           *,
                           settle_after: bool = False,
-                          timeout: float = 10.0) -> PlaybackStepResult:
-        try:
-            element = self._wait_for_xpath(xpath, timeout=timeout)
+                          timeout: float = 10.0,
+                          retries: int = 2) -> PlaybackStepResult:
+        # pylint: disable=too-many-arguments
 
-            self._scroll_into_view(element)
-            self._highlight(element)
+        for attempt in range(retries):
+            try:
+                element = self._wait_for_xpath(xpath, timeout=timeout)
 
-            action(element)
+                self._scroll_into_view(element)
+                self._highlight(element)
 
-            if settle_after:
-                self._wait_for_page_settle()
+                action(element)
 
-            return PlaybackStepResult.success()
+                if settle_after:
+                    self._wait_for_page_settle(timeout)
+                else:
+                    self._wait_for_dom_stable(timeout=1.0, stable_time=0.3)
 
-        except TimeoutException:
-            return PlaybackStepResult.fail(f"Timeout waiting for element: {xpath}")
+                return PlaybackStepResult.success()
 
-        except StaleElementReferenceException:
-            return PlaybackStepResult.fail(f"Element became stale: {xpath}")
+            except TimeoutException:
+                return PlaybackStepResult.fail(
+                    f"Timeout waiting for element: {xpath}")
 
-        except (WebDriverException, JavascriptException, PlaybackActionError) as ex:
-            return PlaybackStepResult.fail(str(ex))
+            except StaleElementReferenceException:
+                if attempt < retries - 1:
+                    # DOM churn: try again
+                    continue
+                return PlaybackStepResult.fail(f"Element became stale: {xpath}")
+
+            except (WebDriverException,
+                    JavascriptException,
+                    PlaybackActionError) as ex:
+                return PlaybackStepResult.fail(str(ex))
 
     def _wait_for_ready_state(self, timeout: float = 10.0):
         """
@@ -675,10 +687,19 @@ class StudioBrowser:
         WebDriverWait(self._driver, timeout).until(
             lambda d: d.execute_script("return document.readyState") == "complete")
 
-    def _wait_for_dom_stable(self, timeout: float = 10.0, stable_time: float = 0.5):
+    def _wait_for_dom_stable(self,
+                             timeout: float = 10.0,
+                             stable_time: float = 0.5):
         """
-        Wait until the DOM size stops changing for `stable_time` seconds.
+        Wait until the document is fully loaded and the DOM size stops changing
+        for `stable_time` seconds.
+
+        This is used as a heuristic to detect that the UI has reached an idle
+        state after navigation or dynamic updates (e.g. in SPAs).
         """
+        # First ensure the document is fully loaded
+        self._wait_for_ready_state(timeout)
+
         end_time = time.time() + timeout
         last_count = None
         stable_since = None
