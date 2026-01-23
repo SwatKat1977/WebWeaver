@@ -1118,8 +1118,6 @@ class StudioMainFrame(wx.Frame):
         # self._stop_playback()
 
     def _on_playback_timer(self, _evt):
-        print("[CALL] _on_playback_timer")
-
         if not self._playback_session:
             return
 

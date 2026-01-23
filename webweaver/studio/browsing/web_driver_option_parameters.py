@@ -118,4 +118,27 @@ WEB_DRIVER_OPTION_PARAMETERS: dict[WebDriverOption, WebDriverOptionParameter] = 
             },
             has_parameters=True
         ),
+
+    WebDriverOption.DISABLE_AUTOMATION_CONTROLLED_FEATURE:
+        WebDriverOptionParameter(
+            WebDriverOption.DISABLE_AUTOMATION_CONTROLLED_FEATURE,
+            {
+                BrowserType.CHROME: [
+                    WebDriverOptionBinding(
+                        WebDriverOptionTarget.ARGUMENT,
+                        "--disable-blink-features")
+                ],
+                BrowserType.CHROMIUM: [
+                    WebDriverOptionBinding(
+                        WebDriverOptionTarget.ARGUMENT,
+                        "--disable-blink-features")
+                ],
+                BrowserType.EDGE: [
+                    WebDriverOptionBinding(
+                        WebDriverOptionTarget.ARGUMENT,
+                        "--disable-blink-features")
+                ],
+            },
+            has_parameters=True
+        ),
 }

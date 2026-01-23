@@ -546,14 +546,23 @@ class StudioBrowser:
         :return: A PlaybackStepResult indicating success or describing the failure.
         """
         xpath = payload.get("xpath")
-        text = payload.get("text", "")
+        text = payload.get("value", "")
 
         def do_type(element):
+            # Clear using JS (more reliable)
+            self._driver.execute_script("""
+                const el = arguments[0];
+                el.focus();
+                el.value = "";
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+            """, element)
+
             element.clear()
             element.click()
             element.send_keys(text)
 
-        return self._playback_element(xpath, do_type, settle_after=False)
+        return self._playback_element(xpath, do_type, wait_after=False)
 
     def playback_check(self, payload: dict) -> PlaybackStepResult:
         """
@@ -645,6 +654,7 @@ class StudioBrowser:
                           action,
                           *,
                           settle_after: bool = False,
+                          wait_after: bool = True,
                           timeout: float = 10.0,
                           retries: int = 2) -> PlaybackStepResult:
         # pylint: disable=too-many-arguments
@@ -658,10 +668,11 @@ class StudioBrowser:
 
                 action(element)
 
-                if settle_after:
-                    self._wait_for_page_settle(timeout)
-                else:
-                    self._wait_for_dom_stable(timeout=1.0, stable_time=0.3)
+                if wait_after:
+                    if settle_after:
+                        self._wait_for_page_settle(timeout)
+                    else:
+                        self._wait_for_dom_stable(timeout=1.0, stable_time=0.3)
 
                 return PlaybackStepResult.success()
 

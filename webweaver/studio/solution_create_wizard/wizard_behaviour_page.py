@@ -49,6 +49,7 @@ class BehaviourPageControls:
     disable_extensions: wx.CheckBox | None = None
     disable_notifications: wx.CheckBox | None = None
     ignore_cert_errors: wx.CheckBox | None = None
+    disable_automation_controlled_feature: wx.CheckBox | None = None
 
     # Window Size behaviour
     window_size_default: wx.RadioButton | None = None
@@ -120,6 +121,11 @@ class WizardBehaviourPage(SolutionWizardBase):
             self, wx.ID_ANY, "Disable notifications (recommended)")
         self._behaviour_controls.ignore_cert_errors = wx.CheckBox(
             self, wx.ID_ANY, "Ignore certificate errors (advanced)")
+        self._behaviour_controls.disable_automation_controlled_feature = \
+            wx.CheckBox(self,
+                        wx.ID_ANY,
+                        "Disable Automation Controlled Feature (advanced)")
+
         self._behaviour_controls.private.SetValue(True)
         self._behaviour_controls.disable_extensions.SetValue(True)
         self._behaviour_controls.disable_notifications.SetValue(True)
@@ -130,6 +136,10 @@ class WizardBehaviourPage(SolutionWizardBase):
                           0, wx.ALL, 5)
         behaviour_box.Add(self._behaviour_controls.ignore_cert_errors,
                           0, wx.ALL, 5)
+        behaviour_box.Add(
+            self._behaviour_controls.disable_automation_controlled_feature,
+            0, wx.ALL, 5)
+
         behaviour_box.AddSpacer(10)
 
         # =====================
@@ -205,6 +215,8 @@ class WizardBehaviourPage(SolutionWizardBase):
             self._behaviour_controls.disable_notifications.GetValue()
         opts.ignore_certificate_errors = \
             self._behaviour_controls.ignore_cert_errors.GetValue()
+        opts.disable_automation_controlled_feature = \
+            self._behaviour_controls.disable_automation_controlled_feature.GetValue()
 
         opts.maximised = \
             self._behaviour_controls.window_size_maximised.GetValue()
@@ -235,7 +247,7 @@ class WizardBehaviourPage(SolutionWizardBase):
 
         user_agent: str = self._behaviour_controls.user_agent.GetValue().strip()
         if user_agent:
-            opts.userAgent = user_agent
+            opts.user_agent = user_agent
 
         else:
             opts.user_agent = None
