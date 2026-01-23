@@ -467,6 +467,43 @@ class StudioBrowser:
         except Exception as ex:
             return PlaybackStepResult.fail(str(ex))
 
+    def playback_check(self, payload: dict) -> PlaybackStepResult:
+        xpath = payload.get("xpath")
+        desired_value = payload.get("value")
+
+        try:
+            element = self.wait_for_xpath(xpath, timeout=10)
+
+            self.scroll_into_view(element)
+            self.highlight(element)
+
+            should_be_checked = bool(desired_value)
+            is_checked = element.is_selected()
+
+            if should_be_checked != is_checked:
+                try:
+                    element.click()
+                except ElementClickInterceptedException:
+                    self.scroll_into_view(element)
+                    element.click()
+
+            # Optional: verify result
+            if element.is_selected() != should_be_checked:
+                return PlaybackStepResult.fail(
+                    f"Checkbox/radio state did not change as expected: {xpath}"
+                )
+
+            return PlaybackStepResult.ok()
+
+        except TimeoutException:
+            return PlaybackStepResult.fail(f"Timeout waiting for element: {xpath}")
+
+        except StaleElementReferenceException:
+            return PlaybackStepResult.fail(f"Element became stale: {xpath}")
+
+        except Exception as ex:
+            return PlaybackStepResult.fail(str(ex))
+
     def wait_for_ready_state(self, timeout: float = 10.0):
         """
         Wait until document.readyState == 'complete'.

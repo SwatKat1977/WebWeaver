@@ -65,6 +65,7 @@ class RecordingPlaybackSession:
 
         if event_type == "dom.check":
             print(f"[EVENT] Check: {payload}")
+            return self._browser.playback_check(payload)
 
         elif event_type == "dom.click":
             print(f"=> Clicking: {payload}")
@@ -78,6 +79,7 @@ class RecordingPlaybackSession:
 
         elif event_type == "dom.type":
             print(f"[EVENT] Type: {payload}")
+            return self._browser.playback_type(payload)
 
         else:
             print("Unknown event:", event_type)
