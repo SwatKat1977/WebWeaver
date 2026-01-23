@@ -50,6 +50,10 @@ class WebDriverOption(enum.Enum):
 
         MAXIMISED:
             Start the browser window maximised.
+
+        DISABLE_AUTOMATION_CONTROLLED_FEATURE:
+            Disable automatic control feature, useful for testing websites
+            that use CAPTCHA.
     """
 
     DISABLE_EXTENSIONS = enum.auto()
@@ -59,3 +63,4 @@ class WebDriverOption(enum.Enum):
     USER_AGENT = enum.auto()
     WINDOW_SIZE = enum.auto()
     MAXIMISED = enum.auto()
+    DISABLE_AUTOMATION_CONTROLLED_FEATURE = enum.auto()

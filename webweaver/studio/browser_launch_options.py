@@ -110,6 +110,9 @@ class BrowserLaunchOptions:
     ignore_certificate_errors: bool = False
     """Whether SSL/TLS certificate errors should be ignored."""
 
+    disable_automation_controlled_feature: bool = False
+    """Disable automation controlled feature for anti-bot enabled pages."""
+
     user_agent: Optional[str] = None
     """Optional user agent string override."""
 
@@ -136,6 +139,8 @@ class BrowserLaunchOptions:
             "disableExtensions": self.disable_extensions,
             "disableNotifications": self.disable_notifications,
             "ignoreCertificateErrors": self.ignore_certificate_errors,
+            "disableAutomationControlledFeature":
+                self.disable_automation_controlled_feature,
             "maximised": self.maximised,
         }
 
