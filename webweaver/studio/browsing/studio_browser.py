@@ -21,7 +21,8 @@ from dataclasses import dataclass
 import logging
 from selenium.common.exceptions import (WebDriverException,
                                         TimeoutException,
-                                        NoSuchElementException)
+                                        ElementClickInterceptedException,
+                                        StaleElementReferenceException)
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -32,7 +33,15 @@ from browsing.recording_js import RECORDING_JS, RECORDING_ENABLE_BOOTSTRAP
 @dataclass
 class PlaybackStepResult:
     ok: bool
-    error: str | None = None
+    error: str = ""
+
+    @staticmethod
+    def ok():
+        return PlaybackStepResult(True, "")
+
+    @staticmethod
+    def fail(msg: str):
+        return PlaybackStepResult(False, msg)
 
 
 class StudioBrowser:
@@ -406,27 +415,137 @@ class StudioBrowser:
     def playback_click(self, payload: dict) -> PlaybackStepResult:
         xpath = payload.get("xpath")
 
-        wait = WebDriverWait(self._driver, 10)
-
         try:
-            el = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
-            el.click()
-            return PlaybackStepResult(ok=True)
+            element = self.wait_for_xpath(xpath, timeout=10)
+
+            self.scroll_into_view(element)
+            self.highlight(element)
+
+            try:
+                element.click()
+            except ElementClickInterceptedException:
+                # Try once more after scroll/highlight
+                self.scroll_into_view(element)
+                element.click()
+
+            self.wait_for_page_settle()
+
+            return PlaybackStepResult.ok()
 
         except TimeoutException:
-            return PlaybackStepResult(
-                ok=False,
-                error="Timed out waiting for element to become clickable"
+            return PlaybackStepResult.fail(
+                f"Timeout waiting for element: {xpath}")
+
+        except StaleElementReferenceException:
+            return PlaybackStepResult.fail(f"Element became stale: {xpath}")
+
+        except Exception as ex:
+            return PlaybackStepResult.fail(str(ex))
+
+    def playback_type(self, payload: dict) -> PlaybackStepResult:
+        xpath = payload.get("xpath")
+        text = payload.get("text", "")
+
+        try:
+            element = self.wait_for_xpath(xpath, timeout=10)
+
+            self.scroll_into_view(element)
+            self.highlight(element)
+
+            element.clear()
+            element.click()
+            element.send_keys(text)
+
+            return PlaybackStepResult.ok()
+
+        except TimeoutException:
+            return PlaybackStepResult.fail(f"Timeout waiting for element: {xpath}")
+
+        except StaleElementReferenceException:
+            return PlaybackStepResult.fail(f"Element became stale: {xpath}")
+
+        except Exception as ex:
+            return PlaybackStepResult.fail(str(ex))
+
+    def wait_for_ready_state(self, timeout: float = 10.0):
+        """
+        Wait until document.readyState == 'complete'.
+        """
+        WebDriverWait(self._driver, timeout).until(
+            lambda d: d.execute_script("return document.readyState") == "complete"
+        )
+
+    def wait_for_dom_stable(self, timeout: float = 10.0, stable_time: float = 0.5):
+        """
+        Wait until the DOM size stops changing for `stable_time` seconds.
+        """
+        import time
+
+        end_time = time.time() + timeout
+        last_count = None
+        stable_since = None
+
+        while time.time() < end_time:
+            count = self._driver.execute_script(
+                "return document.getElementsByTagName('*').length"
             )
 
-        except NoSuchElementException:
-            return PlaybackStepResult(
-                ok=False,
-                error="Element not found"
+            if count == last_count:
+                if stable_since is None:
+                    stable_since = time.time()
+                elif time.time() - stable_since >= stable_time:
+                    return
+            else:
+                stable_since = None
+
+            last_count = count
+            time.sleep(0.1)
+
+        raise TimeoutError("DOM did not stabilize in time")
+
+    def wait_for_page_settle(self, timeout: float = 10.0):
+        """
+        Wait for page load + DOM to stabilize.
+        """
+        self.wait_for_ready_state(timeout)
+        self.wait_for_dom_stable(timeout)
+
+    def wait_for_xpath(self, xpath: str, timeout: float = 10.0):
+        """
+        Wait until an element exists and is visible.
+        """
+        return WebDriverWait(self._driver, timeout).until(
+            EC.visibility_of_element_located((By.XPATH, xpath))
+        )
+
+    def scroll_into_view(self, element):
+        """
+        Scroll element into the center of the viewport.
+        """
+        self._driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center', inline: 'center'});",
+            element,
+        )
+
+    def highlight(self, element, duration: float = 0.25):
+        """
+        Visually highlight an element during playback.
+        """
+        import time
+
+        try:
+            original = element.get_attribute("style")
+            self._driver.execute_script(
+                "arguments[0].setAttribute('style', arguments[1]);",
+                element,
+                "outline: 3px solid red; outline-offset: 2px;",
+            )
+            time.sleep(duration)
+            self._driver.execute_script(
+                "arguments[0].setAttribute('style', arguments[1]);",
+                element,
+                original,
             )
 
-        except Exception as e:
-            return PlaybackStepResult(
-                ok=False,
-                error=str(e))
-
+        except Exception:
+            pass  # highlighting must never break playback
