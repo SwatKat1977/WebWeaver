@@ -558,17 +558,9 @@ class StudioBrowser:
                 el.dispatchEvent(new Event('change', { bubbles: true }));
             """, element)
 
-            # Set value in framework-compatible way
-            self._driver.execute_script("""
-                const el = arguments[0];
-                const value = arguments[1];
-
-                el.focus();
-                el.value = value;
-
-                el.dispatchEvent(new Event('input', { bubbles: true }));
-                el.dispatchEvent(new Event('change', { bubbles: true }));
-            """, element, text)
+            element.clear()
+            element.click()
+            element.send_keys(text)
 
         return self._playback_element(xpath, do_type, wait_after=False)
 

@@ -188,6 +188,10 @@ class BrowserLaunchOptions:
             "ignoreCertificateErrors", opts.ignore_certificate_errors
         )
         opts.maximised = data.get("maximised", opts.maximised)
+        opts.disable_automation_controlled_feature = data.get(
+            "disableAutomationControlledFeature",
+            opts.disable_automation_controlled_feature
+        )
 
         user_agent = data.get("userAgent")
         if isinstance(user_agent, str):
@@ -224,6 +228,10 @@ class BrowserLaunchOptions:
 
         if self.user_agent:
             result[WebDriverOption.USER_AGENT] = self.user_agent
+
+        if self.disable_automation_controlled_feature:
+            result[WebDriverOption.DISABLE_AUTOMATION_CONTROLLED_FEATURE] = \
+                "AutomationControlled"
 
         if self.window_size and self.window_size.width > 0 and \
                 self.window_size.height > 0:
