@@ -24,12 +24,10 @@ from persistence.recording_document import RecordingDocument
 
 class RecordingLoadError(Exception):
     """Raised when a recording file cannot be loaded."""
-    pass
 
 
 class RecordingSaveError(Exception):
     """Raised when a recording file cannot be saved."""
-    pass
 
 
 class RecordingPersistence:

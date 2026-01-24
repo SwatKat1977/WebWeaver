@@ -22,7 +22,41 @@ import wx
 
 
 class StepEditDialog(wx.Dialog):
+    """
+    Modal dialog for editing a single recorded step.
+
+    This dialog provides a simple form-based editor for a recording step
+    dictionary as stored in a `.wwrec` recording file. It currently supports
+    editing:
+
+        - The target XPath
+        - An optional value/text payload (for type/select actions, etc.)
+
+    The action/type itself is shown as read-only and cannot be changed.
+
+    The dialog edits the provided `step` dictionary *in place* if the user
+    accepts the dialog. A deep copy of the original step is kept so callers
+    can detect whether any changes were made.
+
+    Expected step structure (simplified):
+
+        {
+            "type": "dom.type" | "dom.click" | ...,
+            "payload": {
+                "xpath": "...",
+                "value": "..." | "text": "..."   # optional
+            }
+        }
+    """
+
     def __init__(self, parent, step: dict):
+        """
+        Create a new StepEditDialog.
+
+        :param parent: Parent wx window.
+        :param step: The step dictionary to edit. This object may be modified
+                     in-place if the user clicks OK.
+        """
         super().__init__(parent, title="Edit Step", size=(600, 300))
 
         self._step = step
@@ -63,9 +97,24 @@ class StepEditDialog(wx.Dialog):
 
     @property
     def changed(self):
+        """
+        Return True if the step has been modified by the user.
+
+        This compares the current step dictionary against the deep-copied
+        original state captured when the dialog was created.
+        """
         return self._step != self._original
 
     def TransferDataFromWindow(self):
+        """
+        Transfer values from the dialog controls back into the step dictionary.
+
+        This method updates the step's payload in-place and is called by wx
+        when the user accepts the dialog.
+
+        :return: True to indicate successful data transfer.
+        """
+        # pylint: disable=invalid-name
         self._payload["xpath"] = self._target_ctrl.GetValue()
         if "value" in self._payload:
             self._payload["value"] = self._value_ctrl.GetValue()
