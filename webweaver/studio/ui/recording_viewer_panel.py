@@ -21,6 +21,9 @@ from datetime import datetime
 import wx
 from recording_view_context import RecordingViewContext
 from recording.recording_loader import load_recording_from_context
+from ui.step_edit_dialog import StepEditDialog
+from persistence.recording_persistence import (RecordingPersistence,
+                                               RecordingLoadError)
 
 
 def format_time_point(dt: datetime) -> str:
@@ -153,3 +156,28 @@ class RecordingViewerPanel(wx.Panel):
         self.SetSizer(main_sizer)
 
         self._populate_steps()
+
+        self._step_list.Bind(wx.EVT_LIST_ITEM_ACTIVATED,
+                             self._on_step_activated)
+
+    def _on_step_activated(self, evt):
+        index = evt.GetIndex()
+        self._edit_step(index)
+
+    def _edit_step(self, index: int):
+
+        try:
+            recording = RecordingPersistence.load_from_disk(
+                self._context.recording_file)
+
+        except RecordingLoadError as e:
+            wx.MessageBox(str(e), "Error", wx.ICON_ERROR)
+            return
+
+        step = recording.data["recording"]["events"][index]
+
+        dlg = StepEditDialog(self, step)
+        if dlg.ShowModal() == wx.ID_OK and dlg.changed:
+            # Step was modified in-place
+            RecordingPersistence.save_to_disk(recording)
+            self._populate_steps()
