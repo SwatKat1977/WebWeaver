@@ -21,7 +21,7 @@ from abc import ABC, abstractmethod
 from typing import Protocol
 
 
-class CodeGenerator(ABC):
+class BaseCodeGenerator(ABC):
     """
     Base class for all code generation backends.
 
