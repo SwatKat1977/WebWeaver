@@ -65,6 +65,10 @@ class RecordingViewerPanel(wx.Panel):
         self._context: RecordingViewContext = ctx
         self._step_list: wx.ListCtrl = None
 
+        self._current_index: int | None = None
+        self._failed_index: int | None = None
+        self._passed_indices: set[int] = set()
+
         self._create_ui()
 
     @property
@@ -95,6 +99,24 @@ class RecordingViewerPanel(wx.Panel):
             wx.FileName: The recording file.
         """
         return self._context.recording_file
+
+    def timeline_set_current(self, index: int):
+        self._current_index = index
+        self._refresh_timeline_styles()
+
+    def timeline_mark_passed(self, index: int):
+        self._passed_indices.add(index)
+        self._refresh_timeline_styles()
+
+    def timeline_mark_failed(self, index: int):
+        self._failed_index = index
+        self._refresh_timeline_styles()
+
+    def timeline_reset_playback_state(self):
+        self._current_index = None
+        self._failed_index = None
+        self._passed_indices.clear()
+        self._refresh_timeline_styles()
 
     def _extract_step_fields(self, event: dict):
         t = event.get("type")
@@ -181,3 +203,30 @@ class RecordingViewerPanel(wx.Panel):
             # Step was modified in-place
             RecordingPersistence.save_to_disk(recording)
             self._populate_steps()
+
+    def _refresh_timeline_styles(self):
+        """
+        Update the background colour of each timeline row based on playback state.
+        """
+        count = self._step_list.GetItemCount()
+
+        for i in range(count):
+            if self._failed_index is not None and i == self._failed_index:
+                # Failed step -> red
+                self._step_list.SetItemBackgroundColour(i, wx.Colour(255, 200, 200))
+
+            elif self._current_index is not None and i == self._current_index:
+                # Currently executing -> blue
+                self._step_list.SetItemBackgroundColour(i, wx.Colour(200, 220, 255))
+
+            elif i in self._passed_indices:
+                # Already passed -> green
+                self._step_list.SetItemBackgroundColour(i, wx.Colour(200, 255, 200))
+
+            else:
+                # Not touched yet
+                self._step_list.SetItemBackgroundColour(i, wx.NullColour)
+
+        # Auto-scroll to current step
+        if self._current_index is not None:
+            self._step_list.EnsureVisible(self._current_index)

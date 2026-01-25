@@ -17,9 +17,18 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from dataclasses import dataclass
 from logging import Logger
 from browsing.studio_browser import PlaybackStepResult, StudioBrowser
 from recording.recording import Recording
+
+
+@dataclass
+class PlaybackCallbackEvents:
+    on_step_started = None  # Callable[[int], None]
+    on_step_passed = None  # Callable[[int], None]
+    on_step_failed = None  # Callable[[int, str], None]
+    on_playback_finished = None
 
 
 class RecordingPlaybackSession:
@@ -40,11 +49,6 @@ class RecordingPlaybackSession:
                  browser: StudioBrowser,
                  recording: Recording,
                  logger: Logger):
-        self._browser = browser
-        self._recording = recording
-        self._index = 0
-        self._running = False
-        self._logger = logger.getChild(__name__)
         """
         Create a new playback session for the given recording.
 
@@ -52,6 +56,12 @@ class RecordingPlaybackSession:
         :param recording: The Recording to be played back.
         :param logger: Base logger used for emitting playback diagnostics.
         """
+        self._browser = browser
+        self._recording = recording
+        self._index = 0
+        self._running = False
+        self._logger = logger.getChild(__name__)
+        self.callback_events = PlaybackCallbackEvents()
 
     def start(self):
         """
@@ -92,15 +102,30 @@ class RecordingPlaybackSession:
 
         if self._index >= len(self._recording.events):
             self.stop()
+            if self.callback_events.on_playback_finished:
+                self.callback_events.on_playback_finished()
+
             return False
 
-        event = self._recording.events[self._index]
+        current_index = self._index
+
+        if self.callback_events.on_step_started:
+            self.callback_events.on_step_started(current_index)
+
+        event = self._recording.events[current_index]
         result = self._execute_event(event)
 
         if not result.ok:
-            print("Playback failed:", result.error)
+            if self.callback_events.on_step_failed:
+                self.callback_events.on_step_failed(current_index,
+                                                     result.error)
+
             self.stop()
             return False
+
+        # success
+        if self.callback_events.on_step_passed:
+            self.callback_events.on_step_passed(current_index)
 
         self._index += 1
 
@@ -108,40 +133,40 @@ class RecordingPlaybackSession:
 
     def _execute_event(self, event: dict):
         """
-        Execute a single recorded event.
+        Execute a single recorded event and return a PlaybackStepResult.
 
-        This method dispatches the event to the appropriate playback handler
-        on the StudioBrowser based on the event's type field.
-
-        Unknown or unsupported event types are ignored and treated as successful
-        no-ops.
-
-        :param event: The recorded event dictionary.
-        :return: A PlaybackStepResult indicating success or failure of the event.
+        This method is crash-safe: any exception raised during execution is
+        caught and converted into a PlaybackStepResult failure.
         """
-        event_type = event.get("type")
-        payload = event.get("payload", {})
+        try:
+            event_type = event.get("type")
+            payload = event.get("payload", {})
 
-        if event_type == "dom.check":
-            self._logger.debug("[PLAYBACK EVENT] Check: %s", payload)
-            return self._browser.playback_check(payload)
+            if event_type == "dom.check":
+                self._logger.debug("[PLAYBACK EVENT] Check: %s", payload)
+                return self._browser.playback_check(payload)
 
-        if event_type == "dom.click":
-            self._logger.debug("[PLAYBACK EVENT] Button: %s", payload)
-            return self._browser.playback_click(payload)
+            if event_type == "dom.click":
+                self._logger.debug("[PLAYBACK EVENT] Button: %s", payload)
+                return self._browser.playback_click(payload)
 
-        if event_type == "nav.goto":
-            self._browser.open_page(event["url"])
+            if event_type == "nav.goto":
+                self._logger.debug("[PLAYBACK EVENT] Navigate: %s", event.get("url"))
+                self._browser.open_page(event["url"])
+                return PlaybackStepResult.success()
 
-        if event_type == "dom.select":
-            self._logger.debug("[PLAYBACK EVENT] Dropdown: %s", payload)
-            return self._browser.playback_select(payload)
+            if event_type == "dom.select":
+                self._logger.debug("[PLAYBACK EVENT] Dropdown: %s", payload)
+                return self._browser.playback_select(payload)
 
-        if event_type == "dom.type":
-            self._logger.debug("[PLAYBACK EVENT] Text: %s", payload)
-            return self._browser.playback_type(payload)
+            if event_type == "dom.type":
+                self._logger.debug("[PLAYBACK EVENT] Text: %s", payload)
+                return self._browser.playback_type(payload)
 
-        self._logger.debug("[PLAYBACK EVENT] Unknown event: %s",
-                           event_type)
+            self._logger.debug("[PLAYBACK EVENT] Unknown event: %s", event_type)
+            return PlaybackStepResult.success()
 
-        return PlaybackStepResult(ok=True, error="")
+        except Exception as e:
+            # Absolute last-resort safety net
+            self._logger.exception("Playback event crashed")
+            return PlaybackStepResult.fail(str(e))

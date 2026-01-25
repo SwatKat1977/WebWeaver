@@ -1093,6 +1093,10 @@ class StudioMainFrame(wx.Frame):
         if not ctx:
             return
 
+        viewer = self._workspace_panel.get_active_viewer()
+        if viewer:
+            viewer.timeline_reset_playback_state()
+
         self._state_controller.on_recording_playback_running()
 
         recording = load_recording_from_context(ctx)
@@ -1100,6 +1104,11 @@ class StudioMainFrame(wx.Frame):
         self._playback_session = RecordingPlaybackSession(self._web_browser,
                                                           recording,
                                                           self._logger)
+        self._playback_session.callback_events.on_step_started = self._on_playback_step_started
+        self._playback_session.callback_events.on_step_passed = self._on_playback_step_passed
+        self._playback_session.callback_events.on_step_failed = self._on_playback_step_failed
+        self._playback_session.callback_events.on_playback_finished = self._on_playback_finished
+
         self._playback_session.start()
         self._playback_timer.Start(200)
 
@@ -1125,3 +1134,27 @@ class StudioMainFrame(wx.Frame):
         if not still_running:
             self._playback_timer.Stop()
             self._state_controller.on_recording_playback_idle()
+
+    def _on_playback_step_started(self, index: int):
+        viewer = self._workspace_panel.get_active_viewer()
+        if viewer:
+            viewer.timeline_set_current(index)
+
+    def _on_playback_step_passed(self, index: int):
+        viewer = self._workspace_panel.get_active_viewer()
+        if viewer:
+            viewer.timeline_mark_passed(index)
+
+    def _on_playback_step_failed(self, index: int, error: str):
+        # Stop playback immediately
+        self._playback_timer.Stop()
+        self._playback_session = None
+        self._state_controller.on_recording_playback_idle()
+
+        viewer = self._workspace_panel.get_active_viewer()
+        if viewer:
+            viewer.timeline_mark_failed(index)
+            wx.MessageBox(error, "Playback Failed", wx.ICON_ERROR)
+
+    def _on_playback_finished(self):
+        self._playback_timer.Stop()
