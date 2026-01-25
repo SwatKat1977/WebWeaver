@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import importlib.util
+from logging import Logger
 import sys
 from pathlib import Path
 from typing import List
@@ -29,9 +30,10 @@ class CodeGeneratorRegistry:
     Discovers and loads code generator plugins from a directory.
     """
 
-    def __init__(self, plugin_dir: Path):
+    def __init__(self, plugin_dir: Path, logger: Logger):
         self._plugin_dir: Path = plugin_dir
         self._generators: List[BaseCodeGenerator] = []
+        self._logger = logger.getChild(__name__)
 
     def load(self) -> None:
         """
@@ -51,8 +53,7 @@ class CodeGeneratorRegistry:
                 if gen:
                     self._generators.append(gen)
             except Exception as e:
-                # TODO: hook this to your logger
-                print(f"[CodeGen] Failed to load {file}: {e}")
+                self._logger.info(f"[CodeGen] Failed to load %s: %s", file, e)
 
     def get_generators(self) -> List[BaseCodeGenerator]:
         return list(self._generators)
