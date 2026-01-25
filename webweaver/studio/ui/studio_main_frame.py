@@ -67,6 +67,9 @@ from ui.playback_toolbar import (PlaybackToolbarState,
                                  PlaybackToolID)
 from ui.events import EVT_WORKSPACE_ACTIVE_CHANGED
 from playback.recording_playback_session import RecordingPlaybackSession
+from code_generation.code_generator_registry import CodeGeneratorRegistry
+from persistence.recording_document import RecordingDocument
+from persistence.recording_persistence import RecordingPersistence
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -106,8 +109,7 @@ class StudioMainFrame(wx.Frame):
             title="Webweaver Automation Studio",
             pos=INITIAL_POSITION,
             size=wx.Size(1024, 768),
-            style=wx.DEFAULT_FRAME_STYLE,
-        )
+            style=wx.DEFAULT_FRAME_STYLE)
 
         self._logger = logging.getLogger("webweaver_studio")
         self._logger.setLevel(logging.DEBUG)
@@ -130,8 +132,14 @@ class StudioMainFrame(wx.Frame):
         self._inspector_panel: Optional[wx.Panel] = None
 
         self.recent_solutions_menu: Optional[wx.Menu] = None
+        self.code_generation_menu: Optional[wx.Menu] = None
 
         self._playback_toolbar: Optional[PlaybackToolbar] = None
+
+        plugin_path: str = "webweaver/studio/code_generator_plugins"
+        self._code_gen_registry = CodeGeneratorRegistry(Path(plugin_path),
+                                                        self._logger)
+        self._code_gen_registry.load()
 
         # --------------------------------------------------------------
         # Recording Playback Parameters
@@ -264,6 +272,58 @@ class StudioMainFrame(wx.Frame):
 
         wx.CallLater(1, self._aui_mgr.Update)
         wx.CallLater(1, self.SendSizeEvent)
+
+    def rebuild_code_generation_menu(self) -> None:
+        #menu = self.code_generation_menu
+
+        # Remove all existing items
+        while self.code_generation_menu.GetMenuItemCount() > 0:
+            item = self.code_generation_menu.FindItemByPosition(0)
+            self.code_generation_menu.Delete(item)
+
+        generators = self._code_gen_registry.get_generators()
+
+        if not generators:
+            item = self.code_generation_menu.Append(wx.ID_ANY,
+                                                    "(No generators found)")
+            item.Enable(False)
+        else:
+            for gen in generators:
+                item = self.code_generation_menu.Append(wx.ID_ANY, gen.name)
+                self.Bind(
+                    wx.EVT_MENU,
+                    lambda evt, g=gen: self._on_generate_code(g),
+                    item)
+
+        self.code_generation_menu.AppendSeparator()
+
+        refresh_item = self.code_generation_menu.Append(wx.ID_ANY,
+                                                        "Refresh Generators")
+        self.Bind(wx.EVT_MENU,
+                  self._on_refresh_codegen_generators,
+                  refresh_item)
+
+    def _on_generate_code(self, generator):
+        doc = self.get_active_recording_document()
+        if not doc:
+            wx.MessageBox("No active recording.", "Generate Code")
+            return
+
+        code = generator.generate(doc)
+
+        print("==== GENERATED CODE ====")
+        print(code)
+
+    def get_active_recording_document(self) -> RecordingDocument | None:
+        page = self._workspace_panel.get_active_viewer()
+        if not page:
+            return None
+
+        return RecordingPersistence.load_from_disk(page.get_recording_file())
+
+    def _on_refresh_codegen_generators(self, _evt):
+        self._code_gen_registry.load()
+        self.rebuild_code_generation_menu()
 
     def _on_state_changed(self, new_state):
         """
