@@ -101,24 +101,73 @@ class RecordingViewerPanel(wx.Panel):
         return self._context.recording_file
 
     def timeline_set_current(self, index: int):
+        """
+        Mark the given step index as the currently executing step.
+
+        This is used during playback to visually highlight the step that is
+        currently being executed.
+
+        Args:
+            index (int): Index of the step that is currently active.
+        """
         self._current_index = index
         self._refresh_timeline_styles()
 
     def timeline_mark_passed(self, index: int):
+        """
+        Mark the given step index as successfully executed.
+
+        Passed steps are tracked so they can be rendered in a "completed" style
+        in the timeline (e.g. green highlight).
+
+        Args:
+            index (int): Index of the step that completed successfully.
+        """
         self._passed_indices.add(index)
         self._refresh_timeline_styles()
 
     def timeline_mark_failed(self, index: int):
+        """
+        Mark the given step index as failed.
+
+        Only a single failed step is tracked at a time. This is used to render
+        the step in an error style and to indicate where playback stopped.
+
+        Args:
+            index (int): Index of the step that failed.
+        """
         self._failed_index = index
         self._refresh_timeline_styles()
 
     def timeline_reset_playback_state(self):
+        """
+        Clear all playback-related visual state from the timeline.
+
+        This removes:
+        - The current step marker
+        - Any failed step marker
+        - All passed step markers
+
+        After this call, the timeline returns to its neutral, unplayed state.
+        """
         self._current_index = None
         self._failed_index = None
         self._passed_indices.clear()
         self._refresh_timeline_styles()
 
     def _extract_step_fields(self, event: dict):
+        """
+        Extract displayable fields from a raw recording event.
+
+        Converts the low-level event dictionary into human-readable values
+        suitable for display in the timeline list control.
+
+        Args:
+            event (dict): Raw event dictionary from the recording file.
+
+        Returns:
+            tuple[str, str, str]: A tuple of (action, value, target).
+        """
         t = event.get("type")
         p = event.get("payload", {})
 
@@ -141,6 +190,12 @@ class RecordingViewerPanel(wx.Panel):
         return t, str(p), ""
 
     def _populate_steps(self):
+        """
+        Populate the timeline list control from the loaded recording.
+
+        This clears any existing rows and rebuilds the list from the events
+        stored in the recording associated with this panel's context.
+        """
         self._step_list.DeleteAllItems()
 
         recording = load_recording_from_context(self.context)
@@ -183,10 +238,27 @@ class RecordingViewerPanel(wx.Panel):
                              self._on_step_activated)
 
     def _on_step_activated(self, evt):
+        """
+        Handle activation (double-click or Enter) of a step in the timeline.
+
+        This opens the step editor dialog for the selected step.
+        """
         index = evt.GetIndex()
         self._edit_step(index)
 
     def _edit_step(self, index: int):
+        """
+        Open the step editor dialog for the given step index.
+
+        This method:
+        - Loads the recording from disk
+        - Opens the StepEditDialog for the selected step
+        - Saves the recording back to disk if the step was modified
+        - Refreshes the timeline view
+
+        Args:
+            index (int): Index of the step to edit.
+        """
 
         try:
             recording = RecordingPersistence.load_from_disk(
@@ -206,7 +278,14 @@ class RecordingViewerPanel(wx.Panel):
 
     def _refresh_timeline_styles(self):
         """
-        Update the background colour of each timeline row based on playback state.
+        Refresh the visual styling of timeline items based on playback state.
+
+        This method updates row styles to reflect:
+        - Current step
+        - Passed steps
+        - Failed step
+
+        It is called whenever playback state changes.
         """
         count = self._step_list.GetItemCount()
 

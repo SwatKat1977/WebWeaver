@@ -25,6 +25,31 @@ from recording.recording import Recording
 
 @dataclass
 class PlaybackCallbackEvents:
+    """
+    Container for optional playback lifecycle callbacks.
+
+    This dataclass groups together a set of callback functions that can be
+    provided by the UI or other controlling code to receive notifications
+    about playback progress and results.
+
+    All callbacks are optional. If a callback is None, it is simply not called.
+
+    Callbacks:
+
+    - on_step_started(index: int) -> None
+        Called when playback begins executing a step.
+
+    - on_step_passed(index: int) -> None
+        Called when a step completes successfully.
+
+    - on_step_failed(index: int, reason: str) -> None
+        Called when a step fails. The reason string contains a human-readable
+        error message describing the failure.
+
+    - on_playback_finished() -> None
+        Called once playback has finished, either because all steps completed
+        or because playback stopped due to a failure.
+    """
     on_step_started = None  # Callable[[int], None]
     on_step_passed = None  # Callable[[int], None]
     on_step_failed = None  # Callable[[int, str], None]
@@ -138,6 +163,8 @@ class RecordingPlaybackSession:
         This method is crash-safe: any exception raised during execution is
         caught and converted into a PlaybackStepResult failure.
         """
+        # pylint: disable=too-many-return-statements
+
         try:
             event_type = event.get("type")
             payload = event.get("payload", {})
@@ -166,7 +193,7 @@ class RecordingPlaybackSession:
             self._logger.debug("[PLAYBACK EVENT] Unknown event: %s", event_type)
             return PlaybackStepResult.success()
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             # Absolute last-resort safety net
             self._logger.exception("Playback event crashed")
             return PlaybackStepResult.fail(str(e))
