@@ -191,6 +191,20 @@ class WorkspacePanel(wx.Panel):
 
         return None
 
+    def get_active_viewer(self):
+        """
+        Return the active RecordingViewerPanel, or None if the active tab
+        is not a recording viewer.
+        """
+        if not self._notebook:
+            return None
+
+        page = self._notebook.GetCurrentPage()
+        if isinstance(page, RecordingViewerPanel):
+            return page
+
+        return None
+
     def has_active_recording(self) -> bool:
         """
         Return whether there is currently an active recording open in the workspace.
