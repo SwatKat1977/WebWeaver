@@ -1141,6 +1141,7 @@ class StudioMainFrame(wx.Frame):
 
         self._update_toolbar_state()
         self._update_playback_toolbar_state()
+        self.rebuild_code_generation_menu()
 
     def _on_start_recording_playback(self, _evt):
         """
