@@ -199,12 +199,15 @@ class StudioBrowser:
         :return: True if the browser session is still active and responsive,
                  False if the browser is no longer available.
         """
+        if not self._driver:
+            return False
+
         try:
             # Any trivial call that touches the browser
             _ = self._driver.title
             return True
 
-        except WebDriverException:
+        except Exception:
             return False
 
     # --------------------------------------------------------------

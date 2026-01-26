@@ -23,7 +23,8 @@ import logging
 from pathlib import Path
 import sys
 from typing import Optional
-from selenium.common.exceptions import WebDriverException
+from selenium.common.exceptions import (WebDriverException,
+                                        InvalidSessionIdException)
 import wx
 import wx.aui
 from recent_solutions_manager import RecentSolutionsManager
@@ -1008,6 +1009,9 @@ class StudioMainFrame(wx.Frame):
         Clears the internal browser reference, notifies the user, and updates the
         UI to reflect that no browser is currently running.
         """
+        if self._web_browser is None:
+            return  # Already closed/handled
+
         self._web_browser = None
 
         was_recording: bool = (
@@ -1027,6 +1031,21 @@ class StudioMainFrame(wx.Frame):
 
         self._manage_browser_state()
         self._update_toolbar_state()
+
+    def _handle_browser_died(self, reason: str | None = None):
+        """
+        Handle the case where the browser was closed, crashed, or the WebDriver
+        session became invalid.
+
+        This method is safe to call multiple times.
+        """
+        if self._web_browser is None:
+            return  # Already handled
+
+        self._logger.warning("Browser session lost. Reason: %s", reason)
+
+        # Reuse your existing shutdown logic
+        self._on_browser_closed_by_user()
 
     def _manage_browser_state(self):
         """
@@ -1049,10 +1068,16 @@ class StudioMainFrame(wx.Frame):
         if not self._recording_session or not self._recording_session.is_recording():
             return
 
-        if not self._web_browser:
+        if not self._web_browser or not self._web_browser.is_alive():
+            self._handle_browser_died()
             return
 
-        events = self._web_browser.pop_recorded_events()
+        try:
+            events = self._web_browser.pop_recorded_events()
+        except (InvalidSessionIdException, WebDriverException) as e:
+            self._logger.warning("Browser connection lost during recording: %s", e)
+            self._handle_browser_died()
+            return
 
         for ev in events:
             # remove it from payload, it's served its purpose after this.
