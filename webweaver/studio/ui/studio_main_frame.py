@@ -305,8 +305,21 @@ class StudioMainFrame(wx.Frame):
 
         code = generator.generate(doc)
 
-        print("==== GENERATED CODE ====")
-        print(code)
+        with wx.FileDialog(
+                self,
+                "Save generated test",
+                wildcard="Python files (*.py)|*.py|All files (*.*)|*.*",
+                style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+        ) as dlg:
+            if dlg.ShowModal() != wx.ID_OK:
+                return
+
+            path = dlg.GetPath()
+
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(code)
+
+        wx.MessageBox(f"Test generated successfully:\n{path}", "Generate Code")
 
     def get_active_recording_document(self) -> RecordingDocument | None:
         if not self._workspace_panel:
