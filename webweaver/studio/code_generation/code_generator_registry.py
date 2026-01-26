@@ -39,6 +39,8 @@ class CodeGeneratorRegistry:
         """
         (Re)load all generators from disk.
         """
+        # pylint: disable=broad-exception-caught
+
         self._generators.clear()
 
         if not self._plugin_dir.exists():
@@ -52,13 +54,49 @@ class CodeGeneratorRegistry:
                 gen = self._load_from_file(file)
                 if gen:
                     self._generators.append(gen)
+
             except Exception as e:
-                self._logger.info(f"[CodeGen] Failed to load %s: %s", file, e)
+                self._logger.info("[CodeGen] Failed to load %s: %s", file, e)
 
     def get_generators(self) -> List[BaseCodeGenerator]:
+        """
+        Return the list of currently loaded code generator plugins.
+
+        This method returns a shallow copy of the internally registered
+        generator list to prevent external callers from mutating the manager's
+        internal state.
+
+        The returned generators are guaranteed to be instances of
+        BaseCodeGenerator and represent successfully loaded and validated
+        plugins.
+
+        :return: A list of loaded BaseCodeGenerator instances.
+        """
         return list(self._generators)
 
     def _load_from_file(self, path: Path) -> BaseCodeGenerator | None:
+        """
+        Load a code generator plugin from a Python source file.
+
+        This method dynamically imports the module at the given path using a
+        unique, generated module name to avoid collisions in sys.modules.
+
+        Plugin contract:
+            - The module must define a top-level attribute named `GENERATOR`
+            - `GENERATOR` must be an instance of BaseCodeGenerator
+
+        If the module cannot be imported, does not define GENERATOR, or does
+        not conform to the expected type, the plugin is rejected.
+
+        This method does not register the generator; it only loads and
+        validates it.
+
+        :param path: Path to the Python file containing the generator plugin.
+        :return: The loaded BaseCodeGenerator instance, or None if the file
+                 could not be loaded or does not define a valid plugin.
+        :raises TypeError: If the module defines GENERATOR but it is not a
+                           BaseCodeGenerator instance.
+        """
         module_name = f"webweaver_codegen_{path.stem}"
 
         spec = importlib.util.spec_from_file_location(module_name, path)

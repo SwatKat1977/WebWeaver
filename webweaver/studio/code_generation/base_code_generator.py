@@ -29,6 +29,7 @@ class BaseCodeGenerator(ABC):
 
     Implementations should be pure code emitters: they must not touch UI.
     """
+    # pylint: disable=too-few-public-methods
 
     #: Stable unique identifier (e.g. "webweaver-core", "playwright-python")
     id: str
