@@ -42,8 +42,18 @@ def create_main_menu(frame: "StudioMainFrame") -> None:
     menubar.Append(file_menu, "File")
 
     # Code Generation menu
+    code_generation_menu = wx.Menu()
     frame.code_generation_menu = wx.Menu()
-    menubar.Append(frame.code_generation_menu, "&Generate Code")
+    code_generation_menu.AppendSubMenu(
+        frame.code_generation_menu,
+        "Generate")
+    code_generation_menu.AppendSeparator()
+    code_generation_refresh_id = code_generation_menu.Append(
+        wx.ID_ANY, "Refresh Generators")
+    menubar.Append(code_generation_menu, "&Code Generation")
+
+    frame.Bind(wx.EVT_MENU, frame.on_refresh_codegen_generators,
+               code_generation_refresh_id)
 
     # -- Help Menu --
     help_menu = wx.Menu()

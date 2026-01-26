@@ -274,7 +274,6 @@ class StudioMainFrame(wx.Frame):
         wx.CallLater(1, self.SendSizeEvent)
 
     def rebuild_code_generation_menu(self) -> None:
-        #menu = self.code_generation_menu
 
         # Remove all existing items
         while self.code_generation_menu.GetMenuItemCount() > 0:
@@ -288,20 +287,15 @@ class StudioMainFrame(wx.Frame):
                                                     "(No generators found)")
             item.Enable(False)
         else:
+            has_recording = self.get_active_recording_document() is not None
+
             for gen in generators:
                 item = self.code_generation_menu.Append(wx.ID_ANY, gen.name)
+                item.Enable(has_recording)
                 self.Bind(
                     wx.EVT_MENU,
                     lambda evt, g=gen: self._on_generate_code(g),
                     item)
-
-        self.code_generation_menu.AppendSeparator()
-
-        refresh_item = self.code_generation_menu.Append(wx.ID_ANY,
-                                                        "Refresh Generators")
-        self.Bind(wx.EVT_MENU,
-                  self._on_refresh_codegen_generators,
-                  refresh_item)
 
     def _on_generate_code(self, generator):
         doc = self.get_active_recording_document()
@@ -315,13 +309,16 @@ class StudioMainFrame(wx.Frame):
         print(code)
 
     def get_active_recording_document(self) -> RecordingDocument | None:
+        if not self._workspace_panel:
+            return None
+
         page = self._workspace_panel.get_active_viewer()
         if not page:
             return None
 
         return RecordingPersistence.load_from_disk(page.get_recording_file())
 
-    def _on_refresh_codegen_generators(self, _evt):
+    def on_refresh_codegen_generators(self, _evt):
         self._code_gen_registry.load()
         self.rebuild_code_generation_menu()
 
