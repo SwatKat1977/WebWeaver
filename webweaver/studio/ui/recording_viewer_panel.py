@@ -18,12 +18,14 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from datetime import datetime
+from typing import Optional
 import wx
 from recording_view_context import RecordingViewContext
 from recording.recording_loader import load_recording_from_context
 from ui.step_edit_dialog import StepEditDialog
 from persistence.recording_persistence import (RecordingPersistence,
                                                RecordingLoadError)
+from persistence.recording_document import RecordingDocument
 
 
 def format_time_point(dt: datetime) -> str:
@@ -52,6 +54,8 @@ class RecordingViewerPanel(wx.Panel):
     file location, and creation time.
     """
 
+    ID_STEP_DELETE: int = wx.ID_HIGHEST + 5001
+
     def __init__(self, parent, ctx: RecordingViewContext):
         """
         Construct the RecordingViewerPanel.
@@ -68,6 +72,15 @@ class RecordingViewerPanel(wx.Panel):
         self._current_index: int | None = None
         self._failed_index: int | None = None
         self._passed_indices: set[int] = set()
+
+        try:
+            self._document: RecordingDocument = \
+                RecordingPersistence.load_from_disk(
+                    self._context.recording_file)
+
+        except RecordingLoadError as e:
+            wx.MessageBox(str(e), "Error", wx.ICON_ERROR)
+            return
 
         self._create_ui()
 
@@ -237,6 +250,63 @@ class RecordingViewerPanel(wx.Panel):
         self._step_list.Bind(wx.EVT_LIST_ITEM_ACTIVATED,
                              self._on_step_activated)
 
+        self._step_list.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK,
+                             self._on_step_right_click)
+
+    def _on_step_right_click(self, event: wx.ListEvent):
+        index = event.GetIndex()
+        if index < 0:
+            return
+
+        # Remember which step was right-clicked
+        self._context_step_index = index
+
+        menu = wx.Menu()
+        menu.Append(self.ID_STEP_DELETE, "Delete Step")
+
+        self.Bind(wx.EVT_MENU, self._on_delete_step, id=self.ID_STEP_DELETE)
+
+        self.PopupMenu(menu)
+        menu.Destroy()
+
+    def _on_delete_step(self, _evt):
+        index = getattr(self, "_context_step_index", None)
+        if index is None:
+            return
+
+        step = self._document.get_step(index)
+
+        msg = (
+            f"Delete step {index + 1}?\n\n"
+            f"Type: {step.get('type')}"
+        )
+
+        dlg = wx.MessageDialog(
+            self,
+            msg,
+            "Delete Step",
+            wx.YES_NO | wx.NO_DEFAULT | wx.ICON_WARNING
+        )
+
+        if dlg.ShowModal() != wx.ID_YES:
+            dlg.Destroy()
+            return
+
+        dlg.Destroy()
+
+        # 1) Mutate document (in memory)
+        self._document.delete_step(index)
+
+        # 2) Persist to disk
+        RecordingPersistence.save_to_disk(self._document)
+
+        # 3) Refresh UI
+        self.reload_from_document()
+
+    def reload_from_document(self):
+        self._step_list.DeleteAllItems()
+        self._populate_steps()
+
     def _on_step_activated(self, evt):
         """
         Handle activation (double-click or Enter) of a step in the timeline.
@@ -259,21 +329,12 @@ class RecordingViewerPanel(wx.Panel):
         Args:
             index (int): Index of the step to edit.
         """
-
-        try:
-            recording = RecordingPersistence.load_from_disk(
-                self._context.recording_file)
-
-        except RecordingLoadError as e:
-            wx.MessageBox(str(e), "Error", wx.ICON_ERROR)
-            return
-
-        step = recording.data["recording"]["events"][index]
+        step = self._document.data["recording"]["events"][index]
 
         dlg = StepEditDialog(self, step)
         if dlg.ShowModal() == wx.ID_OK and dlg.changed:
             # Step was modified in-place
-            RecordingPersistence.save_to_disk(recording)
+            RecordingPersistence.save_to_disk(self._document)
             self._populate_steps()
 
     def _refresh_timeline_styles(self):

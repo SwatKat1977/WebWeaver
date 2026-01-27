@@ -74,3 +74,18 @@ class RecordingDocument:
         :return: Recording data dictionary.
         """
         return self._recording_data
+
+    def get_step(self, index: int) -> dict:
+        return self._recording_data["recording"]["events"][index]
+
+    def delete_step(self, index: int) -> None:
+        events = self._recording_data["recording"]["events"]
+
+        if index < 0 or index >= len(events):
+            return
+
+        del events[index]
+
+        # Reindex
+        for i, ev in enumerate(events):
+            ev["index"] = i
