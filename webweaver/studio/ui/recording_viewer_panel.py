@@ -18,7 +18,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from datetime import datetime
-from typing import Optional
 import wx
 from recording_view_context import RecordingViewContext
 from recording.recording_loader import load_recording_from_context
@@ -72,6 +71,8 @@ class RecordingViewerPanel(wx.Panel):
         self._current_index: int | None = None
         self._failed_index: int | None = None
         self._passed_indices: set[int] = set()
+
+        self._context_step_index = None
 
         try:
             self._document: RecordingDocument = \
