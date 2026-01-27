@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from io import BytesIO
 import wx
 # Import generated icon byte data
+from resources.recording_toolbar.delete_step import DELETE_STEP_ICON
 from resources.recording_toolbar.edit_step import EDIT_STEP_ICON
 from resources.recording_toolbar.move_step_down import MOVE_STEP_DOWN_ICON
 from resources.recording_toolbar.move_step_up import MOVE_STEP_UP_ICON
@@ -51,6 +52,30 @@ def _load_toolbar_icon(png_bytes: bytes) -> wx.Bitmap:
     return wx.Bitmap(image)
 
 
+def load_toolbar_delete_step_icon() -> wx.Bitmap:
+    """
+    Load the toolbar icon used for deleting a step.
+
+    Returns
+    -------
+    wx.Bitmap
+        The toolbar icon.
+    """
+    return _load_toolbar_icon(DELETE_STEP_ICON)
+
+
+def load_toolbar_edit_step_icon() -> wx.Bitmap:
+    """
+    Load the toolbar icon used for editing a step.
+
+    Returns
+    -------
+    wx.Bitmap
+        The toolbar icon.
+    """
+    return _load_toolbar_icon(EDIT_STEP_ICON)
+
+
 def load_toolbar_move_step_up_icon() -> wx.Bitmap:
     """
     Load the toolbar icon used for moving step up.
@@ -73,15 +98,3 @@ def load_toolbar_move_step_down_icon() -> wx.Bitmap:
         The toolbar icon.
     """
     return _load_toolbar_icon(MOVE_STEP_DOWN_ICON)
-
-
-def load_toolbar_edit_step_icon() -> wx.Bitmap:
-    """
-    Load the toolbar icon used for editing a step.
-
-    Returns
-    -------
-    wx.Bitmap
-        The toolbar icon.
-    """
-    return _load_toolbar_icon(EDIT_STEP_ICON)
