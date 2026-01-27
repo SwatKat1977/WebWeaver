@@ -41,6 +41,20 @@ def create_main_menu(frame: "StudioMainFrame") -> None:
     file_menu.Append(wx.ID_EXIT, "Exit\tCtrl-X")
     menubar.Append(file_menu, "File")
 
+    # Code Generation menu
+    code_generation_menu = wx.Menu()
+    frame.code_generation_menu = wx.Menu()
+    code_generation_menu.AppendSubMenu(
+        frame.code_generation_menu,
+        "Generate")
+    code_generation_menu.AppendSeparator()
+    code_generation_refresh_id = code_generation_menu.Append(
+        wx.ID_ANY, "Refresh Generators")
+    menubar.Append(code_generation_menu, "&Code Generation")
+
+    frame.Bind(wx.EVT_MENU, frame.on_refresh_codegen_generators,
+               code_generation_refresh_id)
+
     # -- Help Menu --
     help_menu = wx.Menu()
     help_menu.Append(wx.ID_ANY, "WebWeaver Help")
@@ -52,3 +66,6 @@ def create_main_menu(frame: "StudioMainFrame") -> None:
     # Load and populate recent solutions
     frame.recent_solutions.load()
     frame.rebuild_recent_solutions_menu()
+
+    # Load and populate the code generation plugins
+    frame.rebuild_code_generation_menu()

@@ -23,12 +23,16 @@ import logging
 from pathlib import Path
 import sys
 from typing import Optional
-from selenium.common.exceptions import WebDriverException
+from selenium.common.exceptions import (WebDriverException,
+                                        InvalidSessionIdException)
 import wx
 import wx.aui
 from recent_solutions_manager import RecentSolutionsManager
 from recording_metadata import RecordingMetadata
-from persistence.solution_persistence import SolutionPersistence, SolutionSaveStatus
+from persistence.solution_persistence import (SolutionPersistence,
+                                              SolutionSaveStatus)
+from persistence.recording_document import RecordingDocument
+from persistence.recording_persistence import RecordingPersistence
 from browsing.web_driver_factory import create_driver_from_solution
 from browsing.studio_browser import StudioBrowser
 from recording_view_context import RecordingViewContext
@@ -67,6 +71,8 @@ from ui.playback_toolbar import (PlaybackToolbarState,
                                  PlaybackToolID)
 from ui.events import EVT_WORKSPACE_ACTIVE_CHANGED
 from playback.recording_playback_session import RecordingPlaybackSession
+from code_generation.code_generator_registry import CodeGeneratorRegistry
+
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -106,8 +112,7 @@ class StudioMainFrame(wx.Frame):
             title="Webweaver Automation Studio",
             pos=INITIAL_POSITION,
             size=wx.Size(1024, 768),
-            style=wx.DEFAULT_FRAME_STYLE,
-        )
+            style=wx.DEFAULT_FRAME_STYLE)
 
         self._logger = logging.getLogger("webweaver_studio")
         self._logger.setLevel(logging.DEBUG)
@@ -130,8 +135,14 @@ class StudioMainFrame(wx.Frame):
         self._inspector_panel: Optional[wx.Panel] = None
 
         self.recent_solutions_menu: Optional[wx.Menu] = None
+        self.code_generation_menu: Optional[wx.Menu] = None
 
         self._playback_toolbar: Optional[PlaybackToolbar] = None
+
+        plugin_path: str = "webweaver/studio/code_generator_plugins"
+        self._code_gen_registry = CodeGeneratorRegistry(Path(plugin_path),
+                                                        self._logger)
+        self._code_gen_registry.load()
 
         # --------------------------------------------------------------
         # Recording Playback Parameters
@@ -264,6 +275,122 @@ class StudioMainFrame(wx.Frame):
 
         wx.CallLater(1, self._aui_mgr.Update)
         wx.CallLater(1, self.SendSizeEvent)
+
+    def rebuild_code_generation_menu(self) -> None:
+        """
+        Rebuild the Code Generation menu from the currently registered
+        generators.
+
+        This method fully clears and repopulates the code generation menu based
+        on the contents of the CodeGeneratorRegistry.
+
+        Behaviour:
+            - All existing menu items are removed.
+            - If no generators are registered, a single disabled placeholder
+              item "(No generators found)" is shown.
+            - If generators exist:
+                - One menu item is created per generator.
+                - Menu items are enabled only if a recording is currently
+                  active.
+                - Each menu item is bound to invoke code generation for its
+                  corresponding generator.
+
+        The enabled/disabled state reflects whether code generation is currently
+        possible (i.e. a recording document is loaded).
+
+        This method should be called whenever:
+            - The set of available generators changes
+            - The active recording document changes
+            - The UI needs to be resynchronized with application state
+        """
+        # Remove all existing items
+        while self.code_generation_menu.GetMenuItemCount() > 0:
+            item = self.code_generation_menu.FindItemByPosition(0)
+            self.code_generation_menu.Delete(item)
+
+        generators = self._code_gen_registry.get_generators()
+
+        if not generators:
+            item = self.code_generation_menu.Append(wx.ID_ANY,
+                                                    "(No generators found)")
+            item.Enable(False)
+        else:
+            has_recording = self.get_active_recording_document() is not None
+
+            for gen in generators:
+                item = self.code_generation_menu.Append(wx.ID_ANY, gen.name)
+                item.Enable(has_recording)
+                self.Bind(
+                    wx.EVT_MENU,
+                    lambda evt, g=gen: self._on_generate_code(g),
+                    item)
+
+    def _on_generate_code(self, generator):
+        doc = self.get_active_recording_document()
+        if not doc:
+            wx.MessageBox("No active recording.", "Generate Code")
+            return
+
+        code = generator.generate(doc)
+
+        with wx.FileDialog(
+                self,
+                "Save generated test",
+                wildcard="Python files (*.py)|*.py|All files (*.*)|*.*",
+                style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+        ) as dlg:
+            if dlg.ShowModal() != wx.ID_OK:
+                return
+
+            path = dlg.GetPath()
+
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(code)
+
+        wx.MessageBox(f"Test generated successfully:\n{path}", "Generate Code")
+
+    def get_active_recording_document(self) -> RecordingDocument | None:
+        """
+        Return the RecordingDocument for the currently active workspace page.
+
+        This method queries the workspace for the active viewer and, if it
+        represents a recording-backed view, loads and returns the corresponding
+        RecordingDocument from disk.
+
+        This method returns None if:
+            - The workspace panel does not exist
+            - There is no active viewer page
+            - The active page does not represent a recording
+
+        The returned document represents the authoritative, file-backed state of
+        the recording and should be treated as immutable by callers.
+
+        :return: The active RecordingDocument, or None if no recording is active.
+        """
+        if not self._workspace_panel:
+            return None
+
+        page = self._workspace_panel.get_active_viewer()
+        if not page:
+            return None
+
+        return RecordingPersistence.load_from_disk(page.get_recording_file())
+
+    def on_refresh_codegen_generators(self, _evt):
+        """
+        Reload all code generator plugins and rebuild the Code Generation menu.
+
+        This handler forces the CodeGeneratorRegistry to rescan and reload all
+        available generator plugins, then refreshes the UI menu to reflect the
+        updated set.
+
+        This is typically invoked by a UI command such as:
+            - "Reload Code Generators"
+            - A developer/debug menu action
+            - Or a plugin refresh command during development
+        """
+        self._code_gen_registry.load()
+        self.rebuild_code_generation_menu()
 
     def _on_state_changed(self, new_state):
         """
@@ -938,6 +1065,9 @@ class StudioMainFrame(wx.Frame):
         Clears the internal browser reference, notifies the user, and updates the
         UI to reflect that no browser is currently running.
         """
+        if self._web_browser is None:
+            return  # Already closed/handled
+
         self._web_browser = None
 
         was_recording: bool = (
@@ -957,6 +1087,21 @@ class StudioMainFrame(wx.Frame):
 
         self._manage_browser_state()
         self._update_toolbar_state()
+
+    def _handle_browser_died(self, reason: str | None = None):
+        """
+        Handle the case where the browser was closed, crashed, or the WebDriver
+        session became invalid.
+
+        This method is safe to call multiple times.
+        """
+        if self._web_browser is None:
+            return  # Already handled
+
+        self._logger.warning("Browser session lost. Reason: %s", reason)
+
+        # Reuse your existing shutdown logic
+        self._on_browser_closed_by_user()
 
     def _manage_browser_state(self):
         """
@@ -979,10 +1124,16 @@ class StudioMainFrame(wx.Frame):
         if not self._recording_session or not self._recording_session.is_recording():
             return
 
-        if not self._web_browser:
+        if not self._web_browser or not self._web_browser.is_alive():
+            self._handle_browser_died()
             return
 
-        events = self._web_browser.pop_recorded_events()
+        try:
+            events = self._web_browser.pop_recorded_events()
+        except (InvalidSessionIdException, WebDriverException) as e:
+            self._logger.warning("Browser connection lost during recording: %s", e)
+            self._handle_browser_died()
+            return
 
         for ev in events:
             # remove it from payload, it's served its purpose after this.
@@ -1084,6 +1235,7 @@ class StudioMainFrame(wx.Frame):
 
         self._update_toolbar_state()
         self._update_playback_toolbar_state()
+        self.rebuild_code_generation_menu()
 
     def _on_start_recording_playback(self, _evt):
         """
