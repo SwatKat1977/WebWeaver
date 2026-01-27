@@ -178,6 +178,7 @@ class StudioMainFrame(wx.Frame):
         self._recording_session: Optional[RecordingSession] = None
         self._current_solution: Optional[StudioSolution] = None
         self._state_controller: Optional[StudioStateController] = None
+        self._recording_toolbar: Optional[RecordingEditorToolbar] = None
 
         self._recent_solutions: RecentSolutionsManager = RecentSolutionsManager()
 
@@ -220,9 +221,6 @@ class StudioMainFrame(wx.Frame):
         # --------------------------------------------------------------
         self._toolbar = MainToolbar.create(self)
         self._recording_toolbar = RecordingEditorToolbar(self, self._aui_mgr)
-
-        # self._aui_mgr.GetPane("StepsToolbar").Show()
-        # self._aui_mgr.Update()
 
         self._state_controller.ui_ready = True
 
@@ -1237,6 +1235,11 @@ class StudioMainFrame(wx.Frame):
         if not self._workspace_panel.has_active_recording():
             self._show_playback_toolbar(False)
             self._state_controller.on_solution_loaded()
+            self._aui_mgr.GetPane("StepsToolbar").Hide()
+        else:
+            self._aui_mgr.GetPane("StepsToolbar").Show()
+
+        self._aui_mgr.Update()
 
         self._update_toolbar_state()
         self._update_playback_toolbar_state()
