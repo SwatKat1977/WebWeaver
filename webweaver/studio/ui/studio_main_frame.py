@@ -69,6 +69,7 @@ from ui.inspector_panel import InspectorPanel
 from ui.playback_toolbar import (PlaybackToolbarState,
                                  PlaybackToolbar,
                                  PlaybackToolID)
+from ui.recording_editor_toolbar import RecordingEditorToolbar
 from ui.events import EVT_WORKSPACE_ACTIVE_CHANGED
 from playback.recording_playback_session import RecordingPlaybackSession
 from code_generation.code_generator_registry import CodeGeneratorRegistry
@@ -218,6 +219,10 @@ class StudioMainFrame(wx.Frame):
         # TOOLBAR (top, dockable)
         # --------------------------------------------------------------
         self._toolbar = MainToolbar.create(self)
+        self._recording_toolbar = RecordingEditorToolbar(self, self._aui_mgr)
+
+        # self._aui_mgr.GetPane("StepsToolbar").Show()
+        # self._aui_mgr.Update()
 
         self._state_controller.ui_ready = True
 
