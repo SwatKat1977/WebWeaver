@@ -19,6 +19,10 @@ Copyright 2025-2026 SwatKat1977
 """
 from png_to_header import png_to_header
 
+png_to_header("recordingToolbarIcons/delete-step.png",
+              "recordingToolbarIcons/delete_step.py",
+              "delete_step_icon")
+
 png_to_header("recordingToolbarIcons/edit-step.png",
               "recordingToolbarIcons/edit_step.py",
               "edit_step_icon")

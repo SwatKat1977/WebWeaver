@@ -6,3 +6,6 @@ Move step down icon
 
 Edit step
 <a href="https://www.flaticon.com/free-icons/pencil" title="pencil icons">Pencil icons created by Freepik - Flaticon</a>
+
+Delete step
+<a href="https://www.flaticon.com/free-icons/trashcan" title="trashcan icons">Trashcan icons created by Three musketeers - Flaticon</a>
