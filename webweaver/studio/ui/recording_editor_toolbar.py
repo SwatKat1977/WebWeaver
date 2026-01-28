@@ -27,9 +27,30 @@ from recording_toolbar_icons import (load_toolbar_edit_step_icon,
 
 
 class RecordingToolbarId:
+    """
+    Command ID constants for the Recording Editor (Steps) toolbar.
+
+    These IDs are used for wx command events emitted by the toolbar buttons
+    and reposted to the main application frame. The frame or higher-level
+    controllers can then handle the commands in a centralized and
+    state-aware manner.
+
+    The IDs are intentionally defined in a single namespace to avoid
+    collisions and to make it explicit which commands belong to the
+    recording editor toolbar.
+    """
+    # pylint: disable=too-few-public-methods
+
+    #: Command ID for deleting the currently selected step.
     STEP_DELETE = wx.ID_HIGHEST + 6001
+
+    #: Command ID for editing the currently selected step.
     STEP_EDIT = wx.ID_HIGHEST + 6002
+
+    #: Command ID for moving the selected step down in the timeline.
     MOVE_STEP_DOWN = wx.ID_HIGHEST + 6003
+
+    #: Command ID for moving the selected step up in the timeline.
     MOVE_STEP_UP = wx.ID_HIGHEST + 6004
 
 
@@ -37,10 +58,29 @@ class RecordingToolbarId:
 class RecordingEditorToolbarState:
     """
     Immutable UI state model for the recording editor (steps) toolbar.
+
+    This value object represents which editing actions are currently
+    permitted based on application state (e.g. whether a step is selected,
+    whether it can be moved, etc.).
+
+    Instances of this class are typically produced by higher-level UI or
+    state controllers and applied to the toolbar via
+    RecordingEditorToolbar.apply_state().
+
+    Being immutable allows cheap equality comparison to avoid unnecessary
+    UI updates.
     """
+
+    #: Whether the selected step can be moved up.
     can_move_up: bool = False
+
+    #: Whether the selected step can be moved down.
     can_move_down: bool = False
+
+    #: Whether the selected step can be edited.
     can_edit: bool = False
+
+    #: Whether the selected step can be deleted.
     can_delete: bool = False
 
 
@@ -145,7 +185,12 @@ class RecordingEditorToolbar:
         """
         Apply a RecordingEditorToolbarState model to the toolbar.
 
-        This method freezes the toolbar during updates to avoid flicker.
+        This method enables or disables toolbar buttons according to the
+        provided state object. If the state has not changed since the last
+        application, no UI update is performed.
+
+        The toolbar window is temporarily frozen during updates to avoid
+        flicker and unnecessary redraws.
         """
         if state == self._last_state:
             return  # <-- nothing changed, no repaint
@@ -174,14 +219,21 @@ class RecordingEditorToolbar:
         Handle the Delete Step toolbar button.
 
         This method reposts a RecordingToolbarId.STEP_DELETE command event to the
-        main frame so the active recording controller can perform the
-        deletion in a centralized and state-aware manner.
+        main frame so the active recording controller can perform the deletion
+        in a centralized, state-aware, and undo-safe manner.
         """
         wx.PostEvent(
             self._frame,
             wx.CommandEvent(wx.EVT_TOOL.typeId, RecordingToolbarId.STEP_DELETE))
 
     def _on_edit(self, _evt):
+        """
+        Handle the Edit Step toolbar button.
+
+        This method reposts a RecordingToolbarId.STEP_EDIT command event to the
+        main frame so the active recording controller can open the step editor
+        and apply any changes in a centralized and state-aware manner.
+        """
         wx.PostEvent(
             self._frame,
             wx.CommandEvent(wx.EVT_TOOL.typeId, RecordingToolbarId.STEP_EDIT))

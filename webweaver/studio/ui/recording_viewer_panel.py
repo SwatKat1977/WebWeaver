@@ -99,10 +99,31 @@ class RecordingViewerPanel(wx.Panel):
 
     @property
     def step_is_selected(self) -> bool:
+        """
+        Return whether a step is currently selected in the step timeline.
+
+        This is a convenience property that checks whether the underlying
+        step list control has at least one selected item.
+
+        :return: True if a step is selected, False otherwise.
+        """
         return self._step_list.GetFirstSelected() != -1
 
     @property
     def selected_step(self) -> int | None:
+        """
+        Return the index of the currently selected step.
+
+        If no step is selected, this property returns None. If multiple steps
+        are selected (which is not normally expected), the index of the first
+        selected step is returned.
+
+        The returned index refers to the position in the current step list /
+        timeline order.
+
+        :return: The zero-based index of the selected step, or None if no step
+                 is selected.
+        """
         idx = self._step_list.GetFirstSelected()
         if idx == -1:
             return None
@@ -110,6 +131,14 @@ class RecordingViewerPanel(wx.Panel):
 
     @property
     def step_count(self) -> int:
+        """
+        Return the total number of steps in the current recording.
+
+        This reflects the number of items currently displayed in the step
+        timeline list control.
+
+        :return: The number of steps in the recording timeline.
+        """
         return self._step_list.GetItemCount()
 
     def get_recording_id(self) -> str:
@@ -301,6 +330,15 @@ class RecordingViewerPanel(wx.Panel):
         self.delete_step(index)
 
     def reload_from_document(self):
+        """
+        Reload the step timeline UI from the underlying RecordingDocument.
+
+        This method clears the current contents of the step list control and
+        repopulates it from the document model. It should be called whenever
+        the document's step list is modified externally (e.g. after deleting,
+        inserting, or reordering steps) to ensure the UI stays in sync with the
+        authoritative document state.
+        """
         self._step_list.DeleteAllItems()
         self._populate_steps()
 
@@ -326,6 +364,23 @@ class RecordingViewerPanel(wx.Panel):
             self._populate_steps()
 
     def delete_step(self, index: int):
+        """
+        Delete a step from the recording at the specified index.
+
+        This method performs the full delete workflow:
+
+            1. Ask the user for confirmation.
+            2. Mutate the underlying RecordingDocument.
+            3. Persist the updated document to disk.
+            4. Refresh the step timeline UI from the document.
+            5. Clear any existing selection.
+            6. Notify the main frame so dependent UI (e.g. toolbars) can
+               recompute their enabled/disabled state.
+
+        If the user cancels the confirmation dialog, no changes are made.
+
+        :param index: Zero-based index of the step to delete.
+        """
         step = self._document.get_step(index)
 
         msg = (
