@@ -802,7 +802,7 @@ class StudioMainFrame(wx.Frame):
 
         if self._current_solution.launch_browser_automatically:
             self._web_browser = create_driver_from_solution(
-                self._current_solution,self._logger)
+                self._current_solution, self._logger)
             self._web_browser.open_page(self._current_solution.base_url)
 
         # Update state + UI
@@ -1052,14 +1052,13 @@ class StudioMainFrame(wx.Frame):
         self._manage_browser_state()
 
     def _update_recording_toolbar_state(self) -> None:
-        # First: disable everything that is state-dependent
-        self._recording_toolbar.set_all_disabled()
-
         if not self._workspace_panel.has_active_recording():
+            self._recording_toolbar.apply_state(RecordingEditorToolbarState())
             return
 
         page = self._workspace_panel.get_active_viewer()
         if not page:
+            self._recording_toolbar.apply_state(RecordingEditorToolbarState())
             return
 
         step_index = page.selected_step

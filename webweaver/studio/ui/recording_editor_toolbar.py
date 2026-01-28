@@ -85,6 +85,15 @@ class RecordingEditorToolbar:
         self._frame = frame
         self._aui_mgr = aui_mgr
 
+        def _bundle(bmp: wx.Bitmap) -> wx.BitmapBundle:
+            # wxPython Phoenix expects BitmapBundle in many tool APIs
+            return wx.BitmapBundle.FromBitmap(bmp)
+
+        bmp_up = load_toolbar_move_step_up_icon()
+        bmp_down = load_toolbar_move_step_down_icon()
+        bmp_edit = load_toolbar_edit_step_icon()
+        bmp_delete = load_toolbar_delete_step_icon()
+
         self._toolbar = wx.aui.AuiToolBar(
             frame,
             style=wx.aui.AUI_TB_DEFAULT_STYLE | wx.aui.AUI_TB_HORIZONTAL)
@@ -92,25 +101,25 @@ class RecordingEditorToolbar:
         self._toolbar.AddTool(
             TOOLBAR_ID_MOVE_STEP_UP,
             "",
-            load_toolbar_move_step_up_icon(),
+            _bundle(bmp_up),
             "Move Step Up")
 
         self._toolbar.AddTool(
             TOOLBAR_ID_MOVE_STEP_DOWN,
             "",
-            load_toolbar_move_step_down_icon(),
+            _bundle(bmp_down),
             "Move Step Down")
 
         self._toolbar.AddTool(
             TOOLBAR_ID_STEP_EDIT,
             "",
-            load_toolbar_edit_step_icon(),
+            _bundle(bmp_edit),
             "Edit Step")
 
         self._toolbar.AddTool(
             TOOLBAR_ID_STEP_DELETE,
             "",
-            load_toolbar_delete_step_icon(),
+            _bundle(bmp_delete),
             "Delete Step")
 
         self._toolbar.Bind(wx.EVT_TOOL, self._on_delete, id=TOOLBAR_ID_STEP_DELETE)
@@ -146,11 +155,24 @@ class RecordingEditorToolbar:
         self._toolbar.EnableTool(TOOLBAR_ID_MOVE_STEP_UP, False)
 
     def apply_state(self, state: RecordingEditorToolbarState) -> None:
-        # Enable / disable
-        self._toolbar.EnableTool(TOOLBAR_ID_STEP_DELETE, state.can_delete)
-        self._toolbar.EnableTool(TOOLBAR_ID_STEP_EDIT, state.can_edit)
-        self._toolbar.EnableTool(TOOLBAR_ID_MOVE_STEP_DOWN, state.can_move_down)
-        self._toolbar.EnableTool(TOOLBAR_ID_MOVE_STEP_UP, state.can_move_up)
+        """
+        Apply a RecordingEditorToolbarState model to the toolbar.
+
+        This method freezes the toolbar during updates to avoid flicker.
+        """
+        tb = self._toolbar
+
+        tb.Freeze()
+        try:
+            tb.EnableTool(TOOLBAR_ID_STEP_DELETE, state.can_delete)
+            tb.EnableTool(TOOLBAR_ID_STEP_EDIT, state.can_edit)
+            tb.EnableTool(TOOLBAR_ID_MOVE_STEP_DOWN, state.can_move_down)
+            tb.EnableTool(TOOLBAR_ID_MOVE_STEP_UP, state.can_move_up)
+
+            # Usually not strictly needed, but safe:
+            tb.Realize()
+        finally:
+            tb.Thaw()
 
     def _on_delete(self, _evt):
         """
