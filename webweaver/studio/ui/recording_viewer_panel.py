@@ -96,6 +96,10 @@ class RecordingViewerPanel(wx.Panel):
         """
         return self._context
 
+    @property
+    def step_is_selected(self) -> bool:
+        return self._context_step_index is not None
+
     def get_recording_id(self) -> str:
         """
         Retrieve the unique identifier of the recording.
@@ -271,7 +275,9 @@ class RecordingViewerPanel(wx.Panel):
         menu.Destroy()
 
     def _on_delete_step(self, _evt):
-        index = getattr(self, "_context_step_index", None)
+        index = self._context_step_index
+        self._context_step_index = None
+
         if index is None:
             return
 

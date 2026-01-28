@@ -69,7 +69,8 @@ from ui.inspector_panel import InspectorPanel
 from ui.playback_toolbar import (PlaybackToolbarState,
                                  PlaybackToolbar,
                                  PlaybackToolID)
-from ui.recording_editor_toolbar import RecordingEditorToolbar
+from ui.recording_editor_toolbar import (RecordingEditorToolbar,
+                                         RecordingEditorToolbarState)
 from ui.events import EVT_WORKSPACE_ACTIVE_CHANGED
 from playback.recording_playback_session import RecordingPlaybackSession
 from code_generation.code_generator_registry import CodeGeneratorRegistry
@@ -1050,6 +1051,23 @@ class StudioMainFrame(wx.Frame):
         MainToolbar.apply_state(self._toolbar, state)
         self._manage_browser_state()
 
+    def _update_recording_toolbar_state(self) -> None:
+        # First: disable everything that is state-dependent
+        self._recording_toolbar.set_all_disabled()
+
+        if not self._workspace_panel.has_active_recording():
+            return
+
+        page = self._workspace_panel.get_active_viewer()
+        has_selection = page.step_is_selected
+
+        state: RecordingEditorToolbarState = RecordingEditorToolbarState()
+
+        if has_selection:
+            state = RecordingEditorToolbarState(can_edit=True, can_delete=True)
+
+        self._recording_toolbar.apply_state(state)
+
     def _on_browser_heartbeat_tick(self, _event):
         """
         Periodic timer callback used to detect if the browser has been closed externally.
@@ -1238,6 +1256,7 @@ class StudioMainFrame(wx.Frame):
             self._aui_mgr.GetPane("StepsToolbar").Hide()
         else:
             self._aui_mgr.GetPane("StepsToolbar").Show()
+            self._update_recording_toolbar_state()
 
         self._aui_mgr.Update()
 
