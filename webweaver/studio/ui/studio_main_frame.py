@@ -1059,12 +1059,22 @@ class StudioMainFrame(wx.Frame):
             return
 
         page = self._workspace_panel.get_active_viewer()
-        has_selection = page.step_is_selected
+        if not page:
+            return
+
+        step_index = page.selected_step
+        step_count = page.step_count
+        has_selection = step_index is not None
 
         state: RecordingEditorToolbarState = RecordingEditorToolbarState()
 
         if has_selection:
-            state = RecordingEditorToolbarState(can_edit=True, can_delete=True)
+            move_up = step_index > 0
+            move_down = step_index < step_count - 1
+            state = RecordingEditorToolbarState(can_edit=True,
+                                                can_delete=True,
+                                                can_move_up=move_up,
+                                                can_move_down=move_down)
 
         self._recording_toolbar.apply_state(state)
 

@@ -22,6 +22,7 @@ import wx
 from recording_view_context import RecordingViewContext
 from recording.recording_loader import load_recording_from_context
 from ui.step_edit_dialog import StepEditDialog
+from ui.events import WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE
 from persistence.recording_persistence import (RecordingPersistence,
                                                RecordingLoadError)
 from persistence.recording_document import RecordingDocument
@@ -98,7 +99,18 @@ class RecordingViewerPanel(wx.Panel):
 
     @property
     def step_is_selected(self) -> bool:
-        return self._context_step_index is not None
+        return self._step_list.GetFirstSelected() != -1
+
+    @property
+    def selected_step(self) -> int | None:
+        idx = self._step_list.GetFirstSelected()
+        if idx == -1:
+            return None
+        return idx
+
+    @property
+    def step_count(self) -> int:
+        return self._step_list.GetItemCount()
 
     def get_recording_id(self) -> str:
         """
@@ -258,6 +270,11 @@ class RecordingViewerPanel(wx.Panel):
         self._step_list.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK,
                              self._on_step_right_click)
 
+        self._step_list.Bind(wx.EVT_LIST_ITEM_SELECTED,
+                             self._on_step_selected)
+        self._step_list.Bind(wx.EVT_LIST_ITEM_DESELECTED,
+                             self._on_step_deselected)
+
     def _on_step_right_click(self, event: wx.ListEvent):
         index = event.GetIndex()
         if index < 0:
@@ -377,3 +394,11 @@ class RecordingViewerPanel(wx.Panel):
         # Auto-scroll to current step
         if self._current_index is not None:
             self._step_list.EnsureVisible(self._current_index)
+
+    def _on_step_selected(self, _evt):
+        evt = wx.CommandEvent(WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE)
+        wx.PostEvent(self.GetTopLevelParent(), evt)
+
+    def _on_step_deselected(self, _evt):
+        evt = wx.CommandEvent(WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE)
+        wx.PostEvent(self.GetTopLevelParent(), evt)
