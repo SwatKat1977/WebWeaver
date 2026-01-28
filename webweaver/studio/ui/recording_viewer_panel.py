@@ -298,6 +298,34 @@ class RecordingViewerPanel(wx.Panel):
         if index is None:
             return
 
+        self.delete_step(index)
+
+    def reload_from_document(self):
+        self._step_list.DeleteAllItems()
+        self._populate_steps()
+
+    def edit_step(self, index: int):
+        """
+        Open the step editor dialog for the given step index.
+
+        This method:
+        - Loads the recording from disk
+        - Opens the StepEditDialog for the selected step
+        - Saves the recording back to disk if the step was modified
+        - Refreshes the timeline view
+
+        Args:
+            index (int): Index of the step to edit.
+        """
+        step = self._document.data["recording"]["events"][index]
+
+        dlg = StepEditDialog(self, step)
+        if dlg.ShowModal() == wx.ID_OK and dlg.changed:
+            # Step was modified in-place
+            RecordingPersistence.save_to_disk(self._document)
+            self._populate_steps()
+
+    def delete_step(self, index: int):
         step = self._document.get_step(index)
 
         msg = (
@@ -318,18 +346,21 @@ class RecordingViewerPanel(wx.Panel):
 
         dlg.Destroy()
 
-        # 1) Mutate document (in memory)
+        # 1) Mutate document
         self._document.delete_step(index)
 
-        # 2) Persist to disk
+        # 2) Persist
         RecordingPersistence.save_to_disk(self._document)
 
         # 3) Refresh UI
         self.reload_from_document()
 
-    def reload_from_document(self):
-        self._step_list.DeleteAllItems()
-        self._populate_steps()
+        # 4) Clear selection explicitly
+        self._step_list.Select(-1)
+
+        # 5) Notify main frame to recompute toolbar state
+        evt = wx.CommandEvent(WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE)
+        wx.PostEvent(self.GetTopLevelParent(), evt)
 
     def _on_step_activated(self, evt):
         """
@@ -338,28 +369,7 @@ class RecordingViewerPanel(wx.Panel):
         This opens the step editor dialog for the selected step.
         """
         index = evt.GetIndex()
-        self._edit_step(index)
-
-    def _edit_step(self, index: int):
-        """
-        Open the step editor dialog for the given step index.
-
-        This method:
-        - Loads the recording from disk
-        - Opens the StepEditDialog for the selected step
-        - Saves the recording back to disk if the step was modified
-        - Refreshes the timeline view
-
-        Args:
-            index (int): Index of the step to edit.
-        """
-        step = self._document.data["recording"]["events"][index]
-
-        dlg = StepEditDialog(self, step)
-        if dlg.ShowModal() == wx.ID_OK and dlg.changed:
-            # Step was modified in-place
-            RecordingPersistence.save_to_disk(self._document)
-            self._populate_steps()
+        self.edit_step(index)
 
     def _refresh_timeline_styles(self):
         """

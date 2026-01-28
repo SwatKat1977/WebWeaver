@@ -70,7 +70,8 @@ from ui.playback_toolbar import (PlaybackToolbarState,
                                  PlaybackToolbar,
                                  PlaybackToolID)
 from ui.recording_editor_toolbar import (RecordingEditorToolbar,
-                                         RecordingEditorToolbarState)
+                                         RecordingEditorToolbarState,
+                                         RecordingToolbarId)
 from ui.events import EVT_WORKSPACE_ACTIVE_CHANGED
 from playback.recording_playback_session import RecordingPlaybackSession
 from code_generation.code_generator_registry import CodeGeneratorRegistry
@@ -223,6 +224,13 @@ class StudioMainFrame(wx.Frame):
         # --------------------------------------------------------------
         self._toolbar = MainToolbar.create(self)
         self._recording_toolbar = RecordingEditorToolbar(self, self._aui_mgr)
+
+        self.Bind(wx.EVT_TOOL,
+                  self._on_recording_step_edit,
+                  id=RecordingToolbarId.STEP_EDIT)
+        self.Bind(wx.EVT_TOOL,
+                  self._on_recording_step_delete,
+                  id=RecordingToolbarId.STEP_DELETE)
 
         self._state_controller.ui_ready = True
 
@@ -1365,3 +1373,25 @@ class StudioMainFrame(wx.Frame):
     def _do_recording_toolbar_update(self):
         self._pending_recording_toolbar_update = False
         self._update_recording_toolbar_state()
+
+    def _on_recording_step_edit(self, _evt):
+        page = self._workspace_panel.get_active_viewer()
+        if not page:
+            return
+
+        index = page.selected_step
+        if index is None:
+            return
+
+        page.edit_step(index)   # we’ll add this method
+
+    def _on_recording_step_delete(self, _evt):
+        page = self._workspace_panel.get_active_viewer()
+        if not page:
+            return
+
+        index = page.selected_step
+        if index is None:
+            return
+
+        page.delete_step(index)   # we’ll add this method

@@ -25,20 +25,12 @@ from recording_toolbar_icons import (load_toolbar_edit_step_icon,
                                      load_toolbar_move_step_down_icon)
 # pylint: disable=duplicate-code
 
-TOOLBAR_ID_STEP_DELETE = wx.ID_HIGHEST + 6001
-"""
-Toolbar command ID for deleting the currently selected recording step.
 
-This ID is emitted by the RecordingEditorToolbar and reposted to the main
-frame so higher-level controllers can handle step deletion in a central,
-state-aware way.
-"""
-
-TOOLBAR_ID_STEP_EDIT = wx.ID_HIGHEST + 6002
-
-TOOLBAR_ID_MOVE_STEP_DOWN = wx.ID_HIGHEST + 6003
-
-TOOLBAR_ID_MOVE_STEP_UP = wx.ID_HIGHEST + 6004
+class RecordingToolbarId:
+    STEP_DELETE = wx.ID_HIGHEST + 6001
+    STEP_EDIT = wx.ID_HIGHEST + 6002
+    MOVE_STEP_DOWN = wx.ID_HIGHEST + 6003
+    MOVE_STEP_UP = wx.ID_HIGHEST + 6004
 
 
 @dataclass(frozen=True)
@@ -65,7 +57,7 @@ class RecordingEditorToolbar:
         - Delete step
 
     The toolbar itself does not perform the editing operations directly.
-    Instead, it emits command events (e.g. TOOLBAR_ID_STEP_DELETE) to the
+    Instead, it emits command events (e.g. RecordingToolbarId.STEP_DELETE) to the
     main frame, where higher-level controllers decide how to apply the
     requested action to the active recording and UI.
     """
@@ -100,30 +92,31 @@ class RecordingEditorToolbar:
             style=wx.aui.AUI_TB_DEFAULT_STYLE | wx.aui.AUI_TB_HORIZONTAL)
 
         self._toolbar.AddTool(
-            TOOLBAR_ID_MOVE_STEP_UP,
+            RecordingToolbarId.MOVE_STEP_UP,
             "",
             _bundle(bmp_up),
             "Move Step Up")
 
         self._toolbar.AddTool(
-            TOOLBAR_ID_MOVE_STEP_DOWN,
+            RecordingToolbarId.MOVE_STEP_DOWN,
             "",
             _bundle(bmp_down),
             "Move Step Down")
 
         self._toolbar.AddTool(
-            TOOLBAR_ID_STEP_EDIT,
+            RecordingToolbarId.STEP_EDIT,
             "",
             _bundle(bmp_edit),
             "Edit Step")
 
         self._toolbar.AddTool(
-            TOOLBAR_ID_STEP_DELETE,
+            RecordingToolbarId.STEP_DELETE,
             "",
             _bundle(bmp_delete),
             "Delete Step")
 
-        self._toolbar.Bind(wx.EVT_TOOL, self._on_delete, id=TOOLBAR_ID_STEP_DELETE)
+        self._toolbar.Bind(wx.EVT_TOOL, self._on_delete, id=RecordingToolbarId.STEP_DELETE)
+        self._toolbar.Bind(wx.EVT_TOOL, self._on_edit, id=RecordingToolbarId.STEP_EDIT)
 
         self._toolbar.Realize()
 
@@ -166,10 +159,10 @@ class RecordingEditorToolbar:
         win.Freeze()
 
         try:
-            tb.EnableTool(TOOLBAR_ID_STEP_DELETE, state.can_delete)
-            tb.EnableTool(TOOLBAR_ID_STEP_EDIT, state.can_edit)
-            tb.EnableTool(TOOLBAR_ID_MOVE_STEP_DOWN, state.can_move_down)
-            tb.EnableTool(TOOLBAR_ID_MOVE_STEP_UP, state.can_move_up)
+            tb.EnableTool(RecordingToolbarId.STEP_DELETE, state.can_delete)
+            tb.EnableTool(RecordingToolbarId.STEP_EDIT, state.can_edit)
+            tb.EnableTool(RecordingToolbarId.MOVE_STEP_DOWN, state.can_move_down)
+            tb.EnableTool(RecordingToolbarId.MOVE_STEP_UP, state.can_move_up)
 
             # Usually not strictly needed, but safe:
             tb.Refresh()
@@ -180,10 +173,15 @@ class RecordingEditorToolbar:
         """
         Handle the Delete Step toolbar button.
 
-        This method reposts a TOOLBAR_ID_STEP_DELETE command event to the
+        This method reposts a RecordingToolbarId.STEP_DELETE command event to the
         main frame so the active recording controller can perform the
         deletion in a centralized and state-aware manner.
         """
         wx.PostEvent(
             self._frame,
-            wx.CommandEvent(wx.EVT_TOOL.typeId, TOOLBAR_ID_STEP_DELETE))
+            wx.CommandEvent(wx.EVT_TOOL.typeId, RecordingToolbarId.STEP_DELETE))
+
+    def _on_edit(self, _evt):
+        wx.PostEvent(
+            self._frame,
+            wx.CommandEvent(wx.EVT_TOOL.typeId, RecordingToolbarId.STEP_EDIT))
