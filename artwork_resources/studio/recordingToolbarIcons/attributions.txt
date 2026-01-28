@@ -1,0 +1,11 @@
+Move step up icon
+<a href="https://www.flaticon.com/free-icons/arrows" title="arrows icons">Arrows icons created by hqrloveq - Flaticon</a>
+
+Move step down icon
+<a href="https://www.flaticon.com/free-icons/downward" title="downward icons">Downward icons created by hqrloveq - Flaticon</a>
+
+Edit step
+<a href="https://www.flaticon.com/free-icons/pencil" title="pencil icons">Pencil icons created by Freepik - Flaticon</a>
+
+Delete step
+<a href="https://www.flaticon.com/free-icons/trashcan" title="trashcan icons">Trashcan icons created by Three musketeers - Flaticon</a>

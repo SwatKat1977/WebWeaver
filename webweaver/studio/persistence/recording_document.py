@@ -74,3 +74,39 @@ class RecordingDocument:
         :return: Recording data dictionary.
         """
         return self._recording_data
+
+    def get_step(self, index: int) -> dict:
+        """
+        Retrieve a single recording step by index.
+
+        This returns the raw event dictionary from the underlying recording
+        data structure.
+
+        :param index: Zero-based index of the step to retrieve.
+        :return: The event dictionary at the given index.
+        :raises IndexError: If the index is out of range.
+        """
+        return self._recording_data["recording"]["events"][index]
+
+    def delete_step(self, index: int) -> None:
+        """
+        Delete a recording step by index.
+
+        If the index is out of range, this method does nothing.
+
+        After deletion, all remaining steps are reindexed so their "index"
+        fields remain contiguous and consistent with their position in the
+        events list.
+
+        :param index: Zero-based index of the step to delete.
+        """
+        events = self._recording_data["recording"]["events"]
+
+        if index < 0 or index >= len(events):
+            return
+
+        del events[index]
+
+        # Reindex
+        for i, ev in enumerate(events):
+            ev["index"] = i
