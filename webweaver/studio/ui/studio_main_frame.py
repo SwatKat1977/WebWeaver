@@ -121,6 +121,7 @@ class StudioMainFrame(wx.Frame):
         handler = logging.StreamHandler()
         handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
         self._logger.addHandler(handler)
+        self._pending_recording_toolbar_update = False
 
         self._toolbar = None
         """The main application toolbar (AUI-managed)."""
@@ -1259,15 +1260,22 @@ class StudioMainFrame(wx.Frame):
 
     def _on_workspace_active_changed(self, _evt):
 
+        pane = self._aui_mgr.GetPane("StepsToolbar")
+
         if not self._workspace_panel.has_active_recording():
             self._show_playback_toolbar(False)
             self._state_controller.on_solution_loaded()
-            self._aui_mgr.GetPane("StepsToolbar").Hide()
-        else:
-            self._aui_mgr.GetPane("StepsToolbar").Show()
-            self._update_recording_toolbar_state()
 
-        self._aui_mgr.Update()
+            if pane.IsOk() and pane.IsShown():
+                pane.Hide()
+                self._aui_mgr.Update()
+
+        else:
+            if pane.IsOk() and not pane.IsShown():
+                pane.Show()
+                self._aui_mgr.Update()
+
+            self._request_recording_toolbar_update()
 
         self._update_toolbar_state()
         self._update_playback_toolbar_state()
@@ -1346,3 +1354,14 @@ class StudioMainFrame(wx.Frame):
 
     def _on_playback_finished(self):
         self._playback_timer.Stop()
+
+    def _request_recording_toolbar_update(self):
+        if self._pending_recording_toolbar_update:
+            return
+
+        self._pending_recording_toolbar_update = True
+        wx.CallLater(16, self._do_recording_toolbar_update)
+
+    def _do_recording_toolbar_update(self):
+        self._pending_recording_toolbar_update = False
+        self._update_recording_toolbar_state()

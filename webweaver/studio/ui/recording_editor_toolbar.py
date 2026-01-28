@@ -84,6 +84,7 @@ class RecordingEditorToolbar:
         """
         self._frame = frame
         self._aui_mgr = aui_mgr
+        self._last_state: RecordingEditorToolbarState | None = None
 
         def _bundle(bmp: wx.Bitmap) -> wx.BitmapBundle:
             # wxPython Phoenix expects BitmapBundle in many tool APIs
@@ -147,22 +148,23 @@ class RecordingEditorToolbar:
         """
         return self._toolbar
 
-    def set_all_disabled(self) -> None:
-        """Disable all state-dependent toolbar buttons."""
-        self._toolbar.EnableTool(TOOLBAR_ID_STEP_DELETE, False)
-        self._toolbar.EnableTool(TOOLBAR_ID_STEP_EDIT, False)
-        self._toolbar.EnableTool(TOOLBAR_ID_MOVE_STEP_DOWN, False)
-        self._toolbar.EnableTool(TOOLBAR_ID_MOVE_STEP_UP, False)
-
     def apply_state(self, state: RecordingEditorToolbarState) -> None:
         """
         Apply a RecordingEditorToolbarState model to the toolbar.
 
         This method freezes the toolbar during updates to avoid flicker.
         """
+        if state == self._last_state:
+            return  # <-- nothing changed, no repaint
+
+        self._last_state = state
+
         tb = self._toolbar
 
-        tb.Freeze()
+        pane = self._aui_mgr.GetPane("StepsToolbar")
+        win = pane.window if pane.IsOk() else self._toolbar
+        win.Freeze()
+
         try:
             tb.EnableTool(TOOLBAR_ID_STEP_DELETE, state.can_delete)
             tb.EnableTool(TOOLBAR_ID_STEP_EDIT, state.can_edit)
@@ -170,9 +172,9 @@ class RecordingEditorToolbar:
             tb.EnableTool(TOOLBAR_ID_MOVE_STEP_UP, state.can_move_up)
 
             # Usually not strictly needed, but safe:
-            tb.Realize()
+            tb.Refresh()
         finally:
-            tb.Thaw()
+            win.Thaw()
 
     def _on_delete(self, _evt):
         """
