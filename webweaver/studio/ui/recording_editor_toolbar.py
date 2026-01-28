@@ -17,6 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from dataclasses import dataclass
 import wx
 from recording_toolbar_icons import (load_toolbar_edit_step_icon,
                                      load_toolbar_delete_step_icon,
@@ -32,6 +33,23 @@ This ID is emitted by the RecordingEditorToolbar and reposted to the main
 frame so higher-level controllers can handle step deletion in a central,
 state-aware way.
 """
+
+TOOLBAR_ID_STEP_EDIT = wx.ID_HIGHEST + 6002
+
+TOOLBAR_ID_MOVE_STEP_DOWN = wx.ID_HIGHEST + 6003
+
+TOOLBAR_ID_MOVE_STEP_UP = wx.ID_HIGHEST + 6004
+
+
+@dataclass(frozen=True)
+class RecordingEditorToolbarState:
+    """
+    Immutable UI state model for the recording editor (steps) toolbar.
+    """
+    can_move_up: bool = False
+    can_move_down: bool = False
+    can_edit: bool = False
+    can_delete: bool = False
 
 
 class RecordingEditorToolbar:
@@ -51,7 +69,6 @@ class RecordingEditorToolbar:
     main frame, where higher-level controllers decide how to apply the
     requested action to the active recording and UI.
     """
-    # pylint: disable=too-few-public-methods
 
     def __init__(self, frame: wx.Frame, aui_mgr: wx.aui.AuiManager):
         """
@@ -70,23 +87,22 @@ class RecordingEditorToolbar:
 
         self._toolbar = wx.aui.AuiToolBar(
             frame,
-            style=wx.aui.AUI_TB_DEFAULT_STYLE | wx.aui.AUI_TB_HORIZONTAL
-        )
+            style=wx.aui.AUI_TB_DEFAULT_STYLE | wx.aui.AUI_TB_HORIZONTAL)
 
         self._toolbar.AddTool(
-            wx.ID_ANY,
+            TOOLBAR_ID_MOVE_STEP_UP,
             "",
             load_toolbar_move_step_up_icon(),
             "Move Step Up")
 
         self._toolbar.AddTool(
-            wx.ID_ANY,
+            TOOLBAR_ID_MOVE_STEP_DOWN,
             "",
             load_toolbar_move_step_down_icon(),
             "Move Step Down")
 
         self._toolbar.AddTool(
-            wx.ID_ANY,
+            TOOLBAR_ID_STEP_EDIT,
             "",
             load_toolbar_edit_step_icon(),
             "Edit Step")
@@ -121,6 +137,20 @@ class RecordingEditorToolbar:
         show/hide the toolbar or query its state.
         """
         return self._toolbar
+
+    def set_all_disabled(self) -> None:
+        """Disable all state-dependent toolbar buttons."""
+        self._toolbar.EnableTool(TOOLBAR_ID_STEP_DELETE, False)
+        self._toolbar.EnableTool(TOOLBAR_ID_STEP_EDIT, False)
+        self._toolbar.EnableTool(TOOLBAR_ID_MOVE_STEP_DOWN, False)
+        self._toolbar.EnableTool(TOOLBAR_ID_MOVE_STEP_UP, False)
+
+    def apply_state(self, state: RecordingEditorToolbarState) -> None:
+        # Enable / disable
+        self._toolbar.EnableTool(TOOLBAR_ID_STEP_DELETE, state.can_delete)
+        self._toolbar.EnableTool(TOOLBAR_ID_STEP_EDIT, state.can_edit)
+        self._toolbar.EnableTool(TOOLBAR_ID_MOVE_STEP_DOWN, state.can_move_down)
+        self._toolbar.EnableTool(TOOLBAR_ID_MOVE_STEP_UP, state.can_move_up)
 
     def _on_delete(self, _evt):
         """
