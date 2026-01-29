@@ -417,6 +417,16 @@ class RecordingViewerPanel(wx.Panel):
         evt = wx.CommandEvent(WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE)
         wx.PostEvent(self.GetTopLevelParent(), evt)
 
+    def move_step(self, from_index: int, to_index: int):
+        if not self._document.move_step(from_index, to_index):
+            return
+
+        RecordingPersistence.save_to_disk(self._document)
+        self.reload_from_document()
+
+        # Reselect moved step
+        self._step_list.Select(to_index)
+
     def _on_step_activated(self, evt):
         """
         Handle activation (double-click or Enter) of a step in the timeline.

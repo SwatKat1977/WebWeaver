@@ -110,3 +110,19 @@ class RecordingDocument:
         # Reindex
         for i, ev in enumerate(events):
             ev["index"] = i
+
+    def move_step(self, from_index: int, to_index: int) -> bool:
+        events = self._recording_data["recording"]["events"]
+
+        if from_index < 0 or from_index >= len(events):
+            return False
+        if to_index < 0 or to_index >= len(events):
+            return False
+
+        step = events.pop(from_index)
+        events.insert(to_index, step)
+
+        for i, ev in enumerate(events):
+            ev["index"] = i
+
+        return True
