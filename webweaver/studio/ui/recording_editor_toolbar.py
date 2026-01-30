@@ -19,7 +19,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from dataclasses import dataclass
 import wx
-from recording_toolbar_icons import (load_toolbar_edit_step_icon,
+from recording_toolbar_icons import (load_toolbar_add_step_icon,
+                                     load_toolbar_edit_step_icon,
                                      load_toolbar_delete_step_icon,
                                      load_toolbar_move_step_up_icon,
                                      load_toolbar_move_step_down_icon)
@@ -41,17 +42,20 @@ class RecordingToolbarId:
     """
     # pylint: disable=too-few-public-methods
 
+    #: Command ID for adding a new step.
+    ADD_STEP = wx.ID_HIGHEST + 6001
+
     #: Command ID for deleting the currently selected step.
-    STEP_DELETE = wx.ID_HIGHEST + 6001
+    STEP_DELETE = wx.ID_HIGHEST + 6002
 
     #: Command ID for editing the currently selected step.
-    STEP_EDIT = wx.ID_HIGHEST + 6002
+    STEP_EDIT = wx.ID_HIGHEST + 6003
 
     #: Command ID for moving the selected step down in the timeline.
-    MOVE_STEP_DOWN = wx.ID_HIGHEST + 6003
+    MOVE_STEP_DOWN = wx.ID_HIGHEST + 6004
 
     #: Command ID for moving the selected step up in the timeline.
-    MOVE_STEP_UP = wx.ID_HIGHEST + 6004
+    MOVE_STEP_UP = wx.ID_HIGHEST + 6005
 
 
 @dataclass(frozen=True)
@@ -122,6 +126,7 @@ class RecordingEditorToolbar:
             # wxPython Phoenix expects BitmapBundle in many tool APIs
             return wx.BitmapBundle.FromBitmap(bmp)
 
+        bmp_add = load_toolbar_add_step_icon()
         bmp_up = load_toolbar_move_step_up_icon()
         bmp_down = load_toolbar_move_step_down_icon()
         bmp_edit = load_toolbar_edit_step_icon()
@@ -130,6 +135,12 @@ class RecordingEditorToolbar:
         self._toolbar = wx.aui.AuiToolBar(
             frame,
             style=wx.aui.AUI_TB_DEFAULT_STYLE | wx.aui.AUI_TB_HORIZONTAL)
+
+        self._toolbar.AddTool(
+            RecordingToolbarId.ADD_STEP,
+            "",
+            _bundle(bmp_add),
+            "Add Step")
 
         self._toolbar.AddTool(
             RecordingToolbarId.MOVE_STEP_UP,

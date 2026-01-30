@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from io import BytesIO
 import wx
 # Import generated icon byte data
+from resources.recording_toolbar.add_step import ADD_STEP_ICON
 from resources.recording_toolbar.delete_step import DELETE_STEP_ICON
 from resources.recording_toolbar.edit_step import EDIT_STEP_ICON
 from resources.recording_toolbar.move_step_down import MOVE_STEP_DOWN_ICON
@@ -50,6 +51,18 @@ def _load_toolbar_icon(png_bytes: bytes) -> wx.Bitmap:
     image = image.Scale(32, 32, wx.IMAGE_QUALITY_HIGH)
 
     return wx.Bitmap(image)
+
+
+def load_toolbar_add_step_icon() -> wx.Bitmap:
+    """
+    Load the toolbar icon used for adding a step.
+
+    Returns
+    -------
+    wx.Bitmap
+        The toolbar icon.
+    """
+    return _load_toolbar_icon(ADD_STEP_ICON)
 
 
 def load_toolbar_delete_step_icon() -> wx.Bitmap:
