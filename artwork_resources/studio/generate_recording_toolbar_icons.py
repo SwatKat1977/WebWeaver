@@ -34,3 +34,11 @@ png_to_header("recordingToolbarIcons/move-step-down.png",
 png_to_header("recordingToolbarIcons/move-step-up.png",
               "recordingToolbarIcons/move_step_up.py",
               "move_step_up_icon")
+
+png_to_header("recordingToolbarIcons/move-step-up.png",
+              "recordingToolbarIcons/move_step_up.py",
+              "move_step_up_icon")
+
+png_to_header("recordingToolbarIcons/add-step.png",
+              "recordingToolbarIcons/add_step.py",
+              "add_step_icon")

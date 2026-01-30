@@ -9,3 +9,6 @@ Edit step
 
 Delete step
 <a href="https://www.flaticon.com/free-icons/trashcan" title="trashcan icons">Trashcan icons created by Three musketeers - Flaticon</a>
+
+Add step
+<a href="https://www.flaticon.com/free-icons/plus-sign" title="plus sign icons">Plus sign icons created by riajulislam - Flaticon</a>
