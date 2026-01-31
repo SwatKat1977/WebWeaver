@@ -17,7 +17,45 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Optional
+from recording.recording_event_type import RecordingEventType
+
+
+@dataclass
+class DomPayload:
+    xpath: str
+
+
+@dataclass
+class DomCheckPayload(DomPayload):
+    checked: bool
+
+
+@dataclass
+class DomClickPayload(DomPayload):
+    pass
+
+
+@dataclass
+class DomSelectPayload(DomPayload):
+    selection: str
+
+
+@dataclass
+class DomTypePayload(DomPayload):
+    value: str
+
+
+@dataclass
+class NavGotoPayload(DomPayload):
+    url: str
+
+
+@dataclass
+class WaitPayload:
+    duration_ms: int
 
 
 class RecordingDocument:
@@ -43,6 +81,8 @@ class RecordingDocument:
     the document is the file + its loaded contents, not the UI view of it.
     """
     __slots__ = ["_path", "_recording_data"]
+
+    DEFAULT_STEP_GAP_MS = 1000
 
     def __init__(self, path: Path, recording_data: dict):
         """
@@ -126,3 +166,43 @@ class RecordingDocument:
             ev["index"] = i
 
         return True
+
+    def insert_step_after(
+            self,
+            index: Optional[int],
+            event_type: RecordingEventType,
+            payload: DomPayload,
+    ) -> int:
+        events = self._recording_data["recording"]["events"]
+        insert_index = len(events) if index is None else index + 1
+        insert_index = min(insert_index, len(events))
+
+        event: dict = {
+            "index": insert_index,
+            "timestamp": 11123,
+            "type": event_type.value,
+            "payload": asdict(payload)
+        }
+
+        events.insert(insert_index, event)
+
+        # Reindex
+        for i, ev in enumerate(events):
+            ev["index"] = i
+
+        self._renormalise_timestamps()
+
+        return insert_index
+
+    def _renormalise_timestamps(self) -> None:
+        """
+        Renormalise step timestamps to maintain monotonic ordering
+        after structural edits (insert, delete, move).
+
+        Timestamps are treated as derived data and are reassigned
+        sequentially based on step order.
+        """
+        events = self._recording_data["recording"]["events"]
+
+        for i, ev in enumerate(events):
+            ev["timestamp"] = i * self.DEFAULT_STEP_GAP_MS
