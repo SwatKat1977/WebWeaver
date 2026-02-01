@@ -26,6 +26,7 @@ from ui.events import WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE
 from persistence.recording_persistence import (RecordingPersistence,
                                                RecordingLoadError)
 from persistence.recording_document import RecordingDocument
+from recording.recording_event_type import (RecordingEventType)
 
 
 def format_time_point(dt: datetime) -> str:
@@ -227,26 +228,35 @@ class RecordingViewerPanel(wx.Panel):
         Returns:
             tuple[str, str, str]: A tuple of (action, value, target).
         """
-        t = event.get("type")
-        p = event.get("payload", {})
+        event_type = RecordingEventType(event.get("type"))
+        action = event_type.name.replace("_", " ").title()
+        payload = event.get("payload", {})
 
-        if t == "dom.click":
-            return "Click", "", p.get("xpath")
+        value = ""
+        target = ""
 
-        if t == "dom.type":
-            return "Type", p.get("value"), p.get("xpath")
+        if event_type == RecordingEventType.DOM_CLICK:
+            target = payload.get("xpath", "")
 
-        if t == "dom.select":
-            value = p.get("value") or p.get("text")
-            return "Select", value, p.get("xpath")
+        elif event_type == RecordingEventType.DOM_TYPE:
+            value = payload.get("value", "")
+            target = payload.get("xpath", "")
 
-        if t == "dom.check":
-            return "Check", str(p.get("value")), p.get("xpath")
+        elif event_type == RecordingEventType.DOM_SELECT:
+            value = payload.get("value") or payload.get("text", "")
+            target = payload.get("xpath", "")
 
-        if t == "nav.goto":
-            return "Navigate", event.get("url"), ""
+        elif event_type == RecordingEventType.DOM_CHECK:
+            value = "Checked" if payload.get("value") else "Unchecked"
+            target = payload.get("xpath", "")
 
-        return t, str(p), ""
+        elif event_type == RecordingEventType.NAV_GOTO:
+            target = payload.get("url", "")
+
+        elif event_type == RecordingEventType.WAIT:
+            value = f"{payload.get('duration_ms', 0)} ms"
+
+        return action, value, target
 
     def _populate_steps(self):
         """
