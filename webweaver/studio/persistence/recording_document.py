@@ -25,36 +25,73 @@ from recording.recording_event_type import RecordingEventType
 
 @dataclass
 class DomPayload:
+    """Base payload for DOM-related events.
+
+    Attributes:
+        xpath: XPath expression identifying the target DOM element.
+    """
     xpath: str
 
 
 @dataclass
 class DomCheckPayload(DomPayload):
+    """Payload for a DOM checkbox or toggle action.
+
+    Attributes:
+        xpath: XPath expression identifying the target element.
+        checked: Whether the element should be checked (True) or unchecked (False).
+    """
     checked: bool
 
 
 @dataclass
 class DomClickPayload(DomPayload):
-    pass
+    """Payload for a DOM click action.
+
+    Attributes:
+        xpath: XPath expression identifying the element to be clicked.
+    """
 
 
 @dataclass
 class DomSelectPayload(DomPayload):
+    """Payload for selecting an option within a DOM element.
+
+    Attributes:
+        xpath: XPath expression identifying the select element.
+        selection: Value or visible text of the option to select.
+    """
     selection: str
 
 
 @dataclass
 class DomTypePayload(DomPayload):
+    """Payload for typing text into a DOM element.
+
+    Attributes:
+        xpath: XPath expression identifying the input element.
+        value: Text value to be entered into the element.
+    """
     value: str
 
 
 @dataclass
-class NavGotoPayload(DomPayload):
+class NavGotoPayload:
+    """Payload for a navigation action.
+
+    Attributes:
+        url: The URL to navigate to.
+    """
     url: str
 
 
 @dataclass
 class WaitPayload:
+    """Payload representing a timed wait step.
+
+    Attributes:
+        duration_ms: Amount of time to wait, in milliseconds.
+    """
     duration_ms: int
 
 
@@ -152,6 +189,20 @@ class RecordingDocument:
             ev["index"] = i
 
     def move_step(self, from_index: int, to_index: int) -> bool:
+        """Move a recording step to a new position in the event list.
+
+        The step at the specified source index is removed and reinserted
+        at the destination index. All events are reindexed after the move
+        to maintain sequential ordering.
+
+        Args:
+            from_index: The current index of the step to move.
+            to_index: The target index where the step should be placed.
+
+        Returns:
+            True if the step was successfully moved, or False if either
+            index was out of range.
+        """
         events = self._recording_data["recording"]["events"]
 
         if from_index < 0 or from_index >= len(events):
@@ -173,6 +224,23 @@ class RecordingDocument:
             event_type: RecordingEventType,
             payload: DomPayload,
     ) -> int:
+        """Insert a new step into the recording after the given index.
+
+        A new event dictionary is created using the provided event type
+        and payload, and inserted immediately after the specified index.
+        If no index is provided, the step is appended to the end of the
+        event list. All events are reindexed and timestamps are
+        renormalized after insertion.
+
+        Args:
+            index: The index after which the new step should be inserted.
+                If None, the step is added to the end of the recording.
+            event_type: The type of event to create.
+            payload: The payload data associated with the new event.
+
+        Returns:
+            The index at which the new step was inserted.
+        """
         events = self._recording_data["recording"]["events"]
         insert_index = len(events) if index is None else index + 1
         insert_index = min(insert_index, len(events))
