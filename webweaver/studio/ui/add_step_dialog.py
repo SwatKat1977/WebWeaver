@@ -68,10 +68,10 @@ def default_payload_for(event_type: RecordingEventType):
         return DomTypePayload(xpath="", value="")
 
     if event_type == RecordingEventType.DOM_SELECT:
-        return DomSelectPayload(xpath="", selection="")
+        return DomSelectPayload(xpath="", value="")
 
     if event_type == RecordingEventType.DOM_CHECK:
-        return DomCheckPayload(xpath="", checked=True)
+        return DomCheckPayload(xpath="", value=True)
 
     if event_type == RecordingEventType.NAV_GOTO:
         return NavGotoPayload(url="")
