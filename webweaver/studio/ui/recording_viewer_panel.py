@@ -21,8 +21,14 @@ from datetime import datetime
 import wx
 from recording_view_context import RecordingViewContext
 from recording.recording_loader import load_recording_from_context
-from ui.step_edit_dialog import StepEditDialog
+from recording.recording_event_type import (RecordingEventType)
 from ui.events import WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE
+from ui.check_step_editor import CheckStepEditor
+from ui.click_step_editor import ClickStepEditor
+from ui.navgoto_step_editor import NavGotoStepEditor
+from ui.select_step_editor import SelectStepEditor
+from ui.type_step_editor import TypeStepEditor
+from ui.wait_step_editor import WaitStepEditor
 from persistence.recording_persistence import (RecordingPersistence,
                                                RecordingLoadError)
 from persistence.recording_document import RecordingDocument
@@ -227,26 +233,35 @@ class RecordingViewerPanel(wx.Panel):
         Returns:
             tuple[str, str, str]: A tuple of (action, value, target).
         """
-        t = event.get("type")
-        p = event.get("payload", {})
+        event_type = RecordingEventType(event.get("type"))
+        action = event_type.name.replace("_", " ").title()
+        payload = event.get("payload", {})
 
-        if t == "dom.click":
-            return "Click", "", p.get("xpath")
+        value = ""
+        target = ""
 
-        if t == "dom.type":
-            return "Type", p.get("value"), p.get("xpath")
+        if event_type == RecordingEventType.DOM_CLICK:
+            target = payload.get("xpath", "")
 
-        if t == "dom.select":
-            value = p.get("value") or p.get("text")
-            return "Select", value, p.get("xpath")
+        elif event_type == RecordingEventType.DOM_TYPE:
+            value = payload.get("value", "")
+            target = payload.get("xpath", "")
 
-        if t == "dom.check":
-            return "Check", str(p.get("value")), p.get("xpath")
+        elif event_type == RecordingEventType.DOM_SELECT:
+            value = payload.get("value") or payload.get("text", "")
+            target = payload.get("xpath", "")
 
-        if t == "nav.goto":
-            return "Navigate", event.get("url"), ""
+        elif event_type == RecordingEventType.DOM_CHECK:
+            value = "Checked" if payload.get("value") else "Unchecked"
+            target = payload.get("xpath", "")
 
-        return t, str(p), ""
+        elif event_type == RecordingEventType.NAV_GOTO:
+            target = payload.get("url", "")
+
+        elif event_type == RecordingEventType.WAIT:
+            value = f"{payload.get('duration_ms', 0)} ms"
+
+        return action, value, target
 
     def _populate_steps(self):
         """
@@ -344,24 +359,49 @@ class RecordingViewerPanel(wx.Panel):
 
     def edit_step(self, index: int):
         """
-        Open the step editor dialog for the given step index.
+        Open an editor dialog for the specified recording step.
 
-        This method:
-        - Loads the recording from disk
-        - Opens the StepEditDialog for the selected step
-        - Saves the recording back to disk if the step was modified
-        - Refreshes the timeline view
+        The method determines the type of the selected event and opens the
+        corresponding editor dialog. If the user confirms changes, the
+        recording is saved to disk and the UI is refreshed.
 
         Args:
-            index (int): Index of the step to edit.
-        """
-        step = self._document.data["recording"]["events"][index]
+            index: The index of the step to be edited.
 
-        dlg = StepEditDialog(self, step)
+        Returns:
+            None. If no editor exists for the step type, a message box is
+            displayed and the method returns without making changes.
+        """
+        event = self._document.get_step(index)
+        event_type = RecordingEventType(event["type"])
+
+        if event_type == RecordingEventType.DOM_CLICK:
+            dlg = ClickStepEditor(self, index, event)
+
+        elif event_type == RecordingEventType.DOM_TYPE:
+            dlg = TypeStepEditor(self, index, event)
+
+        elif event_type == RecordingEventType.DOM_SELECT:
+            dlg = SelectStepEditor(self, index, event)
+
+        elif event_type == RecordingEventType.DOM_CHECK:
+            dlg = CheckStepEditor(self, index, event)
+
+        elif event_type == RecordingEventType.NAV_GOTO:
+            dlg = NavGotoStepEditor(self, index, event)
+
+        elif event_type == RecordingEventType.WAIT:
+            dlg = WaitStepEditor(self, index, event)
+
+        else:
+            wx.MessageBox("No editor for this step type yet")
+            return
+
         if dlg.ShowModal() == wx.ID_OK and dlg.changed:
-            # Step was modified in-place
             RecordingPersistence.save_to_disk(self._document)
             self._populate_steps()
+
+        dlg.Destroy()
 
     def delete_step(self, index: int):
         """
@@ -416,6 +456,32 @@ class RecordingViewerPanel(wx.Panel):
         # 5) Notify main frame to recompute toolbar state
         evt = wx.CommandEvent(WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE)
         wx.PostEvent(self.GetTopLevelParent(), evt)
+
+    def move_step(self, from_index: int, to_index: int):
+        """
+        Move a step within the recording and update the UI.
+
+        Attempts to move a step from one index to another using the
+        underlying document model. If the move is successful, the
+        recording is saved to disk, the UI is reloaded, and the
+        moved step is reselected.
+
+        Args:
+            from_index: The current index of the step to move.
+            to_index: The target index for the step.
+
+        Returns:
+            None. If the move operation is invalid or fails, the
+            method returns without making changes.
+        """
+        if not self._document.move_step(from_index, to_index):
+            return
+
+        RecordingPersistence.save_to_disk(self._document)
+        self.reload_from_document()
+
+        # Reselect moved step
+        self._step_list.Select(to_index)
 
     def _on_step_activated(self, evt):
         """

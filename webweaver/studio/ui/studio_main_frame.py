@@ -232,6 +232,12 @@ class StudioMainFrame(wx.Frame):
                   self._on_recording_step_delete,
                   id=RecordingToolbarId.STEP_DELETE)
 
+        self.Bind(wx.EVT_TOOL, self._on_recording_step_move_up,
+                  id=RecordingToolbarId.MOVE_STEP_UP)
+
+        self.Bind(wx.EVT_TOOL, self._on_recording_step_move_down,
+                  id=RecordingToolbarId.MOVE_STEP_DOWN)
+
         self._state_controller.ui_ready = True
 
         self._create_solution_panel()
@@ -1395,3 +1401,17 @@ class StudioMainFrame(wx.Frame):
             return
 
         page.delete_step(index)   # we’ll add this method
+
+    def _on_recording_step_move_up(self, _evt):
+        page = self._workspace_panel.get_active_viewer()
+        idx = page.selected_step
+        if idx is None or idx == 0:
+            return
+        page.move_step(idx, idx - 1)
+
+    def _on_recording_step_move_down(self, _evt):
+        page = self._workspace_panel.get_active_viewer()
+        idx = page.selected_step
+        if idx is None:
+            return
+        page.move_step(idx, idx + 1)
