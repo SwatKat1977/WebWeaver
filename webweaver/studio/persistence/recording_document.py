@@ -39,9 +39,9 @@ class DomCheckPayload(DomPayload):
 
     Attributes:
         xpath: XPath expression identifying the target element.
-        checked: Whether the element should be checked (True) or unchecked (False).
+        value: Whether the element should be checked (True) or unchecked (False).
     """
-    checked: bool
+    value: bool
 
 
 @dataclass
@@ -59,9 +59,9 @@ class DomSelectPayload(DomPayload):
 
     Attributes:
         xpath: XPath expression identifying the select element.
-        selection: Value or visible text of the option to select.
+        value: Value or visible text of the option to select.
     """
-    selection: str
+    value: str
 
 
 @dataclass

@@ -51,7 +51,7 @@ class SelectStepEditor(wx.Dialog):
         payload = DomSelectPayload(**event.get("payload", {}))
 
         self.xpath_ctrl = wx.TextCtrl(self, value=payload.xpath)
-        self.value_ctrl = wx.TextCtrl(self, value=payload.selection)
+        self.value_ctrl = wx.TextCtrl(self, value=payload.value)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -77,7 +77,7 @@ class SelectStepEditor(wx.Dialog):
         """
         new_payload = DomSelectPayload(
             xpath=self.xpath_ctrl.GetValue(),
-            selection=self.value_ctrl.GetValue(),
+            value=self.value_ctrl.GetValue(),
         )
 
         self._event["payload"] = dataclasses.asdict(new_payload)

@@ -51,7 +51,7 @@ class CheckStepEditor(wx.Dialog):
 
         self.xpath_ctrl = wx.TextCtrl(self, value=payload.xpath)
         self.checked_ctrl = wx.CheckBox(self, label="Checked")
-        self.checked_ctrl.SetValue(bool(payload.checked))
+        self.checked_ctrl.SetValue(bool(payload.value))
 
         sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -76,7 +76,7 @@ class CheckStepEditor(wx.Dialog):
         """
         new_payload = DomCheckPayload(
             xpath=self.xpath_ctrl.GetValue(),
-            checked=self.checked_ctrl.GetValue(),
+            value=self.checked_ctrl.GetValue(),
         )
 
         self._event["payload"] = dataclasses.asdict(new_payload)
