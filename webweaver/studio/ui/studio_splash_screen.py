@@ -62,7 +62,7 @@ class StudioSplashScreen(wx.Frame):
         # Start a simple one-shot timer
         self._timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self._on_timer, self._timer)
-        self._timer.StartOnce(5000)
+        self._timer.StartOnce(9000)
 
     def set_main_frame(self, frame):
         self.main_frame = frame
