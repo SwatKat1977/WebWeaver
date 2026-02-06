@@ -19,8 +19,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from dataclasses import dataclass
 from logging import Logger
-from browsing.studio_browser import PlaybackStepResult, StudioBrowser
-from recording.recording import Recording
+from ..browsing.studio_browser import PlaybackStepResult, StudioBrowser
+from ..recording.recording import Recording
 
 
 @dataclass
