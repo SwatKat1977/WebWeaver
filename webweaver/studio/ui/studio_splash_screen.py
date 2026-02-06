@@ -16,24 +16,32 @@ class StudioSplashScreen(wx.Frame):
         outer = wx.Panel(self)
         # Subtle gray border
         outer.SetBackgroundColour("#AAAAAA")
+
+        frame_sizer = wx.BoxSizer(wx.VERTICAL)
+        frame_sizer.Add(outer, 1, wx.EXPAND)
+        self.SetSizer(frame_sizer)
+
         panel = wx.Panel(outer)
         panel.SetBackgroundColour("#E8E8E8")
         outer_sizer = wx.BoxSizer(wx.VERTICAL)
         outer_sizer.Add(panel, 1, wx.ALL | wx.EXPAND, 2) # 2px border
         outer.SetSizer(outer_sizer)
 
-        logo_bitmap = ImageHelpers.image_to_wxbitmap(WEBWEAVER_MAIN_LOGO)
+        logo_bitmap = ImageHelpers.image_to_wxbitmap(WEBWEAVER_MAIN_LOGO,
+                                                     width=500,
+                                                     height=300)
+
         logo = wx.StaticBitmap(panel, bitmap=logo_bitmap)
 
         core = wx.StaticText(panel, label=f"Core: {core_version}")
         studio = wx.StaticText(panel, label=f"Studio: {studio_version}")
 
-        core.SetForegroundColour("#aaaaaa")
-        studio.SetForegroundColour("#aaaaaa")
+        core.SetForegroundColour("#000000")
+        studio.SetForegroundColour("#000000")
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.AddStretchSpacer()
         sizer.Add(logo, 0, wx.ALIGN_CENTER | wx.ALL, 10)
+        sizer.AddStretchSpacer()
 
         bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
         bottom_sizer.AddStretchSpacer()
@@ -41,7 +49,6 @@ class StudioSplashScreen(wx.Frame):
         bottom_sizer.Add(studio, 0, wx.RIGHT, 10)
 
         sizer.Add(bottom_sizer, 0, wx.EXPAND | wx.BOTTOM, 8)
-        sizer.AddStretchSpacer()
 
         panel.SetSizer(sizer)
 
