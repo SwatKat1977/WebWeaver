@@ -19,10 +19,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from io import BytesIO
 import wx
-from resources.explorer_tree_icons.pages_icon import PAGES_ICON
-from resources.explorer_tree_icons.recordings_icon import RECORDINGS_ICON
-from resources.explorer_tree_icons.root_icon import ROOT_ICON
-from resources.explorer_tree_icons.scripts_icon import SCRIPTS_ICON
+from .resources.explorer_tree_icons.pages_icon import PAGES_ICON
+from .resources.explorer_tree_icons.recordings_icon import RECORDINGS_ICON
+from .resources.explorer_tree_icons.root_icon import ROOT_ICON
+from .resources.explorer_tree_icons.scripts_icon import SCRIPTS_ICON
 
 
 def _load_icon(png_bytes: bytes) -> wx.Bitmap:

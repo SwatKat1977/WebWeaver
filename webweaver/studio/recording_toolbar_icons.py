@@ -20,11 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from io import BytesIO
 import wx
 # Import generated icon byte data
-from resources.recording_toolbar.add_step import ADD_STEP_ICON
-from resources.recording_toolbar.delete_step import DELETE_STEP_ICON
-from resources.recording_toolbar.edit_step import EDIT_STEP_ICON
-from resources.recording_toolbar.move_step_down import MOVE_STEP_DOWN_ICON
-from resources.recording_toolbar.move_step_up import MOVE_STEP_UP_ICON
+from .resources.recording_toolbar.add_step import ADD_STEP_ICON
+from .resources.recording_toolbar.delete_step import DELETE_STEP_ICON
+from .resources.recording_toolbar.edit_step import EDIT_STEP_ICON
+from .resources.recording_toolbar.move_step_down import MOVE_STEP_DOWN_ICON
+from .resources.recording_toolbar.move_step_up import MOVE_STEP_UP_ICON
 
 
 def _load_toolbar_icon(png_bytes: bytes) -> wx.Bitmap:

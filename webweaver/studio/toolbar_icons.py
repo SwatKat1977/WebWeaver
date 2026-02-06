@@ -20,17 +20,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from io import BytesIO
 import wx
 # Import generated icon byte data
-from resources.toolbar.toolbar_inspect import INSPECT_ICON
-from resources.toolbar.toolbar_new_project import NEW_PROJECT_ICON
-from resources.toolbar.toolbar_open_project import OPEN_PROJECT_ICON
-from resources.toolbar.toolbar_close_solution import CLOSE_SOLUTION_ICON
-from resources.toolbar.toolbar_pause_record import PAUSE_RECORD_ICON
-from resources.toolbar.toolbar_play_button import PLAY_BUTTON_ICON
-from resources.toolbar.toolbar_save_project import SAVE_PROJECT_ICON
-from resources.toolbar.toolbar_start_record import START_RECORD_ICON
-from resources.toolbar.toolbar_stop_record import STOP_RECORD_ICON
-from resources.toolbar.toolbar_resume_record import RESUME_RECORD_ICON
-from resources.toolbar.toolbar_browser_button import BROWSER_BUTTON_ICON
+from .resources.toolbar.toolbar_inspect import INSPECT_ICON
+from .resources.toolbar.toolbar_new_project import NEW_PROJECT_ICON
+from .resources.toolbar.toolbar_open_project import OPEN_PROJECT_ICON
+from .resources.toolbar.toolbar_close_solution import CLOSE_SOLUTION_ICON
+from .resources.toolbar.toolbar_pause_record import PAUSE_RECORD_ICON
+from .resources.toolbar.toolbar_play_button import PLAY_BUTTON_ICON
+from .resources.toolbar.toolbar_save_project import SAVE_PROJECT_ICON
+from .resources.toolbar.toolbar_start_record import START_RECORD_ICON
+from .resources.toolbar.toolbar_stop_record import STOP_RECORD_ICON
+from .resources.toolbar.toolbar_resume_record import RESUME_RECORD_ICON
+from .resources.toolbar.toolbar_browser_button import BROWSER_BUTTON_ICON
 
 
 def _load_toolbar_icon(png_bytes: bytes) -> wx.Bitmap:

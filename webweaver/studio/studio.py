@@ -17,9 +17,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import os
+import sys
+sys.path.append(os.path.abspath(".."))
 import wx
-from ui.studio_main_frame import StudioMainFrame
-from ui.studio_splash_screen import StudioSplashScreen
+from .ui.studio_main_frame import StudioMainFrame
+from .ui.studio_splash_screen import StudioSplashScreen
+from ..version import *
 
 
 class WebWeaverStudioApp(wx.App):

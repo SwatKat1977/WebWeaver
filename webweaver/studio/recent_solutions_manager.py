@@ -21,6 +21,7 @@ import json
 from pathlib import Path
 import wx
 
+
 class RecentSolutionsManager:
     """
     Manages the list of recently opened solutions.
