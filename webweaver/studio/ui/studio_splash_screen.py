@@ -29,7 +29,7 @@ class StudioSplashScreen(wx.Frame):
 
         logo_bitmap = ImageHelpers.image_to_wxbitmap(WEBWEAVER_MAIN_LOGO,
                                                      width=500,
-                                                     height=300)
+                                                     height=500)
 
         logo = wx.StaticBitmap(panel, bitmap=logo_bitmap)
 
@@ -56,7 +56,7 @@ class StudioSplashScreen(wx.Frame):
         outer.Layout()
         self.Layout()
 
-        self.SetSize((700, 450))
+        self.SetSize((700, 550))
         self.Centre()
 
         # Start a simple one-shot timer
