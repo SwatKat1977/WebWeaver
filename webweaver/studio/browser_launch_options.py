@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional, Dict, Any
-from browsing.web_driver_option import WebDriverOption
+from .browsing.web_driver_option import WebDriverOption
 
 
 @dataclass
