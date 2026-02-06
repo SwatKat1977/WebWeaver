@@ -11,6 +11,8 @@ class StudioSplashScreen(wx.Frame):
             style=wx.FRAME_NO_TASKBAR | wx.BORDER_NONE | wx.STAY_ON_TOP
         )
 
+        self.main_frame = None
+
         outer = wx.Panel(self)
         # Subtle gray border
         outer.SetBackgroundColour("#AAAAAA")
@@ -43,5 +45,24 @@ class StudioSplashScreen(wx.Frame):
 
         panel.SetSizer(sizer)
 
+        panel.Layout()
+        outer.Layout()
+        self.Layout()
+
         self.SetSize((700, 450))
         self.Centre()
+
+        # Start a simple one-shot timer
+        self._timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self._on_timer, self._timer)
+        self._timer.StartOnce(5000)
+
+    def set_main_frame(self, frame):
+        self.main_frame = frame
+
+    def _on_timer(self, _event):
+        if self.main_frame:
+            self.main_frame.Show()
+            wx.CallAfter(self.main_frame.init_aui)
+
+        self.Destroy()

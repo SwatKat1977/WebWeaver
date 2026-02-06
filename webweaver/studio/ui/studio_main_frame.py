@@ -170,7 +170,6 @@ class StudioMainFrame(wx.Frame):
         # Create web browser 'inspect' timer
         self._inspector_timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self._on_inspector_timer, self._inspector_timer)
-        self._inspector_timer.Start(200)
 
         self._aui_mgr: wx.aui.AuiManager = wx.aui.AuiManager(self)
         """AUI manager responsible for dockable panes and toolbars."""
@@ -294,6 +293,8 @@ class StudioMainFrame(wx.Frame):
 
         wx.CallLater(1, self._aui_mgr.Update)
         wx.CallLater(1, self.SendSizeEvent)
+
+        self._inspector_timer.Start(200)
 
     def rebuild_code_generation_menu(self) -> None:
         """
@@ -920,8 +921,7 @@ class StudioMainFrame(wx.Frame):
                 f"Failed to delete recording:\n{e}",
                 "Delete Recording",
                 wx.ICON_ERROR,
-                self
-            )
+                self)
             return
 
         selected = self._solution_explorer_panel.get_selected_recording()
