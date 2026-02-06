@@ -23,7 +23,7 @@ sys.path.append(os.path.abspath(".."))
 import wx
 from .ui.studio_main_frame import StudioMainFrame
 from .ui.studio_splash_screen import StudioSplashScreen
-from ..version import *
+from ..version import __version__ as core_version
 
 
 class WebWeaverStudioApp(wx.App):
@@ -53,7 +53,7 @@ class WebWeaverStudioApp(wx.App):
 
         splash = StudioSplashScreen(
             # core_version=webweaver_core.__version__,
-            core_version="CORE VERSION",
+            core_version=core_version,
             # studio_version=webweaver_studio.__version__
             studio_version="STUDIO VERSION")
         splash.Show()
