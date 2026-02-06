@@ -19,19 +19,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from datetime import datetime
 import wx
-from recording_view_context import RecordingViewContext
-from recording.recording_loader import load_recording_from_context
-from recording.recording_event_type import (RecordingEventType)
-from ui.events import WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE
-from ui.check_step_editor import CheckStepEditor
-from ui.click_step_editor import ClickStepEditor
-from ui.navgoto_step_editor import NavGotoStepEditor
-from ui.select_step_editor import SelectStepEditor
-from ui.type_step_editor import TypeStepEditor
-from ui.wait_step_editor import WaitStepEditor
-from persistence.recording_persistence import (RecordingPersistence,
-                                               RecordingLoadError)
-from persistence.recording_document import RecordingDocument
+from ..recording_view_context import RecordingViewContext
+from ..recording.recording_loader import load_recording_from_context
+from ..recording.recording_event_type import (RecordingEventType)
+from .events import WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE
+from .check_step_editor import CheckStepEditor
+from .click_step_editor import ClickStepEditor
+from .navgoto_step_editor import NavGotoStepEditor
+from .select_step_editor import SelectStepEditor
+from .type_step_editor import TypeStepEditor
+from .wait_step_editor import WaitStepEditor
+from ..persistence.recording_persistence import (RecordingPersistence,
+                                                 RecordingLoadError)
+from ..persistence.recording_document import RecordingDocument
 
 
 def format_time_point(dt: datetime) -> str:

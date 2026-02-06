@@ -18,13 +18,13 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import wx
-from recording.recording_event_type import RecordingEventType
-from persistence.recording_document import (DomCheckPayload,
-                                            DomClickPayload,
-                                            DomSelectPayload,
-                                            DomTypePayload,
-                                            NavGotoPayload,
-                                            WaitPayload)
+from ..recording.recording_event_type import RecordingEventType
+from ..persistence.recording_document import (DomCheckPayload,
+                                              DomClickPayload,
+                                              DomSelectPayload,
+                                              DomTypePayload,
+                                              NavGotoPayload,
+                                              WaitPayload)
 
 
 RECORDING_EVENT_TYPE_LABELS: list[tuple[str, RecordingEventType]] = [

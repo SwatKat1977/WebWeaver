@@ -19,7 +19,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import dataclasses
 import wx
-from persistence.recording_document import DomCheckPayload
+from ..persistence.recording_document import DomCheckPayload
 
 
 class CheckStepEditor(wx.Dialog):

@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from dataclasses import dataclass
 import wx
-from ui.playback_toolbar_icons import (
+from .playback_toolbar_icons import (
     load_playback_toolbar_pause_icon,
     load_playback_toolbar_play_icon,
     # load_playback_toolbar_step_icon,   FUTURE FEATURE
