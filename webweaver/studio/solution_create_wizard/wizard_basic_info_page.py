@@ -21,10 +21,10 @@ from pathlib import Path
 import sys
 import typing
 import wx
-from solution_create_wizard.solution_create_wizard_data \
+from ..solution_create_wizard.solution_create_wizard_data \
     import SolutionCreateWizardData
-from solution_create_wizard.solution_creation_page import SolutionCreationPage
-from solution_create_wizard.solution_wizard_base import SolutionWizardBase
+from ..solution_create_wizard.solution_creation_page import SolutionCreationPage
+from ..solution_create_wizard.solution_wizard_base import SolutionWizardBase
 
 
 def is_directory_writable(path: Path) -> bool:

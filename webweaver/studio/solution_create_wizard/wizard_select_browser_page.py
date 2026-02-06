@@ -18,15 +18,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import wx
-from solution_create_wizard.solution_create_wizard_data import \
+from ..solution_create_wizard.solution_create_wizard_data import \
     SolutionCreateWizardData
-from solution_create_wizard.solution_creation_page import SolutionCreationPage
-from solution_create_wizard.browser_logos import (
+from ..solution_create_wizard.solution_creation_page import SolutionCreationPage
+from ..solution_create_wizard.browser_logos import (
     load_browser_logo_chromium,
     load_browser_logo_firefox,
     load_browser_logo_google_chrome,
     load_browser_logo_microsoft_edge)
-from solution_create_wizard.solution_wizard_base import SolutionWizardBase
+from ..solution_create_wizard.solution_wizard_base import SolutionWizardBase
 
 
 class WizardSelectBrowserPage(SolutionWizardBase):

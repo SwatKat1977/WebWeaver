@@ -20,11 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from io import BytesIO
 import wx
 # Import generated icon byte data
-from resources.browser_logos.browser_chromium_logo import BROWSER_CHROMIUM_LOGO
-from resources.browser_logos.browser_firefox_logo import BROWSER_FIREFOX_LOGO
-from resources.browser_logos.browser_google_chrome_logo import \
+from ..resources.browser_logos.browser_chromium_logo import BROWSER_CHROMIUM_LOGO
+from ..resources.browser_logos.browser_firefox_logo import BROWSER_FIREFOX_LOGO
+from ..resources.browser_logos.browser_google_chrome_logo import \
     BROWSER_GOOGLE_CHROME_LOGO
-from resources.browser_logos.browser_microsoft_edge_logo import \
+from ..resources.browser_logos.browser_microsoft_edge_logo import \
     BROWSER_MICROSOFT_EDGE_LOGO
 
 
