@@ -19,8 +19,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import json
 from typing import Optional
-from recording_view_context import RecordingViewContext
-from recording.recording import Recording
+from ..recording_view_context import RecordingViewContext
+from .recording import Recording
 
 
 def load_recording_from_context(ctx: RecordingViewContext) -> Optional[Recording]:

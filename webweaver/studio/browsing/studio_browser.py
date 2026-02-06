@@ -29,8 +29,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
-from browsing.inspection_js import INSPECTOR_JS
-from browsing.recording_js import RECORDING_JS
+from .inspection_js import INSPECTOR_JS
+from .recording_js import RECORDING_JS
 
 
 class PlaybackActionError(RuntimeError):
