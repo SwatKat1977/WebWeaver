@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import enum
-from .recording_metadata import RecordingMetadata
+from webweaver.studio.recording_metadata import RecordingMetadata
 
 
 class ExplorerNodeType(enum.Enum):

@@ -20,10 +20,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from io import BytesIO
 import wx
 # Import generated icon byte data
-from ..resources.playback_toolbar.toolbar_pause import PAUSE_ICON
-from ..resources.playback_toolbar.toolbar_play import PLAY_ICON
-from ..resources.playback_toolbar.toolbar_step import STEP_ICON
-from ..resources.playback_toolbar.toolbar_stop import STOP_ICON
+from webweaver.studio.resources.playback_toolbar.toolbar_pause import PAUSE_ICON
+from webweaver.studio.resources.playback_toolbar.toolbar_play import PLAY_ICON
+from webweaver.studio.resources.playback_toolbar.toolbar_step import STEP_ICON
+from webweaver.studio.resources.playback_toolbar.toolbar_stop import STOP_ICON
 
 
 def _load_toolbar_icon(png_bytes: bytes) -> wx.Bitmap:

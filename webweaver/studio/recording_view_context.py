@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from dataclasses import dataclass
 from pathlib import Path
-from .recording_metadata import RecordingMetadata
+from webweaver.studio.recording_metadata import RecordingMetadata
 
 
 @dataclass

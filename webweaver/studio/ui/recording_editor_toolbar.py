@@ -19,7 +19,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from dataclasses import dataclass
 import wx
-from ..recording_toolbar_icons import (load_toolbar_add_step_icon,
+from webweaver.studio.recording_toolbar_icons import (
+                                       load_toolbar_add_step_icon,
                                        load_toolbar_edit_step_icon,
                                        load_toolbar_delete_step_icon,
                                        load_toolbar_move_step_up_icon,

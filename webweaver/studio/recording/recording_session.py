@@ -23,8 +23,8 @@ from pathlib import Path
 import time
 import typing
 import uuid
-from .recording_event_type import RecordingEventType
-from ..studio_solution import StudioSolution
+from webweaver.studio.recording.recording_event_type import RecordingEventType
+from webweaver.studio.studio_solution import StudioSolution
 
 
 def now_utc_iso() -> str:

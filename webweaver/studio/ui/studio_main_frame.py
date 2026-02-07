@@ -27,54 +27,64 @@ from selenium.common.exceptions import (WebDriverException,
                                         InvalidSessionIdException)
 import wx
 import wx.aui
-from ..recent_solutions_manager import RecentSolutionsManager
-from ..recording_metadata import RecordingMetadata
-from ..persistence.solution_persistence import (SolutionPersistence,
+from webweaver.studio.recent_solutions_manager import RecentSolutionsManager
+from webweaver.studio.recording_metadata import RecordingMetadata
+from webweaver.studio.persistence.solution_persistence import (
+                                                SolutionPersistence,
                                                 SolutionSaveStatus)
-from ..persistence.recording_document import RecordingDocument
-from ..persistence.recording_persistence import RecordingPersistence
-from ..browsing.web_driver_factory import create_driver_from_solution
-from ..browsing.studio_browser import StudioBrowser
-from ..recording_view_context import RecordingViewContext
-from ..recording.recording_events import (
+from webweaver.studio.persistence.recording_document import RecordingDocument
+from webweaver.studio.persistence.recording_persistence import \
+    RecordingPersistence
+from webweaver.studio.browsing.web_driver_factory import \
+    create_driver_from_solution
+from webweaver.studio.browsing.studio_browser import StudioBrowser
+from webweaver.studio.recording_view_context import RecordingViewContext
+from webweaver.studio.recording.recording_events import (
     OpenRecordingEvent,
     RenameRecordingEvent,
     DeleteRecordingEvent)
-from ..recording.recording_session import RecordingSession
-from ..recording.recording_event_type import RecordingEventType
-from ..recording.recording_loader import load_recording_from_context
-from ..studio_state_controller import StudioState, StudioStateController
-from ..studio_solution import (
+from webweaver.studio.recording.recording_session import RecordingSession
+from webweaver.studio.recording.recording_event_type import RecordingEventType
+from webweaver.studio.recording.recording_loader import \
+    load_recording_from_context
+from webweaver.studio.studio_state_controller import (StudioState,
+                                                      StudioStateController)
+from webweaver.studio.studio_solution import (
     StudioSolution,
     solution_load_error_to_str,
     SolutionDirectoryCreateStatus)
-from ..solution_create_wizard.wizard_basic_info_page import WizardBasicInfoPage
-from ..solution_create_wizard.solution_create_wizard_data import \
-    SolutionCreateWizardData
-from ..solution_create_wizard.wizard_select_browser_page import \
-    WizardSelectBrowserPage
-from ..solution_create_wizard.wizard_behaviour_page import \
+from webweaver.studio.solution_create_wizard.wizard_basic_info_page import \
+    WizardBasicInfoPage
+from webweaver.studio.solution_create_wizard.solution_create_wizard_data \
+    import SolutionCreateWizardData
+from webweaver.studio.solution_create_wizard.wizard_select_browser_page \
+    import WizardSelectBrowserPage
+from webweaver.studio.solution_create_wizard.wizard_behaviour_page import \
     WizardBehaviourPage
-from ..solution_create_wizard.wizard_finish_page import \
+from webweaver.studio.solution_create_wizard.wizard_finish_page import \
     WizardFinishPage
-from ..solution_create_wizard.solution_creation_page import SolutionCreationPage
-from ..solution_create_wizard.solution_widget_ids import \
+from webweaver.studio.solution_create_wizard.solution_creation_page import \
+    SolutionCreationPage
+from webweaver.studio.solution_create_wizard.solution_widget_ids import \
     SOLUTION_WIZARD_BACK_BUTTON_ID
-from .solution_explorer_panel import SolutionExplorerPanel
-from .workspace_panel import WorkspacePanel
-from .main_toolbar import MainToolbar, ToolbarState
-from .main_menu import create_main_menu
-from .main_status_bar import MainStatusBar
-from .inspector_panel import InspectorPanel
-from .playback_toolbar import (PlaybackToolbarState,
-                               PlaybackToolbar,
-                               PlaybackToolID)
-from .recording_editor_toolbar import (RecordingEditorToolbar,
+from webweaver.studio.ui.solution_explorer_panel import SolutionExplorerPanel
+from webweaver.studio.ui.workspace_panel import WorkspacePanel
+from webweaver.studio.ui.main_toolbar import MainToolbar, ToolbarState
+from webweaver.studio.ui.main_menu import create_main_menu
+from webweaver.studio.ui.main_status_bar import MainStatusBar
+from webweaver.studio.ui.inspector_panel import InspectorPanel
+from webweaver.studio.ui.playback_toolbar import (PlaybackToolbarState,
+                                                  PlaybackToolbar,
+                                                  PlaybackToolID)
+from webweaver.studio.ui.recording_editor_toolbar import (
+                                       RecordingEditorToolbar,
                                        RecordingEditorToolbarState,
                                        RecordingToolbarId)
-from .events import EVT_WORKSPACE_ACTIVE_CHANGED
-from ..playback.recording_playback_session import RecordingPlaybackSession
-from ..code_generation.code_generator_registry import CodeGeneratorRegistry
+from webweaver.studio.ui.events import EVT_WORKSPACE_ACTIVE_CHANGED
+from webweaver.studio.playback.recording_playback_session import \
+    RecordingPlaybackSession
+from webweaver.studio.code_generation.code_generator_registry import \
+    CodeGeneratorRegistry
 
 
 # macOS menu bar offset

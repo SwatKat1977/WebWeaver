@@ -1,7 +1,8 @@
 
 import wx
-from ..image_helpers import ImageHelpers
-from ..resources.webweaver_main_logo import WEBWEAVER_MAIN_LOGO
+from webweaver.studio.image_helpers import ImageHelpers
+from webweaver.studio.resources.webweaver_main_logo import WEBWEAVER_MAIN_LOGO
+
 
 class StudioSplashScreen(wx.Frame):
     def __init__(self, core_version: str, studio_version: str):
