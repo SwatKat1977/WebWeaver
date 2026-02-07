@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from studio_solution import StudioSolutions
+    from webweaver.studio.studio_solution import StudioSolutions
 
 
 class SolutionSaveStatus(enum.Enum):

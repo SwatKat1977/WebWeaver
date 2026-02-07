@@ -2,7 +2,7 @@
 This source file is part of Web Weaver
 For the latest info, see https://github.com/SwatKat1977/WebWeaver
 
-Copyright 2025 SwatKat1977
+Copyright 2025-2026 Webweaver Development Team
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,11 +20,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from io import BytesIO
 import wx
 # Import generated icon byte data
-from resources.recording_toolbar.add_step import ADD_STEP_ICON
-from resources.recording_toolbar.delete_step import DELETE_STEP_ICON
-from resources.recording_toolbar.edit_step import EDIT_STEP_ICON
-from resources.recording_toolbar.move_step_down import MOVE_STEP_DOWN_ICON
-from resources.recording_toolbar.move_step_up import MOVE_STEP_UP_ICON
+from webweaver.studio.resources.recording_toolbar.add_step import ADD_STEP_ICON
+from webweaver.studio.resources.recording_toolbar.delete_step import \
+    DELETE_STEP_ICON
+from webweaver.studio.resources.recording_toolbar.edit_step import \
+    EDIT_STEP_ICON
+from webweaver.studio.resources.recording_toolbar.move_step_down import \
+    MOVE_STEP_DOWN_ICON
+from webweaver.studio.resources.recording_toolbar.move_step_up import \
+    MOVE_STEP_UP_ICON
 
 
 def _load_toolbar_icon(png_bytes: bytes) -> wx.Bitmap:

@@ -19,19 +19,21 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from datetime import datetime
 import wx
-from recording_view_context import RecordingViewContext
-from recording.recording_loader import load_recording_from_context
-from recording.recording_event_type import (RecordingEventType)
-from ui.events import WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE
-from ui.check_step_editor import CheckStepEditor
-from ui.click_step_editor import ClickStepEditor
-from ui.navgoto_step_editor import NavGotoStepEditor
-from ui.select_step_editor import SelectStepEditor
-from ui.type_step_editor import TypeStepEditor
-from ui.wait_step_editor import WaitStepEditor
-from persistence.recording_persistence import (RecordingPersistence,
-                                               RecordingLoadError)
-from persistence.recording_document import RecordingDocument
+from webweaver.studio.recording_view_context import RecordingViewContext
+from webweaver.studio.recording.recording_loader import \
+    load_recording_from_context
+from webweaver.studio.recording.recording_event_type import RecordingEventType
+from webweaver.studio.ui.events import WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE
+from webweaver.studio.ui.check_step_editor import CheckStepEditor
+from webweaver.studio.ui.click_step_editor import ClickStepEditor
+from webweaver.studio.ui.navgoto_step_editor import NavGotoStepEditor
+from webweaver.studio.ui.select_step_editor import SelectStepEditor
+from webweaver.studio.ui.type_step_editor import TypeStepEditor
+from webweaver.studio.ui.wait_step_editor import WaitStepEditor
+from webweaver.studio.persistence.recording_persistence import (
+                                                 RecordingPersistence,
+                                                 RecordingLoadError)
+from webweaver.studio.persistence.recording_document import RecordingDocument
 
 
 def format_time_point(dt: datetime) -> str:

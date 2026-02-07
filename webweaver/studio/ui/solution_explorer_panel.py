@@ -21,19 +21,20 @@ from pathlib import Path
 from typing import Optional
 import wx
 import wx.aui
-from recording.recording_events import (
+from webweaver.studio.recording.recording_events import (
     EVT_OPEN_RECORDING,
     EVT_RENAME_RECORDING,
     EVT_DELETE_RECORDING)
-from recording_metadata import RecordingMetadata
-from studio_solution import StudioSolution
-from solution_explorer_node_data import (
+from webweaver.studio.recording_metadata import RecordingMetadata
+from webweaver.studio.studio_solution import StudioSolution
+from webweaver.studio.solution_explorer_node_data import (
     SolutionExplorerNodeData,
     ExplorerNodeType)
-from solution_explorer_icons import (load_root_icon,
-                                     load_pages_filter_icon,
-                                     load_scripts_filter_icon,
-                                     load_recordings_filter_icon)
+from webweaver.studio.solution_explorer_icons import (
+                                       load_root_icon,
+                                       load_pages_filter_icon,
+                                       load_scripts_filter_icon,
+                                       load_recordings_filter_icon)
 
 # Context menu command IDs for recording items in the solution explorer.s
 ID_CONTEXT_MENU_REC_OPEN = wx.ID_HIGHEST + 3000

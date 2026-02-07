@@ -2,7 +2,7 @@
 This source file is part of Web Weaver
 For the latest info, see https://github.com/SwatKat1977/WebWeaver
 
-Copyright 2025 SwatKat1977
+Copyright 2025-2026 Webweaver Development Team
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,10 +19,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from io import BytesIO
 import wx
-from resources.explorer_tree_icons.pages_icon import PAGES_ICON
-from resources.explorer_tree_icons.recordings_icon import RECORDINGS_ICON
-from resources.explorer_tree_icons.root_icon import ROOT_ICON
-from resources.explorer_tree_icons.scripts_icon import SCRIPTS_ICON
+from .resources.explorer_tree_icons.pages_icon import PAGES_ICON
+from .resources.explorer_tree_icons.recordings_icon import RECORDINGS_ICON
+from .resources.explorer_tree_icons.root_icon import ROOT_ICON
+from .resources.explorer_tree_icons.scripts_icon import SCRIPTS_ICON
 
 
 def _load_icon(png_bytes: bytes) -> wx.Bitmap:

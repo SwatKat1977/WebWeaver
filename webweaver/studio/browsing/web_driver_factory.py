@@ -21,12 +21,14 @@ import logging
 from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver import Edge, EdgeOptions
 from selenium.webdriver import Firefox, FirefoxOptions, FirefoxProfile
-from browsing.browser_type import BrowserType
-from browsing.studio_browser import StudioBrowser
-from browsing.web_driver_option_target import WebDriverOptionTarget
-from browsing.web_driver_option_parameters import WEB_DRIVER_OPTION_PARAMETERS
-from browser_launch_options import BrowserLaunchOptions
-from studio_solution import StudioSolution
+from webweaver.studio.browsing.browser_type import BrowserType
+from webweaver.studio.browsing.studio_browser import StudioBrowser
+from webweaver.studio.browsing.web_driver_option_target import \
+    WebDriverOptionTarget
+from webweaver.studio.browsing.web_driver_option_parameters import \
+    WEB_DRIVER_OPTION_PARAMETERS
+from webweaver.studio.browser_launch_options import BrowserLaunchOptions
+from webweaver.studio.studio_solution import StudioSolution
 
 
 def _apply_browser_launch_options(

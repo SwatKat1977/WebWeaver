@@ -19,7 +19,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import dataclasses
 import wx
-from persistence.recording_document import DomClickPayload
+from webweaver.studio.persistence.recording_document import DomClickPayload
 
 
 class ClickStepEditor(wx.Dialog):

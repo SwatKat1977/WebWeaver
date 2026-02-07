@@ -18,7 +18,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import wx
-from ui.studio_main_frame import StudioMainFrame
+from webweaver.studio.ui.studio_main_frame import StudioMainFrame
+from webweaver.studio.ui.studio_splash_screen import StudioSplashScreen
+from webweaver.version import __version__ as core_version
 
 
 class WebWeaverStudioApp(wx.App):
@@ -45,14 +47,19 @@ class WebWeaverStudioApp(wx.App):
         bool
             True if initialisation succeeds and the main loop should start.
         """
+
+        splash = StudioSplashScreen(
+            # core_version=webweaver_core.__version__,
+            core_version=core_version,
+            # studio_version=webweaver_studio.__version__
+            studio_version="STUDIO VERSION")
+        splash.Show()
+
         frame = StudioMainFrame(parent=None)
-        frame.Show(True)
+        frame.Hide()
 
-        # IMPORTANT: delay AUI initialisation until AFTER the window is shown
-        wx.CallAfter(frame.init_aui)
-
-        # Ensure the app is brought to the foreground on macOS
-        wx.CallAfter(self._force_mac_foreground, frame)
+        # Tell the splash what to show when it closes
+        splash.set_main_frame(frame)
 
         return True
 

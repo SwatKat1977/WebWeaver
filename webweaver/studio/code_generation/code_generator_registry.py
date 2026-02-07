@@ -22,7 +22,7 @@ from logging import Logger
 import sys
 from pathlib import Path
 from typing import List
-from code_generation.base_code_generator import BaseCodeGenerator
+from .base_code_generator import BaseCodeGenerator
 
 
 class CodeGeneratorRegistry:

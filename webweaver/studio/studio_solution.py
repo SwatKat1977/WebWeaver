@@ -22,10 +22,11 @@ import enum
 from pathlib import Path
 import typing
 import wx
-from browser_launch_options import BrowserLaunchOptions
-from recording_metadata import RecordingMetadata, recording_load_error_to_str
-from recording_view_context import RecordingViewContext
-from persistence.solution_persistence import SolutionDirectoryCreateStatus
+from webweaver.studio.browser_launch_options import BrowserLaunchOptions
+from webweaver.studio.recording_metadata import (RecordingMetadata,
+                                                 recording_load_error_to_str)
+from webweaver.studio.recording_view_context import RecordingViewContext
+from webweaver.studio.persistence.solution_persistence import SolutionDirectoryCreateStatus
 
 #: Current .WWS version number
 JSON_VERSION: int = 1

@@ -21,9 +21,9 @@ from pathlib import Path
 from typing import Optional
 import wx
 import wx.aui
-from recording_view_context import RecordingViewContext
-from ui.recording_viewer_panel import RecordingViewerPanel
-from ui.events import WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE
+from webweaver.studio.recording_view_context import RecordingViewContext
+from webweaver.studio.ui.recording_viewer_panel import RecordingViewerPanel
+from webweaver.studio.ui.events import WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE
 
 
 class WorkspacePanel(wx.Panel):

@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Optional
-from recording.recording_event_type import RecordingEventType
+from webweaver.studio.recording.recording_event_type import RecordingEventType
 
 
 @dataclass
