@@ -19,11 +19,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from dataclasses import dataclass
 import wx
-from ..browser_launch_options import BrowserLaunchOptions, WindowSize
-from .solution_create_wizard_data import \
-    SolutionCreateWizardData
-from .solution_creation_page import SolutionCreationPage
-from .solution_wizard_base import SolutionWizardBase
+from webweaver.studio.browser_launch_options import (BrowserLaunchOptions,
+                                                     WindowSize)
+from webweaver.studio.solution_create_wizard.solution_create_wizard_data \
+    import SolutionCreateWizardData
+from webweaver.studio.solution_create_wizard.solution_creation_page import \
+    SolutionCreationPage
+from webweaver.studio.solution_create_wizard.solution_wizard_base import \
+    SolutionWizardBase
 
 
 @dataclass

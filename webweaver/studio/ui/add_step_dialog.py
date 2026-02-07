@@ -18,8 +18,10 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import wx
-from ..recording.recording_event_type import RecordingEventType
-from ..persistence.recording_document import (DomCheckPayload,
+from webweaver.studio.recording.recording_event_type import \
+    RecordingEventType
+from webweaver.studio.persistence.recording_document import (
+                                              DomCheckPayload,
                                               DomClickPayload,
                                               DomSelectPayload,
                                               DomTypePayload,

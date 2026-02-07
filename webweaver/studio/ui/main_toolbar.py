@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from dataclasses import dataclass
 import wx
 import wx.aui
-from ..toolbar_icons import (
+from webweaver.studio.toolbar_icons import (
     load_toolbar_inspect_icon,
     load_toolbar_new_solution_icon,
     load_toolbar_open_solution_icon,

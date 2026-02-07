@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import json
 from pathlib import Path
-from ..persistence.recording_document import RecordingDocument
+from webweaver.studio.persistence.recording_document import RecordingDocument
 
 
 class RecordingLoadError(Exception):

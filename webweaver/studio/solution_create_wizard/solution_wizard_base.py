@@ -19,10 +19,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import enum
 import wx
-from ..wizard_step_indicator import WizardStepIndicator
-from .solution_create_wizard_data \
+from webweaver.studio.wizard_step_indicator import WizardStepIndicator
+from webweaver.studio.solution_create_wizard.solution_create_wizard_data \
     import SolutionCreateWizardData
-from .solution_widget_ids import \
+from webweaver.studio.solution_create_wizard.solution_widget_ids import \
     SOLUTION_WIZARD_BACK_BUTTON_ID
 
 
