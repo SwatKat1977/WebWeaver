@@ -30,7 +30,7 @@ import wx.aui
 from ..recent_solutions_manager import RecentSolutionsManager
 from ..recording_metadata import RecordingMetadata
 from ..persistence.solution_persistence import (SolutionPersistence,
-                                               SolutionSaveStatus)
+                                                SolutionSaveStatus)
 from ..persistence.recording_document import RecordingDocument
 from ..persistence.recording_persistence import RecordingPersistence
 from ..browsing.web_driver_factory import create_driver_from_solution
@@ -60,19 +60,19 @@ from ..solution_create_wizard.wizard_finish_page import \
 from ..solution_create_wizard.solution_creation_page import SolutionCreationPage
 from ..solution_create_wizard.solution_widget_ids import \
     SOLUTION_WIZARD_BACK_BUTTON_ID
-from ..ui.solution_explorer_panel import SolutionExplorerPanel
-from ..ui.workspace_panel import WorkspacePanel
-from ..ui.main_toolbar import MainToolbar, ToolbarState
-from ..ui.main_menu import create_main_menu
-from ..ui.main_status_bar import MainStatusBar
-from ..ui.inspector_panel import InspectorPanel
-from ..ui.playback_toolbar import (PlaybackToolbarState,
-                                   PlaybackToolbar,
-                                   PlaybackToolID)
-from ..ui.recording_editor_toolbar import (RecordingEditorToolbar,
-                                           RecordingEditorToolbarState,
-                                           RecordingToolbarId)
-from ..ui.events import EVT_WORKSPACE_ACTIVE_CHANGED
+from .solution_explorer_panel import SolutionExplorerPanel
+from .workspace_panel import WorkspacePanel
+from .main_toolbar import MainToolbar, ToolbarState
+from .main_menu import create_main_menu
+from .main_status_bar import MainStatusBar
+from .inspector_panel import InspectorPanel
+from .playback_toolbar import (PlaybackToolbarState,
+                               PlaybackToolbar,
+                               PlaybackToolID)
+from .recording_editor_toolbar import (RecordingEditorToolbar,
+                                       RecordingEditorToolbarState,
+                                       RecordingToolbarId)
+from .events import EVT_WORKSPACE_ACTIVE_CHANGED
 from ..playback.recording_playback_session import RecordingPlaybackSession
 from ..code_generation.code_generator_registry import CodeGeneratorRegistry
 

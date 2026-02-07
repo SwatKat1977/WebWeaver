@@ -18,10 +18,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import wx
-from ..solution_create_wizard.solution_create_wizard_data import \
+from .solution_create_wizard_data import \
     SolutionCreateWizardData
-from ..solution_create_wizard.solution_wizard_base import (SolutionWizardBase,
-                                                           NextButtonType)
+from .solution_wizard_base import (SolutionWizardBase,
+                                   NextButtonType)
 
 
 class WizardFinishPage(SolutionWizardBase):
