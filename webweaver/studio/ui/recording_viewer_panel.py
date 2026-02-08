@@ -17,12 +17,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import dataclasses
 from datetime import datetime
+import typing
 import wx
 from webweaver.studio.recording_view_context import RecordingViewContext
 from webweaver.studio.recording.recording_loader import \
     load_recording_from_context
 from webweaver.studio.recording.recording_event_type import RecordingEventType
+from webweaver.studio.ui.add_step_dialog import (AddStepDialog,
+                                                 default_payload_for)
 from webweaver.studio.ui.events import WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE
 from webweaver.studio.ui.check_step_editor import CheckStepEditor
 from webweaver.studio.ui.click_step_editor import ClickStepEditor
@@ -359,6 +363,32 @@ class RecordingViewerPanel(wx.Panel):
         self._step_list.DeleteAllItems()
         self._populate_steps()
 
+    def _create_step_editor_dialog(
+            self,
+            event_type: RecordingEventType,
+            index: int,
+            event: dict) -> typing.Optional[wx.Dialog]:
+
+        if event_type == RecordingEventType.DOM_CLICK:
+            return ClickStepEditor(self, index, event)
+
+        if event_type == RecordingEventType.DOM_TYPE:
+            return TypeStepEditor(self, index, event)
+
+        if event_type == RecordingEventType.DOM_SELECT:
+            return SelectStepEditor(self, index, event)
+
+        if event_type == RecordingEventType.DOM_CHECK:
+            return CheckStepEditor(self, index, event)
+
+        if event_type == RecordingEventType.NAV_GOTO:
+            return NavGotoStepEditor(self, index, event)
+
+        if event_type == RecordingEventType.WAIT:
+            return WaitStepEditor(self, index, event)
+
+        return None
+
     def edit_step(self, index: int):
         """
         Open an editor dialog for the specified recording step.
@@ -377,25 +407,9 @@ class RecordingViewerPanel(wx.Panel):
         event = self._document.get_step(index)
         event_type = RecordingEventType(event["type"])
 
-        if event_type == RecordingEventType.DOM_CLICK:
-            dlg = ClickStepEditor(self, index, event)
+        dlg = self._create_step_editor_dialog(event_type, index, event)
 
-        elif event_type == RecordingEventType.DOM_TYPE:
-            dlg = TypeStepEditor(self, index, event)
-
-        elif event_type == RecordingEventType.DOM_SELECT:
-            dlg = SelectStepEditor(self, index, event)
-
-        elif event_type == RecordingEventType.DOM_CHECK:
-            dlg = CheckStepEditor(self, index, event)
-
-        elif event_type == RecordingEventType.NAV_GOTO:
-            dlg = NavGotoStepEditor(self, index, event)
-
-        elif event_type == RecordingEventType.WAIT:
-            dlg = WaitStepEditor(self, index, event)
-
-        else:
+        if dlg is None:
             wx.MessageBox("No editor for this step type yet")
             return
 
@@ -404,6 +418,43 @@ class RecordingViewerPanel(wx.Panel):
             self._populate_steps()
 
         dlg.Destroy()
+
+    def add_step(self, after_index: typing.Optional[int] = None):
+        dlg = AddStepDialog(self)
+
+        if dlg.ShowModal() != wx.ID_OK:
+            dlg.Destroy()
+            return
+
+        event_type = dlg.get_event_type()
+        dlg.Destroy()
+
+        # Create default payload
+        payload = default_payload_for(event_type)
+
+        # Create temporary event dict for the editor
+        temp_event = {"payload": dataclasses.asdict(payload)}
+
+        editor = self._create_step_editor_dialog(event_type, 0, temp_event)
+
+        if editor is None:
+            wx.MessageBox("No editor for this step type yet")
+            return
+
+        if editor.ShowModal() != wx.ID_OK:
+            editor.Destroy()
+            return
+
+        # Insert using the edited payload
+        self._document.insert_step_after(
+            index=after_index,
+            event_type=event_type,
+            payload=payload)
+
+        RecordingPersistence.save_to_disk(self._document)
+        self.reload_from_document()
+
+        editor.Destroy()
 
     def delete_step(self, index: int):
         """

@@ -44,7 +44,7 @@ class RecordingToolbarId:
     # pylint: disable=too-few-public-methods
 
     #: Command ID for adding a new step.
-    ADD_STEP = wx.ID_HIGHEST + 6001
+    STEP_ADD = wx.ID_HIGHEST + 6001
 
     #: Command ID for deleting the currently selected step.
     STEP_DELETE = wx.ID_HIGHEST + 6002
@@ -138,7 +138,7 @@ class RecordingEditorToolbar:
             style=wx.aui.AUI_TB_DEFAULT_STYLE | wx.aui.AUI_TB_HORIZONTAL)
 
         self._toolbar.AddTool(
-            RecordingToolbarId.ADD_STEP,
+            RecordingToolbarId.STEP_ADD,
             "",
             _bundle(bmp_add),
             "Add Step")
@@ -167,8 +167,15 @@ class RecordingEditorToolbar:
             _bundle(bmp_delete),
             "Delete Step")
 
-        self._toolbar.Bind(wx.EVT_TOOL, self._on_delete, id=RecordingToolbarId.STEP_DELETE)
-        self._toolbar.Bind(wx.EVT_TOOL, self._on_edit, id=RecordingToolbarId.STEP_EDIT)
+        self._toolbar.Bind(wx.EVT_TOOL,
+                           self._on_add,
+                           id=RecordingToolbarId.STEP_ADD)
+        self._toolbar.Bind(wx.EVT_TOOL,
+                           self._on_delete,
+                           id=RecordingToolbarId.STEP_DELETE)
+        self._toolbar.Bind(wx.EVT_TOOL,
+                           self._on_edit,
+                           id=RecordingToolbarId.STEP_EDIT)
 
         self._toolbar.Realize()
 
@@ -225,6 +232,11 @@ class RecordingEditorToolbar:
             tb.Refresh()
         finally:
             win.Thaw()
+
+    def _on_add(self, _evt):
+        wx.PostEvent(
+            self._frame,
+            wx.CommandEvent(wx.EVT_TOOL.typeId, RecordingToolbarId.STEP_ADD))
 
     def _on_delete(self, _evt):
         """
