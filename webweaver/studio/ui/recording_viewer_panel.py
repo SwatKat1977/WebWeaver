@@ -17,12 +17,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import dataclasses
 from datetime import datetime
+import typing
 import wx
 from webweaver.studio.recording_view_context import RecordingViewContext
 from webweaver.studio.recording.recording_loader import \
     load_recording_from_context
 from webweaver.studio.recording.recording_event_type import RecordingEventType
+from webweaver.studio.ui.add_step_dialog import (AddStepDialog,
+                                                 default_payload_for)
 from webweaver.studio.ui.events import WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE
 from webweaver.studio.ui.check_step_editor import CheckStepEditor
 from webweaver.studio.ui.click_step_editor import ClickStepEditor
@@ -359,6 +363,34 @@ class RecordingViewerPanel(wx.Panel):
         self._step_list.DeleteAllItems()
         self._populate_steps()
 
+    def _create_step_editor_dialog(
+            self,
+            event_type: RecordingEventType,
+            index: int,
+            event: dict) -> typing.Optional[wx.Dialog]:
+
+        step_editor = None
+
+        if event_type == RecordingEventType.DOM_CLICK:
+            step_editor = ClickStepEditor(self, index, event)
+
+        if event_type == RecordingEventType.DOM_TYPE:
+            step_editor = TypeStepEditor(self, index, event)
+
+        if event_type == RecordingEventType.DOM_SELECT:
+            step_editor = SelectStepEditor(self, index, event)
+
+        if event_type == RecordingEventType.DOM_CHECK:
+            step_editor = CheckStepEditor(self, index, event)
+
+        if event_type == RecordingEventType.NAV_GOTO:
+            step_editor = NavGotoStepEditor(self, index, event)
+
+        if event_type == RecordingEventType.WAIT:
+            step_editor = WaitStepEditor(self, index, event)
+
+        return step_editor
+
     def edit_step(self, index: int):
         """
         Open an editor dialog for the specified recording step.
@@ -377,25 +409,9 @@ class RecordingViewerPanel(wx.Panel):
         event = self._document.get_step(index)
         event_type = RecordingEventType(event["type"])
 
-        if event_type == RecordingEventType.DOM_CLICK:
-            dlg = ClickStepEditor(self, index, event)
+        dlg = self._create_step_editor_dialog(event_type, index, event)
 
-        elif event_type == RecordingEventType.DOM_TYPE:
-            dlg = TypeStepEditor(self, index, event)
-
-        elif event_type == RecordingEventType.DOM_SELECT:
-            dlg = SelectStepEditor(self, index, event)
-
-        elif event_type == RecordingEventType.DOM_CHECK:
-            dlg = CheckStepEditor(self, index, event)
-
-        elif event_type == RecordingEventType.NAV_GOTO:
-            dlg = NavGotoStepEditor(self, index, event)
-
-        elif event_type == RecordingEventType.WAIT:
-            dlg = WaitStepEditor(self, index, event)
-
-        else:
+        if dlg is None:
             wx.MessageBox("No editor for this step type yet")
             return
 
@@ -404,6 +420,71 @@ class RecordingViewerPanel(wx.Panel):
             self._populate_steps()
 
         dlg.Destroy()
+
+    def add_step(self, after_index: typing.Optional[int] = None):
+        """
+        Add a new step to the current recording document.
+
+        Displays a dialog allowing the user to choose the type of step to
+        create, then opens the appropriate step editor to configure its
+        payload. If the user cancels at any point, no changes are made.
+
+        The created step is inserted either after the specified index or, if
+        `after_index` is None, at the default insertion location as defined by
+        the document.
+
+        Args:
+            after_index: Optional index after which the new step should be
+                         inserted. If None, the step is appended or inserted
+                         according to the document's default behavior.
+
+        Side Effects:
+            - Opens modal dialogs for step type selection and editing.
+            - Modifies the underlying recording document by inserting a new
+              step.
+            - Saves the updated document to disk.
+            - Reloads the UI to reflect the updated document state.
+        """
+        dlg = AddStepDialog(self)
+
+        if dlg.ShowModal() != wx.ID_OK:
+            dlg.Destroy()
+            return
+
+        event_type = dlg.get_event_type()
+        dlg.Destroy()
+
+        # Create default payload
+        payload = default_payload_for(event_type)
+
+        # Create temporary event dict for the editor
+        temp_event = {"payload": dataclasses.asdict(payload)}
+
+        editor = self._create_step_editor_dialog(event_type, 0, temp_event)
+
+        if editor is None:
+            wx.MessageBox("No editor for this step type yet")
+            return
+
+        if editor.ShowModal() != wx.ID_OK:
+            editor.Destroy()
+            return
+
+        edited_payload_dict = temp_event["payload"]
+
+        # Recreate the correct payload object from the edited data
+        payload = default_payload_for(event_type).__class__(**edited_payload_dict)
+
+        # Insert using the edited payload
+        self._document.insert_step_after(
+            index=after_index,
+            event_type=event_type,
+            payload=payload)
+
+        RecordingPersistence.save_to_disk(self._document)
+        self.reload_from_document()
+
+        editor.Destroy()
 
     def delete_step(self, index: int):
         """
