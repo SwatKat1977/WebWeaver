@@ -235,6 +235,9 @@ class StudioMainFrame(wx.Frame):
         self._recording_toolbar = RecordingEditorToolbar(self, self._aui_mgr)
 
         self.Bind(wx.EVT_TOOL,
+                  self._on_recording_step_add,
+                  id=RecordingToolbarId.STEP_ADD)
+        self.Bind(wx.EVT_TOOL,
                   self._on_recording_step_edit,
                   id=RecordingToolbarId.STEP_EDIT)
         self.Bind(wx.EVT_TOOL,
@@ -1389,6 +1392,16 @@ class StudioMainFrame(wx.Frame):
     def _do_recording_toolbar_update(self):
         self._pending_recording_toolbar_update = False
         self._update_recording_toolbar_state()
+
+    def _on_recording_step_add(self, _evt):
+        page = self._workspace_panel.get_active_viewer()
+        if not page:
+            print("_on_recording_step_add() - No active page")
+            return
+
+        insert_after = page.selected_step
+
+        page.add_step(after_index=insert_after)
 
     def _on_recording_step_edit(self, _evt):
         page = self._workspace_panel.get_active_viewer()

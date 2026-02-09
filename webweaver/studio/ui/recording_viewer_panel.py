@@ -369,25 +369,27 @@ class RecordingViewerPanel(wx.Panel):
             index: int,
             event: dict) -> typing.Optional[wx.Dialog]:
 
+        step_editor = None
+
         if event_type == RecordingEventType.DOM_CLICK:
-            return ClickStepEditor(self, index, event)
+            step_editor = ClickStepEditor(self, index, event)
 
         if event_type == RecordingEventType.DOM_TYPE:
-            return TypeStepEditor(self, index, event)
+            step_editor = TypeStepEditor(self, index, event)
 
         if event_type == RecordingEventType.DOM_SELECT:
-            return SelectStepEditor(self, index, event)
+            step_editor = SelectStepEditor(self, index, event)
 
         if event_type == RecordingEventType.DOM_CHECK:
-            return CheckStepEditor(self, index, event)
+            step_editor = CheckStepEditor(self, index, event)
 
         if event_type == RecordingEventType.NAV_GOTO:
-            return NavGotoStepEditor(self, index, event)
+            step_editor = NavGotoStepEditor(self, index, event)
 
         if event_type == RecordingEventType.WAIT:
-            return WaitStepEditor(self, index, event)
+            step_editor = WaitStepEditor(self, index, event)
 
-        return None
+        return step_editor
 
     def edit_step(self, index: int):
         """
@@ -420,6 +422,29 @@ class RecordingViewerPanel(wx.Panel):
         dlg.Destroy()
 
     def add_step(self, after_index: typing.Optional[int] = None):
+        """
+        Add a new step to the current recording document.
+
+        Displays a dialog allowing the user to choose the type of step to
+        create, then opens the appropriate step editor to configure its
+        payload. If the user cancels at any point, no changes are made.
+
+        The created step is inserted either after the specified index or, if
+        `after_index` is None, at the default insertion location as defined by
+        the document.
+
+        Args:
+            after_index: Optional index after which the new step should be
+                         inserted. If None, the step is appended or inserted
+                         according to the document's default behavior.
+
+        Side Effects:
+            - Opens modal dialogs for step type selection and editing.
+            - Modifies the underlying recording document by inserting a new
+              step.
+            - Saves the updated document to disk.
+            - Reloads the UI to reflect the updated document state.
+        """
         dlg = AddStepDialog(self)
 
         if dlg.ShowModal() != wx.ID_OK:
@@ -444,6 +469,11 @@ class RecordingViewerPanel(wx.Panel):
         if editor.ShowModal() != wx.ID_OK:
             editor.Destroy()
             return
+
+        edited_payload_dict = temp_event["payload"]
+
+        # Recreate the correct payload object from the edited data
+        payload = default_payload_for(event_type).__class__(**edited_payload_dict)
 
         # Insert using the edited payload
         self._document.insert_step_after(
