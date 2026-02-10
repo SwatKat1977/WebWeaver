@@ -41,11 +41,13 @@ class BaseCodeGenerator(ABC):
     description: str
 
     @abstractmethod
-    def generate(self, recording_document) -> str:
+    def generate(self, recording_document, settings) -> str:
         """
         Generate source code from a RecordingDocument.
 
         :param recording_document: The RecordingDocument to generate code from
+        :param settings: Settings specific to the recording file
+
         :return: Generated source code as a string
         """
         raise NotImplementedError

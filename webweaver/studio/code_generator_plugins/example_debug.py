@@ -48,7 +48,7 @@ class ExampleDebugGenerator(BaseCodeGenerator):
     name = "Example Debug Generator"
     description = "Outputs a dummy file for testing the plugin system"
 
-    def generate(self, recording_document) -> str:
+    def generate(self, recording_document, settings) -> str:
         return f"""\
 # This is a test generator
 {recording_document}

@@ -27,6 +27,8 @@ from selenium.common.exceptions import (WebDriverException,
                                         InvalidSessionIdException)
 import wx
 import wx.aui
+
+from webweaver.studio.code_generation.code_generator_entry import CodeGeneratorRegistryEntry
 from webweaver.studio.recent_solutions_manager import RecentSolutionsManager
 from webweaver.studio.recording_metadata import RecordingMetadata
 from webweaver.studio.persistence.solution_persistence import (
@@ -341,31 +343,65 @@ class StudioMainFrame(wx.Frame):
             item = self.code_generation_menu.FindItemByPosition(0)
             self.code_generation_menu.Delete(item)
 
-        generators = self._code_gen_registry.get_generators()
+        entries = self._code_gen_registry.get_generators()
 
-        if not generators:
+        if not entries:
             item = self.code_generation_menu.Append(wx.ID_ANY,
                                                     "(No generators found)")
             item.Enable(False)
         else:
             has_recording = self.get_active_recording_document() is not None
 
-            for gen in generators:
-                item = self.code_generation_menu.Append(wx.ID_ANY, gen.name)
+            for entry in entries:
+                item = self.code_generation_menu.Append(wx.ID_ANY, entry.name)
                 item.Enable(has_recording)
                 self.Bind(
                     wx.EVT_MENU,
-                    lambda evt, g=gen: self._on_generate_code(g),
+                    lambda evt, g=entry: self._on_generate_code(g),
                     item)
 
-    def _on_generate_code(self, generator):
+    def _on_generate_code(self, entry: CodeGeneratorRegistryEntry):
+        # 1. Make sure we actually have a recording open
         doc = self.get_active_recording_document()
         if not doc:
             wx.MessageBox("No active recording.", "Generate Code")
             return
 
-        code = generator.generate(doc)
+        # 2. Create fresh instances for this run
+        generator = entry.generator_cls()
+        settings = entry.settings_cls()
 
+        # 3. Attempt to load generator-specific settings if they exist
+        try:
+            codegen_path = doc.path.with_suffix(".codegen")
+
+            if codegen_path.exists():
+                import json
+                with open(codegen_path, "r", encoding="utf-8") as f:
+                    all_settings = json.load(f)
+
+                gen_name = generator.name
+
+                if gen_name in all_settings:
+                    settings.from_json(all_settings[gen_name])
+
+        except Exception as e:
+            # Not fatal – we can still continue with defaults
+            wx.MessageBox(
+                f"Failed to load generator settings:\n{e}",
+                "Generate Code")
+
+        # 4. Actually generate the code
+        try:
+            code = generator.generate(doc, settings)
+        except Exception as e:
+            wx.MessageBox(
+                f"Code generation failed:\n{e}",
+                "Generate Code"
+            )
+            return
+
+        # 5. Ask user where to save it
         with wx.FileDialog(
                 self,
                 "Save generated test",
@@ -377,6 +413,7 @@ class StudioMainFrame(wx.Frame):
 
             path = dlg.GetPath()
 
+        # 6. Write the automated test file
         with open(path, "w", encoding="utf-8") as f:
             f.write(code)
 
