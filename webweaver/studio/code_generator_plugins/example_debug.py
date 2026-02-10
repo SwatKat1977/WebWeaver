@@ -19,7 +19,25 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from webweaver.studio.code_generation.base_code_generator import \
     BaseCodeGenerator
-from webweaver.studio.code_generation.base_code_generator_settings import BaseCodeGeneratorSettings
+from webweaver.studio.code_generation.base_code_generator_settings import \
+    BaseCodeGeneratorSettings
+
+
+class WebweaverCoreSettings(BaseCodeGeneratorSettings):
+
+    def __init__(self):
+        self.threaded = False
+        self.use_decorators = True
+
+    def to_json(self) -> dict:
+        return {
+            "threaded": self.threaded,
+            "useDecorators": self.use_decorators
+        }
+
+    def from_json(self, data: dict) -> None:
+        self.threaded = data.get("threaded", False)
+        self.use_decorators = data.get("useDecorators", True)
 
 
 class ExampleDebugGenerator(BaseCodeGenerator):
@@ -41,4 +59,5 @@ def test_dummy():
 """
 
 
-GENERATOR = ExampleDebugGenerator()
+GENERATOR_CLASS = ExampleDebugGenerator
+SETTINGS_CLASS = WebweaverCoreSettings
