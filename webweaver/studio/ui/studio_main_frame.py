@@ -376,7 +376,6 @@ class StudioMainFrame(wx.Frame):
             codegen_path = doc.path.with_suffix(".codegen")
 
             if codegen_path.exists():
-                import json
                 with open(codegen_path, "r", encoding="utf-8") as f:
                     all_settings = json.load(f)
 
@@ -397,8 +396,7 @@ class StudioMainFrame(wx.Frame):
         except Exception as e:
             wx.MessageBox(
                 f"Code generation failed:\n{e}",
-                "Generate Code"
-            )
+                "Generate Code")
             return
 
         # 5. Ask user where to save it
@@ -406,8 +404,7 @@ class StudioMainFrame(wx.Frame):
                 self,
                 "Save generated test",
                 wildcard="Python files (*.py)|*.py|All files (*.*)|*.*",
-                style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
-        ) as dlg:
+                style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as dlg:
             if dlg.ShowModal() != wx.ID_OK:
                 return
 

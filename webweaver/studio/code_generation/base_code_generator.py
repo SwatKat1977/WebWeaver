@@ -18,6 +18,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from abc import ABC, abstractmethod
+import typing
+from webweaver.studio.recording.recording_event_type import RecordingEventType
+from webweaver.studio.persistence.recording_document import RecordingDocument
 
 
 class BaseCodeGenerator(ABC):
@@ -40,8 +43,14 @@ class BaseCodeGenerator(ABC):
     #: Short description (for tooltips / future dialogs)
     description: str
 
-    @abstractmethod
-    def generate(self, recording_document, settings) -> str:
+    def __init__(self):
+        self._lines: list[str] = []
+        self._recording_document: typing.Optional[dict] = None
+        self._settings = None
+        # Indent level 0 is at column 1, after then it's level * 4
+        self._indent_level = 0
+
+    def generate(self, recording_document: RecordingDocument, settings) -> str:
         """
         Generate source code from a RecordingDocument.
 
@@ -50,4 +59,62 @@ class BaseCodeGenerator(ABC):
 
         :return: Generated source code as a string
         """
+        self._recording_document = recording_document
+        self._settings = settings
+
+        self._begin_file()
+
+        recording_data = recording_document.data["recording"]
+
+        for event in recording_data["events"]:
+            self._handle_event(event)
+
+        self._end_file()
+
+        return "\n".join(self._lines)
+
+    @abstractmethod
+    def _begin_file(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _end_file(self):
+        raise NotImplementedError
+
+    def _handle_event(self, event: dict):
+        event_type = RecordingEventType(event["type"])
+        payload = event["payload"]
+
+        method_name = f"on_{event_type.name.lower()}"
+
+        handler = getattr(self, method_name, self._on_unknown)
+
+        handler(payload)
+
+    @abstractmethod
+    def _on_unknown(self, payload):
+        raise NotImplementedError
+
+    @abstractmethod
+    def on_dom_click(self, payload):
+        raise NotImplementedError
+
+    @abstractmethod
+    def on_dom_type(self, payload):
+        raise NotImplementedError
+
+    @abstractmethod
+    def on_dom_check(self, payload):
+        raise NotImplementedError
+
+    @abstractmethod
+    def on_dom_select(self, payload):
+        raise NotImplementedError
+
+    @abstractmethod
+    def on_nav_goto(self, payload):
+        raise NotImplementedError
+
+    @abstractmethod
+    def on_wait(self, payload):
         raise NotImplementedError

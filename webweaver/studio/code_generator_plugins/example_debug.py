@@ -24,6 +24,7 @@ from webweaver.studio.code_generation.base_code_generator_settings import \
 
 
 class WebweaverCoreSettings(BaseCodeGeneratorSettings):
+    """ Example code generator """
 
     def __init__(self):
         self.threaded = False
@@ -48,16 +49,68 @@ class ExampleDebugGenerator(BaseCodeGenerator):
     name = "Example Debug Generator"
     description = "Outputs a dummy file for testing the plugin system"
 
-    def generate(self, recording_document, settings) -> str:
-        return f"""\
-# This is a test generator
-{recording_document}
-# Recording path: {recording_document.path}
- 
-def test_dummy():
-    assert True
-"""
+    def _begin_file(self):
+        recording_name = self._recording_document.data['recording']["name"]
+        cls_name = recording_name.replace(' ', '')
+
+        template = [
+            "# Example Debug Generator generated code",
+            "# Copyright 2025-2026 Webweaver Development Team",
+            "",
+            f"class {cls_name}(WebweaverTestClass)",
+             "",
+             "    @test()",
+            f"    def {cls_name}(self):"
+        ]
+        self._lines.extend(template)
+
+        self._indent_level = 2
+        print(f"\n\nClass Name: {cls_name}")
+
+    def _end_file(self):
+        return
+
+    def _on_unknown(self, payload):
+        return
+
+    def on_dom_click(self, payload):
+        return
+
+    def on_dom_type(self, payload):
+        indent = " " * (self._indent_level * 4)
+
+        template = [
+            "ctrl = TextboxControl(self._driver, self._logger)",
+            "if not ctrl.find_element_by_xpath('{xpath}'):",
+            "    raise ElementNotFoundError('Textbox not found')",
+            "",
+            "ctrl.set_value('{value}')",
+            ""]
+        self._lines.extend(
+            indent + line.format(**payload) for line in template)
+
+    def on_dom_check(self, payload):
+        return
+
+    def on_dom_select(self, payload):
+        indent = " " * (self._indent_level * 4)
+
+        template = [
+            "ctrl = DropdownControl(self._driver, self._logger)",
+            "if not ctrl.find_element_by_xpath('{xpath}'):",
+            "    raise ElementNotFoundError('drop-down not found')",
+            "",
+            "ctrl.select_by_text('{value}')",
+            ""]
+        self._lines.extend(
+            indent + line.format(**payload) for line in template)
+
+    def on_nav_goto(self, payload):
+        return
+
+    def on_wait(self, payload):
+        return
 
 
-GENERATOR_CLASS = ExampleDebugGenerator
-SETTINGS_CLASS = WebweaverCoreSettings
+GENERATOR_CLASS = ExampleDebugGenerator # pylint: disable=invalid-name
+SETTINGS_CLASS = WebweaverCoreSettings  # pylint: disable=invalid-name
