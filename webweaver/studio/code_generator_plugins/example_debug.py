@@ -17,7 +17,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from code_generation.base_code_generator import BaseCodeGenerator
+from webweaver.studio.code_generation.base_code_generator import \
+    BaseCodeGenerator
+from webweaver.studio.code_generation.base_code_generator_settings import BaseCodeGeneratorSettings
 
 
 class ExampleDebugGenerator(BaseCodeGenerator):

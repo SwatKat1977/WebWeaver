@@ -153,7 +153,7 @@ class StudioMainFrame(wx.Frame):
 
         self._playback_toolbar: Optional[PlaybackToolbar] = None
 
-        plugin_path: str = "studio/code_generator_plugins"
+        plugin_path: str = "webweaver/studio/code_generator_plugins"
         self._code_gen_registry = CodeGeneratorRegistry(Path(plugin_path),
                                                         self._logger)
         self._code_gen_registry.load()
