@@ -50,22 +50,59 @@ class ExampleDebugGenerator(BaseCodeGenerator):
     description = "Outputs a dummy file for testing the plugin system"
 
     def _begin_file(self):
-        recording_name = self._recording_document.data['recording']["name"]
+        recording_doc = self._recording_document.data
+        recording_name = recording_doc['recording']["name"]
         cls_name = recording_name.replace(' ', '')
 
         template = [
             "# Example Debug Generator generated code",
-            "# Copyright 2025-2026 Webweaver Development Team",
-            "",
+            "# Copyright 2025-2026 Webweaver Development Team"]
+        self._lines.extend(template)
+
+        all_events: dict = recording_doc["recording"]["events"]
+        has_button_control: bool = False
+        has_dropdown_control: bool = False
+        has_radio_control: bool = False
+        has_text_control: bool = False
+
+        for event in all_events:
+            if event["type"] == "dom.check":
+                has_radio_control = True
+
+            elif event["type"] == "dom.click":
+                has_button_control = True
+
+            elif event["type"] == "dom.select":
+                has_dropdown_control = True
+
+            elif event["type"] == "dom.type":
+                has_text_control = True
+
+        self._lines.append("from webweaver.web.exceptions import ElementNotFoundError")
+        self._lines.append("from webweaver.web.web_driver import WebDriver")
+
+        if has_button_control:
+            self._lines.append("from webweaver.web.button_control import ButtonControl")
+
+        if has_dropdown_control:
+            self._lines.append("from webweaver.web.dropdown_control import DropdownControl")
+
+        if has_radio_control:
+            self._lines.append("from webweaver.web.radio_button_control import RadioButtonControl")
+
+        if has_text_control:
+            self._lines.append("from webweaver.web.textbox_control import TextboxControl")
+
+        self._indent_level = 2
+
+        class_template = [
+             "",
+             "",
             f"class {cls_name}(WebweaverTestClass)",
              "",
              "    @test()",
-            f"    def {cls_name}(self):"
-        ]
-        self._lines.extend(template)
-
-        self._indent_level = 2
-        print(f"\n\nClass Name: {cls_name}")
+            f"    def {cls_name}(self):"]
+        self._lines.extend(class_template)
 
     def _end_file(self):
         return
