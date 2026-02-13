@@ -85,7 +85,7 @@ class BaseCodeGenerator(ABC):
         event_type = RecordingEventType(event["type"])
         payload = event["payload"]
 
-        method_name = f"on_{event_type.name.lower()}"
+        method_name = f"_on_{event_type.name.lower()}"
 
         handler = getattr(self, method_name, self._on_unknown)
 
@@ -96,25 +96,25 @@ class BaseCodeGenerator(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def on_dom_click(self, payload):
+    def _on_dom_click(self, payload):
         raise NotImplementedError
 
     @abstractmethod
-    def on_dom_type(self, payload):
+    def _on_dom_type(self, payload):
         raise NotImplementedError
 
     @abstractmethod
-    def on_dom_check(self, payload):
+    def _on_dom_check(self, payload):
         raise NotImplementedError
 
     @abstractmethod
-    def on_dom_select(self, payload):
+    def _on_dom_select(self, payload):
         raise NotImplementedError
 
     @abstractmethod
-    def on_nav_goto(self, payload):
+    def _on_nav_goto(self, payload):
         raise NotImplementedError
 
     @abstractmethod
-    def on_wait(self, payload):
+    def _on_wait(self, payload):
         raise NotImplementedError

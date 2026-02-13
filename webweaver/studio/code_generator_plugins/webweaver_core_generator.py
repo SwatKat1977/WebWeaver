@@ -17,8 +17,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import time
-
 from webweaver.studio.code_generation.base_code_generator import \
     BaseCodeGenerator
 from webweaver.studio.code_generation.base_code_generator_settings import \
@@ -109,7 +107,7 @@ class WebweaverCoreCodeGenerator(BaseCodeGenerator):
         class_template = [
              "",
              "",
-            f"class {cls_name}(WebweaverTestClass)",
+            f"class {cls_name}(WebweaverTestClass):",
              "",
              "    @test()",
             f"    def {cls_name}(self):"]
@@ -121,7 +119,7 @@ class WebweaverCoreCodeGenerator(BaseCodeGenerator):
     def _on_unknown(self, payload):
         return
 
-    def on_dom_click(self, payload):
+    def _on_dom_click(self, payload):
         indent = " " * (self._indent_level * 4)
 
         template = [
@@ -134,7 +132,8 @@ class WebweaverCoreCodeGenerator(BaseCodeGenerator):
         self._lines.extend(
             indent + line.format(**payload) for line in template)
 
-    def on_dom_type(self, payload):
+    def _on_dom_type(self, payload):
+        """Process a textbox control event"""
         indent = " " * (self._indent_level * 4)
 
         template = [
@@ -147,7 +146,8 @@ class WebweaverCoreCodeGenerator(BaseCodeGenerator):
         self._lines.extend(
             indent + line.format(**payload) for line in template)
 
-    def on_dom_check(self, payload):
+    def _on_dom_check(self, payload):
+        """Process a tickbox control event"""
         indent = " " * (self._indent_level * 4)
 
         template = [
@@ -155,7 +155,7 @@ class WebweaverCoreCodeGenerator(BaseCodeGenerator):
             "if not ctrl.find_element_by_xpath('{xpath}'):",
             "    raise ElementNotFoundError('TickboxControl not found')",
             "",
-            "ctrl_value = {value}",
+            "ctrl_value: bool = {value}",
             "if ctrl_value:",
             "    ctrl.check()",
             "else:",
@@ -164,7 +164,8 @@ class WebweaverCoreCodeGenerator(BaseCodeGenerator):
         self._lines.extend(
             indent + line.format(**payload) for line in template)
 
-    def on_dom_select(self, payload):
+    def _on_dom_select(self, payload):
+        """Process a dropdown control event"""
         indent = " " * (self._indent_level * 4)
 
         template = [
@@ -177,12 +178,14 @@ class WebweaverCoreCodeGenerator(BaseCodeGenerator):
         self._lines.extend(
             indent + line.format(**payload) for line in template)
 
-    def on_nav_goto(self, payload):
+    def _on_nav_goto(self, payload):
+        """Process a navigate (change page) event"""
         indent = " " * (self._indent_level * 4)
         nav_url: str = payload["url"]
         self._lines.append(indent + f"self._driver.open_page('{nav_url}')")
 
-    def on_wait(self, payload):
+    def _on_wait(self, payload):
+        """Process a wait (hard wait) event"""
         indent = " " * (self._indent_level * 4)
         duration_seconds: float = int(payload["duration_ms"]) / 1000
 
