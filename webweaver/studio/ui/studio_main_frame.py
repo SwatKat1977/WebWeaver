@@ -372,23 +372,22 @@ class StudioMainFrame(wx.Frame):
         settings = entry.settings_cls()
 
         # 3. Attempt to load generator-specific settings if they exist
-        try:
-            codegen_path = doc.path.with_suffix(".codegen")
-
-            if codegen_path.exists():
+        codegen_path = doc.path.with_suffix(".codegen")
+        if codegen_path.exists():
+            try:
                 with open(codegen_path, "r", encoding="utf-8") as f:
                     all_settings = json.load(f)
 
-                gen_name = generator.name
+            except json.JSONDecodeError as ex:
+                wx.MessageBox(
+                    f"Generator settings file is invalid JSON:\n{ex}",
+                    "Code Generation Error")
+                return
 
+            else:
+                gen_name = generator.name
                 if gen_name in all_settings:
                     settings.from_json(all_settings[gen_name])
-
-        except Exception as e:
-            # Not fatal – we can still continue with defaults
-            wx.MessageBox(
-                f"Failed to load generator settings:\n{e}",
-                "Generate Code")
 
         # 4. Actually generate the code
         try:
