@@ -17,6 +17,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import time
+
 from webweaver.studio.code_generation.base_code_generator import \
     BaseCodeGenerator
 from webweaver.studio.code_generation.base_code_generator_settings import \
@@ -56,7 +58,7 @@ class WebweaverCoreCodeGenerator(BaseCodeGenerator):
         cls_name = recording_name.replace(' ', '')
 
         template = [
-            "# -----------------------------------------------------------"
+            "# -----------------------------------------------------------",
             "# Generated from Webweaver Studio",
             "# -----------------------------------------------------------"]
         self._lines.extend(template)
@@ -66,6 +68,7 @@ class WebweaverCoreCodeGenerator(BaseCodeGenerator):
         has_dropdown_control: bool = False
         has_check_control: bool = False
         has_text_control: bool = False
+        has_wait: bool = False
 
         for event in all_events:
             if event["type"] == "dom.check":
@@ -80,8 +83,14 @@ class WebweaverCoreCodeGenerator(BaseCodeGenerator):
             elif event["type"] == "dom.type":
                 has_text_control = True
 
+            elif event["type"] == "wait":
+                has_wait = True
+
+        if has_wait:
+            self._lines.append("import time")
+
         self._lines.append("from webweaver.web.exceptions import ElementNotFoundError")
-        self._lines.append("from webweaver.web.web_driver import WebDriver")
+        self._lines.append("from webweaver.executor.test_decorators import test")
 
         if has_button_control:
             self._lines.append("from webweaver.web.button_control import ButtonControl")
@@ -107,7 +116,7 @@ class WebweaverCoreCodeGenerator(BaseCodeGenerator):
         self._lines.extend(class_template)
 
     def _end_file(self):
-        return
+        self._lines.append("")
 
     def _on_unknown(self, payload):
         return
@@ -169,10 +178,16 @@ class WebweaverCoreCodeGenerator(BaseCodeGenerator):
             indent + line.format(**payload) for line in template)
 
     def on_nav_goto(self, payload):
-        return
+        indent = " " * (self._indent_level * 4)
+        nav_url: str = payload["url"]
+        self._lines.append(indent + f"self._driver.open_page('{nav_url}')")
 
     def on_wait(self, payload):
-        return
+        indent = " " * (self._indent_level * 4)
+        duration_seconds: float = int(payload["duration_ms"]) / 1000
+
+        self._lines.append(indent + f"time.sleep({duration_seconds})")
+        self._lines.append("")
 
 
 GENERATOR_CLASS = WebweaverCoreCodeGenerator  # pylint: disable=invalid-name
