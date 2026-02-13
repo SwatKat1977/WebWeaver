@@ -384,10 +384,9 @@ class StudioMainFrame(wx.Frame):
                     "Code Generation Error")
                 return
 
-            else:
-                gen_name = generator.name
-                if gen_name in all_settings:
-                    settings.from_json(all_settings[gen_name])
+            gen_name = generator.name
+            if gen_name in all_settings:
+                settings.from_json(all_settings[gen_name])
 
         # 4. Actually generate the code
         try:
