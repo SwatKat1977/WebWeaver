@@ -24,7 +24,7 @@ from webweaver.studio.code_generation.base_code_generator_settings import \
 
 
 class WebweaverCoreSettings(BaseCodeGeneratorSettings):
-    """ Example code generator """
+    """ Webweaver core code generator """
 
     def __init__(self):
         self.threaded = False
@@ -41,13 +41,14 @@ class WebweaverCoreSettings(BaseCodeGeneratorSettings):
         self.use_decorators = data.get("useDecorators", True)
 
 
-class ExampleDebugGenerator(BaseCodeGenerator):
-    """Temporary code generator as an example"""
+class WebweaverCoreCodeGenerator(BaseCodeGenerator):
+    """Webweaver core (python) code generator"""
+
     # pylint: disable=too-few-public-methods
 
-    id = "example-debug"
-    name = "Example Debug Generator"
-    description = "Outputs a dummy file for testing the plugin system"
+    id = "webweaver-core"
+    name = "Webweaver Core (Python)"
+    description = "Generate Python automated script using Webweaver Core"
 
     def _begin_file(self):
         recording_doc = self._recording_document.data
@@ -55,19 +56,20 @@ class ExampleDebugGenerator(BaseCodeGenerator):
         cls_name = recording_name.replace(' ', '')
 
         template = [
-            "# Example Debug Generator generated code",
-            "# Copyright 2025-2026 Webweaver Development Team"]
+            "# -----------------------------------------------------------"
+            "# Generated from Webweaver Studio",
+            "# -----------------------------------------------------------"]
         self._lines.extend(template)
 
         all_events: dict = recording_doc["recording"]["events"]
         has_button_control: bool = False
         has_dropdown_control: bool = False
-        has_radio_control: bool = False
+        has_check_control: bool = False
         has_text_control: bool = False
 
         for event in all_events:
             if event["type"] == "dom.check":
-                has_radio_control = True
+                has_check_control = True
 
             elif event["type"] == "dom.click":
                 has_button_control = True
@@ -87,8 +89,8 @@ class ExampleDebugGenerator(BaseCodeGenerator):
         if has_dropdown_control:
             self._lines.append("from webweaver.web.dropdown_control import DropdownControl")
 
-        if has_radio_control:
-            self._lines.append("from webweaver.web.radio_button_control import RadioButtonControl")
+        if has_check_control:
+            self._lines.append("from webweaver.web.tickbox_control import TickboxControl")
 
         if has_text_control:
             self._lines.append("from webweaver.web.textbox_control import TextboxControl")
@@ -111,7 +113,17 @@ class ExampleDebugGenerator(BaseCodeGenerator):
         return
 
     def on_dom_click(self, payload):
-        return
+        indent = " " * (self._indent_level * 4)
+
+        template = [
+            "ctrl = ButtonControl(self._driver, self._logger)",
+            "if not ctrl.find_element_by_xpath('{xpath}'):",
+            "    raise ElementNotFoundError('Button not found')",
+            "",
+            "ctrl.click()",
+            ""]
+        self._lines.extend(
+            indent + line.format(**payload) for line in template)
 
     def on_dom_type(self, payload):
         indent = " " * (self._indent_level * 4)
@@ -127,7 +139,21 @@ class ExampleDebugGenerator(BaseCodeGenerator):
             indent + line.format(**payload) for line in template)
 
     def on_dom_check(self, payload):
-        return
+        indent = " " * (self._indent_level * 4)
+
+        template = [
+            "ctrl = TickboxControl(self._driver, self._logger)",
+            "if not ctrl.find_element_by_xpath('{xpath}'):",
+            "    raise ElementNotFoundError('TickboxControl not found')",
+            "",
+            "ctrl_value = {value}",
+            "if ctrl_value:",
+            "    ctrl.check()",
+            "else:",
+            "    ctrl.uncheck()",
+            ""]
+        self._lines.extend(
+            indent + line.format(**payload) for line in template)
 
     def on_dom_select(self, payload):
         indent = " " * (self._indent_level * 4)
@@ -149,5 +175,5 @@ class ExampleDebugGenerator(BaseCodeGenerator):
         return
 
 
-GENERATOR_CLASS = ExampleDebugGenerator # pylint: disable=invalid-name
-SETTINGS_CLASS = WebweaverCoreSettings  # pylint: disable=invalid-name
+GENERATOR_CLASS = WebweaverCoreCodeGenerator  # pylint: disable=invalid-name
+SETTINGS_CLASS = WebweaverCoreSettings        # pylint: disable=invalid-name
