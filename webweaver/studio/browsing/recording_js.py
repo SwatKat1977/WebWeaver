@@ -37,6 +37,24 @@ RECORDING_JS = r"""
 
     function now() { return Date.now(); }
 
+    function getControlType(el) {
+        if (!el) return "unknown";
+
+        const tag = el.tagName.toLowerCase();
+
+        if (tag === "input") {
+            return (el.type || "text").toLowerCase();
+        }
+
+        if (tag === "textarea")
+            return "textarea";
+
+        if (tag === "select")
+            return "select";
+
+        return tag;
+    }
+
     function getXPath(el) {
         if (el.id) return '//*[@id="' + el.id + '"]';
 
@@ -90,6 +108,7 @@ RECORDING_JS = r"""
         const ev = {
             __kind: "type",
             xpath: getXPath(t),
+            control_type: getControlType(t),
             value: t.value,
             time: Date.now()
         };
@@ -122,6 +141,7 @@ RECORDING_JS = r"""
             var ev = {
                 __kind: "check",
                 xpath: getXPath(el),
+                control_type: getControlType(el),
                 value: el.checked ? 1 : 0,
                 time: now()
             };
@@ -135,6 +155,7 @@ RECORDING_JS = r"""
             var ev = {
                 __kind: "select",
                 xpath: getXPath(el),
+                control_type: getControlType(el),
                 value: el.value,
                 time: now()
             };
