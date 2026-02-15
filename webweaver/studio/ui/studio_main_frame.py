@@ -391,9 +391,12 @@ class StudioMainFrame(wx.Frame):
         # 4. Actually generate the code
         try:
             code = generator.generate(doc, settings)
-        except Exception as e:
+
+        # Catch any exception as code generation moves into user-space and
+        # we don't know what exception could get raised.
+        except Exception as ex: # pylint: disable=broad-exception-caught
             wx.MessageBox(
-                f"Code generation failed:\n{e}",
+                f"Code generation failed:\n{ex}",
                 "Generate Code")
             return
 
