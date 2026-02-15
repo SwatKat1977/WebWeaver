@@ -42,6 +42,7 @@ class DomCheckPayload(DomPayload):
         value: Whether the element should be checked (True) or unchecked (False).
     """
     value: bool
+    control_type: str = "checkbox"
 
 
 @dataclass
@@ -51,6 +52,7 @@ class DomClickPayload(DomPayload):
     Attributes:
         xpath: XPath expression identifying the element to be clicked.
     """
+    control_type: str = "click"
 
 
 @dataclass
@@ -62,6 +64,7 @@ class DomSelectPayload(DomPayload):
         value: Value or visible text of the option to select.
     """
     value: str
+    control_type: str = "select"
 
 
 @dataclass
@@ -73,6 +76,7 @@ class DomTypePayload(DomPayload):
         value: Text value to be entered into the element.
     """
     value: str
+    control_type: str = "text"
 
 
 @dataclass

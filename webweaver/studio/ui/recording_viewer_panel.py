@@ -371,6 +371,10 @@ class RecordingViewerPanel(wx.Panel):
 
         step_editor = None
 
+        payload = event.get("payload", {})
+        if "control_type" not in payload:
+            payload["control_type"] = "unknown"
+
         if event_type == RecordingEventType.DOM_CLICK:
             step_editor = ClickStepEditor(self, index, event)
 
