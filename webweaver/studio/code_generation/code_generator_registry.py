@@ -21,8 +21,10 @@ import importlib.util
 from logging import Logger
 import sys
 from pathlib import Path
-from typing import List
+import typing
 from .base_code_generator import BaseCodeGenerator
+from .base_code_generator_settings import BaseCodeGeneratorSettings
+from .code_generator_entry import CodeGeneratorRegistryEntry
 
 
 class CodeGeneratorRegistry:
@@ -32,7 +34,7 @@ class CodeGeneratorRegistry:
 
     def __init__(self, plugin_dir: Path, logger: Logger):
         self._plugin_dir: Path = plugin_dir
-        self._generators: List[BaseCodeGenerator] = []
+        self._generators: typing.List[CodeGeneratorRegistryEntry] = []
         self._logger = logger.getChild(__name__)
 
     def load(self) -> None:
@@ -58,7 +60,7 @@ class CodeGeneratorRegistry:
             except Exception as e:
                 self._logger.info("[CodeGen] Failed to load %s: %s", file, e)
 
-    def get_generators(self) -> List[BaseCodeGenerator]:
+    def get_generators(self) -> typing.List[CodeGeneratorRegistryEntry]:
         """
         Return the list of currently loaded code generator plugins.
 
@@ -74,7 +76,8 @@ class CodeGeneratorRegistry:
         """
         return list(self._generators)
 
-    def _load_from_file(self, path: Path) -> BaseCodeGenerator | None:
+    def _load_from_file(self, path: Path) -> (
+            typing.Optional)[CodeGeneratorRegistryEntry]:
         """
         Load a code generator plugin from a Python source file.
 
@@ -107,13 +110,16 @@ class CodeGeneratorRegistry:
         sys.modules[module_name] = module
         spec.loader.exec_module(module)
 
-        # Convention: plugin must expose GENERATOR = instance
-        gen = getattr(module, "GENERATOR", None)
+        gen_cls = getattr(module, "GENERATOR_CLASS", None)
+        settings_cls = getattr(module, "SETTINGS_CLASS", None)
 
-        if gen is None:
+        if gen_cls is None or settings_cls is None:
             return None
 
-        if not isinstance(gen, BaseCodeGenerator):
-            raise TypeError("GENERATOR is not a CodeGenerator")
+        if not issubclass(gen_cls, BaseCodeGenerator):
+            raise TypeError("GENERATOR_CLASS is not a BaseCodeGenerator subclass")
 
-        return gen
+        if not issubclass(settings_cls, BaseCodeGeneratorSettings):
+            raise TypeError("SETTINGS_CLASS is not a BaseCodeGeneratorSettings subclass")
+
+        return CodeGeneratorRegistryEntry(gen_cls, settings_cls)

@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from dataclasses import dataclass
 from logging import Logger
+import typing
 from webweaver.studio.browsing.studio_browser import (PlaybackStepResult,
                                                       StudioBrowser)
 from webweaver.studio.recording.recording import Recording
@@ -51,10 +52,10 @@ class PlaybackCallbackEvents:
         Called once playback has finished, either because all steps completed
         or because playback stopped due to a failure.
     """
-    on_step_started = None  # Callable[[int], None]
-    on_step_passed = None  # Callable[[int], None]
-    on_step_failed = None  # Callable[[int, str], None]
-    on_playback_finished = None
+    on_step_started: typing.Callable[[int], None] = None
+    on_step_passed: typing.Callable[[int], None] = None
+    on_step_failed: typing.Callable[[int], None] = None
+    on_playback_finished: typing.Callable[[int], None] = None
 
 
 class RecordingPlaybackSession:
