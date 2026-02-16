@@ -21,6 +21,7 @@ import wx
 from webweaver.studio.ui.studio_main_frame import StudioMainFrame
 from webweaver.studio.ui.studio_splash_screen import StudioSplashScreen
 from webweaver.version import __version__ as core_version
+from webweaver.studio.version import __version__ as studio_version
 
 
 class WebWeaverStudioApp(wx.App):
@@ -48,11 +49,8 @@ class WebWeaverStudioApp(wx.App):
             True if initialisation succeeds and the main loop should start.
         """
 
-        splash = StudioSplashScreen(
-            # core_version=webweaver_core.__version__,
-            core_version=core_version,
-            # studio_version=webweaver_studio.__version__
-            studio_version="STUDIO VERSION")
+        splash = StudioSplashScreen(core_version=core_version,
+                                    studio_version=studio_version)
         splash.Show()
 
         frame = StudioMainFrame(parent=None)

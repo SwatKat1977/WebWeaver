@@ -259,3 +259,64 @@ class RecordingSession:
 
         with self._file_path.open("w", encoding="utf-8") as f:
             json.dump(self._recording_json, f, indent=4)
+
+    def start_existing(self, doc) -> bool:
+        """
+        Resume recording into an existing recording document.
+
+        New events will be appended to the end of the existing event list.
+        Event indexes and timestamps continue from the last event.
+        """
+        self._last_error = None
+
+        if self._active:
+            self._last_error = "A recording session is already active."
+            return False
+
+        try:
+            # ------------------------------------------------------------
+            # 1) Use existing file + JSON
+            # ------------------------------------------------------------
+            self._file_path = doc.path
+
+            # If your document already exposes JSON, use that.
+            # Otherwise load from disk.
+            if hasattr(doc, "data"):
+                self._recording_json = doc.data
+            else:
+                with self._file_path.open("r", encoding="utf-8") as f:
+                    self._recording_json = json.load(f)
+
+            events = self._recording_json["recording"]["events"]
+
+            # ------------------------------------------------------------
+            # 2) Continue indexes
+            # ------------------------------------------------------------
+            if events:
+                self._next_index = events[-1]["index"] + 1
+            else:
+                self._next_index = 0
+
+            # ------------------------------------------------------------
+            # 3) Continue timestamps naturally
+            #
+            # We fake the start time so elapsed_ms picks up where
+            # the recording left off.
+            # ------------------------------------------------------------
+            last_timestamp = events[-1]["timestamp"] if events else 0
+
+            self._start_time = time.monotonic() - (last_timestamp / 1000.0)
+
+            # Remove old endedAt — recording is live again
+            self._recording_json["recording"].pop("endedAt", None)
+
+            self._active = True
+
+            return True
+
+        except (OSError,
+                json.JSONDecodeError,
+                KeyError,
+                TypeError) as ex:
+            self._last_error = f"Failed to resume recording:\n{ex}"
+            return False
