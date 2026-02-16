@@ -637,16 +637,15 @@ class StudioMainFrame(wx.Frame):
         # Append to recording flag, default is False.
         append_mode: bool = False
 
-        if doc:
+        if doc and self._state_controller.state != StudioState.RECORDING_RUNNING:
             result = wx.MessageBox(
                 "A recording is already open.\n\n"
-                "Yes = Append new steps to this recording\n"
-                "No = Start a new recording\n"
-                "Cancel = Do nothing",
+                "Yes : Append new steps to this recording\n"
+                "No : Start a new recording\n"
+                "Cancel : Do nothing",
                 "Resume Recording?",
                 wx.YES_NO | wx.CANCEL | wx.ICON_QUESTION,
-                self
-            )
+                self)
 
             if result == wx.CANCEL:
                 return
@@ -654,48 +653,79 @@ class StudioMainFrame(wx.Frame):
             if result == wx.YES:
                 append_mode = True
 
+        # toggle state
         self._state_controller.on_record_start_stop()
 
         if self._state_controller.state == StudioState.RECORDING_RUNNING:
-            ok = self._recording_session.start(
-                self._current_solution.generate_next_recording_name())
-            if not ok:
-                wx.MessageBox(
-                    self._recording_session.last_error or
-                    "Failed to start recording.",
-                    "Recording Error",
-                    wx.ICON_ERROR,
-                    self
-                )
 
-                # Revert state change
-                self._state_controller.on_record_start_stop()
-                return
-
-            self._web_browser.enable_record_mode()
-            # 100ms polling for elements
-            self._recording_timer.Start(100)
+            if append_mode and doc:
+                self._resume_existing_recording_session(doc)
+            else:
+                self._start_new_recording_session()
 
         elif self._state_controller.state == StudioState.SOLUTION_LOADED:
-            ok = self._recording_session.stop()
-            if not ok:
-                wx.MessageBox(
-                    self._recording_session.last_error or
-                    "Failed to stop recording.",
-                    "Recording Error",
-                    wx.ICON_ERROR,
-                    self
-                )
+            self._stop_recording_session()
 
-                # Revert state change
-                self._state_controller.on_record_start_stop()
-                return
+    def _stop_recording_session(self):
+        ok = self._recording_session.stop()
 
-            self._solution_explorer_panel.refresh_recordings(
-                self._current_solution)
+        if not ok:
+            wx.MessageBox(
+                self._recording_session.last_error or
+                "Failed to stop recording.",
+                "Recording Error",
+                wx.ICON_ERROR,
+                self
+            )
+            self._state_controller.on_record_start_stop()
+            return
 
-            self._web_browser.disable_record_mode()
-            self._recording_timer.Stop()
+        self._solution_explorer_panel.refresh_recordings(
+            self._current_solution
+        )
+
+        self._web_browser.disable_record_mode()
+        self._recording_timer.Stop()
+
+    def _start_new_recording_session(self):
+        ok = self._recording_session.start(
+            self._current_solution.generate_next_recording_name()
+        )
+
+        if not ok:
+            wx.MessageBox(
+                self._recording_session.last_error or
+                "Failed to start recording.",
+                "Recording Error",
+                wx.ICON_ERROR,
+                self
+            )
+
+            # Revert state change
+            self._state_controller.on_record_start_stop()
+            return
+
+        self._web_browser.enable_record_mode()
+
+        # 100ms polling for elements
+        self._recording_timer.Start(100)
+
+    def _resume_existing_recording_session(self, doc):
+        ok = self._recording_session.start_existing(doc)
+
+        if not ok:
+            wx.MessageBox(
+                self._recording_session.last_error or
+                "Failed to resume recording.",
+                "Recording Error",
+                wx.ICON_ERROR,
+                self
+            )
+            self._state_controller.on_record_start_stop()
+            return
+
+        self._web_browser.enable_record_mode()
+        self._recording_timer.Start(100)
 
     def on_record_pause_event(self, _event: wx.CommandEvent):
         """
