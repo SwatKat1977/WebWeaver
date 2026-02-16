@@ -183,7 +183,7 @@ class WizardBasicInfoPage(SolutionWizardBase):
         """
         dlg = wx.DirDialog(self, "Choose solution location")
         if dlg.ShowModal() == wx.ID_OK:
-            self._txtSolutionDir.SetValue(dlg.GetPath())
+            self._txt_solution_dir.SetValue(dlg.GetPath())
 
     def _on_next_click(self, _event):
         """
