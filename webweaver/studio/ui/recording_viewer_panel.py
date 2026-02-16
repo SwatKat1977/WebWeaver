@@ -226,6 +226,16 @@ class RecordingViewerPanel(wx.Panel):
         self._passed_indices.clear()
         self._refresh_timeline_styles()
 
+    def reload_from_disk(self):
+        """
+        Reload the recording document from disk and refresh the UI.
+        """
+        self._document = RecordingPersistence.load_from_disk(
+            self._document.path
+        )
+
+        self.reload_from_document()
+
     def _extract_step_fields(self, event: dict):
         """
         Extract displayable fields from a raw recording event.

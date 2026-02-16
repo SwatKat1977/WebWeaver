@@ -675,14 +675,21 @@ class StudioMainFrame(wx.Frame):
                 "Failed to stop recording.",
                 "Recording Error",
                 wx.ICON_ERROR,
-                self
-            )
+                self)
             self._state_controller.on_record_start_stop()
             return
+
+        # Reload currently open recording
+        page = self._workspace_panel.get_active_viewer()
+        if page:
+            page.reload_from_disk()
 
         self._solution_explorer_panel.refresh_recordings(
             self._current_solution
         )
+
+        self._solution_explorer_panel.refresh_recordings(
+            self._current_solution)
 
         self._web_browser.disable_record_mode()
         self._recording_timer.Stop()
