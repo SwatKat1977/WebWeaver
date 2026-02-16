@@ -314,6 +314,9 @@ class RecordingSession:
 
             return True
 
-        except Exception as ex:
+        except (OSError,
+                json.JSONDecodeError,
+                KeyError,
+                TypeError) as ex:
             self._last_error = f"Failed to resume recording:\n{ex}"
             return False
