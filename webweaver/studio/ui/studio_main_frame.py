@@ -631,6 +631,29 @@ class StudioMainFrame(wx.Frame):
         Any failure during start or stop will leave the application in its
         previous state.
         """
+
+        doc: RecordingDocument = self.get_active_recording_document()
+
+        # Append to recording flag, default is False.
+        append_mode: bool = False
+
+        if doc:
+            result = wx.MessageBox(
+                "A recording is already open.\n\n"
+                "Yes = Append new steps to this recording\n"
+                "No = Start a new recording\n"
+                "Cancel = Do nothing",
+                "Resume Recording?",
+                wx.YES_NO | wx.CANCEL | wx.ICON_QUESTION,
+                self
+            )
+
+            if result == wx.CANCEL:
+                return
+
+            if result == wx.YES:
+                append_mode = True
+
         self._state_controller.on_record_start_stop()
 
         if self._state_controller.state == StudioState.RECORDING_RUNNING:
