@@ -209,6 +209,11 @@ class RecordingPlaybackSession:
                 #self._browser.open_page(event["url"])
                 return PlaybackStepResult.success()
 
+            if event_type == "scroll":
+                print(f"Scrolling: {payload}")
+                self.perform_page_scroll(event)
+                return PlaybackStepResult.success()
+
             if event_type == "wait":
                 self._logger.debug("[PLAYBACK EVENT] Wait: %s ms", payload)
                 self._perform_wait(event)
@@ -241,5 +246,23 @@ class RecordingPlaybackSession:
             }
         }
         """
+
+    def perform_page_scroll(self, event):
+        payload = event.get("payload", {})
+        scroll_type = payload.get("scroll_type")
+        scroll_x = payload.get("x_scroll")
+        scroll_y = payload.get("y_scroll")
+
+        if scroll_type == "bottom":
+            print("Scroll to bottom")
+            self._browser.scroll_to_bottom()
+
+        elif scroll_type == "top":
+            print("Scroll to top")
+            self._browser.scroll_to_top()
+
+        elif scroll_type == "custom":
+            print("custom scroll")
+            self._browser.scroll_to(int(scroll_x), int(scroll_y))
 
 # ApiClient

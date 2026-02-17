@@ -212,6 +212,36 @@ class StudioBrowser:
             return False
 
     # --------------------------------------------------------------
+    # Page scroll functionality
+    # --------------------------------------------------------------
+
+    def scroll_to_bottom(self):
+        """
+        Scroll the browser window to the bottom of the current page.
+        """
+        self._driver.execute_script(
+            "window.scrollTo(0, document.body.scrollHeight);")
+
+    def scroll_to_top(self):
+        """
+        Scroll the browser window to the top of the current page.
+        """
+        self._driver.execute_script("window.scrollTo(0, 0);")
+
+    def scroll_to(self, x, y):
+        """
+        Scroll the browser window to a specific position.
+
+        Parameters
+        ----------
+        x : int
+            The horizontal scroll offset.
+        y : int
+            The vertical scroll offset.
+        """
+        self._driver.execute_script(f"window.scrollTo({x}, {y});")
+
+    # --------------------------------------------------------------
     # Inspection functionality
     # --------------------------------------------------------------
 
