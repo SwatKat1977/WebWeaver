@@ -119,16 +119,35 @@ class RestApiStepEditor(wx.Dialog):
 
     def _on_ok(self, _evt):
 
+        base_url = self._base_url_ctrl.GetValue().strip()
+        rest_call = self._rest_call_ctrl.GetValue().strip()
+
+        # --- validation ---
+        if not base_url:
+            wx.MessageBox(
+                "Base URL is required.",
+                "Validation Error",
+                wx.OK | wx.ICON_WARNING)
+            self._base_url_ctrl.SetFocus()
+            return
+
+        if not rest_call:
+            wx.MessageBox(
+                "REST call is required.",
+                "Validation Error",
+                wx.OK | wx.ICON_WARNING)
+            self._rest_call_ctrl.SetFocus()
+            return
+
         label, enum_val = REST_API_EVENT_TYPE_LABELS[
-            self._method_choice_ctrl.GetSelection()
-        ]
+            self._method_choice_ctrl.GetSelection()]
 
         body_text = self._body_ctrl.GetValue().strip()
 
         self._event["payload"] = {
-            "base_url": self._base_url_ctrl.GetValue(),
+            "base_url": base_url,
             "call_type": enum_val.value,
-            "rest_call": self._rest_call_ctrl.GetValue(),
+            "rest_call": rest_call,
             "body": body_text or None
         }
 
