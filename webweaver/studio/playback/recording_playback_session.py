@@ -19,7 +19,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from dataclasses import dataclass
 from logging import Logger
+import time
 import typing
+import selenium
+from webweaver.studio.api_client import ApiClient
 from webweaver.studio.browsing.studio_browser import (PlaybackStepResult,
                                                       StudioBrowser)
 from webweaver.studio.recording.recording import Recording
@@ -179,11 +182,6 @@ class RecordingPlaybackSession:
                 self._logger.debug("[PLAYBACK EVENT] Button: %s", payload)
                 return self._browser.playback_click(payload)
 
-            if event_type == "nav.goto":
-                self._logger.debug("[PLAYBACK EVENT] Navigate: %s", event.get("url"))
-                self._browser.open_page(event["url"])
-                return PlaybackStepResult.success()
-
             if event_type == "dom.select":
                 self._logger.debug("[PLAYBACK EVENT] Dropdown: %s", payload)
                 return self._browser.playback_select(payload)
@@ -192,6 +190,30 @@ class RecordingPlaybackSession:
                 self._logger.debug("[PLAYBACK EVENT] Text: %s", payload)
                 return self._browser.playback_type(payload)
 
+            if event_type == "nav.goto":
+                payload = event.get("payload", {})
+                url: str = payload.get("url")
+                self._logger.debug("[PLAYBACK EVENT] Navigate to '%s'", url)
+
+                try:
+                    self._browser.open_page(url)
+                except selenium.common.exceptions.WebDriverException as ex:
+                    return PlaybackStepResult.fail(f"Unable to navigate to '{url}'")
+
+                return PlaybackStepResult.success()
+
+            if event_type == "rest_api":
+                print("REST API : ", event)
+
+                #self._logger.debug("[PLAYBACK EVENT] Wait: %s", event.get("url"))
+                #self._browser.open_page(event["url"])
+                return PlaybackStepResult.success()
+
+            if event_type == "wait":
+                self._logger.debug("[PLAYBACK EVENT] Wait: %s ms", payload)
+                self._perform_wait(event)
+                return PlaybackStepResult.success()
+
             self._logger.debug("[PLAYBACK EVENT] Unknown event: %s", event_type)
             return PlaybackStepResult.success()
 
@@ -199,3 +221,25 @@ class RecordingPlaybackSession:
             # Absolute last-resort safety net
             self._logger.exception("Playback event crashed")
             return PlaybackStepResult.fail(str(e))
+
+    def _perform_wait(self, event):
+        payload = event.get("payload", {})
+        duration = payload.get("duration_ms")
+        time.sleep(duration / 1000)
+
+    def _perform_rest_api(self, event):
+        """
+        REST API :  {
+            'index': 0,
+            'timestamp': 0,
+            'type': 'rest_api',
+            'payload': {
+                'base_url': 'HTTP://localhost:8000',
+                'call_type': 'post',
+                'rest_call': '/question?ans=yes',
+                'body': None
+            }
+        }
+        """
+
+# ApiClient

@@ -107,6 +107,13 @@ class RestApiPayload:
     body: str | None = None
 
 
+@dataclass
+class ScrollPayload:
+    scroll_type: str
+    x_scroll: int | None = None
+    y_scroll: int | None = None
+
+
 class RecordingDocument:
     """
     File-backed document model representing a loaded recording.
