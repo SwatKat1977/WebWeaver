@@ -82,6 +82,9 @@ def event_type_from_str(value: str) -> RecordingEventType:
     elif value == "rest_api":
         event_type = RecordingEventType.REST_API
 
+    elif value == "scroll":
+        event_type = RecordingEventType.SCROLL
+
     elif value == "wait":
         event_type = RecordingEventType.WAIT
 
