@@ -99,6 +99,13 @@ class WaitPayload:
     duration_ms: int
 
 
+@dataclass
+class RestApiPayload:
+    base_url: str
+    call_type: str
+    call: str
+
+
 class RecordingDocument:
     """
     File-backed document model representing a loaded recording.

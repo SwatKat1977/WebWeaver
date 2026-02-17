@@ -31,9 +31,10 @@ class RecordingEventType(enum.Enum):
 
     DOM_CHECK = "dom.check"
     DOM_CLICK = "dom.click"
-    NAV_GOTO = "nav.goto"
     DOM_SELECT = "dom.select"
     DOM_TYPE = "dom.type"
+    NAV_GOTO = "nav.goto"
+    REST_API = "rest_api"
     WAIT = "wait"
     UNKNOWN = "unknown"
 
@@ -76,6 +77,9 @@ def event_type_from_str(value: str) -> RecordingEventType:
 
     elif value == "dom.type":
         event_type = RecordingEventType.DOM_TYPE
+
+    elif value == "rest_api":
+        event_type = RecordingEventType.REST_API
 
     elif value == "wait":
         event_type = RecordingEventType.WAIT
