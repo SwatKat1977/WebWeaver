@@ -26,6 +26,7 @@ from webweaver.studio.persistence.recording_document import (
                                               DomSelectPayload,
                                               DomTypePayload,
                                               NavGotoPayload,
+                                              RestApiPayload,
                                               WaitPayload)
 
 
@@ -35,6 +36,7 @@ RECORDING_EVENT_TYPE_LABELS: list[tuple[str, RecordingEventType]] = [
     ("DOM Select", RecordingEventType.DOM_SELECT),
     ("DOM Check", RecordingEventType.DOM_CHECK),
     ("Navigate", RecordingEventType.NAV_GOTO),
+    ("Rest API", RecordingEventType.REST_API),
     ("Wait", RecordingEventType.WAIT),
 ]
 """
@@ -77,6 +79,9 @@ def default_payload_for(event_type: RecordingEventType):
 
     if event_type == RecordingEventType.NAV_GOTO:
         return NavGotoPayload(url="")
+
+    if event_type == RecordingEventType.REST_API:
+        return RestApiPayload(base_url="", call_type="GET", call="")
 
     if event_type == RecordingEventType.WAIT:
         return WaitPayload(duration_ms=1000)
