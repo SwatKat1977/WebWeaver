@@ -35,6 +35,7 @@ class RecordingEventType(enum.Enum):
     DOM_TYPE = "dom.type"
     NAV_GOTO = "nav.goto"
     REST_API = "rest_api"
+    SCROLL = "scroll"
     WAIT = "wait"
     UNKNOWN = "unknown"
 
