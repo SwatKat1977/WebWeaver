@@ -81,7 +81,10 @@ def default_payload_for(event_type: RecordingEventType):
         return NavGotoPayload(url="")
 
     if event_type == RecordingEventType.REST_API:
-        return RestApiPayload(base_url="", call_type="GET", call="")
+        return RestApiPayload(base_url="",
+                              call_type="GET",
+                              rest_call="",
+                              body="")
 
     if event_type == RecordingEventType.WAIT:
         return WaitPayload(duration_ms=1000)

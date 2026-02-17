@@ -103,7 +103,8 @@ class WaitPayload:
 class RestApiPayload:
     base_url: str
     call_type: str
-    call: str
+    rest_call: str
+    body: str | None = None
 
 
 class RecordingDocument:
