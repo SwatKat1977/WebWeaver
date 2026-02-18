@@ -24,7 +24,32 @@ import aiohttp
 
 @dataclass()
 class ApiResponse:
-    """ Class for keeping track of api return data. """
+    """
+    Represents the result of an API request.
+
+    This object is used as a unified return type for all API calls made by
+    :class:`ApiClient`, whether the request succeeds or fails.
+
+    Attributes:
+        status_code (int):
+            HTTP status code returned by the server.
+            Will typically be 0 when a request fails before receiving a response.
+
+        body (dict | str):
+            Parsed response body.
+            - JSON responses are returned as a dict.
+            - Non-JSON responses are returned as raw text.
+            May be ``None`` if the request failed.
+
+        content_type (str):
+            The response content type (e.g. ``"application/json"``).
+            May be ``None`` if no response was received.
+
+        exception_msg (str):
+            Error message populated when an exception occurs
+            (connection failure, timeout, etc.). ``None`` on success.
+    """
+
     status_code: int
     body: dict | str
     content_type : str
@@ -35,6 +60,19 @@ class ApiResponse:
                  body: dict | str = None,
                  content_type : str = None,
                  exception_msg : str = None):
+        """
+        Initialise an ApiResponse instance.
+
+        Args:
+            status_code:
+                HTTP status code returned by the server.
+            body:
+                Parsed response payload (JSON dict or raw text).
+            content_type:
+                MIME type returned in the response headers.
+            exception_msg:
+                Error message if the request failed.
+        """
         self.status_code = status_code
         self.body = body
         self.content_type = content_type
@@ -42,6 +80,19 @@ class ApiResponse:
 
 
 class ApiClient:
+    """
+    Lightweight asynchronous HTTP client wrapper around aiohttp.
+
+    Provides convenience methods for common HTTP verbs and returns
+    results as :class:`ApiResponse` objects for consistent handling.
+
+    Notes:
+        - Each request creates a new ``aiohttp.ClientSession``.
+        - JSON responses are automatically deserialized.
+        - Network and timeout errors are captured and returned inside
+          an ``ApiResponse`` instead of raising exceptions.
+    """
+
     CONTENT_TYPE_JSON: str = "application/json"
 
     # Convenience wrappers for specific HTTP methods
@@ -49,31 +100,98 @@ class ApiClient:
                             url: str,
                             json_data: dict = None,
                             timeout: int = 2):
+        """
+        Perform an asynchronous HTTP POST request.
+
+        Args:
+            url: Target endpoint URL.
+            json_data: Optional JSON payload sent in the request body.
+            timeout: Total request timeout in seconds.
+
+        Returns:
+            ApiResponse containing the result or error information.
+        """
         return await self._call_api("post", url, json_data, timeout)
 
     async def call_api_get(self,
                            url: str,
                            json_data: dict = None,
                            timeout: int = 2):
+        """
+        Perform an asynchronous HTTP GET request.
+
+        Args:
+            url: Target endpoint URL.
+            json_data: Optional JSON payload (rare for GET but supported).
+            timeout: Total request timeout in seconds.
+
+        Returns:
+            ApiResponse containing the result or error information.
+        """
         return await self._call_api("get", url, json_data, timeout)
 
     async def call_api_delete(self,
                               url: str,
                               json_data: dict = None,
                               timeout: int = 2):
+        """
+        Perform an asynchronous HTTP DELETE request.
+
+        Args:
+            url: Target endpoint URL.
+            json_data: Optional JSON payload.
+            timeout: Total request timeout in seconds.
+
+        Returns:
+            ApiResponse containing the result or error information.
+        """
         return await self._call_api("delete", url, json_data, timeout)
 
     async def call_api_patch(self,
                              url: str,
                              json_data: dict = None,
                              timeout: int = 2):
+        """
+        Perform an asynchronous HTTP PATCH request.
+
+        Args:
+            url: Target endpoint URL.
+            json_data: Optional JSON payload.
+            timeout: Total request timeout in seconds.
+
+        Returns:
+            ApiResponse containing the result or error information.
+        """
         return await self._call_api("patch", url, json_data, timeout)
 
     async def _call_api(self, method: str, url: str,
                         json_data: dict = None,
                         timeout: int = 2) -> "ApiResponse":
         """
-        Generic internal method to make an API call with the specified HTTP method.
+        Internal generic API caller used by all HTTP verb wrappers.
+
+        This method dynamically resolves the HTTP method on an
+        ``aiohttp.ClientSession`` and executes the request.
+
+        Behaviour:
+            - JSON responses are parsed to ``dict``.
+            - Non-JSON responses are returned as text.
+            - Connection and timeout errors are caught and returned
+              as an ``ApiResponse`` with ``exception_msg`` populated.
+
+        Args:
+            method:
+                HTTP method name (e.g. ``"get"``, ``"post"``, ``"delete"``).
+            url:
+                Target endpoint URL.
+            json_data:
+                Optional JSON request payload.
+            timeout:
+                Total request timeout in seconds.
+
+        Returns:
+            ApiResponse representing either a successful response
+            or an error condition.
         """
         try:
             async with aiohttp.ClientSession(

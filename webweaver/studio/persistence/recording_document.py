@@ -101,6 +101,31 @@ class WaitPayload:
 
 @dataclass
 class RestApiPayload:
+    """
+    Represents the data required to execute a REST API request.
+
+    This payload object is typically used to describe an API call in a
+    serialisable and transport-friendly way (e.g., recording, replaying,
+    or passing request definitions between components).
+
+    Attributes:
+        base_url (str):
+            Root URL of the target API service
+            (e.g. ``"https://api.example.com"``).
+
+        call_type (str):
+            HTTP method to use for the request.
+            Common values include ``"GET"``, ``"POST"``,
+            ``"PATCH"``, ``"DELETE"``, etc.
+
+        rest_call (str):
+            Endpoint path appended to ``base_url``.
+            Example: ``"/users/123"``.
+
+        body (str | None):
+            Optional request body payload, usually JSON-encoded text.
+            ``None`` indicates that no body is sent.
+    """
     base_url: str
     call_type: str
     rest_call: str
@@ -109,6 +134,28 @@ class RestApiPayload:
 
 @dataclass
 class ScrollPayload:
+    """
+    Describes a scrolling action for UI or automation workflows.
+
+    This payload captures both the type of scrolling action and
+    optional horizontal/vertical scroll values.
+
+    Attributes:
+        scroll_type (str):
+            Type of scroll action being performed.
+            Examples might include ``"absolute"``, ``"relative"``,
+            ``"wheel"``, or other system-defined scroll behaviours.
+
+        x_scroll (int | None):
+            Horizontal scroll amount. Positive and negative values
+            indicate direction depending on the implementation.
+            ``None`` if not applicable.
+
+        y_scroll (int | None):
+            Vertical scroll amount. Positive and negative values
+            indicate direction depending on the implementation.
+            ``None`` if not applicable.
+    """
     scroll_type: str
     x_scroll: int | None = None
     y_scroll: int | None = None
