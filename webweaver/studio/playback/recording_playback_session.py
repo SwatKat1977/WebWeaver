@@ -287,8 +287,9 @@ class RecordingPlaybackSession:
 
             return PlaybackStepResult.success()
 
-        except Exception as e:
-            # ONLY real failures end playback
+        except (RuntimeError, OSError, TimeoutError) as e:
+            # RuntimeError -> event loop issues
+            # OSError / TimeoutError -> network-related failures
             return PlaybackStepResult.fail(str(e))
 
     def _perform_page_scroll(self, event):
