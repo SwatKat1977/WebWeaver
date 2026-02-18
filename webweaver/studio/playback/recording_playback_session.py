@@ -26,6 +26,7 @@ import selenium
 from webweaver.studio.api_client import ApiClient
 from webweaver.studio.browsing.studio_browser import (PlaybackStepResult,
                                                       StudioBrowser)
+from webweaver.studio.playback.playback_context import PlaybackContext
 from webweaver.studio.recording.recording import Recording
 
 
@@ -93,6 +94,7 @@ class RecordingPlaybackSession:
         self._running = False
         self._logger = logger.getChild(__name__)
         self.callback_events = PlaybackCallbackEvents()
+        self._context = PlaybackContext()
 
     def start(self):
         """
@@ -104,6 +106,7 @@ class RecordingPlaybackSession:
         """
         self._running = True
         self._index = 0
+        self._context.clear()
 
     def stop(self):
         """
@@ -204,12 +207,11 @@ class RecordingPlaybackSession:
                 return PlaybackStepResult.success()
 
             if event_type == "rest_api":
-                print("REST API : ", event)
-                self._perform_rest_api(event)
-                return PlaybackStepResult.success()
+                self._logger.debug("[PLAYBACK EVENT] REST API: %s ", payload)
+                return self._perform_rest_api(event)
 
             if event_type == "scroll":
-                print(f"Scrolling: {payload}")
+                self._logger.debug("[PLAYBACK EVENT] Scroll: %s ", payload)
                 self._perform_page_scroll(event)
                 return PlaybackStepResult.success()
 
@@ -237,22 +239,58 @@ class RecordingPlaybackSession:
         base_url = payload.get("base_url")
         rest_call = payload.get("rest_call")
         call_body = payload.get("body")
+        output_name = payload.get("output_variable")
 
         api_client = ApiClient()
 
-        if call_type == "get":
-            response = asyncio.run(api_client.call_api_get(
-                                   url=f"{base_url}{rest_call}",
-                                   json_data=call_body))
+        try:
+            # -----------------------------
+            # Perform HTTP call
+            # -----------------------------
+            if call_type == "get":
+                response = asyncio.run(api_client.call_api_get(
+                                       url=f"{base_url}{rest_call}",
+                                       json_data=call_body))
 
-        elif call_type == "post":
-            response = asyncio.run(api_client.call_api_post(
-                                   url=f"{base_url}{rest_call}"))
+            elif call_type == "post":
+                response = asyncio.run(api_client.call_api_post(
+                                       url=f"{base_url}{rest_call}"))
 
-        else:
-            return
+            else:
+                return PlaybackStepResult.fail(
+                    f"Unknown REST call type '{call_type}'")
 
-        print(f"\n\nStatus : {response.status_code} | Body : {response.body}\n\n")
+            # -----------------------------
+            # Store result in context
+            # -----------------------------
+            result = {
+                "status": response.status_code,
+                "ok": 200 <= response.status_code < 300,
+                "body": response.body,
+                "headers": getattr(response, "headers", {})
+            }
+
+            if output_name:
+                self._context.set_variable(output_name, result)
+
+            if response.status_code == 0:
+                error_msg = getattr(response, "error", None)
+
+                if not error_msg:
+                    error_msg = "REST call failed before receiving an HTTP response"
+
+                return PlaybackStepResult.fail(error_msg)
+
+            self._logger.info("REST API status=%s error=%s",
+                              response.status_code,
+                              getattr(response, "error", None))
+
+            return PlaybackStepResult.success()
+
+        except (RuntimeError, OSError, TimeoutError) as e:
+            # RuntimeError -> event loop issues
+            # OSError / TimeoutError -> network-related failures
+            return PlaybackStepResult.fail(str(e))
 
     def _perform_page_scroll(self, event):
         payload = event.get("payload", {})

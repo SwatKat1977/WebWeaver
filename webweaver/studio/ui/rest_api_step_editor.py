@@ -112,6 +112,12 @@ class RestApiStepEditor(wx.Dialog):
         else:
             self._method_choice_ctrl.SetSelection(0)
 
+        # Output variable Control
+        self._output_variable_ctrl = wx.TextCtrl(
+            self,
+            value=getattr(payload, "output_variable", "") or "")
+
+        # REST API call
         self._body_ctrl = wx.TextCtrl(
             self,
             value=payload.body or "",
@@ -134,6 +140,10 @@ class RestApiStepEditor(wx.Dialog):
                  0, wx.ALIGN_CENTER_VERTICAL)
         form.Add(self._rest_call_ctrl, 1, wx.EXPAND)
 
+        form.Add(wx.StaticText(self, label="Output Variable (Optional):"),
+                 0, wx.ALIGN_CENTER_VERTICAL)
+        form.Add(self._output_variable_ctrl, 1, wx.EXPAND)
+
         main_sizer.Add(form, 0, wx.EXPAND | wx.ALL, 10)
 
         main_sizer.Add(wx.StaticText(self, label="Body (optional):"),
@@ -148,8 +158,14 @@ class RestApiStepEditor(wx.Dialog):
         main_sizer.Add(self.CreateButtonSizer(wx.OK | wx.CANCEL),
                        0, wx.ALL | wx.ALIGN_RIGHT, 10)
 
+        # Set minimum size for the controls.
+        self._base_url_ctrl.SetMinSize((450, -1))
+        self._rest_call_ctrl.SetMinSize((450, -1))
+        self._body_ctrl.SetMinSize((450, 150))
+
         self.SetSizer(main_sizer)
-        self.SetSize((650, 450))
+        self.Fit()
+        self.SetMinSize(self.GetSize())
         self.CentreOnParent()
 
         self.Bind(wx.EVT_BUTTON, self._on_ok, id=wx.ID_OK)
@@ -172,6 +188,7 @@ class RestApiStepEditor(wx.Dialog):
         """
         base_url = self._base_url_ctrl.GetValue().strip()
         rest_call = self._rest_call_ctrl.GetValue().strip()
+        output_variable = self._output_variable_ctrl.GetValue().strip()
 
         # --- validation ---
         if not base_url:
@@ -199,6 +216,7 @@ class RestApiStepEditor(wx.Dialog):
             "base_url": base_url,
             "call_type": enum_val.value,
             "rest_call": rest_call,
+            "output_variable": output_variable,
             "body": body_text or None
         }
 

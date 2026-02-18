@@ -80,6 +80,7 @@ def default_payload_for(event_type: RecordingEventType):
             base_url="",
             call_type="GET",
             rest_call="",
+            output_variable="",
             body=""
         ),
         RecordingEventType.SCROLL: lambda: ScrollPayload(
