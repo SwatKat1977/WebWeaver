@@ -17,12 +17,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import asyncio
 from dataclasses import dataclass
 from logging import Logger
 import time
 import typing
 import selenium
-# from webweaver.studio.api_client import ApiClient
+from webweaver.studio.api_client import ApiClient
 from webweaver.studio.browsing.studio_browser import (PlaybackStepResult,
                                                       StudioBrowser)
 from webweaver.studio.recording.recording import Recording
@@ -204,9 +205,7 @@ class RecordingPlaybackSession:
 
             if event_type == "rest_api":
                 print("REST API : ", event)
-
-                #self._logger.debug("[PLAYBACK EVENT] Wait: %s", event.get("url"))
-                #self._browser.open_page(event["url"])
+                self._perform_rest_api(event)
                 return PlaybackStepResult.success()
 
             if event_type == "scroll":
@@ -233,20 +232,27 @@ class RecordingPlaybackSession:
         time.sleep(duration / 1000)
 
     def _perform_rest_api(self, event):
-        """
-        REST API :  {
-            'index': 0,
-            'timestamp': 0,
-            'type': 'rest_api',
-            'payload': {
-                'base_url': 'HTTP://localhost:8000',
-                'call_type': 'post',
-                'rest_call': '/question?ans=yes',
-                'body': None
-            }
-        }
-        # ApiClient
-        """
+        payload = event.get("payload", {})
+        call_type = payload.get("call_type")
+        base_url = payload.get("base_url")
+        rest_call = payload.get("rest_call")
+        call_body = payload.get("body")
+
+        api_client = ApiClient()
+
+        if call_type == "get":
+            response = asyncio.run(api_client.call_api_get(
+                                   url=f"{base_url}{rest_call}",
+                                   json_data=call_body))
+
+        elif call_type == "post":
+            response = asyncio.run(api_client.call_api_post(
+                                   url=f"{base_url}{rest_call}"))
+
+        else:
+            return
+
+        print(f"\n\nStatus : {response.status_code} | Body : {response.body}\n\n")
 
     def _perform_page_scroll(self, event):
         payload = event.get("payload", {})
