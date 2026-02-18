@@ -554,10 +554,17 @@ class StudioBrowser:
         def do_click(element):
             try:
                 element.click()
+                return
+
             except ElementClickInterceptedException:
-                # Try once more after re-scrolling
-                self._scroll_into_view(element)
-                element.click()
+                self._logger.debug(
+                    "Click intercepted — falling back to JS click")
+
+            except WebDriverException as ex:
+                self._logger.debug("Native click failed: %s", ex)
+
+            # semantic fallback (important)
+            self._driver.execute_script("arguments[0].click();", element)
 
         return self._playback_element(xpath, do_click, settle_after=True)
 
@@ -683,6 +690,53 @@ class StudioBrowser:
 
         return self._playback_element(xpath, do_select, settle_after=True)
 
+    def _is_in_fixed_overlay(self, element) -> bool:
+        """
+        Return True if the element is inside a position:fixed container.
+        Page scrolling will not move it.
+        """
+        return self._driver.execute_script("""
+            let el = arguments[0];
+
+            while (el) {
+                const style = window.getComputedStyle(el);
+
+                if (style.position === "fixed") {
+                    return true;
+                }
+
+                el = el.parentElement;
+            }
+
+            return false;
+        """, element)
+
+    def _prepare_element_for_action(self, element):
+        """
+        Prepare an element for interaction.
+
+        This intentionally does only minimal, safe work:
+        - scroll element into view (centered)
+        - no layout changes
+        - no action-specific logic
+        """
+
+        try:
+            # Skip scrolling if element is inside fixed overlay
+            if self._is_in_fixed_overlay(element):
+                return
+
+            self._driver.execute_script("""
+                arguments[0].scrollIntoView({
+                    block: 'center',
+                    inline: 'nearest'
+                });
+            """, element)
+
+        except Exception:
+            # Preparation should never fail playback
+            pass
+
     def _playback_element(self,
                           xpath: str,
                           action,
@@ -697,7 +751,7 @@ class StudioBrowser:
             try:
                 element = self._wait_for_xpath(xpath, timeout=timeout)
 
-                self._scroll_into_view(element)
+                self._prepare_element_for_action(element)
                 self._highlight(element)
 
                 action(element)
@@ -723,6 +777,10 @@ class StudioBrowser:
             except (WebDriverException,
                     JavascriptException,
                     PlaybackActionError) as ex:
+
+                if attempt < retries - 1:
+                    continue
+
                 return PlaybackStepResult.fail(str(ex))
 
     def _wait_for_ready_state(self, timeout: float = 10.0):
@@ -765,7 +823,7 @@ class StudioBrowser:
             last_count = count
             time.sleep(0.1)
 
-        raise TimeoutError("DOM did not stabilize in time")
+        raise TimeoutException("DOM did not stabilize in time")
 
     def _wait_for_page_settle(self, timeout: float = 10.0):
         """
@@ -779,15 +837,7 @@ class StudioBrowser:
         Wait until an element exists and is visible.
         """
         return WebDriverWait(self._driver, timeout).until(
-            EC.visibility_of_element_located((By.XPATH, xpath)))
-
-    def _scroll_into_view(self, element):
-        """
-        Scroll element into the center of the viewport.
-        """
-        self._driver.execute_script(
-            "arguments[0].scrollIntoView({block: 'center', inline: 'center'});",
-            element)
+            EC.presence_of_element_located((By.XPATH, xpath)))
 
     def _highlight(self, element, duration: float = 0.25):
         """
