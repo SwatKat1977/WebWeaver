@@ -94,7 +94,7 @@ class StudioBrowser:
     The raw Selenium driver is intentionally hidden behind this wrapper. If low-level
     access is required, it can be obtained via the `raw` property.
     """
-    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes, too-many-public-methods
 
     def __init__(self, driver, logger: logging.Logger):
         """

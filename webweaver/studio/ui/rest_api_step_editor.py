@@ -17,13 +17,19 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
-import dataclasses
 from enum import Enum
 import wx
 from webweaver.studio.persistence.recording_document import RestApiPayload
 
 
 class RestApiCallType(Enum):
+    """
+    Supported HTTP methods for REST API recording steps.
+
+    These values are persisted as lowercase strings in the recording
+    document payload.
+    """
+
     GET = "get"
     DELETE = "delete"
     POST = "post"
@@ -37,8 +43,42 @@ REST_API_EVENT_TYPE_LABELS: list[tuple[str, RestApiCallType]] = [
 
 
 class RestApiStepEditor(wx.Dialog):
+    """
+    Dialog for creating or editing a REST API playback step.
+
+    The editor allows the user to configure:
+
+    - Base URL
+    - HTTP method
+    - REST endpoint/path
+    - Optional request body (enabled only for POST requests)
+
+    The dialog edits the provided ``event`` dictionary in place. When
+    accepted, the updated payload is written back to ``event["payload"]``.
+
+    Attributes:
+        changed (bool):
+            True if the user confirmed changes with OK.
+        _event (dict):
+            The recording step event being edited.
+    """
+    # pylint: disable=too-few-public-methods
 
     def __init__(self, parent, _index: int, event: dict):
+        """
+        Initialize the REST API step editor dialog.
+
+        Args:
+            parent:
+                Parent wx widget.
+            _index (int):
+                Step index in the recording timeline. Currently unused but
+                kept for API consistency with other step editors.
+            event (dict):
+                Event dictionary containing an optional ``payload`` key.
+                The payload is parsed into a ``RestApiPayload`` model and
+                written back when saved.
+        """
         super().__init__(parent, title="Edit REST API Step")
 
         self.changed = False
@@ -118,7 +158,18 @@ class RestApiStepEditor(wx.Dialog):
         self._update_body_enabled()
 
     def _on_ok(self, _evt):
+        """
+        Validate inputs and persist dialog values back into the event payload.
 
+        Validation rules:
+            - Base URL must not be empty.
+            - REST call path must not be empty.
+
+        On success:
+            - Updates ``self._event["payload"]``.
+            - Sets ``self.changed`` to True.
+            - Closes the dialog with ``wx.ID_OK``.
+        """
         base_url = self._base_url_ctrl.GetValue().strip()
         rest_call = self._rest_call_ctrl.GetValue().strip()
 
@@ -139,7 +190,7 @@ class RestApiStepEditor(wx.Dialog):
             self._rest_call_ctrl.SetFocus()
             return
 
-        label, enum_val = REST_API_EVENT_TYPE_LABELS[
+        _, enum_val = REST_API_EVENT_TYPE_LABELS[
             self._method_choice_ctrl.GetSelection()]
 
         body_text = self._body_ctrl.GetValue().strip()
@@ -156,7 +207,10 @@ class RestApiStepEditor(wx.Dialog):
 
     def _update_body_enabled(self):
         """
-        Enable body input only when POST is selected.
+        Enable or disable the request body control based on method selection.
+
+        The body field is only enabled when POST is selected, reflecting
+        the intended use of request payloads within recorded REST steps.
         """
         selected_index = self._method_choice_ctrl.GetSelection()
 
@@ -169,4 +223,10 @@ class RestApiStepEditor(wx.Dialog):
         self._body_ctrl.Enable(method == RestApiCallType.POST)
 
     def _on_method_changed(self, _evt):
+        """
+        Handle HTTP method selection changes.
+
+        This updates UI state to ensure controls reflect valid input
+        for the selected request type.
+        """
         self._update_body_enabled()

@@ -17,14 +17,23 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
-import dataclasses
 from enum import Enum
 import wx
-from webweaver.studio.persistence.recording_document import (RestApiPayload,
-                                                             ScrollPayload)
+from webweaver.studio.persistence.recording_document import ScrollPayload
 
 
 class ScrollType(Enum):
+    """
+    Supported scroll behaviours for a recorded scroll step.
+
+    Values are persisted as lowercase strings within the recording
+    payload and determine how playback performs scrolling:
+
+    - TOP: Scroll to the top of the document.
+    - BOTTOM: Scroll to the bottom of the document.
+    - CUSTOM: Scroll to a specific X/Y coordinate.
+    """
+
     BOTTOM = "bottom"
     CUSTOM = "custom"
     TOP = "top"
@@ -38,7 +47,39 @@ SCROLL_EVENT_TYPE_LABELS: list[tuple[str, ScrollType]] = [
 
 
 class ScrollStepEditor(wx.Dialog):
+    """
+    Dialog for creating or editing a scroll playback step.
+
+    The editor allows the user to select a scroll strategy
+    (top, bottom, or custom coordinates). For custom scrolling,
+    X and Y coordinates are required.
+
+    The provided ``event`` dictionary is edited in place. If the
+    user confirms the dialog, the updated payload is written back
+    to ``event["payload"]``.
+
+    Attributes:
+        changed (bool):
+            True when the dialog is accepted with valid changes.
+        _event (dict):
+            The step event being modified.
+    """
+    # pylint: disable=too-few-public-methods
+
     def __init__(self, parent, _index: int, event: dict):
+        """
+        Initialize the scroll step editor dialog.
+
+        Args:
+            parent:
+                Parent wx widget.
+            _index (int):
+                Step index in the recording timeline. Currently unused
+                but retained for consistency with other step editors.
+            event (dict):
+                The event dictionary containing an optional ``payload``
+                describing the existing scroll configuration.
+        """
         super().__init__(parent, title="Edit Scroll Step")
 
         self.changed = False
@@ -52,7 +93,6 @@ class ScrollStepEditor(wx.Dialog):
             choices=[label for label, _ in SCROLL_EVENT_TYPE_LABELS])
 
         # --- Scroll Method ---
-        current_method = payload.scroll_type.upper()
         try:
             current_type = ScrollType(payload.scroll_type)
         except ValueError:
@@ -104,7 +144,18 @@ class ScrollStepEditor(wx.Dialog):
         self._update_location_enabled()
 
     def _on_ok(self, _evt):
+        """
+        Validate inputs and persist dialog values into the event payload.
 
+        For CUSTOM scrolling, both X and Y coordinates must be valid
+        integers. For TOP and BOTTOM modes, coordinate values are ignored
+        and stored as ``None``.
+
+        On successful validation:
+            - Updates ``self._event["payload"]``.
+            - Sets ``self.changed`` to True.
+            - Closes the dialog with ``wx.ID_OK``.
+        """
         _, enum_val = SCROLL_EVENT_TYPE_LABELS[
             self._method_choice_ctrl.GetSelection()
         ]
@@ -135,7 +186,10 @@ class ScrollStepEditor(wx.Dialog):
 
     def _update_location_enabled(self):
         """
-        Enable body input only when POST is selected.
+        Enable or disable coordinate input fields based on scroll type.
+
+        X and Y input controls are only enabled when the selected
+        scroll method is ``CUSTOM``.
         """
         selected_index = self._method_choice_ctrl.GetSelection()
 
@@ -150,4 +204,9 @@ class ScrollStepEditor(wx.Dialog):
         self._y_ctrl.Enable(method == ScrollType.CUSTOM)
 
     def _on_method_changed(self, _evt):
+        """
+        Handle scroll method selection changes.
+
+        Updates UI control state so only relevant fields are editable.
+        """
         self._update_location_enabled()

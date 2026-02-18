@@ -22,7 +22,7 @@ from logging import Logger
 import time
 import typing
 import selenium
-from webweaver.studio.api_client import ApiClient
+# from webweaver.studio.api_client import ApiClient
 from webweaver.studio.browsing.studio_browser import (PlaybackStepResult,
                                                       StudioBrowser)
 from webweaver.studio.recording.recording import Recording
@@ -197,7 +197,7 @@ class RecordingPlaybackSession:
 
                 try:
                     self._browser.open_page(url)
-                except selenium.common.exceptions.WebDriverException as ex:
+                except selenium.common.exceptions.WebDriverException:
                     return PlaybackStepResult.fail(f"Unable to navigate to '{url}'")
 
                 return PlaybackStepResult.success()
@@ -211,7 +211,7 @@ class RecordingPlaybackSession:
 
             if event_type == "scroll":
                 print(f"Scrolling: {payload}")
-                self.perform_page_scroll(event)
+                self._perform_page_scroll(event)
                 return PlaybackStepResult.success()
 
             if event_type == "wait":
@@ -245,24 +245,23 @@ class RecordingPlaybackSession:
                 'body': None
             }
         }
+        # ApiClient
         """
 
-    def perform_page_scroll(self, event):
+    def _perform_page_scroll(self, event):
         payload = event.get("payload", {})
         scroll_type = payload.get("scroll_type")
         scroll_x = payload.get("x_scroll")
         scroll_y = payload.get("y_scroll")
 
+        # Scroll to the bottom of the page.
         if scroll_type == "bottom":
-            print("Scroll to bottom")
             self._browser.scroll_to_bottom()
 
+        # Scroll to the top of the page.
         elif scroll_type == "top":
-            print("Scroll to top")
             self._browser.scroll_to_top()
 
+        # Scroll a specific distance (in pixels).
         elif scroll_type == "custom":
-            print("custom scroll")
             self._browser.scroll_to(int(scroll_x), int(scroll_y))
-
-# ApiClient
