@@ -22,6 +22,7 @@ import logging
 import time
 from selenium.common.exceptions import (WebDriverException,
                                         TimeoutException,
+                                        NoSuchElementException,
                                         ElementClickInterceptedException,
                                         StaleElementReferenceException,
                                         JavascriptException)
@@ -733,7 +734,10 @@ class StudioBrowser:
                 });
             """, element)
 
-        except Exception:
+        except (
+                StaleElementReferenceException,
+                NoSuchElementException,
+                WebDriverException,):
             # Preparation should never fail playback
             pass
 
