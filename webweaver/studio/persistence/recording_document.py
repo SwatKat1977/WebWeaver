@@ -118,6 +118,10 @@ class RestApiPayload:
             Common values include ``"GET"``, ``"POST"``,
             ``"PATCH"``, ``"DELETE"``, etc.
 
+        output_variable (str):
+            Optional output variable name.
+            Example: `backend_call`.
+
         rest_call (str):
             Endpoint path appended to ``base_url``.
             Example: ``"/users/123"``.
@@ -129,6 +133,7 @@ class RestApiPayload:
     base_url: str
     call_type: str
     rest_call: str
+    output_variable: str | None = None
     body: str | None = None
 
 
