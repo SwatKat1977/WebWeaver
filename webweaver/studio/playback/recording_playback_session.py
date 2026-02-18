@@ -26,6 +26,7 @@ import selenium
 from webweaver.studio.api_client import ApiClient
 from webweaver.studio.browsing.studio_browser import (PlaybackStepResult,
                                                       StudioBrowser)
+from webweaver.studio.playback.playback_context import PlaybackContext
 from webweaver.studio.recording.recording import Recording
 
 
@@ -93,6 +94,7 @@ class RecordingPlaybackSession:
         self._running = False
         self._logger = logger.getChild(__name__)
         self.callback_events = PlaybackCallbackEvents()
+        self._context = PlaybackContext()
 
     def start(self):
         """
@@ -104,6 +106,7 @@ class RecordingPlaybackSession:
         """
         self._running = True
         self._index = 0
+        self._context.clear()
 
     def stop(self):
         """

@@ -21,10 +21,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 class PlaybackContext:
     def __init__(self):
-        self.variables: dict[str, object] = {}
+        self._variables: dict[str, object] = {}
 
     def set(self, name: str, value):
-        self.variables[name] = value
+        self._variables[name] = value
 
     def get(self, name: str, default=None):
-        return self.variables.get(name, default)
+        return self._variables.get(name, default)
+
+    def clear(self):
+        self._variables.clear()
