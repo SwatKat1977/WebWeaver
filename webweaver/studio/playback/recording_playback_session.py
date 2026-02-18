@@ -271,7 +271,7 @@ class RecordingPlaybackSession:
             }
 
             if output_name:
-                self._context.set(output_name, result)
+                self._context.set_variable(output_name, result)
 
             if response.status_code == 0:
                 error_msg = getattr(response, "error", None)
