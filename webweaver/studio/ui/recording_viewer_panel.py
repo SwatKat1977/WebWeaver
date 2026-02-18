@@ -31,7 +31,9 @@ from webweaver.studio.ui.events import WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE
 from webweaver.studio.ui.check_step_editor import CheckStepEditor
 from webweaver.studio.ui.click_step_editor import ClickStepEditor
 from webweaver.studio.ui.navgoto_step_editor import NavGotoStepEditor
+from webweaver.studio.ui.rest_api_step_editor import RestApiStepEditor
 from webweaver.studio.ui.select_step_editor import SelectStepEditor
+from webweaver.studio.ui.scroll_step_editor import ScrollStepEditor
 from webweaver.studio.ui.type_step_editor import TypeStepEditor
 from webweaver.studio.ui.wait_step_editor import WaitStepEditor
 from webweaver.studio.persistence.recording_persistence import (
@@ -382,7 +384,11 @@ class RecordingViewerPanel(wx.Panel):
         step_editor = None
 
         payload = event.get("payload", {})
-        if "control_type" not in payload:
+        if "control_type" not in payload and \
+                event_type not in [RecordingEventType.NAV_GOTO,
+                                   RecordingEventType.REST_API,
+                                   RecordingEventType.SCROLL,
+                                   RecordingEventType.WAIT]:
             payload["control_type"] = "unknown"
 
         if event_type == RecordingEventType.DOM_CLICK:
@@ -399,6 +405,12 @@ class RecordingViewerPanel(wx.Panel):
 
         if event_type == RecordingEventType.NAV_GOTO:
             step_editor = NavGotoStepEditor(self, index, event)
+
+        if event_type == RecordingEventType.REST_API:
+            step_editor = RestApiStepEditor(self, index, event)
+
+        if event_type == RecordingEventType.SCROLL:
+            step_editor = ScrollStepEditor(self, index, event)
 
         if event_type == RecordingEventType.WAIT:
             step_editor = WaitStepEditor(self, index, event)

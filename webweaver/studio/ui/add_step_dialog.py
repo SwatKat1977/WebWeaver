@@ -17,6 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+from typing import Callable
 import wx
 from webweaver.studio.recording.recording_event_type import \
     RecordingEventType
@@ -26,6 +27,8 @@ from webweaver.studio.persistence.recording_document import (
                                               DomSelectPayload,
                                               DomTypePayload,
                                               NavGotoPayload,
+                                              RestApiPayload,
+                                              ScrollPayload,
                                               WaitPayload)
 
 
@@ -35,6 +38,8 @@ RECORDING_EVENT_TYPE_LABELS: list[tuple[str, RecordingEventType]] = [
     ("DOM Select", RecordingEventType.DOM_SELECT),
     ("DOM Check", RecordingEventType.DOM_CHECK),
     ("Navigate", RecordingEventType.NAV_GOTO),
+    ("Rest API", RecordingEventType.REST_API),
+    ("Scroll", RecordingEventType.SCROLL),
     ("Wait", RecordingEventType.WAIT),
 ]
 """
@@ -54,34 +59,41 @@ def default_payload_for(event_type: RecordingEventType):
     payload dataclass with sensible default values.
 
     Args:
-        event_type (RecordingEventType): The type of event for which to
-            generate a default payload.
+        event_type (RecordingEventType):
+            The type of event for which to generate a default payload.
 
     Returns:
         An instance of the payload dataclass associated with the event type.
 
     Raises:
-        ValueError: If the provided event type is not supported.
+        ValueError:
+            If the provided event type is not supported.
     """
-    if event_type == RecordingEventType.DOM_CLICK:
-        return DomClickPayload(xpath="")
 
-    if event_type == RecordingEventType.DOM_TYPE:
-        return DomTypePayload(xpath="", value="")
+    payload_factories: dict[RecordingEventType, Callable[[], object]] = {
+        RecordingEventType.DOM_CLICK: lambda: DomClickPayload(xpath=""),
+        RecordingEventType.DOM_TYPE: lambda: DomTypePayload(xpath="", value=""),
+        RecordingEventType.DOM_SELECT: lambda: DomSelectPayload(xpath="", value=""),
+        RecordingEventType.DOM_CHECK: lambda: DomCheckPayload(xpath="", value=True),
+        RecordingEventType.NAV_GOTO: lambda: NavGotoPayload(url=""),
+        RecordingEventType.REST_API: lambda: RestApiPayload(
+            base_url="",
+            call_type="GET",
+            rest_call="",
+            body=""
+        ),
+        RecordingEventType.SCROLL: lambda: ScrollPayload(
+            scroll_type="custom",
+            x_scroll=0,
+            y_scroll=0
+        ),
+        RecordingEventType.WAIT: lambda: WaitPayload(duration_ms=1000),
+    }
 
-    if event_type == RecordingEventType.DOM_SELECT:
-        return DomSelectPayload(xpath="", value="")
-
-    if event_type == RecordingEventType.DOM_CHECK:
-        return DomCheckPayload(xpath="", value=True)
-
-    if event_type == RecordingEventType.NAV_GOTO:
-        return NavGotoPayload(url="")
-
-    if event_type == RecordingEventType.WAIT:
-        return WaitPayload(duration_ms=1000)
-
-    raise ValueError(f"Unsupported event type: {event_type}")
+    try:
+        return payload_factories[event_type]()
+    except KeyError as ex:
+        raise ValueError(f"Unsupported event type: {event_type}") from ex
 
 
 class AddStepDialog(wx.Dialog):
