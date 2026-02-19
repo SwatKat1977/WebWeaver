@@ -56,6 +56,12 @@ class DomClickPayload(DomPayload):
 
 
 @dataclass
+class DomGetPayload(DomPayload):
+    property_type: str
+    output_variable: str
+
+
+@dataclass
 class DomSelectPayload(DomPayload):
     """Payload for selecting an option within a DOM element.
 
