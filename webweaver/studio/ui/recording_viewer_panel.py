@@ -29,6 +29,7 @@ from webweaver.studio.recording.recording_loader import \
 from webweaver.studio.recording.recording_event_type import RecordingEventType
 from webweaver.studio.ui.add_step_dialog import (AddStepDialog,
                                                  default_payload_for)
+from webweaver.studio.ui.dom_get_step_editor import DomGetStepEditor
 from webweaver.studio.ui.events import WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE
 from webweaver.studio.ui.check_step_editor import CheckStepEditor
 from webweaver.studio.ui.click_step_editor import ClickStepEditor
@@ -410,6 +411,9 @@ class RecordingViewerPanel(wx.Panel):
 
         if event_type == RecordingEventType.DOM_CLICK:
             step_editor = ClickStepEditor(self, index, event)
+
+        if event_type == RecordingEventType.DOM_GET:
+            step_editor = DomGetStepEditor(self, index, event)
 
         if event_type == RecordingEventType.DOM_TYPE:
             step_editor = TypeStepEditor(self, index, event)
