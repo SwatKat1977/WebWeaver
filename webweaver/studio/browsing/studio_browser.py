@@ -427,7 +427,7 @@ class StudioBrowser:
                 "return window.__drain_recorded_events ? "
                 "window.__drain_recorded_events() : [];")
 
-        except (WebDriverException, JavascriptException) as e:
+        except (WebDriverException, JavascriptException):
             return []
 
     def poll(self) -> None:
