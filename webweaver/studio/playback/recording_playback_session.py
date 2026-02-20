@@ -163,7 +163,6 @@ class RecordingPlaybackSession:
 
         self._index += 1
 
-        print(f"Variables: {self._context.variables()}")
         return True
 
     def _execute_event(self, event: dict):

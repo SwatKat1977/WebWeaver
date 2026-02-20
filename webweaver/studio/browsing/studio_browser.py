@@ -428,7 +428,6 @@ class StudioBrowser:
                 "window.__drain_recorded_events() : [];")
 
         except (WebDriverException, JavascriptException) as e:
-            print("POP ERROR:", e)
             return []
 
     def poll(self) -> None:

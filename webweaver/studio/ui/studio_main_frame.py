@@ -811,7 +811,7 @@ class StudioMainFrame(wx.Frame):
         pane = self._aui_mgr.GetPane("PlaybackToolbar")
 
         if not pane.IsOk():
-            print("PlaybackToolbar pane not found in AUI manager")
+            self._logger.info("PlaybackToolbar pane not found in AUI manager")
             return
 
         pane.Show(show)
