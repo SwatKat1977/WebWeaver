@@ -57,6 +57,26 @@ class DomClickPayload(DomPayload):
 
 @dataclass
 class DomGetPayload(DomPayload):
+    """
+    Payload for a DOM_GET recording step.
+
+    Represents an operation that retrieves a property from a DOM element
+    identified by the inherited XPath and stores the result into a named
+    output variable for later steps to consume.
+
+    Attributes:
+        property_type (str):
+            The type of property to retrieve from the DOM element.
+            Examples include:
+                - "text"         → element.textContent / innerText
+                - "value"        → input value
+                - "attribute:href" → specific attribute
+            Interpretation is handled by the playback engine.
+
+        output_variable (str):
+            The name of the variable where the retrieved value will be stored.
+            This variable becomes available to subsequent recording steps.
+    """
     property_type: str
     output_variable: str
 
