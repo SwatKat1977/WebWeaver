@@ -427,8 +427,7 @@ class StudioBrowser:
                 "return window.__drain_recorded_events ? "
                 "window.__drain_recorded_events() : [];")
 
-        except (WebDriverException, JavascriptException) as e:
-            print("POP ERROR:", e)
+        except (WebDriverException, JavascriptException):
             return []
 
     def poll(self) -> None:
@@ -861,3 +860,39 @@ class StudioBrowser:
 
         except (StaleElementReferenceException, WebDriverException, JavascriptException):
             pass  # _highlighting must never break playback
+
+    def playback_get(self, payload: dict, context) -> PlaybackStepResult:
+        """
+        Execute a DOM_GET event.
+
+        Reads a property from the element identified by XPath
+        and stores the result into the playback context.
+        """
+
+        xpath = payload.get("xpath")
+        property_type = payload.get("property_type")
+        output_variable = payload.get("output_variable")
+
+        def do_get(element):
+            if property_type == "text":
+                value = element.text
+
+            elif property_type == "value":
+                value = element.get_attribute("value")
+
+            elif property_type == "checked":
+                value = element.is_selected()
+
+            elif property_type == "html":
+                value = element.get_attribute("innerHTML")
+
+            else:
+                raise PlaybackActionError(
+                    f"Unsupported DOM_GET property: {property_type}")
+
+            context.set_variable(output_variable, value)
+
+        return self._playback_element(xpath,
+                                      do_get,
+                                      settle_after=False,
+                                      wait_after=False)

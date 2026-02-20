@@ -31,6 +31,7 @@ class RecordingEventType(enum.Enum):
 
     DOM_CHECK = "dom.check"
     DOM_CLICK = "dom.click"
+    DOM_GET = "dom.get"
     DOM_SELECT = "dom.select"
     DOM_TYPE = "dom.type"
     NAV_GOTO = "nav.goto"

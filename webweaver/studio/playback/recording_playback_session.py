@@ -186,6 +186,10 @@ class RecordingPlaybackSession:
                 self._logger.debug("[PLAYBACK EVENT] Button: %s", payload)
                 return self._browser.playback_click(payload)
 
+            if event_type == "dom.get":
+                self._logger.debug("[PLAYBACK EVENT] Element Get: %s", payload)
+                return self._browser.playback_get(payload, self._context)
+
             if event_type == "dom.select":
                 self._logger.debug("[PLAYBACK EVENT] Dropdown: %s", payload)
                 return self._browser.playback_select(payload)
@@ -195,7 +199,6 @@ class RecordingPlaybackSession:
                 return self._browser.playback_type(payload)
 
             if event_type == "nav.goto":
-                payload = event.get("payload", {})
                 url: str = payload.get("url")
                 self._logger.debug("[PLAYBACK EVENT] Navigate to '%s'", url)
 

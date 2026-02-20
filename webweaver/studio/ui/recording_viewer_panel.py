@@ -19,6 +19,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import dataclasses
 from datetime import datetime
+import secrets
+import string
 import typing
 import wx
 from webweaver.studio.recording_view_context import RecordingViewContext
@@ -27,6 +29,7 @@ from webweaver.studio.recording.recording_loader import \
 from webweaver.studio.recording.recording_event_type import RecordingEventType
 from webweaver.studio.ui.add_step_dialog import (AddStepDialog,
                                                  default_payload_for)
+from webweaver.studio.ui.dom_get_step_editor import DomGetStepEditor
 from webweaver.studio.ui.events import WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE
 from webweaver.studio.ui.check_step_editor import CheckStepEditor
 from webweaver.studio.ui.click_step_editor import ClickStepEditor
@@ -39,7 +42,8 @@ from webweaver.studio.ui.wait_step_editor import WaitStepEditor
 from webweaver.studio.persistence.recording_persistence import (
                                                  RecordingPersistence,
                                                  RecordingLoadError)
-from webweaver.studio.persistence.recording_document import RecordingDocument
+from webweaver.studio.persistence.recording_document import (RecordingDocument,
+                                                             DomGetPayload)
 
 
 def format_time_point(dt: datetime) -> str:
@@ -69,6 +73,12 @@ class RecordingViewerPanel(wx.Panel):
     """
 
     ID_STEP_DELETE: int = wx.ID_HIGHEST + 5001
+    ID_ADD_GETTER_STEP: int = wx.ID_HIGHEST + 5002
+
+    ALLOWED_GETTER_TYPES = {"dom.click",
+                            "dom.type",
+                            "dom.select",
+                            "dom.check"}
 
     def __init__(self, parent, ctx: RecordingViewContext):
         """
@@ -344,11 +354,19 @@ class RecordingViewerPanel(wx.Panel):
 
         # Remember which step was right-clicked
         self._context_step_index = index
+        step = self._document.get_step(index)
 
         menu = wx.Menu()
-        menu.Append(self.ID_STEP_DELETE, "Delete Step")
 
+        # Always allow step to be deleted
+        menu.Append(self.ID_STEP_DELETE, "Delete Step")
         self.Bind(wx.EVT_MENU, self._on_delete_step, id=self.ID_STEP_DELETE)
+
+        # Only allow getter for certain step types
+        if self._can_add_getter(step):
+            menu.Append(self.ID_ADD_GETTER_STEP, "Add Getter Below")
+            self.Bind(wx.EVT_MENU, self._on_add_getter,
+                      id=self.ID_ADD_GETTER_STEP)
 
         self.PopupMenu(menu)
         menu.Destroy()
@@ -385,7 +403,8 @@ class RecordingViewerPanel(wx.Panel):
 
         payload = event.get("payload", {})
         if "control_type" not in payload and \
-                event_type not in [RecordingEventType.NAV_GOTO,
+                event_type not in [RecordingEventType.DOM_GET,
+                                   RecordingEventType.NAV_GOTO,
                                    RecordingEventType.REST_API,
                                    RecordingEventType.SCROLL,
                                    RecordingEventType.WAIT]:
@@ -393,6 +412,9 @@ class RecordingViewerPanel(wx.Panel):
 
         if event_type == RecordingEventType.DOM_CLICK:
             step_editor = ClickStepEditor(self, index, event)
+
+        if event_type == RecordingEventType.DOM_GET:
+            step_editor = DomGetStepEditor(self, index, event)
 
         if event_type == RecordingEventType.DOM_TYPE:
             step_editor = TypeStepEditor(self, index, event)
@@ -642,3 +664,72 @@ class RecordingViewerPanel(wx.Panel):
     def _on_step_deselected(self, _evt):
         evt = wx.CommandEvent(WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE)
         wx.PostEvent(self.GetTopLevelParent(), evt)
+
+    def _can_add_getter(self, step: dict) -> bool:
+        step_type = step.get("type")
+        if step_type not in self.ALLOWED_GETTER_TYPES:
+            return False
+
+        payload = step.get("payload", {})
+        return bool(payload.get("xpath"))
+
+    def _on_add_getter(self, _evt):
+        index = self._context_step_index
+        self._context_step_index = None
+
+        if index is None:
+            return
+
+        # Get the original step
+        step = self._document.get_step(index)
+
+        # Defensive check (even though menu was filtered)
+        if not self._can_add_getter(step):
+            return
+
+        payload = step.get("payload", {})
+        xpath = payload.get("xpath")
+
+        if not xpath:
+            return
+
+        code: str = ''.join(secrets.choice(string.ascii_letters) \
+                            for _ in range(6))
+        output_variable: str = f"step_{index}_{code}"
+
+        # Create getter step
+        new_step_payload = self._create_getter_step(xpath,
+                                                    "text",
+                                                    output_variable)
+
+        insert_index = index + 1  # insert below
+
+        # Insert into document
+        self._document.insert_step_after(index,
+                                         RecordingEventType.DOM_GET,
+                                         new_step_payload)
+
+        # Persist
+        RecordingPersistence.save_to_disk(self._document)
+
+        # Refresh UI
+        self.reload_from_document()
+
+        # Select and scroll to new step
+        self._step_list.Select(insert_index)
+        self._step_list.EnsureVisible(insert_index)
+
+        # Immediately open editor
+        self.edit_step(insert_index)
+
+        # Notify main frame to update toolbars
+        evt = wx.CommandEvent(WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE)
+        wx.PostEvent(self.GetTopLevelParent(), evt)
+
+    def _create_getter_step(self,
+                            xpath: str,
+                            property_type: str,
+                            output_variable: str) -> DomGetPayload:
+        return DomGetPayload(xpath=xpath,
+                             property_type=property_type,
+                             output_variable=output_variable)

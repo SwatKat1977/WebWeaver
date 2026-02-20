@@ -24,6 +24,7 @@ from webweaver.studio.recording.recording_event_type import \
 from webweaver.studio.persistence.recording_document import (
                                               DomCheckPayload,
                                               DomClickPayload,
+                                              DomGetPayload,
                                               DomSelectPayload,
                                               DomTypePayload,
                                               NavGotoPayload,
@@ -34,6 +35,7 @@ from webweaver.studio.persistence.recording_document import (
 
 RECORDING_EVENT_TYPE_LABELS: list[tuple[str, RecordingEventType]] = [
     ("DOM Click", RecordingEventType.DOM_CLICK),
+    ("DOM Get", RecordingEventType.DOM_GET),
     ("DOM Type", RecordingEventType.DOM_TYPE),
     ("DOM Select", RecordingEventType.DOM_SELECT),
     ("DOM Check", RecordingEventType.DOM_CHECK),
@@ -72,6 +74,9 @@ def default_payload_for(event_type: RecordingEventType):
 
     payload_factories: dict[RecordingEventType, Callable[[], object]] = {
         RecordingEventType.DOM_CLICK: lambda: DomClickPayload(xpath=""),
+        RecordingEventType.DOM_GET: lambda: DomGetPayload(xpath="",
+                                                          property_type="text",
+                                                          output_variable=""),
         RecordingEventType.DOM_TYPE: lambda: DomTypePayload(xpath="", value=""),
         RecordingEventType.DOM_SELECT: lambda: DomSelectPayload(xpath="", value=""),
         RecordingEventType.DOM_CHECK: lambda: DomCheckPayload(xpath="", value=True),
