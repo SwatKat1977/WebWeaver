@@ -17,6 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import copy
 import dataclasses
 from datetime import datetime
 import secrets
@@ -403,7 +404,8 @@ class RecordingViewerPanel(wx.Panel):
 
         payload = event.get("payload", {})
         if "control_type" not in payload and \
-                event_type not in [RecordingEventType.NAV_GOTO,
+                event_type not in [RecordingEventType.DOM_GET,
+                                   RecordingEventType.NAV_GOTO,
                                    RecordingEventType.REST_API,
                                    RecordingEventType.SCROLL,
                                    RecordingEventType.WAIT]:

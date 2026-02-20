@@ -63,6 +63,7 @@ class DomGetStepEditor(wx.Dialog):
         self._event = event
         self.changed = False
         self._index = index
+        self._original_payload = event["payload"].copy()
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -75,8 +76,7 @@ class DomGetStepEditor(wx.Dialog):
         xpath_label = wx.StaticText(self, label="XPath:")
         self._xpath_ctrl = wx.TextCtrl(
             self,
-            value=payload.get("xpath", "")
-        )
+            value=payload.get("xpath", ""))
 
         grid.Add(xpath_label, 0, wx.ALIGN_CENTER_VERTICAL)
         grid.Add(self._xpath_ctrl, 1, wx.EXPAND)
@@ -85,9 +85,8 @@ class DomGetStepEditor(wx.Dialog):
         property_label = wx.StaticText(self, label="Property Type:")
         self._property_choice = wx.Choice(
             self,
-            choices=["text", "value", "checked", "html"]
-        )
-        current_property = event.get("property_type", "text")
+            choices=["text", "value", "checked", "html"])
+        current_property = payload.get("property_type", "text")
         self._property_choice.SetStringSelection(current_property)
 
         grid.Add(property_label, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -97,8 +96,7 @@ class DomGetStepEditor(wx.Dialog):
         variable_label = wx.StaticText(self, label="Output Variable:")
         self._variable_ctrl = wx.TextCtrl(
             self,
-            value=payload.get("output_variable", "")
-        )
+            value=payload.get("output_variable", ""))
 
         grid.Add(variable_label, 0, wx.ALIGN_CENTER_VERTICAL)
         grid.Add(self._variable_ctrl, 1, wx.EXPAND)
@@ -134,9 +132,20 @@ class DomGetStepEditor(wx.Dialog):
         The event dictionary is modified in place. The dialog then closes
         with ``wx.ID_OK``.
         """
-        # Update payload in place
-        self._event["payload"]["xpath"] = self._xpath_ctrl.GetValue()
-        self._event["payload"]["property_type"] = self._property_choice.GetStringSelection()
-        self._event["payload"]["output_variable"] = self._variable_ctrl.GetValue()
+
+        new_xpath = self._xpath_ctrl.GetValue()
+        new_property = self._property_choice.GetStringSelection()
+        new_output = self._variable_ctrl.GetValue()
+
+        if (new_xpath != self._original_payload.get("xpath") or
+                new_property != self._original_payload.get("property_type") or
+                new_output != self._original_payload.get("output_variable")):
+
+            # Update payload in place
+            self._event["payload"]["xpath"] = self._xpath_ctrl.GetValue()
+            self._event["payload"]["property_type"] = self._property_choice.GetStringSelection()
+            self._event["payload"]["output_variable"] = self._variable_ctrl.GetValue()
+
+            self.changed = True
 
         self.EndModal(wx.ID_OK)

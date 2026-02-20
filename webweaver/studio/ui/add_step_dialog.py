@@ -35,6 +35,7 @@ from webweaver.studio.persistence.recording_document import (
 
 RECORDING_EVENT_TYPE_LABELS: list[tuple[str, RecordingEventType]] = [
     ("DOM Click", RecordingEventType.DOM_CLICK),
+    ("DOM Get", RecordingEventType.DOM_GET),
     ("DOM Type", RecordingEventType.DOM_TYPE),
     ("DOM Select", RecordingEventType.DOM_SELECT),
     ("DOM Check", RecordingEventType.DOM_CHECK),
