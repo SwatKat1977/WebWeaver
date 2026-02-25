@@ -22,6 +22,7 @@ import wx
 from webweaver.studio.recording.recording_event_type import \
     RecordingEventType
 from webweaver.studio.persistence.recording_document import (
+                                              AssertPayload,
                                               DomCheckPayload,
                                               DomClickPayload,
                                               DomGetPayload,
@@ -34,6 +35,7 @@ from webweaver.studio.persistence.recording_document import (
 
 
 RECORDING_EVENT_TYPE_LABELS: list[tuple[str, RecordingEventType]] = [
+    ("Assertion", RecordingEventType.ASSERT),
     ("DOM Click", RecordingEventType.DOM_CLICK),
     ("DOM Get", RecordingEventType.DOM_GET),
     ("DOM Type", RecordingEventType.DOM_TYPE),
@@ -73,6 +75,9 @@ def default_payload_for(event_type: RecordingEventType):
     """
 
     payload_factories: dict[RecordingEventType, Callable[[], object]] = {
+        RecordingEventType.ASSERT: lambda: AssertPayload(operator="is_equal_to",
+                                                         left_value="",
+                                                         right_value=""),
         RecordingEventType.DOM_CLICK: lambda: DomClickPayload(xpath=""),
         RecordingEventType.DOM_GET: lambda: DomGetPayload(xpath="",
                                                           property_type="text",

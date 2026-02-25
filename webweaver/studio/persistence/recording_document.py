@@ -32,6 +32,42 @@ class DomPayload:
     """
     xpath: str
 
+@dataclass
+class AssertPayload:
+    """
+    Structured payload for an assertion step.
+
+    This dataclass represents the serialized data required to evaluate
+    an assertion during playback. It is typically stored within a step
+    event and edited via the AssertionStepEditor dialog.
+
+    Fields
+    ------
+    operator : str
+        The string value of the assertion operator (corresponding to
+        `AssertionOperator.value`). Determines how the comparison is
+        performed.
+
+    left_value : str
+        The primary expression or literal being evaluated.
+
+    right_value : str | None
+        The secondary value used for binary operators. This should be
+        None for unary operators (e.g., IS_TRUE, IS_NONE).
+
+    soft_assert : bool
+        If True, a failed assertion will be recorded but will not stop
+        playback execution.
+
+    Notes
+    -----
+    This structure is intentionally serialization-friendly and mirrors
+    the shape of the event["payload"] dictionary used in step storage.
+    """
+    operator: str = "is_equal_to"
+    left_value: str = ""
+    right_value: None | str = None
+    soft_assert: bool = False
 
 @dataclass
 class DomCheckPayload(DomPayload):
