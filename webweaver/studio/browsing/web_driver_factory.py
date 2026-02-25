@@ -18,9 +18,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import logging
-from selenium.webdriver import Chrome, ChromeOptions
-from selenium.webdriver import Edge, EdgeOptions
-from selenium.webdriver import Firefox, FirefoxOptions, FirefoxProfile
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.edge.options import Options as EdgeOptions
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
+from selenium.webdriver.firefox.firefox_profile import FirefoxProfile
 from webweaver.studio.browsing.browser_type import BrowserType
 from webweaver.studio.browsing.studio_browser import StudioBrowser
 from webweaver.studio.browsing.web_driver_option_target import \
@@ -161,7 +163,7 @@ def create_driver_from_solution(solution: StudioSolution,
         options.add_experimental_option("excludeSwitches", ["enable-logging"])
 
         _apply_browser_launch_options(browser, launch_opts, chrome_options=options)
-        driver = Chrome(options=options)
+        driver = webdriver.Chrome(options=options)
 
     elif browser == BrowserType.EDGE:
         options = EdgeOptions()
@@ -172,13 +174,13 @@ def create_driver_from_solution(solution: StudioSolution,
         options.add_experimental_option("excludeSwitches", ["enable-logging"])
 
         _apply_browser_launch_options(browser, launch_opts, edge_options=options)
-        driver = Edge(options=options)
+        driver = webdriver.Edge(options=options)
 
     elif browser == BrowserType.FIREFOX:
         options = FirefoxOptions()
         profile = FirefoxProfile()
         _apply_browser_launch_options(browser, launch_opts, firefox_profile=profile)
-        driver = Firefox(options=options)
+        driver = webdriver.Firefox(options=options)
 
     else:
         raise ValueError(f"Unsupported browser: {browser}")
