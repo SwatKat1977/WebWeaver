@@ -49,7 +49,9 @@ class Assertions:
     # Public API
     # ---------------------------------------------------------
 
-    def assert_that(self, actual: Any, description: str | None = None) -> _AssertValue:
+    def assert_that(self,
+                    actual: Any,
+                    description: str | None = None) -> _AssertValue:
         return _AssertValue(self, actual, description)
 
     def summarise(self) -> None:
