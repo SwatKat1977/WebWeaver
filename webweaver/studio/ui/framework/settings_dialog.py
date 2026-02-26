@@ -152,9 +152,9 @@ class SettingsDialog(wx.Dialog):
 
         return True
 
-    def _on_ok(self, event):
+    def _on_ok(self, _event):
         if self._apply_all():
             self.EndModal(wx.ID_OK)
 
-    def _on_apply(self, event):
+    def _on_apply(self, _event):
         self._apply_all()
