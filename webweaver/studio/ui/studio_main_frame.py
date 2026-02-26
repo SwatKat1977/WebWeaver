@@ -91,8 +91,9 @@ from webweaver.studio.app_settings_manager import AppSettingsManager
 from webweaver.studio.ui.framework.settings_dialog import SettingsDialog
 from webweaver.studio.ui.framework.page_definition import PageDefinition
 from webweaver.studio.ui.app_settings_dialog.plugins_settings_page \
-    import PluginsSettingsPage
-
+    import PluginsSettingsPage as AppSettingsPluginsPage
+from webweaver.studio.ui.app_settings_dialog.general_settings_page \
+    import GeneralSettingsPage as AppSettingsGeneralPage
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -323,6 +324,9 @@ class StudioMainFrame(wx.Frame):
         wx.CallLater(1, self.SendSizeEvent)
 
         self._inspector_timer.Start(200)
+
+        if self._app_settings.start_maximised:
+            self.Maximize()
 
     def rebuild_code_generation_menu(self) -> None:
         """
@@ -681,7 +685,8 @@ class StudioMainFrame(wx.Frame):
 
     def on_open_app_settings(self, _evt):
         page_definitions = [
-            PageDefinition("Plugins", PluginsSettingsPage),
+            PageDefinition("General", AppSettingsGeneralPage),
+            PageDefinition("Plugins", AppSettingsPluginsPage)
         ]
 
         dialog = SettingsDialog(

@@ -61,14 +61,19 @@ class AppSettingsManager:
             is not present in the configuration store, a sensible
             default is used.
         """
+        # General Settings
+        restore_last_solution = self._config.ReadBool("restore_last_solution",
+                                                      False)
+        start_maximised = self._config.ReadBool("start_maximised", False)
+
+        # Code Generation settings
         code_generators_path = self._config.Read("code_generators_path", "")
-        restore = self._config.ReadBool("restore_last_solution", True)
 
         return StudioAppSettings(
             code_generators_path=Path(code_generators_path) \
                 if code_generators_path else Path(),
-            restore_last_solution=restore,
-        )
+            restore_last_solution=restore_last_solution,
+            start_maximised=start_maximised)
 
     def save(self, settings: StudioAppSettings):
         """
@@ -85,4 +90,6 @@ class AppSettingsManager:
                            str(settings.code_generators_path))
         self._config.WriteBool("restore_last_solution",
                                settings.restore_last_solution)
+        self._config.WriteBool("start_maximised",
+                               settings.start_maximised)
         self._config.Flush()

@@ -37,7 +37,7 @@ class StudioAppSettings:
     it is a pure data container.
 
     Attributes:
-        plugins_path (Path):
+        code_generators_path (Path):
             Filesystem path where plugins are discovered and loaded.
 
         restore_last_solution (bool):
@@ -46,4 +46,7 @@ class StudioAppSettings:
     """
 
     code_generators_path: Path
+
     restore_last_solution: bool = True
+
+    start_maximised: bool = False
