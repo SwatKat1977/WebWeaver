@@ -50,6 +50,7 @@ class SettingsDialog(wx.Dialog):
 
     def __init__(self,
                  parent: wx.Window,
+                 title: str,
                  context,
                  page_definitions: typing.List[PageDefinition]):
         """
@@ -71,6 +72,8 @@ class SettingsDialog(wx.Dialog):
 
         self._context = context
         self._page_definitions: typing.List[PageDefinition] = page_definitions
+
+        self.SetTitle(title)
 
         # Maps tree items to their corresponding SettingsPage instance.
         # Each page instance is created once and reused while the dialog

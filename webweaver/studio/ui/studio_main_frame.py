@@ -686,6 +686,7 @@ class StudioMainFrame(wx.Frame):
 
         dialog = SettingsDialog(
             self,
+            title="Studio Settings",
             context=self._app_settings,
             page_definitions=page_definitions
         )
