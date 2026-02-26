@@ -85,6 +85,7 @@ class SettingsDialog(wx.Dialog):
     def _create_ui(self):
         self._tree = wx.TreeCtrl(self)
         self._tree.SetMinSize((200, -1))
+        self._tree.SetWindowStyle(wx.TR_HIDE_ROOT | wx.TR_SINGLE)
 
         self._content_area = wx.Panel(self)
 
@@ -106,7 +107,7 @@ class SettingsDialog(wx.Dialog):
         self.SetSizer(main_sizer)
         self.SetSize((700, 500))
 
-        root = self._tree.AddRoot("Settings")
+        root = self._tree.AddRoot("App Settings")
 
         for definition in self._page_definitions:
             item = self._tree.AppendItem(root, definition.label)
@@ -118,9 +119,6 @@ class SettingsDialog(wx.Dialog):
             self._content_sizer.Add(page, 1, wx.EXPAND)
 
             self._pages[item] = page
-
-        # Expand Root
-        self._tree.Expand(root)
 
         # Select first item automatically
         first_item, _ = self._tree.GetFirstChild(root)
