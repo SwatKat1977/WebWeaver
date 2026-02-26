@@ -29,16 +29,22 @@ def create_main_menu(frame: "StudioMainFrame") -> None:
 
     # -- File Menu --
     file_menu = wx.Menu()
-    file_menu.Append(wx.ID_NEW, "New Project\tCtrl+N")
-    file_menu.Append(wx.ID_OPEN, "Open Project\tCtrl+O")
+    new_solution_id = file_menu.Append(wx.ID_ANY, "New Solution\tCtrl+N")
+    open_solution_id = file_menu.Append(wx.ID_OPEN, "Open Solution\tCtrl+O")
+    frame.Bind(wx.EVT_MENU, frame.on_new_solution_event, new_solution_id)
+    frame.Bind(wx.EVT_MENU, frame.on_open_solution_event, open_solution_id)
 
     frame.recent_solutions_menu = wx.Menu()
     file_menu.AppendSubMenu(frame.recent_solutions_menu,
                             "Recent Solutions")
-
-    file_menu.Append(wx.ID_SAVE, "Save Project\tCtrl+S")
     file_menu.AppendSeparator()
-    file_menu.Append(wx.ID_EXIT, "Exit\tCtrl-X")
+    app_setting_id = file_menu.Append(wx.ID_ANY, "Settings\tCtrl+Alt-sS")
+    frame.Bind(wx.EVT_MENU, frame.on_open_app_settings,
+               app_setting_id)
+    file_menu.AppendSeparator()
+    exit_item = file_menu.Append(wx.ID_EXIT, "Exit\tCtrl-X")
+    frame.Bind(wx.EVT_MENU, frame.on_file_exit, exit_item)
+
     menubar.Append(file_menu, "File")
 
     # Code Generation menu
@@ -58,8 +64,9 @@ def create_main_menu(frame: "StudioMainFrame") -> None:
     # -- Help Menu --
     help_menu = wx.Menu()
     help_menu.Append(wx.ID_ANY, "WebWeaver Help")
-    help_menu.Append(wx.ID_ABOUT, "About WebWeaver")
+    about_id = help_menu.Append(wx.ID_ANY, "About WebWeaver")
     menubar.Append(help_menu, "Help")
+    frame.Bind(wx.EVT_MENU, frame.on_about_studio, about_id)
 
     frame.SetMenuBar(menubar)
 

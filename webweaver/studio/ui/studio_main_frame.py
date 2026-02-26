@@ -87,7 +87,14 @@ from webweaver.studio.playback.recording_playback_session import \
     RecordingPlaybackSession
 from webweaver.studio.code_generation.code_generator_registry import \
     CodeGeneratorRegistry
-
+from webweaver.studio.app_settings_manager import AppSettingsManager
+from webweaver.studio.ui.framework.settings_dialog import SettingsDialog
+from webweaver.studio.ui.framework.page_definition import PageDefinition
+from webweaver.studio.ui.app_settings_dialog.plugins_settings_page \
+    import PluginsSettingsPage as AppSettingsPluginsPage
+from webweaver.studio.ui.app_settings_dialog.general_settings_page \
+    import GeneralSettingsPage as AppSettingsGeneralPage
+from webweaver.studio.ui.about_dialog import AboutDialog
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -128,6 +135,14 @@ class StudioMainFrame(wx.Frame):
             pos=INITIAL_POSITION,
             size=wx.Size(1024, 768),
             style=wx.DEFAULT_FRAME_STYLE)
+
+        # Load Webweaver studio's application settings, it's location is
+        # dependent on the OS:
+        # Windows -> Registry
+        # macOS   -> ~/Library/Preferences
+        # Linux   -> ~/.config
+        self._settings_manager = AppSettingsManager()
+        self._app_settings = self._settings_manager.load()
 
         self._logger = logging.getLogger("webweaver_studio")
         self._logger.setLevel(logging.DEBUG)
@@ -310,6 +325,9 @@ class StudioMainFrame(wx.Frame):
         wx.CallLater(1, self.SendSizeEvent)
 
         self._inspector_timer.Start(200)
+
+        if self._app_settings.start_maximised:
+            self.Maximize()
 
     def rebuild_code_generation_menu(self) -> None:
         """
@@ -524,6 +542,19 @@ class StudioMainFrame(wx.Frame):
             # Cancel / close / ESC
             break
 
+    def on_file_exit(self, _event):
+        """
+        Handle the File → Exit menu action.
+
+        Closes the main application window, triggering the standard
+        wxWidgets shutdown sequence for the application.
+
+        Args:
+            _event:
+                The wx event associated with the menu command.
+        """
+        self.Close()
+
     def _create_solution(self, data):
         self._current_solution = StudioSolution(
             data.solution_name,
@@ -589,6 +620,25 @@ class StudioMainFrame(wx.Frame):
 
         finally:
             dlg.Destroy()
+
+    def on_about_studio(self, _event):
+        """
+        Event handler for displaying the About WebWeaver Studio dialog.
+
+        Creates and shows the AboutDialog as a modal window. The dialog
+        blocks interaction with the parent window until dismissed. After
+        the user closes the dialog, it is explicitly destroyed to ensure
+        proper resource cleanup.
+
+        Parameters
+        ----------
+        _event : wx.Event
+            The wxPython event object associated with the menu or UI action.
+            The parameter is unused but required by the event binding system.
+        """
+        dlg = AboutDialog(self)
+        dlg.ShowModal()
+        dlg.Destroy()
 
     def on_close_solution_event(self, _event: wx.CommandEvent):
         """
@@ -665,6 +715,39 @@ class StudioMainFrame(wx.Frame):
 
         elif self._state_controller.state == StudioState.SOLUTION_LOADED:
             self._stop_recording_session()
+
+    def on_open_app_settings(self, _evt):
+        """
+        Handle the Studio Settings menu action.
+
+        Constructs and displays the SettingsDialog, providing the current
+        StudioAppSettings instance and registered settings pages.
+
+        If the user confirms the dialog (OK), the updated settings model
+        is persisted using AppSettingsManager. If the dialog is cancelled,
+        no changes are saved.
+
+        Args:
+            _evt:
+                The wx event associated with the menu command.
+                The parameter is unused.
+        """
+        page_definitions = [
+            PageDefinition("General", AppSettingsGeneralPage),
+            PageDefinition("Plugins", AppSettingsPluginsPage)
+        ]
+
+        dialog = SettingsDialog(
+            self,
+            title="Studio Settings",
+            context=self._app_settings,
+            page_definitions=page_definitions
+        )
+
+        if dialog.ShowModal() == wx.ID_OK:
+            self._settings_manager.save(self._app_settings)
+
+        dialog.Destroy()
 
     def _stop_recording_session(self):
         ok = self._recording_session.stop()
@@ -1317,6 +1400,17 @@ class StudioMainFrame(wx.Frame):
             self._logger.debug("Recorded event: %s", ev)
 
     def _on_close_app(self, event):
+        result = wx.MessageBox(
+            "Are you sure you want to exit?",
+            "Exit WebWeaver Studio",
+            wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION,
+            parent=self
+        )
+
+        if result != wx.YES:
+            event.Veto()
+            return
+
         # Stop recording cleanly
         if self._recording_session and self._recording_session.is_recording():
             self._recording_session.stop()
