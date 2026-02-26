@@ -24,12 +24,46 @@ from webweaver.studio.version import __version__
 
 
 class AboutDialog(wx.Dialog):
+    """
+    Modal "About" dialog for WebWeaver Studio.
+
+    This dialog displays the application logo, name, current version,
+    and a short description of the software. The window size is fixed
+    (non-resizable) to maintain consistent layout and presentation.
+
+    The logo is loaded from embedded PNG byte data (WEBWEAVER_MAIN_LOGO),
+    scaled to 256x256 using high-quality interpolation, and displayed
+    above the application title and version information.
+
+    Parameters
+    ----------
+    parent : wx.Window
+        The parent window for this dialog.
+    """
+    # pylint: disable=too-few-public-methods
+
     def __init__(self, parent):
+        """
+        Modal "About" dialog for WebWeaver Studio.
+
+        This dialog displays the application logo, name, current version,
+        and a short description of the software. The window size is fixed
+        (non-resizable) to maintain consistent layout and presentation.
+
+        The logo is loaded from embedded PNG byte data (WEBWEAVER_MAIN_LOGO),
+        scaled to 256x256 using high-quality interpolation, and displayed
+        above the application title and version information.
+
+        Parameters
+        ----------
+        parent : wx.Window
+            The parent window for this dialog.
+        """
         super().__init__(
             parent,
             title="About WebWeaver Studio",
-            style=wx.DEFAULT_DIALOG_STYLE & ~(wx.RESIZE_BORDER | wx.MAXIMIZE_BOX)
-        )
+            style=wx.DEFAULT_DIALOG_STYLE &
+                  ~(wx.RESIZE_BORDER | wx.MAXIMIZE_BOX))
 
         self.SetMinSize((400, 350))
         self.SetMaxSize((400, 350))

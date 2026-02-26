@@ -622,7 +622,20 @@ class StudioMainFrame(wx.Frame):
             dlg.Destroy()
 
     def on_about_studio(self, _event):
+        """
+        Event handler for displaying the About WebWeaver Studio dialog.
 
+        Creates and shows the AboutDialog as a modal window. The dialog
+        blocks interaction with the parent window until dismissed. After
+        the user closes the dialog, it is explicitly destroyed to ensure
+        proper resource cleanup.
+
+        Parameters
+        ----------
+        _event : wx.Event
+            The wxPython event object associated with the menu or UI action.
+            The parameter is unused but required by the event binding system.
+        """
         dlg = AboutDialog(self)
         dlg.ShowModal()
         dlg.Destroy()
