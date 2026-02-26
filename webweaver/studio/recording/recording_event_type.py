@@ -29,6 +29,7 @@ class RecordingEventType(enum.Enum):
     to the serialized form used in recording files.
     """
 
+    ASSERT = 'assert'
     DOM_CHECK = "dom.check"
     DOM_CLICK = "dom.click"
     DOM_GET = "dom.get"
@@ -64,6 +65,9 @@ def event_type_from_str(value: str) -> RecordingEventType:
     """
 
     event_type: RecordingEventType = RecordingEventType.UNKNOWN
+
+    if value == "assert":
+        event_type = RecordingEventType.ASSERT
 
     if value == "dom.check":
         event_type = RecordingEventType.DOM_CHECK

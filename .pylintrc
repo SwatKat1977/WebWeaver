@@ -4,3 +4,4 @@ ignored-classes=wx
 
 [MASTER]
 init-hook='import sys, os; sys.path.insert(0, os.getcwd())'
+ignore-patterns=.*\.md$

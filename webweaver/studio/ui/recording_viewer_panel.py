@@ -37,6 +37,7 @@ from webweaver.studio.ui.navgoto_step_editor import NavGotoStepEditor
 from webweaver.studio.ui.rest_api_step_editor import RestApiStepEditor
 from webweaver.studio.ui.select_step_editor import SelectStepEditor
 from webweaver.studio.ui.scroll_step_editor import ScrollStepEditor
+from webweaver.studio.ui.step_editor_dialogs.assert_step_editor_dialog import AssertionStepEditor
 from webweaver.studio.ui.type_step_editor import TypeStepEditor
 from webweaver.studio.ui.wait_step_editor import WaitStepEditor
 from webweaver.studio.persistence.recording_persistence import (
@@ -409,6 +410,9 @@ class RecordingViewerPanel(wx.Panel):
                                    RecordingEventType.SCROLL,
                                    RecordingEventType.WAIT]:
             payload["control_type"] = "unknown"
+
+        if event_type == RecordingEventType.ASSERT:
+            step_editor = AssertionStepEditor(self, index, event)
 
         if event_type == RecordingEventType.DOM_CLICK:
             step_editor = ClickStepEditor(self, index, event)
