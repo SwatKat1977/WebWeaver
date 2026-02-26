@@ -541,6 +541,9 @@ class StudioMainFrame(wx.Frame):
             # Cancel / close / ESC
             break
 
+    def on_file_exit(self, event):
+        self.Close()
+
     def _create_solution(self, data):
         self._current_solution = StudioSolution(
             data.solution_name,
@@ -1352,6 +1355,17 @@ class StudioMainFrame(wx.Frame):
             self._logger.debug("Recorded event: %s", ev)
 
     def _on_close_app(self, event):
+        result = wx.MessageBox(
+            "Are you sure you want to exit?",
+            "Exit WebWeaver Studio",
+            wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION,
+            parent=self
+        )
+
+        if result != wx.YES:
+            event.Veto()
+            return
+
         # Stop recording cleanly
         if self._recording_session and self._recording_session.is_recording():
             self._recording_session.stop()

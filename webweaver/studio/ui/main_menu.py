@@ -40,7 +40,9 @@ def create_main_menu(frame: "StudioMainFrame") -> None:
     frame.Bind(wx.EVT_MENU, frame.on_open_app_settings,
                app_setting_id)
     file_menu.AppendSeparator()
-    file_menu.Append(wx.ID_EXIT, "Exit\tCtrl-X")
+    exit_item = file_menu.Append(wx.ID_EXIT, "Exit\tCtrl-X")
+    frame.Bind(wx.EVT_MENU, frame.on_file_exit, exit_item)
+
     menubar.Append(file_menu, "File")
 
     # Code Generation menu
