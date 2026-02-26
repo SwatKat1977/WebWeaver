@@ -51,13 +51,29 @@ class PluginsSettingsPage(SettingsPage):
         super().__init__(parent)
         self._settings = context
 
-        sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer  = wx.BoxSizer(wx.VERTICAL)
+
+        # Add top spacer
+        main_sizer.AddSpacer(20)
+
+        content_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        label = wx.StaticText(
+            self,
+            label="Code Generator Plugins Path"
+        )
+        font = label.GetFont()
+        font = font.Bold()
+        label.SetFont(font)
+        content_sizer.Add(label, 0, wx.BOTTOM, 6)
 
         self._dir_picker = wx.DirPickerCtrl(
             self, message="Select plugins directory")
+        content_sizer.Add(self._dir_picker, 0, wx.EXPAND)
 
-        sizer.Add(self._dir_picker, 0, wx.ALL | wx.EXPAND, 10)
-        self.SetSizer(sizer)
+        main_sizer.Add(content_sizer, 0, wx.ALL | wx.EXPAND, 2)
+
+        self.SetSizer(main_sizer)
 
     def load(self):
         """

@@ -81,6 +81,8 @@ class SettingsDialog(wx.Dialog):
 
     def _create_ui(self):
         self._tree = wx.TreeCtrl(self)
+        self._tree.SetMinSize((200, -1))
+
         self._content_area = wx.Panel(self)
 
         self._content_sizer = wx.BoxSizer(wx.VERTICAL)
