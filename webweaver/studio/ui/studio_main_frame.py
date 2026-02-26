@@ -94,6 +94,7 @@ from webweaver.studio.ui.app_settings_dialog.plugins_settings_page \
     import PluginsSettingsPage as AppSettingsPluginsPage
 from webweaver.studio.ui.app_settings_dialog.general_settings_page \
     import GeneralSettingsPage as AppSettingsGeneralPage
+from webweaver.studio.ui.about_dialog import AboutDialog
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -619,6 +620,12 @@ class StudioMainFrame(wx.Frame):
 
         finally:
             dlg.Destroy()
+
+    def on_about_studio(self, _event):
+
+        dlg = AboutDialog(self)
+        dlg.ShowModal()
+        dlg.Destroy()
 
     def on_close_solution_event(self, _event: wx.CommandEvent):
         """

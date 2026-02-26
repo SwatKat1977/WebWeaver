@@ -64,8 +64,9 @@ def create_main_menu(frame: "StudioMainFrame") -> None:
     # -- Help Menu --
     help_menu = wx.Menu()
     help_menu.Append(wx.ID_ANY, "WebWeaver Help")
-    help_menu.Append(wx.ID_ABOUT, "About WebWeaver")
+    about_id = help_menu.Append(wx.ID_ANY, "About WebWeaver")
     menubar.Append(help_menu, "Help")
+    frame.Bind(wx.EVT_MENU, frame.on_about_studio, about_id)
 
     frame.SetMenuBar(menubar)
 
