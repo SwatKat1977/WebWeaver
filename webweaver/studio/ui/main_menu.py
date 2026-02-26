@@ -35,8 +35,6 @@ def create_main_menu(frame: "StudioMainFrame") -> None:
     frame.recent_solutions_menu = wx.Menu()
     file_menu.AppendSubMenu(frame.recent_solutions_menu,
                             "Recent Solutions")
-
-    file_menu.Append(wx.ID_SAVE, "Save Project\tCtrl+S")
     file_menu.AppendSeparator()
     app_setting_id = file_menu.Append(wx.ID_ANY, "Settings\tCtrl+Alt-sS")
     frame.Bind(wx.EVT_MENU, frame.on_open_app_settings,
