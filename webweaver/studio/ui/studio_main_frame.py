@@ -87,6 +87,7 @@ from webweaver.studio.playback.recording_playback_session import \
     RecordingPlaybackSession
 from webweaver.studio.code_generation.code_generator_registry import \
     CodeGeneratorRegistry
+from webweaver.studio.app_settings_manager import AppSettingsManager
 
 
 # macOS menu bar offset
@@ -128,6 +129,14 @@ class StudioMainFrame(wx.Frame):
             pos=INITIAL_POSITION,
             size=wx.Size(1024, 768),
             style=wx.DEFAULT_FRAME_STYLE)
+
+        # Load Webweaver studio's application settings, it's location is
+        # dependent on the OS:
+        # Windows -> Registry
+        # macOS   -> ~/Library/Preferences
+        # Linux   -> ~/.config
+        self._settings_manager = AppSettingsManager()
+        self._app_settings = self._settings_manager.load()
 
         self._logger = logging.getLogger("webweaver_studio")
         self._logger.setLevel(logging.DEBUG)
