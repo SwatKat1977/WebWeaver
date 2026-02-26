@@ -29,8 +29,10 @@ def create_main_menu(frame: "StudioMainFrame") -> None:
 
     # -- File Menu --
     file_menu = wx.Menu()
-    file_menu.Append(wx.ID_NEW, "New Project\tCtrl+N")
-    file_menu.Append(wx.ID_OPEN, "Open Project\tCtrl+O")
+    new_solution_id = file_menu.Append(wx.ID_ANY, "New Solution\tCtrl+N")
+    open_solution_id = file_menu.Append(wx.ID_OPEN, "Open Solution\tCtrl+O")
+    frame.Bind(wx.EVT_MENU, frame.on_new_solution_event, new_solution_id)
+    frame.Bind(wx.EVT_MENU, frame.on_open_solution_event, open_solution_id)
 
     frame.recent_solutions_menu = wx.Menu()
     file_menu.AppendSubMenu(frame.recent_solutions_menu,
