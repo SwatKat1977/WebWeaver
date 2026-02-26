@@ -61,11 +61,12 @@ class AppSettingsManager:
             is not present in the configuration store, a sensible
             default is used.
         """
-        plugins_path = self._config.Read("plugins_path", "")
+        code_generators_path = self._config.Read("code_generators_path", "")
         restore = self._config.ReadBool("restore_last_solution", True)
 
         return StudioAppSettings(
-            plugins_path=Path(plugins_path) if plugins_path else Path(),
+            code_generators_path=Path(code_generators_path) \
+                if code_generators_path else Path(),
             restore_last_solution=restore,
         )
 
@@ -80,7 +81,8 @@ class AppSettingsManager:
         This method writes values to wx.Config and flushes the
         configuration to ensure changes are committed.
         """
-        self._config.Write("plugins_path", str(settings.plugins_path))
+        self._config.Write("code_generators_path",
+                           str(settings.code_generators_path))
         self._config.WriteBool("restore_last_solution",
                                settings.restore_last_solution)
         self._config.Flush()

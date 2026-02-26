@@ -51,36 +51,49 @@ class PluginsSettingsPage(SettingsPage):
         super().__init__(parent)
         self._settings = context
 
-        main_sizer  = wx.BoxSizer(wx.VERTICAL)
+        outer = wx.BoxSizer(wx.VERTICAL)
 
-        # Add top spacer
-        main_sizer.AddSpacer(20)
+        # ---- Content container with consistent margins ----
+        content  = wx.BoxSizer(wx.VERTICAL)
 
-        content_sizer = wx.BoxSizer(wx.VERTICAL)
+        # ===== Section Title =====
+        title = wx.StaticText(self, label="Code Generator Plugins")
+        font = title.GetFont()
+        font = font.Bold()
+        font.SetPointSize(font.GetPointSize() + 1)
+        title.SetFont(font)
+        content.Add(title, 0, wx.BOTTOM, 10)
 
-        label = wx.StaticText(
-            self,
-            label="Code Generator Plugins Path"
-        )
+        # ===== Divider line =====
+        content.Add(wx.StaticLine(self), 0, wx.EXPAND | wx.BOTTOM, 20)
+
+        # --- Code Generation Plugin field Area ---
+        label = wx.StaticText(self,
+                               label="Code Generator Plugins Path")
         font = label.GetFont()
         font = font.Bold()
         label.SetFont(font)
-        content_sizer.Add(label, 0, wx.BOTTOM, 6)
+        content.Add(label, 0, wx.BOTTOM, 6)
 
-        self._dir_picker = wx.DirPickerCtrl(
-            self, message="Select plugins directory")
-        content_sizer.Add(self._dir_picker, 0, wx.EXPAND)
+        self._code_gen_dir_picker = wx.DirPickerCtrl(
+            self, message="Select code generator directory")
+        content.Add(self._code_gen_dir_picker, 0, wx.EXPAND)
 
-        main_sizer.Add(content_sizer, 0, wx.ALL | wx.EXPAND, 2)
+        # Add content with clean outer padding
+        outer.Add(content, 0, wx.ALL | wx.EXPAND, 20)
 
-        self.SetSizer(main_sizer)
+        # Push everything upward
+        outer.AddStretchSpacer()
+
+        self.SetSizer(outer)
 
     def load(self):
         """
         Populate the directory picker with the current plugins path
         from the settings model.
         """
-        self._dir_picker.SetPath(str(self._settings.plugins_path))
+        self._code_gen_dir_picker.SetPath(
+            str(self._settings.code_generators_path))
 
     def validate(self) -> bool:
         """
@@ -104,4 +117,5 @@ class PluginsSettingsPage(SettingsPage):
         The chosen path is written to the associated
         StudioAppSettings instance.
         """
-        self._settings.plugins_path = Path(self._dir_picker.GetPath())
+        self._settings.code_generators_path = \
+            Path(self._code_gen_dir_picker.GetPath())

@@ -45,5 +45,5 @@ class StudioAppSettings:
             last solution on startup.
     """
 
-    plugins_path: Path
+    code_generators_path: Path
     restore_last_solution: bool = True
