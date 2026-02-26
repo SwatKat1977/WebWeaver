@@ -17,7 +17,17 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+from dataclasses import dataclass
+from typing import Optional
 import wx
+
+
+@dataclass(frozen=True)
+class ValidationResult:
+    ok: bool
+    message: str = ""
+    focus: Optional[wx.Window] = None  # control to focus
+
 
 class SettingsPage(wx.Panel):
     """
@@ -51,18 +61,8 @@ class SettingsPage(wx.Panel):
         or context and update the page's controls accordingly.
         """
 
-    def validate(self) -> bool:
-        """
-        Validate the current user input.
-
-        Returns:
-            bool: True if the page's data is valid and may be applied,
-                  False if validation fails.
-
-        Subclasses should override this method if validation
-        beyond basic control constraints is required.
-        """
-        return True
+    def validate(self) -> ValidationResult:
+        return ValidationResult(ok=True)
 
     def apply(self):
         """

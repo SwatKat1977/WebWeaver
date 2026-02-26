@@ -19,7 +19,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 from pathlib import Path
 import wx
-from webweaver.studio.ui.framework.settings_page import SettingsPage
+from webweaver.studio.ui.framework.settings_page import (SettingsPage,
+                                                         ValidationResult)
 from webweaver.studio.studio_app_settings import StudioAppSettings
 
 
@@ -95,20 +96,34 @@ class PluginsSettingsPage(SettingsPage):
         self._code_gen_dir_picker.SetPath(
             str(self._settings.code_generators_path))
 
-    def validate(self) -> bool:
-        """
-        Validate the selected plugins directory.
+    def validate(self) -> ValidationResult:
+        raw_path = self._code_gen_dir_picker.GetPath().strip()
 
-        Returns:
-            bool: True if the selected path is acceptable.
+        if not raw_path:
+            return ValidationResult(
+                False,
+                "Please choose a code generators directory.",
+                self._code_gen_dir_picker)
 
-        Note:
-            Currently no validation is performed. Future implementations
-            may check that the directory exists or meets specific criteria.
-        """
+        code_gen_dir = Path(self._code_gen_dir_picker.GetPath()).expanduser()
 
-        # could check path exists if you want
-        return True
+        if not str(code_gen_dir).strip():
+            return ValidationResult(
+                False,
+                "Please choose a code generators directory.",
+                self._code_gen_dir_picker)
+
+        if not code_gen_dir.exists():
+            return ValidationResult(False,
+                                    "That folder doesn’t exist.",
+                                    self._code_gen_dir_picker)
+
+        if not code_gen_dir.is_dir():
+            return ValidationResult(False,
+                                    "That path isn’t a folder.",
+                                    self._code_gen_dir_picker)
+
+        return ValidationResult(True)
 
     def apply(self):
         """

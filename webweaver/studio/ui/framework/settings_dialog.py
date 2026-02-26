@@ -146,9 +146,8 @@ class SettingsDialog(wx.Dialog):
         self._show_page(item)
 
     def _apply_all(self) -> bool:
-        for page in self._pages.values():
-            if not page.validate():
-                return False
+        if not self._validate_all():
+            return False
 
         for page in self._pages.values():
             page.apply()
@@ -161,3 +160,24 @@ class SettingsDialog(wx.Dialog):
 
     def _on_apply(self, _event):
         self._apply_all()
+
+    def _validate_all(self) -> bool:
+        for item, page in self._pages.items():
+            result = page.validate()
+            if not result.ok:
+                # show the page that has the problem
+                self._tree.SelectItem(item)
+                self._show_page(item)
+
+                wx.MessageBox(
+                    result.message,
+                    "Invalid setting",
+                    wx.OK | wx.ICON_WARNING,
+                    parent=self,
+                )
+
+                if result.focus:
+                    result.focus.SetFocus()
+
+                return False
+        return True
