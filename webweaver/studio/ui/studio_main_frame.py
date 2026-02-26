@@ -541,7 +541,17 @@ class StudioMainFrame(wx.Frame):
             # Cancel / close / ESC
             break
 
-    def on_file_exit(self, event):
+    def on_file_exit(self, _event):
+        """
+        Handle the File → Exit menu action.
+
+        Closes the main application window, triggering the standard
+        wxWidgets shutdown sequence for the application.
+
+        Args:
+            _event:
+                The wx event associated with the menu command.
+        """
         self.Close()
 
     def _create_solution(self, data):
@@ -687,6 +697,21 @@ class StudioMainFrame(wx.Frame):
             self._stop_recording_session()
 
     def on_open_app_settings(self, _evt):
+        """
+        Handle the Studio Settings menu action.
+
+        Constructs and displays the SettingsDialog, providing the current
+        StudioAppSettings instance and registered settings pages.
+
+        If the user confirms the dialog (OK), the updated settings model
+        is persisted using AppSettingsManager. If the dialog is cancelled,
+        no changes are saved.
+
+        Args:
+            _evt:
+                The wx event associated with the menu command.
+                The parameter is unused.
+        """
         page_definitions = [
             PageDefinition("General", AppSettingsGeneralPage),
             PageDefinition("Plugins", AppSettingsPluginsPage)

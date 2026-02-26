@@ -24,6 +24,27 @@ import wx
 
 @dataclass(frozen=True)
 class ValidationResult:
+    """
+    Represents the outcome of validating a settings page.
+
+    This immutable result object allows a page to communicate not only
+    whether validation succeeded, but also provide contextual information
+    such as an error message and which control should receive focus.
+
+    Attributes:
+        ok (bool):
+            True if validation succeeded and the dialog may proceed.
+            False if validation failed.
+
+        message (str):
+            Optional human-readable validation error message.
+            Intended to be displayed to the user when `ok` is False.
+
+        focus (Optional[wx.Window]):
+            Optional control that should receive input focus if
+            validation fails. Allows the dialog to guide the user
+            directly to the problematic field.
+    """
     ok: bool
     message: str = ""
     focus: Optional[wx.Window] = None  # control to focus
@@ -62,6 +83,17 @@ class SettingsPage(wx.Panel):
         """
 
     def validate(self) -> ValidationResult:
+        """
+        Validate the current user input.
+
+        Returns:
+            ValidationResult:
+                An object describing whether validation succeeded.
+                The default implementation always returns success.
+
+        Subclasses should override this method if custom validation
+        logic is required.
+        """
         return ValidationResult(ok=True)
 
     def apply(self):
