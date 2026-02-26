@@ -88,6 +88,10 @@ from webweaver.studio.playback.recording_playback_session import \
 from webweaver.studio.code_generation.code_generator_registry import \
     CodeGeneratorRegistry
 from webweaver.studio.app_settings_manager import AppSettingsManager
+from webweaver.studio.ui.framework.settings_dialog import SettingsDialog
+from webweaver.studio.ui.framework.page_definition import PageDefinition
+from webweaver.studio.ui.app_settings_dialog.plugins_settings_page \
+    import PluginsSettingsPage
 
 
 # macOS menu bar offset
@@ -674,6 +678,22 @@ class StudioMainFrame(wx.Frame):
 
         elif self._state_controller.state == StudioState.SOLUTION_LOADED:
             self._stop_recording_session()
+
+    def on_open_app_settings(self, _evt):
+        page_definitions = [
+            PageDefinition("Plugins", PluginsSettingsPage),
+        ]
+
+        dialog = SettingsDialog(
+            self,
+            context=self._app_settings,
+            page_definitions=page_definitions
+        )
+
+        if dialog.ShowModal() == wx.ID_OK:
+            self._settings_manager.save(self._app_settings)
+
+        dialog.Destroy()
 
     def _stop_recording_session(self):
         ok = self._recording_session.stop()

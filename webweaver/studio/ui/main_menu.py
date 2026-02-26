@@ -38,6 +38,10 @@ def create_main_menu(frame: "StudioMainFrame") -> None:
 
     file_menu.Append(wx.ID_SAVE, "Save Project\tCtrl+S")
     file_menu.AppendSeparator()
+    app_setting_id = file_menu.Append(wx.ID_ANY, "Settings\tCtrl+Alt-sS")
+    frame.Bind(wx.EVT_MENU, frame.on_open_app_settings,
+               app_setting_id)
+    file_menu.AppendSeparator()
     file_menu.Append(wx.ID_EXIT, "Exit\tCtrl-X")
     menubar.Append(file_menu, "File")
 
