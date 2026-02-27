@@ -994,6 +994,8 @@ class StudioMainFrame(wx.Frame):
             return False
 
         self._current_solution = result.solution
+        self._current_solution.solution_directory = str(solution_file.resolve().parent)
+        self._current_solution.create_directory_for_solution = False
 
         # Ensure directory structure (safe, idempotent)
         status = self._current_solution.ensure_directory_structure()
