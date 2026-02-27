@@ -178,6 +178,10 @@ class RecordingPlaybackSession:
             event_type = event.get("type")
             payload = event.get("payload", {})
 
+            if event_type == 'assert':
+                self._logger.debug("[PLAYBACK EVENT] Assert: %s", payload)
+                return self._perform_assert_playback(payload)
+
             if event_type == "dom.check":
                 self._logger.debug("[PLAYBACK EVENT] Check: %s", payload)
                 return self._browser.playback_check(payload)
@@ -312,3 +316,8 @@ class RecordingPlaybackSession:
         # Scroll a specific distance (in pixels).
         elif scroll_type == "custom":
             self._browser.scroll_to(int(scroll_x), int(scroll_y))
+
+    def _perform_assert_playback(self, event):
+        print("Assertion GOES HERE....\n\n\n")
+
+        return PlaybackStepResult.success()
