@@ -55,19 +55,19 @@ from webweaver.studio.studio_solution import (
     StudioSolution,
     solution_load_error_to_str,
     SolutionDirectoryCreateStatus)
-from webweaver.studio.solution_create_wizard.wizard_basic_info_page import \
+from webweaver.studio.ui.solution_create_wizard.wizard_basic_info_page import \
     WizardBasicInfoPage
-from webweaver.studio.solution_create_wizard.solution_create_wizard_data \
+from webweaver.studio.ui.solution_create_wizard.solution_create_wizard_data \
     import SolutionCreateWizardData
-from webweaver.studio.solution_create_wizard.wizard_select_browser_page \
+from webweaver.studio.ui.solution_create_wizard.wizard_select_browser_page \
     import WizardSelectBrowserPage
-from webweaver.studio.solution_create_wizard.wizard_behaviour_page import \
+from webweaver.studio.ui.solution_create_wizard.wizard_behaviour_page import \
     WizardBehaviourPage
-from webweaver.studio.solution_create_wizard.wizard_finish_page import \
+from webweaver.studio.ui.solution_create_wizard.wizard_finish_page import \
     WizardFinishPage
-from webweaver.studio.solution_create_wizard.solution_creation_page import \
+from webweaver.studio.ui.solution_create_wizard.solution_creation_page import \
     SolutionCreationPage
-from webweaver.studio.solution_create_wizard.solution_widget_ids import \
+from webweaver.studio.ui.solution_create_wizard.solution_widget_ids import \
     SOLUTION_WIZARD_BACK_BUTTON_ID
 from webweaver.studio.ui.solution_explorer_panel import SolutionExplorerPanel
 from webweaver.studio.ui.workspace_panel import WorkspacePanel

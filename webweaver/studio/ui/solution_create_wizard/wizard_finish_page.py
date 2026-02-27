@@ -18,9 +18,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import wx
-from webweaver.studio.solution_create_wizard.solution_create_wizard_data \
+from webweaver.studio.ui.solution_create_wizard.solution_create_wizard_data \
     import SolutionCreateWizardData
-from webweaver.studio.solution_create_wizard.solution_wizard_base import (
+from webweaver.studio.ui.solution_create_wizard.solution_wizard_base import (
                                    SolutionWizardBase,
                                    NextButtonType)
 

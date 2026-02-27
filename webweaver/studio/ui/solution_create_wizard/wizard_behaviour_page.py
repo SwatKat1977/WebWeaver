@@ -21,11 +21,11 @@ from dataclasses import dataclass
 import wx
 from webweaver.studio.browser_launch_options import (BrowserLaunchOptions,
                                                      WindowSize)
-from webweaver.studio.solution_create_wizard.solution_create_wizard_data \
+from webweaver.studio.ui.solution_create_wizard.solution_create_wizard_data \
     import SolutionCreateWizardData
-from webweaver.studio.solution_create_wizard.solution_creation_page import \
+from webweaver.studio.ui.solution_create_wizard.solution_creation_page import \
     SolutionCreationPage
-from webweaver.studio.solution_create_wizard.solution_wizard_base import \
+from webweaver.studio.ui.solution_create_wizard.solution_wizard_base import \
     SolutionWizardBase
 
 
