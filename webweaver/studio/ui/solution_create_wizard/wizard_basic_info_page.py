@@ -17,6 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import os
 from pathlib import Path
 import sys
 import typing
@@ -31,18 +32,16 @@ from webweaver.studio.ui.solution_create_wizard.solution_wizard_base import \
 
 def is_directory_writable(path: Path) -> bool:
     """
-    Check whether a directory exists and is writable.
+    Check whether an existing directory is writable.
+    Does NOT create the directory.
     """
-    try:
-        path.mkdir(parents=True, exist_ok=True)
-        test_file = path / ".write_test"
-        with open(test_file, "w", encoding="utf-8") as f:
-            f.write("test")
-        test_file.unlink()
-        return True
-
-    except OSError:
+    if not path.exists():
         return False
+
+    if not path.is_dir():
+        return False
+
+    return os.access(path, os.W_OK)
 
 
 class WizardBasicInfoPage(SolutionWizardBase):
@@ -239,6 +238,14 @@ class WizardBasicInfoPage(SolutionWizardBase):
             return False
 
         path = Path(solution_dir)
+
+        if not path.is_absolute():
+            wx.MessageBox(
+                "Please enter a full directory path or use the Browse button.",
+                "Validation error",
+                wx.ICON_WARNING
+            )
+            return False
 
         # Windows root drive protection (C:\)
         if sys.platform == "win32":
