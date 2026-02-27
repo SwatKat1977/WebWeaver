@@ -17,7 +17,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import os
 from pathlib import Path
 import sys
 import typing
@@ -40,7 +39,7 @@ def is_directory_writable(path: Path) -> bool:
 
     try:
         test_file = path / ".ww_write_test_tmp"
-        with open(test_file, "w"):
+        with open(test_file, "w", encoding="utf-8"):
             pass
         test_file.unlink()
         return True
@@ -218,11 +217,52 @@ class WizardBasicInfoPage(SolutionWizardBase):
         Returns:
             bool: True if all fields are valid, False otherwise.
         """
+        if not self._validate_solution_name():
+            return False
+
+        if not self._validate_solution_directory():
+            return False
+
+        solution_dir = Path(self._txt_solution_dir.GetValue().strip())
+        create_solution_dir = self._chk_create_solution_dir.GetValue()
+        solution_name = self._txt_solution_name.GetValue().strip()
+
+        if create_solution_dir:
+            final_path = solution_dir / solution_name
+
+            if final_path.exists():
+                wx.MessageBox(
+                    f"A directory named '{solution_name}' already exists in the selected location.",
+                    "Validation error",
+                    wx.ICON_WARNING
+                )
+                return False
+
+        else:
+            wws_files = list(solution_dir.glob("*.wws"))
+
+            if wws_files:
+                wx.MessageBox(
+                    "This directory already contains a WebWeaver solution file (.wws).\n"
+                    "Please choose a different location.",
+                    "Validation error",
+                    wx.ICON_WARNING
+                )
+                return False
+
+        # Write back to data object
+        self._data.solution_name = solution_name
+        self._data.solution_directory = str(solution_dir)
+        self._data.create_solution_dir = self._chk_create_solution_dir.GetValue()
+
+        return True
+
+    def _validate_solution_name(self) -> bool:
         solution_name = self._txt_solution_name.GetValue().strip()
 
         if not solution_name:
-            wx.MessageBox("Please enter a solution name.", "Validation error",
-                          wx.ICON_WARNING)
+            wx.MessageBox("Please enter a solution name.",
+                          "Validation error", wx.ICON_WARNING)
             return False
 
         if not self._txt_solution_name.Validate():
@@ -235,6 +275,9 @@ class WizardBasicInfoPage(SolutionWizardBase):
             self._txt_solution_name.SetFocus()
             return False
 
+        return True
+
+    def _validate_solution_directory(self) -> bool:
         solution_dir = self._txt_solution_dir.GetValue().strip()
 
         if not solution_dir:
@@ -275,35 +318,5 @@ class WizardBasicInfoPage(SolutionWizardBase):
                 wx.ICON_WARNING
             )
             return False
-
-        create_solution_dir = self._chk_create_solution_dir.GetValue()
-
-        if create_solution_dir:
-            final_path = path / solution_name
-
-            if final_path.exists():
-                wx.MessageBox(
-                    f"A directory named '{solution_name}' already exists in the selected location.",
-                    "Validation error",
-                    wx.ICON_WARNING
-                )
-                return False
-
-        else:
-            wws_files = list(path.glob("*.wws"))
-
-            if wws_files:
-                wx.MessageBox(
-                    "This directory already contains a WebWeaver solution file (.wws).\n"
-                    "Please choose a different location.",
-                    "Validation error",
-                    wx.ICON_WARNING
-                )
-                return False
-
-        # Write back to data object
-        self._data.solution_name = solution_name
-        self._data.solution_directory = str(path)
-        self._data.create_solution_dir = self._chk_create_solution_dir.GetValue()
 
         return True
