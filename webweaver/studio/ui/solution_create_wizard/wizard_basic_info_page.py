@@ -35,13 +35,17 @@ def is_directory_writable(path: Path) -> bool:
     Check whether an existing directory is writable.
     Does NOT create the directory.
     """
-    if not path.exists():
+    if not path.exists() or not path.is_dir():
         return False
 
-    if not path.is_dir():
+    try:
+        test_file = path / ".ww_write_test_tmp"
+        with open(test_file, "w"):
+            pass
+        test_file.unlink()
+        return True
+    except OSError:
         return False
-
-    return os.access(path, os.W_OK)
 
 
 class WizardBasicInfoPage(SolutionWizardBase):
@@ -169,7 +173,8 @@ class WizardBasicInfoPage(SolutionWizardBase):
         if filtered != value:
             pos = ctrl.GetInsertionPoint()
             ctrl.ChangeValue(filtered)
-            ctrl.SetInsertionPoint(min(pos - 1, len(filtered)))
+            new_pos = max(0, min(pos - 1, len(filtered)))
+            ctrl.SetInsertionPoint(new_pos)
 
         event.Skip()
 
@@ -279,6 +284,18 @@ class WizardBasicInfoPage(SolutionWizardBase):
             if final_path.exists():
                 wx.MessageBox(
                     f"A directory named '{solution_name}' already exists in the selected location.",
+                    "Validation error",
+                    wx.ICON_WARNING
+                )
+                return False
+
+        else:
+            wws_files = list(path.glob("*.wws"))
+
+            if wws_files:
+                wx.MessageBox(
+                    "This directory already contains a WebWeaver solution file (.wws).\n"
+                    "Please choose a different location.",
                     "Validation error",
                     wx.ICON_WARNING
                 )
