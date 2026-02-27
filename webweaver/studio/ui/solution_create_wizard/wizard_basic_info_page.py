@@ -271,6 +271,19 @@ class WizardBasicInfoPage(SolutionWizardBase):
             )
             return False
 
+        create_solution_dir = self._chk_create_solution_dir.GetValue()
+
+        if create_solution_dir:
+            final_path = path / solution_name
+
+            if final_path.exists():
+                wx.MessageBox(
+                    f"A directory named '{solution_name}' already exists in the selected location.",
+                    "Validation error",
+                    wx.ICON_WARNING
+                )
+                return False
+
         # Write back to data object
         self._data.solution_name = solution_name
         self._data.solution_directory = str(path)
