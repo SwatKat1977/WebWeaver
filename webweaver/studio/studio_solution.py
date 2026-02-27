@@ -95,7 +95,6 @@ class StudioSolution:
             "version": JSON_VERSION,
             "solution": {
                 "solutionName": self.solution_name,
-                "solutionDirectory": self.solution_directory,
                 "solutionDirectoryCreated": self.create_directory_for_solution,
                 "baseUrl": self.base_url,
                 "browser": self.selected_browser,
@@ -137,7 +136,6 @@ class StudioSolution:
 
         required = [
             "solutionName",
-            "solutionDirectory",
             "solutionDirectoryCreated",
             "baseUrl",
             "browser",
@@ -156,7 +154,7 @@ class StudioSolution:
 
         solution = StudioSolution(
             solution_name=str(raw_solution["solutionName"]),
-            solution_directory=str(raw_solution["solutionDirectory"]),
+            solution_directory=".",
             create_directory_for_solution=bool(raw_solution["solutionDirectoryCreated"]),
             base_url=str(raw_solution["baseUrl"]),
             selected_browser=str(raw_solution["browser"]),
