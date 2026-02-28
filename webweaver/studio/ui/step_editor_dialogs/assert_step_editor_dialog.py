@@ -20,6 +20,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 from enum import Enum
 import wx
 
+
 class AssertionOperator(str, Enum):
     """
     Enumeration of supported assertion operators.
@@ -68,6 +69,7 @@ class AssertionOperator(str, Enum):
     IS_NONE = "is_none"
     IS_NOT_NONE = "is_not_none"
 
+
 ASSERTION_OPERATOR_LABELS: list[tuple[str, AssertionOperator]] = [
     ("Equals (==)", AssertionOperator.EQUALS),
     ("Not Equals (!=)", AssertionOperator.NOT_EQUALS),
@@ -101,6 +103,7 @@ UNARY_OPERATORS = {
     AssertionOperator.IS_NONE,
     AssertionOperator.IS_NOT_NONE,
 }
+
 
 class AssertionStepEditor(wx.Dialog):
     """
