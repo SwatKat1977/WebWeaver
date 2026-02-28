@@ -72,7 +72,7 @@ class Assertions:
     # Internal failure handler
     # ---------------------------------------------------------
 
-    def _handle_failure(self, message: str) -> None:
+    def handle_failure(self, message: str) -> None:
         if self.logger:
             self.logger.error(message)
 
@@ -102,7 +102,7 @@ class _AssertValue:
 
     def _fail(self, msg: str) -> None:
         message = f"{self.description} {msg}".strip()
-        self.parent._handle_failure(message)
+        self.parent.handle_failure(message)
 
     # ---------------------------------------------------------
     # Fluent matchers
