@@ -28,6 +28,7 @@ from webweaver.studio.browsing.studio_browser import (PlaybackStepResult,
                                                       StudioBrowser)
 from webweaver.studio.playback.playback_context import PlaybackContext
 from webweaver.studio.recording.recording import Recording
+from webweaver.common.assertion import Assertions
 
 
 @dataclass
@@ -95,6 +96,10 @@ class RecordingPlaybackSession:
         self._logger = logger.getChild(__name__)
         self.callback_events = PlaybackCallbackEvents()
         self._context = PlaybackContext()
+        self._hard_assert: Assertions = Assertions(soft=False,
+                                                   logger=self._logger)
+        self._soft_assert: Assertions = Assertions(soft=True,
+                                                   logger=self._logger)
 
     def start(self):
         """
@@ -317,7 +322,51 @@ class RecordingPlaybackSession:
         elif scroll_type == "custom":
             self._browser.scroll_to(int(scroll_x), int(scroll_y))
 
-    def _perform_assert_playback(self, event):
-        print("Assertion GOES HERE....\n\n\n")
+    def _perform_assert_playback(self, payload):
+        operator = payload.get("operator")
+        soft_assert: bool = bool(payload.get("soft_assert"))
+        left_value = payload.get("left_value")
+        right_value = payload.get("right_value")
+
+        asserter = self._soft_assert if soft_assert else self._hard_assert
+
+        if operator == "equals":
+            asserter.assert_that(left_value).is_equal_to(right_value)
+
+        elif operator == "not_equals":
+            asserter.assert_that(left_value).is_not_equal_to(right_value)
+
+        elif operator == "greater_than":
+            asserter.assert_that(left_value).is_greater_than(right_value)
+
+        elif operator == "less_than":
+            asserter.assert_that(left_value).is_less_than(right_value)
+
+        elif operator == "contains":
+            asserter.assert_that(left_value).contains(right_value)
+
+        elif operator == "in":
+            asserter.assert_that(left_value).is_in(right_value)
+
+        elif operator == "starts_with":
+            asserter.assert_that(left_value).starts_with(right_value)
+
+        elif operator == "ends_with":
+            asserter.assert_that(left_value).ends_with(right_value)
+
+        elif operator == "matches_regex":
+            asserter.assert_that(left_value).matches(right_value)
+
+        elif operator == "is_true":
+            asserter.assert_that(left_value).is_true()
+
+        elif operator == "is_false":
+            asserter.assert_that(left_value).is_false()
+
+        elif operator == "is_none":
+            asserter.assert_that(left_value).is_none()
+
+        elif operator == "is_not_none":
+            asserter.assert_that(left_value).is_not_none()
 
         return PlaybackStepResult.success()
