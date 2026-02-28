@@ -28,7 +28,7 @@ from webweaver.studio.browsing.studio_browser import (PlaybackStepResult,
                                                       StudioBrowser)
 from webweaver.studio.playback.playback_context import PlaybackContext
 from webweaver.studio.recording.recording import Recording
-from webweaver.common.assertion import Assertions
+from webweaver.common.assertion import Assertions, AssertionFailure
 
 
 @dataclass
@@ -330,43 +330,48 @@ class RecordingPlaybackSession:
 
         asserter = self._soft_assert if soft_assert else self._hard_assert
 
-        if operator == "equals":
-            asserter.assert_that(left_value).is_equal_to(right_value)
+        try:
+            if operator == "equals":
+                asserter.assert_that(left_value).is_equal_to(right_value)
 
-        elif operator == "not_equals":
-            asserter.assert_that(left_value).is_not_equal_to(right_value)
+            elif operator == "not_equals":
+                asserter.assert_that(left_value).is_not_equal_to(right_value)
 
-        elif operator == "greater_than":
-            asserter.assert_that(left_value).is_greater_than(right_value)
+            elif operator == "greater_than":
+                asserter.assert_that(left_value).is_greater_than(right_value)
 
-        elif operator == "less_than":
-            asserter.assert_that(left_value).is_less_than(right_value)
+            elif operator == "less_than":
+                asserter.assert_that(left_value).is_less_than(right_value)
 
-        elif operator == "contains":
-            asserter.assert_that(left_value).contains(right_value)
+            elif operator == "contains":
+                asserter.assert_that(left_value).contains(right_value)
 
-        elif operator == "in":
-            asserter.assert_that(left_value).is_in(right_value)
+            elif operator == "in":
+                asserter.assert_that(left_value).is_in(right_value)
 
-        elif operator == "starts_with":
-            asserter.assert_that(left_value).starts_with(right_value)
+            elif operator == "starts_with":
+                asserter.assert_that(left_value).starts_with(right_value)
 
-        elif operator == "ends_with":
-            asserter.assert_that(left_value).ends_with(right_value)
+            elif operator == "ends_with":
+                asserter.assert_that(left_value).ends_with(right_value)
 
-        elif operator == "matches_regex":
-            asserter.assert_that(left_value).matches(right_value)
+            elif operator == "matches_regex":
+                asserter.assert_that(left_value).matches(right_value)
 
-        elif operator == "is_true":
-            asserter.assert_that(left_value).is_true()
+            elif operator == "is_true":
+                asserter.assert_that(left_value).is_true()
 
-        elif operator == "is_false":
-            asserter.assert_that(left_value).is_false()
+            elif operator == "is_false":
+                asserter.assert_that(left_value).is_false()
 
-        elif operator == "is_none":
-            asserter.assert_that(left_value).is_none()
+            elif operator == "is_none":
+                asserter.assert_that(left_value).is_none()
 
-        elif operator == "is_not_none":
-            asserter.assert_that(left_value).is_not_none()
+            elif operator == "is_not_none":
+                asserter.assert_that(left_value).is_not_none()
+
+        except AssertionFailure as ex:
+            assert_msg: str = str(ex)
+            return PlaybackStepResult.fail(assert_msg)
 
         return PlaybackStepResult.success()
