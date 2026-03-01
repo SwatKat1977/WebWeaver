@@ -17,56 +17,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
-from enum import Enum
+import json
 import wx
+from webweaver.common.assertion_operator import AssertionOperator
 
-class AssertionOperator(str, Enum):
-    """
-    Enumeration of supported assertion operators.
-
-    Each operator defines the comparison or validation rule applied
-    during assertion step execution. The enum inherits from `str`
-    so that values can be serialized directly (e.g., into JSON) and
-    persisted in step payloads without additional conversion.
-
-    Categories
-    ----------
-    Binary operators (require left and right values):
-        - EQUALS
-        - NOT_EQUALS
-        - GREATER_THAN
-        - LESS_THAN
-        - CONTAINS
-        - IN
-        - STARTS_WITH
-        - ENDS_WITH
-        - MATCHES_REGEX
-
-    Unary operators (require only a left value):
-        - IS_TRUE
-        - IS_FALSE
-        - IS_NONE
-        - IS_NOT_NONE
-
-    Notes
-    -----
-    Operators listed as unary should also be included in
-    `UNARY_OPERATORS` to ensure UI components (such as
-    AssertionStepEditor) correctly disable the right-hand input.
-    """
-    EQUALS = "equals"
-    NOT_EQUALS = "not_equals"
-    GREATER_THAN = "greater_than"
-    LESS_THAN = "less_than"
-    CONTAINS = "contains"
-    IN = "in"
-    STARTS_WITH = "starts_with"
-    ENDS_WITH = "ends_with"
-    MATCHES_REGEX = "matches_regex"
-    IS_TRUE = "is_true"
-    IS_FALSE = "is_false"
-    IS_NONE = "is_none"
-    IS_NOT_NONE = "is_not_none"
 
 ASSERTION_OPERATOR_LABELS: list[tuple[str, AssertionOperator]] = [
     ("Equals (==)", AssertionOperator.EQUALS),
@@ -95,12 +49,13 @@ This set must remain consistent with the unary operators defined in
 `AssertionOperator` to prevent mismatches between UI behavior and
 execution logic.
 """
-UNARY_OPERATORS = {
+UNARY_ASSERTION_OPERATORS = {
     AssertionOperator.IS_TRUE,
     AssertionOperator.IS_FALSE,
     AssertionOperator.IS_NONE,
     AssertionOperator.IS_NOT_NONE,
 }
+
 
 class AssertionStepEditor(wx.Dialog):
     """
@@ -118,7 +73,7 @@ class AssertionStepEditor(wx.Dialog):
     confirms (OK), the dialog updates `event["payload"]` in-place with
     the edited values and sets `self.changed` to True.
 
-    Unary operators (defined in UNARY_OPERATORS) do not require a
+    Unary operators (defined in UNARY_ASSERTION_OPERATORS) do not require a
     right-hand value. When such an operator is selected, the right-hand
     input control is disabled and cleared automatically.
 
@@ -247,7 +202,7 @@ class AssertionStepEditor(wx.Dialog):
 
         _, operator = ASSERTION_OPERATOR_LABELS[selected_index]
 
-        self._right_ctrl.Enable(operator not in UNARY_OPERATORS)
+        self._right_ctrl.Enable(operator not in UNARY_ASSERTION_OPERATORS)
 
     def _on_ok(self, _evt):
 
@@ -262,9 +217,29 @@ class AssertionStepEditor(wx.Dialog):
             "soft_assert": self._soft_checkbox.GetValue(),
         }
 
-        if operator not in UNARY_OPERATORS:
+        right_value = None
+
+        if operator not in UNARY_ASSERTION_OPERATORS:
             right_value = self._right_ctrl.GetValue().strip()
             payload["right_value"] = right_value
+
+        if operator == AssertionOperator.IN:
+            try:
+                parsed = json.loads(right_value)
+            except json.JSONDecodeError:
+                wx.MessageBox(
+                    "For 'In', the right value must be a valid JSON array.\n"
+                    "Example:\n[\"apple\", \"banana\"]",
+                    "Validation Error",
+                    wx.ICON_WARNING)
+                return
+
+            if not isinstance(parsed, list):
+                wx.MessageBox(
+                    "For 'In', the right value must be a JSON list.",
+                    "Validation Error",
+                    wx.ICON_WARNING)
+                return
 
         self._event["payload"] = payload
 
@@ -273,9 +248,22 @@ class AssertionStepEditor(wx.Dialog):
 
     def _on_operator_changed(self, _evt):
         selected_index = self._operator_choice.GetSelection()
-        if selected_index != wx.NOT_FOUND:
-            _, operator = ASSERTION_OPERATOR_LABELS[selected_index]
-            if operator in UNARY_OPERATORS:
-                self._right_ctrl.SetValue("")
+
+        if selected_index == wx.NOT_FOUND:
+            self._update_right_enabled()
+            return
+
+        _, operator = ASSERTION_OPERATOR_LABELS[selected_index]
+
+        if operator in UNARY_ASSERTION_OPERATORS:
+            self._right_ctrl.SetValue("")
+
+        if operator == AssertionOperator.IN:
+            self._hint_label.SetLabel(
+                "Right value must be a JSON array, e.g. "
+                "[\"apple\", \"banana\"].")
+        else:
+            self._hint_label.SetLabel(
+                "Use {{property_name}} to reference stored variables.")
 
         self._update_right_enabled()

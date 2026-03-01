@@ -72,7 +72,7 @@ class Assertions:
     # Internal failure handler
     # ---------------------------------------------------------
 
-    def _handle_failure(self, message: str) -> None:
+    def handle_failure(self, message: str) -> None:
         if self.logger:
             self.logger.error(message)
 
@@ -102,7 +102,7 @@ class _AssertValue:
 
     def _fail(self, msg: str) -> None:
         message = f"{self.description} {msg}".strip()
-        self.parent._handle_failure(message)
+        self.parent.handle_failure(message)
 
     # ---------------------------------------------------------
     # Fluent matchers
@@ -139,13 +139,27 @@ class _AssertValue:
         return self
 
     def is_greater_than(self, value: Any) -> _AssertValue:
-        if not self.actual > value:
-            self._fail(f"expected > {value}, got {self.actual}")
+        try:
+            if not self.actual > value:
+                self._fail(f"expected > {value}, got {self.actual}")
+
+        except TypeError:
+            self._fail(
+                f"cannot compare {type(self.actual).__name__} "
+                f"with {type(value).__name__}")
+
         return self
 
     def is_less_than(self, value: Any) -> _AssertValue:
-        if not self.actual < value:
-            self._fail(f"expected < {value}, got {self.actual}")
+        try:
+            if not self.actual < value:
+                self._fail(f"expected < {value}, got {self.actual}")
+
+        except TypeError:
+            self._fail(
+                f"cannot compare {type(self.actual).__name__} "
+                f"with {type(value).__name__}")
+
         return self
 
     def contains(self, element: Any) -> _AssertValue:

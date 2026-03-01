@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import asyncio
 from dataclasses import dataclass
+import json
 from logging import Logger
 import time
 import typing
@@ -28,6 +29,12 @@ from webweaver.studio.browsing.studio_browser import (PlaybackStepResult,
                                                       StudioBrowser)
 from webweaver.studio.playback.playback_context import PlaybackContext
 from webweaver.studio.recording.recording import Recording
+from webweaver.common.assertion import Assertions, AssertionFailure
+from webweaver.common.assertion_operator import (AssertionOperator,
+                                                 ASSERTION_NUMERICAL_OPERATORS,
+                                                 ASSERTION_STRING_OPERATORS,
+                                                 ASSERTION_BOOLEAN_OPERATORS,
+                                                 ASSERTION_EXISTENCE_OPERATORS)
 
 
 @dataclass
@@ -76,6 +83,7 @@ class RecordingPlaybackSession:
     driven by toolbar actions such as Play, Step, Pause, and Stop, and to report
     failures immediately when an event cannot be executed.
     """
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(self,
                  browser: StudioBrowser,
@@ -95,6 +103,10 @@ class RecordingPlaybackSession:
         self._logger = logger.getChild(__name__)
         self.callback_events = PlaybackCallbackEvents()
         self._context = PlaybackContext()
+        self._hard_assert: Assertions = Assertions(soft=False,
+                                                   logger=self._logger)
+        self._soft_assert: Assertions = Assertions(soft=True,
+                                                   logger=self._logger)
 
     def start(self):
         """
@@ -177,6 +189,10 @@ class RecordingPlaybackSession:
         try:
             event_type = event.get("type")
             payload = event.get("payload", {})
+
+            if event_type == 'assert':
+                self._logger.debug("[PLAYBACK EVENT] Assert: %s", payload)
+                return self._perform_assert_playback(payload)
 
             if event_type == "dom.check":
                 self._logger.debug("[PLAYBACK EVENT] Check: %s", payload)
@@ -312,3 +328,146 @@ class RecordingPlaybackSession:
         # Scroll a specific distance (in pixels).
         elif scroll_type == "custom":
             self._browser.scroll_to(int(scroll_x), int(scroll_y))
+
+    def _perform_assert_playback(self, payload):
+        operator = payload.get("operator")
+        soft_assert: bool = bool(payload.get("soft_assert"))
+        left_value = payload.get("left_value")
+        right_value = payload.get("right_value")
+
+        operator_enum = AssertionOperator(operator)
+
+        asserter = self._soft_assert if soft_assert else self._hard_assert
+
+        try:
+            # Process numerical assertion operators
+            if operator_enum in ASSERTION_NUMERICAL_OPERATORS:
+                self._playback_numerical_operator(left_value,
+                                                  right_value,
+                                                  operator_enum,
+                                                  asserter)
+
+            if operator_enum in ASSERTION_STRING_OPERATORS:
+                self._playback_string_assertion(left_value,
+                                                right_value,
+                                                operator_enum,
+                                                asserter)
+
+            if operator_enum in ASSERTION_BOOLEAN_OPERATORS:
+                self._playback_boolean_assertion(left_value,
+                                                 operator_enum,
+                                                 asserter)
+
+            if operator_enum in ASSERTION_EXISTENCE_OPERATORS:
+                self._playback_existence_assertion(left_value,
+                                                   operator_enum,
+                                                   asserter)
+
+        except AssertionFailure as ex:
+            assert_msg: str = str(ex)
+            return PlaybackStepResult.fail(assert_msg)
+
+        return PlaybackStepResult.success()
+
+    def _playback_numerical_operator(self,
+                                     left_value,
+                                     right_value,
+                                     operator: AssertionOperator,
+                                     asserter):
+
+        if operator == AssertionOperator.EQUALS:
+            asserter.assert_that(left_value).is_equal_to(right_value)
+
+        elif operator == AssertionOperator.NOT_EQUALS:
+            asserter.assert_that(left_value).is_not_equal_to(right_value)
+
+        elif operator == AssertionOperator.GREATER_THAN:
+            try:
+                left_value = float(left_value)
+                right_value = float(right_value)
+
+            except ValueError as ex:
+                raise AssertionFailure(
+                    "Numeric comparison requires numeric values") from ex
+
+            asserter.assert_that(left_value).is_greater_than(right_value)
+
+        elif operator == AssertionOperator.LESS_THAN:
+            try:
+                left_value = float(left_value)
+                right_value = float(right_value)
+
+            except ValueError as ex:
+                raise AssertionFailure(
+                    "Numeric comparison requires numeric values") from ex
+
+            asserter.assert_that(left_value).is_less_than(right_value)
+
+    def _playback_string_assertion(self,
+                                   left_value,
+                                   right_value,
+                                   operator: AssertionOperator,
+                                   asserter):
+
+        if operator == AssertionOperator.CONTAINS:
+            asserter.assert_that(left_value).contains(right_value)
+
+        elif operator == AssertionOperator.IN:
+            try:
+                collection = json.loads(right_value)
+
+                if not isinstance(collection, list):
+                    raise AssertionFailure(
+                        "Expected a JSON list for 'is_in'")
+
+                asserter.assert_that(left_value).is_in(collection)
+
+            except json.JSONDecodeError as ex:
+                raise AssertionFailure(
+                    "Invalid JSON for 'is_in' operator") from ex
+
+        elif operator == AssertionOperator.STARTS_WITH:
+            asserter.assert_that(left_value).starts_with(right_value)
+
+        elif operator == AssertionOperator.ENDS_WITH:
+            asserter.assert_that(left_value).ends_with(right_value)
+
+        elif operator == AssertionOperator.MATCHES_REGEX:
+            asserter.assert_that(left_value).matches(right_value)
+
+    def _playback_boolean_assertion(self,
+                                    left_value,
+                                    operator: AssertionOperator,
+                                    asserter):
+        left_value_boolean = self._parse_boolean(left_value)
+
+        if operator == AssertionOperator.IS_TRUE:
+            asserter.assert_that(left_value_boolean).is_true()
+
+        elif operator == AssertionOperator.IS_FALSE:
+            asserter.assert_that(left_value_boolean).is_false()
+
+    def _playback_existence_assertion(self,
+                                      left_value,
+                                      operator: AssertionOperator,
+                                      asserter):
+        if operator == AssertionOperator.IS_NONE:
+            asserter.assert_that(left_value).is_none()
+
+        elif operator == AssertionOperator.IS_NOT_NONE:
+            asserter.assert_that(left_value).is_not_none()
+
+    def _parse_boolean(self, value: str) -> bool:
+        if isinstance(value, bool):
+            return value
+
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+
+            if normalized in ("true", "1", "yes"):
+                return True
+            if normalized in ("false", "0", "no"):
+                return False
+
+        raise AssertionFailure(
+            f"Boolean comparison requires boolean value, got '{value}'")
