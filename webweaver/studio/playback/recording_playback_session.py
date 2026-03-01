@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import asyncio
 from dataclasses import dataclass
+import json
 from logging import Logger
 import time
 import typing
@@ -363,7 +364,17 @@ class RecordingPlaybackSession:
                 asserter.assert_that(left_value).contains(right_value)
 
             elif operator == "in":
-                asserter.assert_that(left_value).is_in(right_value)
+                try:
+                    collection = json.loads(right_value)
+
+                    if not isinstance(collection, list):
+                        raise AssertionFailure(
+                            "Expected a JSON list for 'is_in'")
+
+                    asserter.assert_that(left_value).is_in(collection)
+
+                except json.JSONDecodeError:
+                    raise AssertionFailure("Invalid JSON for 'is_in' operator")
 
             elif operator == "starts_with":
                 asserter.assert_that(left_value).starts_with(right_value)

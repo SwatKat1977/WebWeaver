@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 from enum import Enum
+import json
 import wx
 
 
@@ -265,9 +266,29 @@ class AssertionStepEditor(wx.Dialog):
             "soft_assert": self._soft_checkbox.GetValue(),
         }
 
+        right_value = None
+
         if operator not in UNARY_OPERATORS:
             right_value = self._right_ctrl.GetValue().strip()
             payload["right_value"] = right_value
+
+        if operator == AssertionOperator.IN:
+            try:
+                parsed = json.loads(right_value)
+            except json.JSONDecodeError:
+                wx.MessageBox(
+                    "For 'In', the right value must be a valid JSON array.\n"
+                    "Example:\n[\"apple\", \"banana\"]",
+                    "Validation Error",
+                    wx.ICON_WARNING)
+                return
+
+            if not isinstance(parsed, list):
+                wx.MessageBox(
+                    "For 'In', the right value must be a JSON list.",
+                    "Validation Error",
+                    wx.ICON_WARNING)
+                return
 
         self._event["payload"] = payload
 
@@ -276,9 +297,22 @@ class AssertionStepEditor(wx.Dialog):
 
     def _on_operator_changed(self, _evt):
         selected_index = self._operator_choice.GetSelection()
-        if selected_index != wx.NOT_FOUND:
-            _, operator = ASSERTION_OPERATOR_LABELS[selected_index]
-            if operator in UNARY_OPERATORS:
-                self._right_ctrl.SetValue("")
+
+        if selected_index == wx.NOT_FOUND:
+            self._update_right_enabled()
+            return
+
+        _, operator = ASSERTION_OPERATOR_LABELS[selected_index]
+
+        if operator in UNARY_OPERATORS:
+            self._right_ctrl.SetValue("")
+
+        if operator == AssertionOperator.IN:
+            self._hint_label.SetLabel(
+                "Right value must be a JSON array, e.g. "
+                "[\"apple\", \"banana\"].")
+        else:
+            self._hint_label.SetLabel(
+                "Use {{property_name}} to reference stored variables.")
 
         self._update_right_enabled()
