@@ -338,9 +338,25 @@ class RecordingPlaybackSession:
                 asserter.assert_that(left_value).is_not_equal_to(right_value)
 
             elif operator == "greater_than":
+                try:
+                    left_value = float(left_value)
+                    right_value = float(right_value)
+
+                except ValueError:
+                    raise AssertionFailure(
+                        "Numeric comparison requires numeric values")
+
                 asserter.assert_that(left_value).is_greater_than(right_value)
 
             elif operator == "less_than":
+                try:
+                    left_value = float(left_value)
+                    right_value = float(right_value)
+
+                except ValueError:
+                    raise AssertionFailure(
+                        "Numeric comparison requires numeric values")
+
                 asserter.assert_that(left_value).is_less_than(right_value)
 
             elif operator == "contains":

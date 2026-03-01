@@ -139,13 +139,27 @@ class _AssertValue:
         return self
 
     def is_greater_than(self, value: Any) -> _AssertValue:
-        if not self.actual > value:
-            self._fail(f"expected > {value}, got {self.actual}")
+        try:
+            if not self.actual > value:
+                self._fail(f"expected > {value}, got {self.actual}")
+
+        except TypeError:
+            self._fail(
+                f"cannot compare {type(self.actual).__name__} "
+                f"with {type(value).__name__}")
+
         return self
 
     def is_less_than(self, value: Any) -> _AssertValue:
-        if not self.actual < value:
-            self._fail(f"expected < {value}, got {self.actual}")
+        try:
+            if not self.actual < value:
+                self._fail(f"expected < {value}, got {self.actual}")
+
+        except TypeError:
+            self._fail(
+                f"cannot compare {type(self.actual).__name__} "
+                f"with {type(value).__name__}")
+
         return self
 
     def contains(self, element: Any) -> _AssertValue:
