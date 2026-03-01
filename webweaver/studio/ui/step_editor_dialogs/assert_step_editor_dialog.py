@@ -19,8 +19,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import json
 import wx
-from webweaver.common.assertion_operator import (AssertionOperator,
-                                                 UNARY_OPERATORS)
+from webweaver.common.assertion_operator import AssertionOperator
 
 
 ASSERTION_OPERATOR_LABELS: list[tuple[str, AssertionOperator]] = [
@@ -39,6 +38,24 @@ ASSERTION_OPERATOR_LABELS: list[tuple[str, AssertionOperator]] = [
     ("Is Not None", AssertionOperator.IS_NOT_NONE),
 ]
 
+"""
+Set of assertion operators that do not require a right-hand value.
+
+Operators included here are treated as unary during both UI editing
+and playback execution. When selected in the editor, the right-hand
+input control is disabled and cleared automatically.
+
+This set must remain consistent with the unary operators defined in
+`AssertionOperator` to prevent mismatches between UI behavior and
+execution logic.
+"""
+UNARY_ASSERTION_OPERATORS = {
+    AssertionOperator.IS_TRUE,
+    AssertionOperator.IS_FALSE,
+    AssertionOperator.IS_NONE,
+    AssertionOperator.IS_NOT_NONE,
+}
+
 
 class AssertionStepEditor(wx.Dialog):
     """
@@ -56,7 +73,7 @@ class AssertionStepEditor(wx.Dialog):
     confirms (OK), the dialog updates `event["payload"]` in-place with
     the edited values and sets `self.changed` to True.
 
-    Unary operators (defined in UNARY_OPERATORS) do not require a
+    Unary operators (defined in UNARY_ASSERTION_OPERATORS) do not require a
     right-hand value. When such an operator is selected, the right-hand
     input control is disabled and cleared automatically.
 
@@ -185,7 +202,7 @@ class AssertionStepEditor(wx.Dialog):
 
         _, operator = ASSERTION_OPERATOR_LABELS[selected_index]
 
-        self._right_ctrl.Enable(operator not in UNARY_OPERATORS)
+        self._right_ctrl.Enable(operator not in UNARY_ASSERTION_OPERATORS)
 
     def _on_ok(self, _evt):
 
@@ -202,7 +219,7 @@ class AssertionStepEditor(wx.Dialog):
 
         right_value = None
 
-        if operator not in UNARY_OPERATORS:
+        if operator not in UNARY_ASSERTION_OPERATORS:
             right_value = self._right_ctrl.GetValue().strip()
             payload["right_value"] = right_value
 
@@ -238,7 +255,7 @@ class AssertionStepEditor(wx.Dialog):
 
         _, operator = ASSERTION_OPERATOR_LABELS[selected_index]
 
-        if operator in UNARY_OPERATORS:
+        if operator in UNARY_ASSERTION_OPERATORS:
             self._right_ctrl.SetValue("")
 
         if operator == AssertionOperator.IN:

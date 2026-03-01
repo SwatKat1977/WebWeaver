@@ -69,20 +69,27 @@ class AssertionOperator(str, Enum):
     IS_NOT_NONE = "is_not_none"
 
 
-"""
-Set of assertion operators that do not require a right-hand value.
+ASSERTION_NUMERICAL_OPERATORS = {
+    AssertionOperator.EQUALS,
+    AssertionOperator.NOT_EQUALS,
+    AssertionOperator.GREATER_THAN,
+    AssertionOperator.LESS_THAN
+}
 
-Operators included here are treated as unary during both UI editing
-and playback execution. When selected in the editor, the right-hand
-input control is disabled and cleared automatically.
+ASSERTION_STRING_OPERATORS = {
+    AssertionOperator.CONTAINS,
+    AssertionOperator.IN,
+    AssertionOperator.STARTS_WITH,
+    AssertionOperator.ENDS_WITH,
+    AssertionOperator.MATCHES_REGEX
+}
 
-This set must remain consistent with the unary operators defined in
-`AssertionOperator` to prevent mismatches between UI behavior and
-execution logic.
-"""
-UNARY_OPERATORS = {
+ASSERTION_BOOLEAN_OPERATORS = {
     AssertionOperator.IS_TRUE,
     AssertionOperator.IS_FALSE,
+}
+
+ASSERTION_EXISTENCE_OPERATORS = {
     AssertionOperator.IS_NONE,
     AssertionOperator.IS_NOT_NONE,
 }
