@@ -78,6 +78,7 @@ class RecordingPlaybackSession:
     driven by toolbar actions such as Play, Step, Pause, and Stop, and to report
     failures immediately when an event cannot be executed.
     """
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(self,
                  browser: StudioBrowser,
@@ -343,9 +344,9 @@ class RecordingPlaybackSession:
                     left_value = float(left_value)
                     right_value = float(right_value)
 
-                except ValueError:
+                except ValueError as ex:
                     raise AssertionFailure(
-                        "Numeric comparison requires numeric values")
+                        "Numeric comparison requires numeric values") from ex
 
                 asserter.assert_that(left_value).is_greater_than(right_value)
 
@@ -354,9 +355,9 @@ class RecordingPlaybackSession:
                     left_value = float(left_value)
                     right_value = float(right_value)
 
-                except ValueError:
+                except ValueError as ex:
                     raise AssertionFailure(
-                        "Numeric comparison requires numeric values")
+                        "Numeric comparison requires numeric values") from ex
 
                 asserter.assert_that(left_value).is_less_than(right_value)
 
@@ -373,8 +374,9 @@ class RecordingPlaybackSession:
 
                     asserter.assert_that(left_value).is_in(collection)
 
-                except json.JSONDecodeError:
-                    raise AssertionFailure("Invalid JSON for 'is_in' operator")
+                except json.JSONDecodeError as ex:
+                    raise AssertionFailure(
+                        "Invalid JSON for 'is_in' operator") from ex
 
             elif operator == "starts_with":
                 asserter.assert_that(left_value).starts_with(right_value)
