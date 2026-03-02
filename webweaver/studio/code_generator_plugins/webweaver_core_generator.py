@@ -119,6 +119,9 @@ class WebweaverCoreCodeGenerator(BaseCodeGenerator):
     def _on_unknown(self, payload):
         return
 
+    def _on_assert(self, payload):
+        print(f"[DEBUG] (_on_assert) Payload: {payload}")
+
     def _on_dom_click(self, payload):
         indent = " " * (self._indent_level * 4)
 
@@ -131,6 +134,9 @@ class WebweaverCoreCodeGenerator(BaseCodeGenerator):
             ""]
         self._lines.extend(
             indent + line.format(**payload) for line in template)
+
+    def _on_dom_get(self, payload):
+        print(f"[DEBUG] (_on_dom_get) Payload: {payload}")
 
     def _on_dom_type(self, payload):
         """Process a textbox control event"""
