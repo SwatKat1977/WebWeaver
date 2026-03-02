@@ -120,7 +120,72 @@ class WebweaverCoreCodeGenerator(BaseCodeGenerator):
         return
 
     def _on_assert(self, payload):
-        print(f"[DEBUG] (_on_assert) Payload: {payload}")
+        indent = " " * (self._indent_level * 4)
+
+        soft_assert = self._parse_boolean(payload.get("soft_assert"))
+        operator = payload.get("operator")
+        left_value = payload.get("left_value")
+        right_value = payload.get("right_value")
+
+        asserter = f'self.assume_that("{left_value}")' if soft_assert else \
+            f'self.assert_that("{left_value}")'
+
+        assert_str = ""
+        if operator == "equals":
+            assert_str = f'{asserter}.is_equal_to({right_value})'
+
+        elif operator == "not_equals":
+            assert_str = f'{asserter}.is_not_equal_to({right_value})'
+
+        elif operator == "greater_than":
+            assert_str = f'{asserter}.is_greater_than({right_value})'
+
+        elif operator == "less_than":
+            assert_str = f'{asserter}.is_less_than({right_value})'
+
+        elif operator == "contains":
+            assert_str = f'{asserter}.contains({right_value})'
+
+        elif operator == "in":
+            assert_str = f'{asserter}.is_in({right_value})'
+
+        elif operator == "starts_with":
+            assert_str = f'{asserter}.starts_with({right_value})'
+
+        elif operator == "ends_with":
+            assert_str = f'{asserter}.ends_with({right_value})'
+
+        elif operator == "matches_regex":
+            assert_str = f'{asserter}.matches({right_value})'
+
+        elif operator == "is_true":
+            assert_str = f'{asserter}.is_true()'
+
+        elif operator == "is_false":
+            assert_str = f'{asserter}.is_false()'
+
+        elif operator == "is_none":
+            assert_str = f'{asserter}.is_none()'
+
+        elif operator == "is_not_none":
+            assert_str = f'{asserter}.is_not_none()'
+
+        self._lines.append(indent + assert_str)
+        self._lines.append("")
+
+    def _parse_boolean(self, value: str) -> bool:
+        if isinstance(value, bool):
+            return value
+
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+
+            if normalized in ("true", "1", "yes"):
+                return True
+            if normalized in ("false", "0", "no"):
+                return False
+
+        raise ValueError(f"Invalid boolean value, got '{value}'")
 
     def _on_dom_click(self, payload):
         indent = " " * (self._indent_level * 4)
