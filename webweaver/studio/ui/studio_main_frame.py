@@ -170,8 +170,9 @@ class StudioMainFrame(wx.Frame):
 
         self._playback_toolbar: Optional[PlaybackToolbar] = None
 
-        plugin_path: str = "webweaver/studio/code_generator_plugins"
-        self._code_gen_registry = CodeGeneratorRegistry(Path(plugin_path),
+        code_gens_dir = self._app_settings.code_generators_path
+        print(f"[DEBUG] code_gens_dir: {code_gens_dir}")
+        self._code_gen_registry = CodeGeneratorRegistry(Path(code_gens_dir),
                                                         self._logger)
         self._code_gen_registry.load()
 
@@ -744,8 +745,12 @@ class StudioMainFrame(wx.Frame):
             page_definitions=page_definitions
         )
 
+        old_code_gen_path = self._app_settings.code_generators_path
         if dialog.ShowModal() == wx.ID_OK:
             self._settings_manager.save(self._app_settings)
+            if self._app_settings.code_generators_path != old_code_gen_path:
+                self._code_gen_registry.plugin_dir = \
+                    self._app_settings.code_generators_path
 
         dialog.Destroy()
 

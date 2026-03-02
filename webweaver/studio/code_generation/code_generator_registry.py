@@ -37,6 +37,14 @@ class CodeGeneratorRegistry:
         self._generators: typing.List[CodeGeneratorRegistryEntry] = []
         self._logger = logger.getChild(__name__)
 
+    @property
+    def plugin_dir(self) -> Path:
+        return self._plugin_dir
+
+    @plugin_dir.setter
+    def plugin_dir(self, plugin_dir: Path):
+        self._plugin_dir = plugin_dir = plugin_dir
+
     def load(self) -> None:
         """
         (Re)load all generators from disk.
@@ -76,8 +84,8 @@ class CodeGeneratorRegistry:
         """
         return list(self._generators)
 
-    def _load_from_file(self, path: Path) -> (
-            typing.Optional)[CodeGeneratorRegistryEntry]:
+    def _load_from_file(self, path: Path) -> \
+            typing.Optional[CodeGeneratorRegistryEntry]:
         """
         Load a code generator plugin from a Python source file.
 
