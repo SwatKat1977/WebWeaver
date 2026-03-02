@@ -21,6 +21,7 @@ from webweaver.studio.code_generation.base_code_generator import \
     BaseCodeGenerator
 from webweaver.studio.code_generation.base_code_generator_settings import \
     BaseCodeGeneratorSettings
+# pylint: disable=R0801
 
 
 class WebweaverCoreSettings(BaseCodeGeneratorSettings):
@@ -120,6 +121,7 @@ class WebweaverCoreCodeGenerator(BaseCodeGenerator):
         return
 
     def _on_assert(self, payload):
+        # pylint: disable=too-many-branches
         indent = " " * (self._indent_level * 4)
 
         soft_assert = self._parse_boolean(payload.get("soft_assert"))
