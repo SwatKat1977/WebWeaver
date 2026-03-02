@@ -136,7 +136,36 @@ class WebweaverCoreCodeGenerator(BaseCodeGenerator):
             indent + line.format(**payload) for line in template)
 
     def _on_dom_get(self, payload):
-        print(f"[DEBUG] (_on_dom_get) Payload: {payload}")
+        indent = " " * (self._indent_level * 4)
+
+        property_type = payload.get("property_type")
+        output_variable = payload.get("output_variable")
+
+        if property_type == "text":
+            value_str = f"{output_variable} = element.text"
+
+        elif property_type == "value":
+            value_str = f'{output_variable} = element.get_attribute("value")'
+
+        elif property_type == "checked":
+            value_str = f'{output_variable} = element.is_selected()'
+
+        elif property_type == "html":
+            value_str = f'{output_variable} = element.get_attribute("innerHTML")'
+
+        else:
+            raise ValueError(f"Unsupported DOM_GET property: {property_type}")
+
+        template = [
+            "element = WebDriverWait(self._driver).until(EC.presence_of_element_located" +
+            "((By.XPATH, {xpath})))",
+            "if not element:",
+            "    raise ElementNotFoundError('Element not found')",
+            "",
+            value_str
+        ]
+        self._lines.extend(
+            indent + line.format(**payload) for line in template)
 
     def _on_dom_type(self, payload):
         """Process a textbox control event"""
