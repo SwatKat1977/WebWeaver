@@ -27,7 +27,6 @@ from webweaver.studio.toolbar_icons import (
     load_toolbar_pause_record_icon,
     load_toolbar_play_icon,
     load_toolbar_resume_record_icon,
-    load_toolbar_save_solution_icon,
     load_toolbar_close_solution_icon,
     load_toolbar_web_browser_icon,
     load_toolbar_start_record_icon,
@@ -40,25 +39,22 @@ TOOLBAR_ID_NEW_SOLUTION: int = wx.ID_HIGHEST + 1
 TOOLBAR_ID_OPEN_SOLUTION: int = wx.ID_HIGHEST + 2
 """Toolbar command ID for opening an existing solution."""
 
-TOOLBAR_ID_SAVE_SOLUTION: int = wx.ID_HIGHEST + 3
-"""Toolbar command ID for saving the current solution."""
-
-TOOLBAR_ID_CLOSE_SOLUTION: int = wx.ID_HIGHEST + 4
+TOOLBAR_ID_CLOSE_SOLUTION: int = wx.ID_HIGHEST + 3
 """Toolbar command ID for closing the current solution."""
 
-TOOLBAR_ID_INSPECTOR_MODE: int = wx.ID_HIGHEST + 5
+TOOLBAR_ID_INSPECTOR_MODE: int = wx.ID_HIGHEST + 4
 """Toolbar command ID for toggling Inspector mode."""
 
-TOOLBAR_ID_START_STOP_RECORD: int = wx.ID_HIGHEST + 6
+TOOLBAR_ID_START_STOP_RECORD: int = wx.ID_HIGHEST + 5
 """Toolbar command ID for starting or stopping recording."""
 
-TOOLBAR_ID_PAUSE_RECORD: int = wx.ID_HIGHEST + 7
+TOOLBAR_ID_PAUSE_RECORD: int = wx.ID_HIGHEST + 6
 """Toolbar command ID for pausing an active recording."""
 
-TOOLBAR_ID_WEB_BROWSER: int = wx.ID_HIGHEST + 8
+TOOLBAR_ID_WEB_BROWSER: int = wx.ID_HIGHEST + 7
 """Toolbar command ID for web browser control."""
 
-TOOLBAR_ID_PLAY_RECORDING: int = wx.ID_HIGHEST + 9
+TOOLBAR_ID_PLAY_RECORDING: int = wx.ID_HIGHEST + 8
 """Toolbar command ID for playing a recording."""
 
 @dataclass(frozen=True)
@@ -130,12 +126,6 @@ class MainToolbar:
             "",
             load_toolbar_open_solution_icon(),
             "Open Solution")
-
-        toolbar.AddTool(
-            TOOLBAR_ID_SAVE_SOLUTION,
-            "",
-            load_toolbar_save_solution_icon(),
-            "Save Solution")
 
         toolbar.AddTool(
             TOOLBAR_ID_CLOSE_SOLUTION,
