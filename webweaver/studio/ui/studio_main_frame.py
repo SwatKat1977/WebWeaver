@@ -166,8 +166,6 @@ class StudioMainFrame(wx.Frame):
         self.recent_solutions_menu: Optional[wx.Menu] = None
         self.code_generation_menu: Optional[wx.Menu] = None
 
-        self._playback_toolbar: Optional[PlaybackToolbar] = None
-
         code_gens_dir = self._app_settings.code_generators_path
         self._code_gen_registry = CodeGeneratorRegistry(Path(code_gens_dir),
                                                         self._logger)
@@ -1029,7 +1027,6 @@ class StudioMainFrame(wx.Frame):
         self._workspace_panel.open_recording(ctx)
 
         # 3. Update UI
-        print("# 3. Update UI")
         self._update_playback_toolbar_state()
 
     def _rename_recording_event(self, _evt: wx.CommandEvent) -> None:
@@ -1452,7 +1449,7 @@ class StudioMainFrame(wx.Frame):
         if pane.IsOk():
             pane.Show(show)
             self._aui_mgr.Update()
-            PlaybackToolbar.set_all_playback_disabled(self._playback_toolbar)
+            MainToolbar.set_all_playback_disabled(self._toolbar)
 
     def _on_workspace_active_changed(self, _evt):
 

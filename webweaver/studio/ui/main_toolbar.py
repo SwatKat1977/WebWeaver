@@ -296,11 +296,6 @@ class MainToolbar:
         toolbar.EnableTool(TOOLBAR_ID_PAUSE_RECORD, False)
         toolbar.EnableTool(TOOLBAR_ID_WEB_BROWSER, False)
 
-        """Disable all state-dependent buttons for 'playback' functionality"""
-        toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_START, False)
-        toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_PAUSE, False)
-        toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_STOP, False)
-
     @staticmethod
     def set_all_playback_disabled(toolbar):
         """
@@ -364,7 +359,6 @@ class MainToolbar:
         toolbar.Realize()
         toolbar.Refresh()
 
-
     @staticmethod
     def apply_playback_state(toolbar: wx.aui.AuiToolBar,
                              playback_state: PlaybackToolbarState) -> None:
@@ -379,7 +373,7 @@ class MainToolbar:
         The toolbar is re-realized and refreshed after all changes are applied.
         """
 
-        """Disable all state-dependent buttons for 'playback' functionality"""
+        # Disable all state-dependent buttons for 'playback' functionality
         toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_START, False)
         toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_PAUSE, False)
         toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_STOP, False)
