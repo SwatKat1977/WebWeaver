@@ -858,6 +858,7 @@ class StudioMainFrame(wx.Frame):
                 self._state_controller.on_inspector_toggle(True)
                 self._show_inspector_panel(True)
 
+    ## DEPRECIATED ##
     def on_playback_mode_event(self, _event: wx.CommandEvent):
         """
         Handle the user toggling playback mode from the main toolbar.
@@ -1243,7 +1244,7 @@ class StudioMainFrame(wx.Frame):
 
         elif self._current_state == StudioState.RECORDING_PAUSED:
             state = ToolbarState(can_record=True, can_pause=True,
-                                 is_recording=True, is_paused=True)
+                                 is_recording=True, is_recording_paused=True)
 
         elif self._current_state == StudioState.INSPECTING:
             state = ToolbarState(can_save=True, can_close=True,
@@ -1259,7 +1260,7 @@ class StudioMainFrame(wx.Frame):
         elif self._current_state == StudioState.RECORDING_PLAYBACK_PAUSED:
             state = ToolbarState(can_playback_recording=has_recording)
 
-        MainToolbar.apply_state(self._toolbar, state)
+        MainToolbar.apply_core_state(self._toolbar, state)
         self._manage_browser_state()
 
     def _update_recording_toolbar_state(self) -> None:

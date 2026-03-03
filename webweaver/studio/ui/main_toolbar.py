@@ -85,6 +85,7 @@ class ToolbarState:
     """
     # pylint: disable=too-many-instance-attributes
 
+    ## Core functionality
     can_save: bool = False
     can_close: bool = False
     can_inspect: bool = False
@@ -93,9 +94,40 @@ class ToolbarState:
     can_browse: bool = False
     can_playback_recording: bool = False
     is_recording: bool = False
-    is_paused: bool = False
+    is_recording_paused: bool = False
     is_inspecting: bool = False
     browser_running: bool = False
+
+
+@dataclass(slots=True)
+class PlaybackToolbarState:
+    """
+    Declarative UI state model for the playback toolbar.
+
+    This dataclass describes which playback controls should be enabled and what
+    the current execution state is. It is produced by the studio state controller
+    (or main frame) and applied to the PlaybackToolbar to update the UI.
+
+    Fields
+    ------
+    can_start_playback : bool
+        Whether the Play button should be enabled.
+    can_pause_playback : bool
+        Whether the Pause button should be enabled.
+    can_stop_playback : bool
+        Whether the Stop button should be enabled.
+    can_step : bool
+        Whether the Step button should be enabled (future feature).
+    is_playback_running : bool
+        Whether playback is currently running.
+    is_playback_paused : bool
+        Whether playback is currently paused.
+    """
+    can_start_playback = False
+    can_stop_playback = False
+    can_pause_playback = False
+    is_playback_running = False
+    is_playback_paused = False
 
 
 class MainToolbar:
@@ -266,15 +298,53 @@ TOOLBAR_ID_PLAYBACK_STEP: int = wx.ID_HIGHEST + 12
 
     @staticmethod
     def set_all_disabled(toolbar: wx.aui.AuiToolBar) -> None:
-        """Disable all state-dependent toolbar buttons."""
+        """Disable all state-dependent buttons for 'main' functionality"""
         toolbar.EnableTool(TOOLBAR_ID_CLOSE_SOLUTION, False)
         toolbar.EnableTool(TOOLBAR_ID_INSPECTOR_MODE, False)
         toolbar.EnableTool(TOOLBAR_ID_START_STOP_RECORD, False)
         toolbar.EnableTool(TOOLBAR_ID_PAUSE_RECORD, False)
         toolbar.EnableTool(TOOLBAR_ID_WEB_BROWSER, False)
 
+        """Disable all state-dependent buttons for 'playback' functionality"""
+        toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_START, False)
+        toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_PAUSE, False)
+        toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_STOP, False)
+
+    '''
+    @dataclass(slots=True)
+class PlaybackToolbarState:
+    """
+    Declarative UI state model for the playback toolbar.
+
+    This dataclass describes which playback controls should be enabled and what
+    the current execution state is. It is produced by the studio state controller
+    (or main frame) and applied to the PlaybackToolbar to update the UI.
+
+    Fields
+    ------
+    can_start_playback : bool
+        Whether the Play button should be enabled.
+    can_pause_playback : bool
+        Whether the Pause button should be enabled.
+    can_stop_playback : bool
+        Whether the Stop button should be enabled.
+    can_step : bool
+        Whether the Step button should be enabled (future feature).
+    is_playback_running : bool
+        Whether playback is currently running.
+    is_playback_paused : bool
+        Whether playback is currently paused.
+    """
+    can_start_playback = False
+    can_stop_playback = False
+    can_pause_playback = False
+    is_playback_running = False
+    is_playback_paused = False
+    '''
+
     @staticmethod
-    def apply_state(toolbar: wx.aui.AuiToolBar, state: ToolbarState) -> None:
+    def apply_core_state(toolbar: wx.aui.AuiToolBar,
+                         toolbar_state: ToolbarState) -> None:
         """
         Apply a ToolbarState model to the given toolbar.
 
@@ -287,14 +357,20 @@ TOOLBAR_ID_PLAYBACK_STEP: int = wx.ID_HIGHEST + 12
         """
 
         # Enable / disable
-        toolbar.EnableTool(TOOLBAR_ID_CLOSE_SOLUTION, state.can_close)
-        toolbar.EnableTool(TOOLBAR_ID_INSPECTOR_MODE, state.can_inspect)
-        toolbar.EnableTool(TOOLBAR_ID_START_STOP_RECORD, state.can_record)
-        toolbar.EnableTool(TOOLBAR_ID_PAUSE_RECORD, state.can_pause)
-        toolbar.EnableTool(TOOLBAR_ID_WEB_BROWSER, state.can_browse)
+        toolbar.EnableTool(TOOLBAR_ID_CLOSE_SOLUTION, toolbar_state.can_close)
+        toolbar.EnableTool(TOOLBAR_ID_INSPECTOR_MODE,
+                           toolbar_state.can_inspect)
+        toolbar.EnableTool(TOOLBAR_ID_START_STOP_RECORD,
+                           toolbar_state.can_record)
+        toolbar.EnableTool(TOOLBAR_ID_PAUSE_RECORD, toolbar_state.can_pause)
+        toolbar.EnableTool(TOOLBAR_ID_WEB_BROWSER, toolbar_state.can_browse)
+
+        ###########################
+        ### Core toolbar states ###
+        ###########################
 
         # Recording button appearance
-        if state.is_recording:
+        if toolbar_state.is_recording:
             toolbar.SetToolBitmap(TOOLBAR_ID_START_STOP_RECORD,
                                   load_toolbar_stop_record_icon())
             toolbar.SetToolShortHelp(TOOLBAR_ID_START_STOP_RECORD,
@@ -305,8 +381,8 @@ TOOLBAR_ID_PLAYBACK_STEP: int = wx.ID_HIGHEST + 12
             toolbar.SetToolShortHelp(TOOLBAR_ID_START_STOP_RECORD,
                                      "Start Recording")
 
-        # Pause button appearance
-        if state.is_paused:
+        # Pause recording button appearance
+        if toolbar_state.is_recording_paused:
             toolbar.SetToolBitmap(TOOLBAR_ID_PAUSE_RECORD,
                                   load_toolbar_resume_record_icon())
             toolbar.SetToolShortHelp(TOOLBAR_ID_PAUSE_RECORD,
@@ -318,10 +394,46 @@ TOOLBAR_ID_PLAYBACK_STEP: int = wx.ID_HIGHEST + 12
                                      "Pause Recording")
 
         # Inspector toggle
-        toolbar.ToggleTool(TOOLBAR_ID_INSPECTOR_MODE, state.is_inspecting)
+        toolbar.ToggleTool(TOOLBAR_ID_INSPECTOR_MODE,
+                           toolbar_state.is_inspecting)
 
         toolbar.Realize()
         toolbar.Refresh()
+
+
+    @staticmethod
+    def apply_playback_state(toolbar: wx.aui.AuiToolBar,
+                             playback_state: PlaybackToolbarState) -> None:
+        """
+        Apply a ToolbarState model to the given toolbar.
+
+        This method updates:
+        - Which buttons are enabled or disabled
+        - The appearance and tooltip of the recording and pause buttons
+        - The checked state of the inspector toggle
+
+        The toolbar is re-realized and refreshed after all changes are applied.
+        """
+
+        """Disable all state-dependent buttons for 'playback' functionality"""
+        toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_START, False)
+        toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_PAUSE, False)
+        toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_STOP, False)
+
+        # Enable / disable
+        toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_START,
+                           playback_state.can_start_playback)
+        toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_PAUSE,
+                           playback_state.can_pause_playback)
+        toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_STOP,
+                           playback_state.can_stop_playback)
+
+        #    toolbar.EnableTool(PlaybackToolID.TOOLBAR_ID_STEP_PLAYBACK,
+        #                       playback_state.can_step)
+
+        toolbar.Realize()
+        toolbar.Refresh()
+
 
     @staticmethod
     def manage_browser_status(toolbar: wx.aui.AuiToolBar, state: bool) -> None:
