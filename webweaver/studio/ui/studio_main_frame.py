@@ -279,6 +279,7 @@ class StudioMainFrame(wx.Frame):
         # --------------------------------------------------------------
         self._status_bar = MainStatusBar(self)
         self._update_toolbar_state()
+        self._update_playback_toolbar_state()
 
         self._create_inspector_panel()
 
@@ -1160,10 +1161,14 @@ class StudioMainFrame(wx.Frame):
 
         toolbar_state = PlaybackToolbarState()
         current_state = self._current_state
-        has_recording = (self._workspace_panel.has_active_recording() and
-                         current_state == StudioState.SOLUTION_LOADED)
 
-        if current_state == StudioState.RECORDING_PLAYBACK_IDLE or has_recording:
+        if current_state == StudioState.SOLUTION_LOADED and \
+           self._workspace_panel.has_active_recording():
+            toolbar_state = PlaybackToolbarState(can_start_playback=True,
+                                                 can_step_playback=False,
+                                                 can_stop_playback=False)
+
+        elif current_state == StudioState.RECORDING_PLAYBACK_IDLE:
             toolbar_state = PlaybackToolbarState(can_start_playback=True,
                                                  can_step_playback=False,
                                                  can_stop_playback=False)

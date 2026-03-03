@@ -158,8 +158,8 @@ class MainToolbar:
             | wx.aui.AUI_TB_HORZ_LAYOUT)
 
         toolbar.SetToolBitmapSize(wx.Size(32, 32))
-        toolbar.SetToolPacking(5)
-        toolbar.SetToolSeparation(5)
+        toolbar.SetToolPacking(6)
+        toolbar.SetToolSeparation(8)
 
         toolbar.AddTool(
             TOOLBAR_ID_NEW_SOLUTION,
@@ -179,6 +179,7 @@ class MainToolbar:
             load_toolbar_close_solution_icon(),
             "Close Solution")
 
+        # --- Group break ---
         toolbar.AddSeparator()
 
         toolbar.AddTool(
@@ -200,12 +201,18 @@ class MainToolbar:
             load_toolbar_pause_record_icon(),
             "Pause Recording")
 
+        # --- Group break ---
+        toolbar.AddSeparator()
+
         toolbar.AddTool(
             TOOLBAR_ID_WEB_BROWSER,
             "",
             load_toolbar_web_browser_icon(),
             "Open Web Browser",
             wx.ITEM_CHECK)
+
+        # --- Group break ---
+        toolbar.AddSeparator()
 
         toolbar.AddTool(
             TOOLBAR_ID_PLAYBACK_START,
