@@ -93,6 +93,7 @@ from webweaver.studio.ui.app_settings_dialog.plugins_settings_page \
 from webweaver.studio.ui.app_settings_dialog.general_settings_page \
     import GeneralSettingsPage as AppSettingsGeneralPage
 from webweaver.studio.ui.about_dialog import AboutDialog
+from webweaver.studio.ui.toolbox_panel import ToolboxPanel
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -162,6 +163,8 @@ class StudioMainFrame(wx.Frame):
         """Web browser application"""
 
         self._inspector_panel: Optional[wx.Panel] = None
+
+        self._toolbox_panel: Optional[ToolboxPanel] = None
 
         self.recent_solutions_menu: Optional[wx.Menu] = None
         self.code_generation_menu: Optional[wx.Menu] = None
@@ -271,6 +274,11 @@ class StudioMainFrame(wx.Frame):
         # Create workspace panel
         # --------------------------------------------------------------
         self._create_workspace_panel()
+
+        # --------------------------------------------------------------
+        # Create toolbox panel
+        # --------------------------------------------------------------
+        self._create_toolbox_panel()
 
         self._aui_mgr.Update()
 
@@ -950,6 +958,24 @@ class StudioMainFrame(wx.Frame):
 
         self._workspace_panel.Show(True)
         self._aui_mgr.GetPane("Workspace").Show(True)
+
+    def _create_toolbox_panel(self):
+        # -------------------------
+        # Workspace
+        # -------------------------
+        self._toolbox_panel = ToolboxPanel(self)
+
+        self.aui_manager.AddPane(
+            self._toolbox_panel,
+            wx.aui.AuiPaneInfo()
+            .Name("Toolbox")
+            .Caption("Toolbox")
+            .Right()
+            .Layer(1)
+            .Position(1)
+            .BestSize(220, -1)
+            .MinSize(180, -1)
+        )
 
     def _open_solution(self, solution_file: Path) -> bool:
         if not solution_file.exists():
