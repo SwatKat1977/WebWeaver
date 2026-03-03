@@ -8,7 +8,9 @@ a = Analysis(
     pathex=['.'],
     binaries=[],
     datas=[],
-    hiddenimports=[],
+    hiddenimports=['wx',
+                   'wx.adv',
+                   'wx.lib.mixins.listctrl'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -27,7 +29,8 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
+    version='webweaver/studio/pyinstaller_version.txt',
     console=False,  # GUI app
 )
 
