@@ -17,6 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import typing
 import wx
 
 
@@ -31,55 +32,62 @@ class ToolboxPanel(wx.Panel):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self.tree = wx.TreeCtrl(
+        self._placeholder: typing.Optional[wx.StaticText] = None
+
+        self._tree = wx.TreeCtrl(
             self,
             style=wx.TR_DEFAULT_STYLE
                   | wx.TR_HIDE_ROOT
-                  | wx.TR_LINES_AT_ROOT
-        )
+                  | wx.TR_LINES_AT_ROOT)
 
-        sizer.Add(self.tree, 1, wx.EXPAND | wx.ALL, 5)
+        sizer.Add(self._tree, 1, wx.EXPAND | wx.ALL, 5)
 
         self.SetSizer(sizer)
 
         self._build_tree()
 
-        self.tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self._on_item_activated)
+        self._tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self._on_item_activated)
 
-    # ------------------------------------------------------------------
+    def show_no_recording(self):
+        self._tree.Hide()
+        self._placeholder.Show()
+        self.Layout()
+
+    def enable_panel(self, enabled: bool):
+        self._tree.Enable(enabled)
+
+    def _create_ui(self):
 
     def _build_tree(self):
         """
         Populate toolbox tree with available actions.
         """
 
-        root = self.tree.AddRoot("Toolbox")
+        root = self._tree.AddRoot("Toolbox")
 
-        dom = self.tree.AppendItem(root, "DOM Actions")
-        self.tree.AppendItem(dom, "Check")
-        self.tree.AppendItem(dom, "Click")
-        self.tree.AppendItem(dom, "Get DOM Value")
-        self.tree.AppendItem(dom, "Type")
-        self.tree.AppendItem(dom, "Select")
-        self.tree.AppendItem(dom, "Wait")
+        dom = self._tree.AppendItem(root, "DOM Actions")
+        self._tree.AppendItem(dom, "Check")
+        self._tree.AppendItem(dom, "Click")
+        self._tree.AppendItem(dom, "Get DOM Value")
+        self._tree.AppendItem(dom, "Type")
+        self._tree.AppendItem(dom, "Select")
+        self._tree.AppendItem(dom, "Wait")
 
-        browser = self.tree.AppendItem(root, "Browser")
-        self.tree.AppendItem(browser, "Navigate")
-        self.tree.AppendItem(browser, "Scroll")
+        browser = self._tree.AppendItem(root, "Browser")
+        self._tree.AppendItem(browser, "Navigate")
+        self._tree.AppendItem(browser, "Scroll")
         # self.tree.AppendItem(browser, "Refresh")
 
-        logic = self.tree.AppendItem(root, "Logic")
-        self.tree.AppendItem(logic, "Group")
-        self.tree.AppendItem(logic, "Rest API")
+        logic = self._tree.AppendItem(root, "Logic")
+        self._tree.AppendItem(logic, "Group")
+        self._tree.AppendItem(logic, "Rest API")
         # self.tree.AppendItem(logic, "Loop")
 
-        assertion = self.tree.AppendItem(root, "Assertion")
-        self.tree.AppendItem(assertion, "Assert")
+        assertion = self._tree.AppendItem(root, "Assertion")
+        self._tree.AppendItem(assertion, "Assert")
         # self.tree.AppendItem(logic, "Loop")
 
-        self.tree.ExpandAll()
-
-    # ------------------------------------------------------------------
+        self._tree.ExpandAll()
 
     def _on_item_activated(self, event):
         """
@@ -90,7 +98,7 @@ class ToolboxPanel(wx.Panel):
         if not item.IsOk():
             return
 
-        action_name = self.tree.GetItemText(item)
+        action_name = self._tree.GetItemText(item)
 
         print(f"Toolbox action selected: {action_name}")
         # Later this should insert a step into the recording.

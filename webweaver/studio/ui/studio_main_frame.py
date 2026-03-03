@@ -976,6 +976,7 @@ class StudioMainFrame(wx.Frame):
             .BestSize(220, -1)
             .MinSize(180, -1)
         )
+        self._toolbox_panel.enable_panel(False)
 
     def _open_solution(self, solution_file: Path) -> bool:
         if not solution_file.exists():
