@@ -33,32 +33,37 @@ class ToolboxPanel(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         self._placeholder: typing.Optional[wx.StaticText] = None
+        self._tree: typing.Optional[wx.TreeCtrl] = None
 
-        self._tree = wx.TreeCtrl(
-            self,
-            style=wx.TR_DEFAULT_STYLE
-                  | wx.TR_HIDE_ROOT
-                  | wx.TR_LINES_AT_ROOT)
-
-        sizer.Add(self._tree, 1, wx.EXPAND | wx.ALL, 5)
-
-        self.SetSizer(sizer)
-
-        self._build_tree()
-
-        self._tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self._on_item_activated)
+        self._create_ui()
+        self.show_no_recording()
 
     def show_no_recording(self):
         self._tree.Hide()
         self._placeholder.Show()
         self.Layout()
 
-    def enable_panel(self, enabled: bool):
-        self._tree.Enable(enabled)
+    def show_toolbox_items(self) -> None:
+        self._placeholder.Hide()
+        self._tree.Show()
+        self._tree.ExpandAll()
+        self.Layout()
 
     def _create_ui(self):
+        sizer = wx.BoxSizer(wx.VERTICAL)
 
-    def _build_tree(self):
+        # -- Placeholder text --
+        self._placeholder = wx.StaticText(self,
+                                          label="No recording open")
+        self._placeholder.SetForegroundColour(wx.Colour(120, 120, 120))
+
+        # -- Actual tree --
+        self._tree = wx.TreeCtrl(
+            self,
+            style=wx.TR_DEFAULT_STYLE
+                  | wx.TR_HIDE_ROOT
+                  | wx.TR_LINES_AT_ROOT)
+
         """
         Populate toolbox tree with available actions.
         """
@@ -88,6 +93,13 @@ class ToolboxPanel(wx.Panel):
         # self.tree.AppendItem(logic, "Loop")
 
         self._tree.ExpandAll()
+
+        self._tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self._on_item_activated)
+
+        sizer.Add(self._placeholder, 1, wx.ALIGN_CENTER | wx.ALL, 10)
+        sizer.Add(self._tree, 1, wx.EXPAND | wx.ALL, 5)
+
+        self.SetSizer(sizer)
 
     def _on_item_activated(self, event):
         """

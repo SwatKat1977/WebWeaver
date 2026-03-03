@@ -974,17 +974,14 @@ class StudioMainFrame(wx.Frame):
             .Layer(1)
             .Position(1)
             .BestSize(220, -1)
-            .MinSize(180, -1)
-        )
-        self._toolbox_panel.enable_panel(False)
+            .MinSize(180, -1))
 
     def _open_solution(self, solution_file: Path) -> bool:
         if not solution_file.exists():
             wx.MessageBox(
                 "Solution file does not exist.",
                 "Open Solution",
-                wx.ICON_ERROR
-            )
+                wx.ICON_ERROR)
             return False
 
         try:
@@ -995,16 +992,14 @@ class StudioMainFrame(wx.Frame):
             wx.MessageBox(
                 f"Failed to read solution file:\n{e}",
                 "Open Solution",
-                wx.ICON_ERROR
-            )
+                wx.ICON_ERROR)
             return False
 
         if result.solution is None:
             wx.MessageBox(
                 solution_load_error_to_str(result.error),
                 "Open Solution",
-                wx.ICON_ERROR
-            )
+                wx.ICON_ERROR)
             return False
 
         self._current_solution = result.solution
@@ -1017,8 +1012,7 @@ class StudioMainFrame(wx.Frame):
             wx.MessageBox(
                 "Failed to prepare solution folders.",
                 "Open Solution",
-                wx.ICON_ERROR
-            )
+                wx.ICON_ERROR)
             self._current_solution = None
             return False
 
@@ -1490,12 +1484,15 @@ class StudioMainFrame(wx.Frame):
         if not self._workspace_panel.has_active_recording():
             self._show_playback_toolbar(False)
             self._state_controller.on_solution_loaded()
+            self._toolbox_panel.show_no_recording()
 
             if pane.IsOk() and pane.IsShown():
                 pane.Hide()
                 self._aui_mgr.Update()
 
         else:
+            self._toolbox_panel.show_toolbox_items()
+
             if pane.IsOk() and not pane.IsShown():
                 pane.Show()
                 self._aui_mgr.Update()
