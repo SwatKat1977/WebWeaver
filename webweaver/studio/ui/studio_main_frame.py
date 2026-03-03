@@ -171,7 +171,6 @@ class StudioMainFrame(wx.Frame):
         self._playback_toolbar: Optional[PlaybackToolbar] = None
 
         code_gens_dir = self._app_settings.code_generators_path
-        print(f"[DEBUG] code_gens_dir: {code_gens_dir}")
         self._code_gen_registry = CodeGeneratorRegistry(Path(code_gens_dir),
                                                         self._logger)
         self._code_gen_registry.load()
