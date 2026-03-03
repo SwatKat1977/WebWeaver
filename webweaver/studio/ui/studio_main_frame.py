@@ -107,7 +107,7 @@ class StudioMainFrame(wx.Frame):
     including the menu bar, AUI-managed toolbars, and other dockable panes.
     It serves as the central coordination point for the Studio UI.
     """
-    # pylint: disable=too-few-public-methods, too-many-instance-attributes
+    # pylint: disable=too-many-public-methods, too-many-instance-attributes
 
     RECENT_SOLUTION_BASE_ID: int = wx.ID_HIGHEST + 500
 
@@ -1474,7 +1474,7 @@ class StudioMainFrame(wx.Frame):
         self._update_playback_toolbar_state()
         self.rebuild_code_generation_menu()
 
-    def _on_start_recording_playback(self, _evt):
+    def on_start_recording_playback(self, _evt):
         """
         Handle the recording playback 'play' button being pressed.
         """
@@ -1501,14 +1501,14 @@ class StudioMainFrame(wx.Frame):
         self._playback_session.start()
         self._playback_timer.Start(200)
 
-    def _on_pause_recording_playback(self, _evt):
+    def on_pause_recording_playback(self, _evt):
         """
         Handle the recording playback 'pause' button being pressed.
         """
         self._state_controller.on_recording_playback_pause()
         # self._pause_playback(ctx)
 
-    def _on_stop_recording_playback(self, _evt):
+    def on_stop_recording_playback(self, _evt):
         """
         Handle the recording playback 'stop' button being pressed.
         """

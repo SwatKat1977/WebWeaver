@@ -261,13 +261,13 @@ class MainToolbar:
 
         # --- Bind recording playback toolbar events ---
         toolbar.Bind(wx.EVT_TOOL,
-                     frame._on_start_recording_playback,
+                     frame.on_start_recording_playback,
                      id=TOOLBAR_ID_PLAYBACK_START)
         toolbar.Bind(wx.EVT_TOOL,
-                     frame._on_pause_recording_playback,
+                     frame.on_pause_recording_playback,
                      id=TOOLBAR_ID_PLAYBACK_PAUSE)
         toolbar.Bind(wx.EVT_TOOL,
-                     frame._on_stop_recording_playback,
+                     frame.on_stop_recording_playback,
                      id=TOOLBAR_ID_PLAYBACK_STOP)
 
         frame.aui_manager.AddPane(
