@@ -85,7 +85,6 @@ class ToolbarState:
     """
     # pylint: disable=too-many-instance-attributes
 
-    ## Core functionality
     can_save: bool = False
     can_close: bool = False
     can_inspect: bool = False
@@ -123,11 +122,12 @@ class PlaybackToolbarState:
     is_playback_paused : bool
         Whether playback is currently paused.
     """
-    can_start_playback = False
-    can_stop_playback = False
-    can_pause_playback = False
-    is_playback_running = False
-    is_playback_paused = False
+    can_start_playback: bool = False
+    can_stop_playback: bool = False
+    can_pause_playback: bool = False
+    can_step_playback: bool = False
+    is_playback_running: bool = False
+    is_playback_paused: bool = False
 
 
 class MainToolbar:
@@ -207,19 +207,6 @@ class MainToolbar:
             "Open Web Browser",
             wx.ITEM_CHECK)
 
-        '''
-        TOOLBAR_ID_PLAYBACK_START: int = wx.ID_HIGHEST + 9
-"""Toolbar command ID for starting playback."""
-
-TOOLBAR_ID_PLAYBACK_PAUSE: int = wx.ID_HIGHEST + 10
-"""Toolbar command ID for pausing playback."""
-
-TOOLBAR_ID_PLAYBACK_STOP: int = wx.ID_HIGHEST + 11
-"""Toolbar command ID for stopping playback."""
-
-TOOLBAR_ID_PLAYBACK_STEP: int = wx.ID_HIGHEST + 12
-        '''
-
         toolbar.AddTool(
             TOOLBAR_ID_PLAYBACK_START,
             "",
@@ -243,41 +230,45 @@ TOOLBAR_ID_PLAYBACK_STEP: int = wx.ID_HIGHEST + 12
 
         toolbar.Realize()
 
-        # --- Bind toolbar events ---
-        toolbar.Bind(
-            wx.EVT_TOOL,
-            frame.on_new_solution_event,
-            id=TOOLBAR_ID_NEW_SOLUTION)
+        # --- Bind core toolbar events ---
+        toolbar.Bind(wx.EVT_TOOL,
+                     frame.on_new_solution_event,
+                     id=TOOLBAR_ID_NEW_SOLUTION)
 
-        toolbar.Bind(
-            wx.EVT_TOOL,
-            frame.on_close_solution_event,
-            id=TOOLBAR_ID_CLOSE_SOLUTION)
+        toolbar.Bind(wx.EVT_TOOL,
+                     frame.on_close_solution_event,
+                     id=TOOLBAR_ID_CLOSE_SOLUTION)
 
-        toolbar.Bind(
-            wx.EVT_TOOL,
-            frame.on_open_solution_event,
-            id=TOOLBAR_ID_OPEN_SOLUTION)
+        toolbar.Bind(wx.EVT_TOOL,
+                     frame.on_open_solution_event,
+                     id=TOOLBAR_ID_OPEN_SOLUTION)
 
-        toolbar.Bind(
-            wx.EVT_TOOL,
-            frame.on_record_start_stop_event,
-            id=TOOLBAR_ID_START_STOP_RECORD)
+        toolbar.Bind(wx.EVT_TOOL,
+                     frame.on_record_start_stop_event,
+                     id=TOOLBAR_ID_START_STOP_RECORD)
 
-        toolbar.Bind(
-            wx.EVT_TOOL,
-            frame.on_record_pause_event,
-            id=TOOLBAR_ID_PAUSE_RECORD)
+        toolbar.Bind(wx.EVT_TOOL,
+                     frame.on_record_pause_event,
+                     id=TOOLBAR_ID_PAUSE_RECORD)
 
-        toolbar.Bind(
-            wx.EVT_TOOL,
-            frame.on_inspector_event,
-            id=TOOLBAR_ID_INSPECTOR_MODE)
+        toolbar.Bind(wx.EVT_TOOL,
+                     frame.on_inspector_event,
+                     id=TOOLBAR_ID_INSPECTOR_MODE)
 
-        toolbar.Bind(
-            wx.EVT_TOOL,
-            frame.on_web_browser_event,
-            id=TOOLBAR_ID_WEB_BROWSER)
+        toolbar.Bind(wx.EVT_TOOL,
+                     frame.on_web_browser_event,
+                     id=TOOLBAR_ID_WEB_BROWSER)
+
+        # --- Bind recording playback toolbar events ---
+        toolbar.Bind(wx.EVT_TOOL,
+                     frame._on_start_recording_playback,
+                     id=TOOLBAR_ID_PLAYBACK_START)
+        toolbar.Bind(wx.EVT_TOOL,
+                     frame._on_pause_recording_playback,
+                     id=TOOLBAR_ID_PLAYBACK_PAUSE)
+        toolbar.Bind(wx.EVT_TOOL,
+                     frame._on_stop_recording_playback,
+                     id=TOOLBAR_ID_PLAYBACK_STOP)
 
         frame.aui_manager.AddPane(
             toolbar,
@@ -297,7 +288,7 @@ TOOLBAR_ID_PLAYBACK_STEP: int = wx.ID_HIGHEST + 12
         return toolbar
 
     @staticmethod
-    def set_all_disabled(toolbar: wx.aui.AuiToolBar) -> None:
+    def set_all_core_disabled(toolbar: wx.aui.AuiToolBar) -> None:
         """Disable all state-dependent buttons for 'main' functionality"""
         toolbar.EnableTool(TOOLBAR_ID_CLOSE_SOLUTION, False)
         toolbar.EnableTool(TOOLBAR_ID_INSPECTOR_MODE, False)
@@ -310,37 +301,14 @@ TOOLBAR_ID_PLAYBACK_STEP: int = wx.ID_HIGHEST + 12
         toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_PAUSE, False)
         toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_STOP, False)
 
-    '''
-    @dataclass(slots=True)
-class PlaybackToolbarState:
-    """
-    Declarative UI state model for the playback toolbar.
-
-    This dataclass describes which playback controls should be enabled and what
-    the current execution state is. It is produced by the studio state controller
-    (or main frame) and applied to the PlaybackToolbar to update the UI.
-
-    Fields
-    ------
-    can_start_playback : bool
-        Whether the Play button should be enabled.
-    can_pause_playback : bool
-        Whether the Pause button should be enabled.
-    can_stop_playback : bool
-        Whether the Stop button should be enabled.
-    can_step : bool
-        Whether the Step button should be enabled (future feature).
-    is_playback_running : bool
-        Whether playback is currently running.
-    is_playback_paused : bool
-        Whether playback is currently paused.
-    """
-    can_start_playback = False
-    can_stop_playback = False
-    can_pause_playback = False
-    is_playback_running = False
-    is_playback_paused = False
-    '''
+    @staticmethod
+    def set_all_playback_disabled(toolbar):
+        """
+        Disable all playback icons on the toolbar.
+        """
+        toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_START, False)
+        toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_PAUSE, False)
+        toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_STOP, False)
 
     @staticmethod
     def apply_core_state(toolbar: wx.aui.AuiToolBar,
@@ -364,10 +332,6 @@ class PlaybackToolbarState:
                            toolbar_state.can_record)
         toolbar.EnableTool(TOOLBAR_ID_PAUSE_RECORD, toolbar_state.can_pause)
         toolbar.EnableTool(TOOLBAR_ID_WEB_BROWSER, toolbar_state.can_browse)
-
-        ###########################
-        ### Core toolbar states ###
-        ###########################
 
         # Recording button appearance
         if toolbar_state.is_recording:
@@ -427,7 +391,6 @@ class PlaybackToolbarState:
                            playback_state.can_pause_playback)
         toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_STOP,
                            playback_state.can_stop_playback)
-
         #    toolbar.EnableTool(PlaybackToolID.TOOLBAR_ID_STEP_PLAYBACK,
         #                       playback_state.can_step)
 
