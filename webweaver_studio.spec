@@ -1,4 +1,56 @@
 # -*- mode: python ; coding: utf-8 -*-
+import sys
+import os
+
+project_root = os.path.abspath('.')
+sys.path.insert(0, project_root)
+
+from webweaver.studio.version import MAJOR, MINOR, PATCH, __version__
+
+
+from PyInstaller.utils.win32.versioninfo import (
+    VSVersionInfo,
+    FixedFileInfo,
+    StringFileInfo,
+    StringTable,
+    StringStruct,
+    VarFileInfo,
+    VarStruct
+)
+
+file_version_tuple = (MAJOR, MINOR, PATCH, 0)
+file_version_string = f"{MAJOR}.{MINOR}.{PATCH}"
+
+version_info = VSVersionInfo(
+    ffi=FixedFileInfo(
+        filevers=file_version_tuple,
+        prodvers=file_version_tuple,
+        mask=0x3f,
+        flags=0x0,
+        OS=0x40004,
+        fileType=0x1,
+        subtype=0x0,
+        date=(0, 0)
+    ),
+    kids=[
+        StringFileInfo([
+            StringTable(
+                '040904B0',
+                [
+                    StringStruct('CompanyName', 'WebWeaver Development Team'),
+                    StringStruct('FileDescription', 'WebWeaver Studio'),
+                    StringStruct('FileVersion', file_version_string),
+                    StringStruct('InternalName', 'WebWeaverStudio'),
+                    StringStruct('OriginalFilename', 'WebWeaverStudio.exe'),
+                    StringStruct('ProductName', 'WebWeaver Studio'),
+                    StringStruct('ProductVersion', __version__),
+                    StringStruct('LegalCopyright', '© 2025-2026 WebWeaver Development Team'),
+                ]
+            )
+        ]),
+        VarFileInfo([VarStruct('Translation', [1033, 1200])])
+    ]
+)
 
 block_cipher = None
 
@@ -30,7 +82,7 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,
-    version='webweaver/studio/pyinstaller_version.txt',
+    version=version_info,
     console=False,  # GUI app
 )
 
