@@ -24,7 +24,7 @@ MINOR = 1
 PATCH = 0
 
 # e.g. "alpha", "beta", "rc1", or None
-PRE_RELEASE = "RC-1 (Alpha #2)"
+PRE_RELEASE = None
 
 # Version tuple for comparisons
 VERSION = (MAJOR, MINOR, PATCH, PRE_RELEASE)
