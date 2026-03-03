@@ -29,17 +29,62 @@ from .code_generator_entry import CodeGeneratorRegistryEntry
 
 class CodeGeneratorRegistry:
     """
-    Discovers and loads code generator plugins from a directory.
+    Registry responsible for discovering and loading code generator plugins.
+
+    The registry scans a given plugin directory, loads available generator
+    implementations, and stores them as `CodeGeneratorRegistryEntry` instances.
+    It also provides access to the configured plugin directory.
+
+    Each registry instance is scoped to a single plugin directory.
     """
 
     def __init__(self, plugin_dir: Path, logger: Logger):
+        """Initialise a new CodeGeneratorRegistry.
+
+        Args:
+            plugin_dir (Path): Path to the directory containing generator plugins.
+            logger (Logger): Base logger instance used for logging registry
+                activity. A child logger scoped to this module is created.
+        """
         self._plugin_dir: Path = plugin_dir
         self._generators: typing.List[CodeGeneratorRegistryEntry] = []
         self._logger = logger.getChild(__name__)
 
-    def load(self) -> None:
+    @property
+    def plugin_dir(self) -> Path:
+        """Return the currently configured plugin directory.
+
+        Returns:
+            Path: The path representing the plugin directory.
         """
-        (Re)load all generators from disk.
+        return self._plugin_dir
+
+    @plugin_dir.setter
+    def plugin_dir(self, plugin_dir: Path):
+        """Update the plugin directory used for discovering plugins.
+
+        Changing this value does not automatically reload or rediscover
+        generators. The caller is responsible for triggering any required
+        refresh logic after updating the directory.
+
+        Args:
+            plugin_dir (Path): The new plugin directory path.
+        """
+        self._plugin_dir = plugin_dir = plugin_dir
+
+    def load(self) -> None:
+        """Load or reload all generator plugins from the configured directory.
+
+        This method clears the current registry and scans the plugin directory
+        for Python files. Each valid plugin module is imported and validated
+        before being registered.
+
+        Files beginning with "_" are ignored.
+
+        If the plugin directory does not exist, the registry remains empty.
+
+        Any exceptions raised during plugin loading are caught and logged,
+        allowing the registry to continue processing remaining files.
         """
         # pylint: disable=broad-exception-caught
 
@@ -72,33 +117,38 @@ class CodeGeneratorRegistry:
         BaseCodeGenerator and represent successfully loaded and validated
         plugins.
 
-        :return: A list of loaded BaseCodeGenerator instances.
+        Returns:
+            List[CodeGeneratorRegistryEntry]: The loaded generator entries.
         """
         return list(self._generators)
 
-    def _load_from_file(self, path: Path) -> (
-            typing.Optional)[CodeGeneratorRegistryEntry]:
-        """
-        Load a code generator plugin from a Python source file.
+    def _load_from_file(self, path: Path) -> \
+            typing.Optional[CodeGeneratorRegistryEntry]:
+        """Load and validate a code generator plugin from a Python file.
 
-        This method dynamically imports the module at the given path using a
-        unique, generated module name to avoid collisions in sys.modules.
+        The module is dynamically imported using a unique module name to avoid
+        collisions in ``sys.modules``.
 
         Plugin contract:
-            - The module must define a top-level attribute named `GENERATOR`
-            - `GENERATOR` must be an instance of BaseCodeGenerator
+            - The module must define a top-level ``GENERATOR_CLASS`` attribute.
+            - The module must define a top-level ``SETTINGS_CLASS`` attribute.
+            - ``GENERATOR_CLASS`` must be a subclass of BaseCodeGenerator.
+            - ``SETTINGS_CLASS`` must be a subclass of BaseCodeGeneratorSettings.
 
-        If the module cannot be imported, does not define GENERATOR, or does
-        not conform to the expected type, the plugin is rejected.
+        This method performs loading and validation only. It does not register
+        the generator in the registry.
 
-        This method does not register the generator; it only loads and
-        validates it.
+        Args:
+            path (Path): Path to the Python file containing the generator plugin.
 
-        :param path: Path to the Python file containing the generator plugin.
-        :return: The loaded BaseCodeGenerator instance, or None if the file
-                 could not be loaded or does not define a valid plugin.
-        :raises TypeError: If the module defines GENERATOR but it is not a
-                           BaseCodeGenerator instance.
+        Returns:
+            Optional[CodeGeneratorRegistryEntry]: A registry entry containing
+            the generator and settings classes if valid, otherwise None.
+
+        Raises:
+            TypeError: If GENERATOR_CLASS is not a BaseCodeGenerator subclass.
+            TypeError: If SETTINGS_CLASS is not a
+                BaseCodeGeneratorSettings subclass.
         """
         module_name = f"webweaver_codegen_{path.stem}"
 

@@ -18,7 +18,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import wx
-from webweaver.studio.ui.framework.settings_page import SettingsPage
+from webweaver.studio.ui.framework.settings_page import (SettingsPage,
+                                                         ValidationResult)
 from webweaver.studio.studio_app_settings import StudioAppSettings
 
 
@@ -87,9 +88,9 @@ class GeneralSettingsPage(SettingsPage):
     def load(self):
         self._start_max_checkbox.SetValue(self._settings.start_maximised)
 
-    def validate(self):
+    def validate(self) -> ValidationResult:
         # No validation needed for checkboxes
-        return True
+        return ValidationResult(True)
 
     def apply(self):
         self._settings.start_maximised = \

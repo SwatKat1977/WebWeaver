@@ -96,7 +96,15 @@ class BaseCodeGenerator(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def _on_assert(self, payload):
+        raise NotImplementedError
+
+    @abstractmethod
     def _on_dom_click(self, payload):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _on_dom_get(self, payload):
         raise NotImplementedError
 
     @abstractmethod
