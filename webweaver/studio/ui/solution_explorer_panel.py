@@ -42,6 +42,9 @@ ID_CONTEXT_MENU_REC_RENAME = wx.ID_HIGHEST + 3001
 ID_CONTEXT_MENU_REC_DELETE = wx.ID_HIGHEST + 3002
 
 
+HIDE_DEV_WORK: bool = True
+
+
 class SolutionExplorerPanel(wx.Panel):
     """
     Tree-based panel displaying the contents of the current solution.
@@ -262,8 +265,9 @@ class SolutionExplorerPanel(wx.Panel):
                                      RecordingMetadata())
         )
 
-        self._append_empty_node(root, "Pages", self._icon_pages)
-        self._append_empty_node(root, "Scripts", self._icon_scripts)
+        if not HIDE_DEV_WORK:
+            self._append_empty_node(root, "Pages", self._icon_pages)
+            self._append_empty_node(root, "Scripts", self._icon_scripts)
 
         recordings: wx.TreeItemId = self._tree.AppendItem(
             root,
