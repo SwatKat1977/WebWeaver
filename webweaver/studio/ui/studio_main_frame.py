@@ -278,7 +278,7 @@ class StudioMainFrame(wx.Frame):
         # --------------------------------------------------------------
         # Create toolbox panel
         # --------------------------------------------------------------
-        self._create_toolbox_panel()
+        # self._create_toolbox_panel()
 
         self._aui_mgr.Update()
 
@@ -1484,14 +1484,14 @@ class StudioMainFrame(wx.Frame):
         if not self._workspace_panel.has_active_recording():
             self._show_playback_toolbar(False)
             self._state_controller.on_solution_loaded()
-            self._toolbox_panel.show_no_recording()
+            # self._toolbox_panel.show_no_recording()
 
             if pane.IsOk() and pane.IsShown():
                 pane.Hide()
                 self._aui_mgr.Update()
 
         else:
-            self._toolbox_panel.show_toolbox_items()
+            # self._toolbox_panel.show_toolbox_items()
 
             if pane.IsOk() and not pane.IsShown():
                 pane.Show()
