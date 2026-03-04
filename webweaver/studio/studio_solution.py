@@ -40,6 +40,9 @@ SCRIPTS_DIRECTORY: str = "scripts"
 #: Subdirectory name for stored recordings
 RECORDINGS_DIRECTORY: str = "recordings"
 
+#: Subdirectory name for stored test suites
+TEST_SUITES_DIRECTORY: str = "test_suites"
+
 
 class SolutionLoadError(enum.Enum):
     """
@@ -211,6 +214,15 @@ class StudioSolution:
         """
         return self.get_solution_directory() / RECORDINGS_DIRECTORY
 
+    def get_test_suites_directory(self) -> Path:
+        """
+        Get the Test Suites directory path.
+
+        Returns:
+            Path to the Test Suites directory.
+        """
+        return self.get_solution_directory() / TEST_SUITES_DIRECTORY
+
     def ensure_directory_structure(self) -> SolutionDirectoryCreateStatus:
         """
         Ensure all required directories for this solution exist.
@@ -237,6 +249,11 @@ class StudioSolution:
             self.get_recordings_directory().mkdir(parents=True, exist_ok=True)
         except OSError:
             return SolutionDirectoryCreateStatus.CANNOT_CREATE_RECORDINGS
+
+        try:
+            self.get_test_suites_directory().mkdir(parents=True, exist_ok=True)
+        except OSError:
+            return SolutionDirectoryCreateStatus.CANNOT_CREATE_TEST_SUITES
 
         return SolutionDirectoryCreateStatus.NONE_
 
