@@ -23,6 +23,7 @@ import secrets
 import string
 import typing
 import wx
+import wx.dataview as dataview
 from webweaver.studio.recording_view_context import RecordingViewContext
 from webweaver.studio.recording.recording_loader import \
     load_recording_from_context
@@ -269,8 +270,18 @@ class RecordingViewerPanel(wx.Panel):
         value = ""
         target = ""
 
+        # RecordingEventType.REST_API
+        # RecordingEventType.ASSERT
+        # RecordingEventType.SCROLL
+
         if event_type == RecordingEventType.DOM_CLICK:
             target = payload.get("xpath", "")
+
+        elif event_type == RecordingEventType.DOM_GET:
+            property_type = payload.get("property_type", "")
+            out_variable = payload.get("output_variable", "")
+            value = f"Type: {property_type}"
+            target = f"Variable: {out_variable}"
 
         elif event_type == RecordingEventType.DOM_TYPE:
             value = payload.get("value", "")
@@ -323,8 +334,36 @@ class RecordingViewerPanel(wx.Panel):
 
         self._step_list = wx.ListCtrl(
             self,
-            style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_THEME
-        )
+            style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_THEME)
+
+        # --- Steps list tree ---
+
+        # Steps list tree : Create
+        self._steps_tree = dataview.TreeListCtrl(
+            self,
+            style=wx.BORDER_NONE | dataview.TL_MULTIPLE)
+
+        # Steps list tree : Setup columns
+        self._steps_tree.AppendColumn("Action", width=180)
+        self._steps_tree.AppendColumn("Value", width=150)
+        self._steps_tree.AppendColumn("Description", width=400)
+
+        for i in range(3):
+            self._steps_tree.GetDataView().GetColumn(i).SetResizeable(True)
+
+        self._tree_root = self._steps_tree.GetRootItem()
+
+        '''
+        login = self._steps_tree.AppendItem(self._tree_root, "Login")
+        self._steps_tree.SetItemText(login, 1, "")
+        self._steps_tree.SetItemText(login, 2, "Authentication steps")
+
+        step = self._steps_tree.AppendItem(login, "Dom Click")
+        self._steps_tree.SetItemText(step, 1, "")
+        self._steps_tree.SetItemText(step, 2, "Click login button")
+        '''
+
+        main_sizer.Add(self._steps_tree, 1, wx.EXPAND)
 
         self._step_list.InsertColumn(0, "#", width=50)
         self._step_list.InsertColumn(1, "Action", width=120)
