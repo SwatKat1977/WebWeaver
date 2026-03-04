@@ -35,6 +35,9 @@ class ExplorerNodeType(enum.Enum):
     FOLDER_SCRIPTS = enum.auto()
     FOLDER_RECORDINGS = enum.auto()
     RECORDING_ITEM = enum.auto()
+    FOLDER_TEST_SUITES = enum.auto()
+    TEST_SUITES_ITEM = enum.auto()
+    TEST_SUITES_FILTER = enum.auto()
 
 
 class SolutionExplorerNodeData:
