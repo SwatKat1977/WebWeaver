@@ -28,28 +28,50 @@ class ToolboxPanel(wx.Panel):
     """
 
     def __init__(self, parent):
+        """
+        Initialize the toolbox panel.
+
+        Args:
+            parent (wx.Window): Parent window that owns this panel.
+        """
         super().__init__(parent)
 
-        sizer = wx.BoxSizer(wx.VERTICAL)
-
         self._placeholder: typing.Optional[wx.StaticText] = None
-        self._tree: typing.Optional[wx.TreeCtrl] = None
+        self._toolbox_tree: typing.Optional[wx.TreeCtrl] = None
 
         self._create_ui()
         self.show_no_recording()
 
     def show_no_recording(self):
-        self._tree.Hide()
+        """
+        Display the placeholder message indicating that no recording
+        is currently open and hide the toolbox tree.
+        """
+        self._toolbox_tree.Hide()
         self._placeholder.Show()
         self.Layout()
 
     def show_toolbox_items(self) -> None:
+        """
+        Display the toolbox tree containing available actions and
+        hide the placeholder message.
+        """
         self._placeholder.Hide()
-        self._tree.Show()
-        self._tree.ExpandAll()
+        self._toolbox_tree.Show()
+        self._toolbox_tree.ExpandAll()
         self.Layout()
 
     def _create_ui(self):
+        """
+        Create and initialize the user interface elements for the
+        toolbox panel.
+
+        This includes:
+
+        - A placeholder label shown when no recording is open.
+        - A tree control listing all available toolbox actions.
+        - Event bindings for user interaction.
+        """
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         # -- Placeholder text --
@@ -58,59 +80,65 @@ class ToolboxPanel(wx.Panel):
         self._placeholder.SetForegroundColour(wx.Colour(120, 120, 120))
 
         # -- Actual tree --
-        self._tree = wx.TreeCtrl(
+        self._toolbox_tree = wx.TreeCtrl(
             self,
             style=wx.TR_DEFAULT_STYLE
                   | wx.TR_HIDE_ROOT
                   | wx.TR_LINES_AT_ROOT)
 
-        """
-        Populate toolbox tree with available actions.
-        """
+        # Populate toolbox tree with available actions.
+        root = self._toolbox_tree.AddRoot("Toolbox")
 
-        root = self._tree.AddRoot("Toolbox")
+        dom = self._toolbox_tree.AppendItem(root, "DOM Actions")
+        self._toolbox_tree.AppendItem(dom, "Check")
+        self._toolbox_tree.AppendItem(dom, "Click")
+        self._toolbox_tree.AppendItem(dom, "Get DOM Value")
+        self._toolbox_tree.AppendItem(dom, "Type")
+        self._toolbox_tree.AppendItem(dom, "Select")
+        self._toolbox_tree.AppendItem(dom, "Wait")
 
-        dom = self._tree.AppendItem(root, "DOM Actions")
-        self._tree.AppendItem(dom, "Check")
-        self._tree.AppendItem(dom, "Click")
-        self._tree.AppendItem(dom, "Get DOM Value")
-        self._tree.AppendItem(dom, "Type")
-        self._tree.AppendItem(dom, "Select")
-        self._tree.AppendItem(dom, "Wait")
-
-        browser = self._tree.AppendItem(root, "Browser")
-        self._tree.AppendItem(browser, "Navigate")
-        self._tree.AppendItem(browser, "Scroll")
+        browser = self._toolbox_tree.AppendItem(root, "Browser")
+        self._toolbox_tree.AppendItem(browser, "Navigate")
+        self._toolbox_tree.AppendItem(browser, "Scroll")
         # self.tree.AppendItem(browser, "Refresh")
 
-        logic = self._tree.AppendItem(root, "Logic")
-        self._tree.AppendItem(logic, "Group")
-        self._tree.AppendItem(logic, "Rest API")
+        logic = self._toolbox_tree.AppendItem(root, "Logic")
+        self._toolbox_tree.AppendItem(logic, "Group")
+        self._toolbox_tree.AppendItem(logic, "Rest API")
         # self.tree.AppendItem(logic, "Loop")
 
-        assertion = self._tree.AppendItem(root, "Assertion")
-        self._tree.AppendItem(assertion, "Assert")
+        assertion = self._toolbox_tree.AppendItem(root, "Assertion")
+        self._toolbox_tree.AppendItem(assertion, "Assert")
         # self.tree.AppendItem(logic, "Loop")
 
-        self._tree.ExpandAll()
+        self._toolbox_tree.ExpandAll()
 
-        self._tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self._on_item_activated)
+        self._toolbox_tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED,
+                                self._on_item_activated)
 
         sizer.Add(self._placeholder, 1, wx.ALIGN_CENTER | wx.ALL, 10)
-        sizer.Add(self._tree, 1, wx.EXPAND | wx.ALL, 5)
+        sizer.Add(self._toolbox_tree, 1, wx.EXPAND | wx.ALL, 5)
 
         self.SetSizer(sizer)
 
     def _on_item_activated(self, event):
         """
-        Called when user double-clicks an action.
+        Handle activation of a toolbox item.
+
+        This event is triggered when the user double-clicks an item in
+        the toolbox tree. The selected action name is retrieved and can
+        later be used to insert a corresponding step into the current
+        recording.
+
+        Args:
+            event (wx.TreeEvent): Tree activation event.
         """
         item = event.GetItem()
 
         if not item.IsOk():
             return
 
-        action_name = self._tree.GetItemText(item)
+        action_name = self._toolbox_tree.GetItemText(item)
 
         print(f"Toolbox action selected: {action_name}")
         # Later this should insert a step into the recording.
