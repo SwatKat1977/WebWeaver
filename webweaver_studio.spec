@@ -62,7 +62,29 @@ a = Analysis(
     datas=[],
     hiddenimports=['wx',
                    'wx.adv',
-                   'wx.lib.mixins.listctrl'],
+                   'wx.lib.mixins.listctrl',
+
+                   # Selenium core
+                   'selenium',
+                   'selenium.webdriver',
+                   'selenium.webdriver.common',
+
+                   # Chrome / Chromium
+                   'selenium.webdriver.chrome',
+                   'selenium.webdriver.chrome.webdriver',
+                   'selenium.webdriver.chrome.service',
+                   'selenium.webdriver.chrome.options',
+
+                   # Edge (Chromium)
+                   'selenium.webdriver.edge',
+                   'selenium.webdriver.edge.webdriver',
+                   'selenium.webdriver.edge.service',
+                   'selenium.webdriver.edge.options',
+
+                   # webdriver-manager
+                   'webdriver_manager',
+                   'webdriver_manager.chrome',
+                   'webdriver_manager.microsoft'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -83,7 +105,7 @@ exe = EXE(
     strip=False,
     upx=False,
     version=version_info,
-    console=False,  # GUI app
+    console=False
 )
 
 coll = COLLECT(
