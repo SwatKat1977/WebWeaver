@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Optional
 import wx
 import wx.aui
+from webweaver.studio.persistence.test_suite_persistence import TestSuitePersistence
 from webweaver.studio.recording.recording_events import (
     EVT_OPEN_RECORDING,
     EVT_RENAME_RECORDING,
@@ -158,8 +159,8 @@ class SolutionExplorerPanel(wx.Panel):
     def _populate_test_suites(self,
                               solution: StudioSolution,
                               node: wx.TreeItemId) -> None:
-
-        test_suites = solution.discover_test_suite_files()
+        suite_dir: Path = solution.get_test_suites_directory()
+        test_suites = TestSuitePersistence.discover_files(suite_dir)
 
         if not test_suites:
             self._tree.AppendItem(node, "(empty)")
