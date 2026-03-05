@@ -201,7 +201,33 @@ class SolutionExplorerPanel(wx.Panel):
 
         while child.IsOk():
             if self._tree.GetItemText(child) == "Recordings":
-                self._populate_recordings(solution, child)
+                self._tree.DeleteChildren(child)
+                # self._populate_recordings(solution, child)
+                self._tree.Expand(child)
+                return
+
+            child, cookie = self._tree.GetNextChild(root, cookie)
+
+    def refresh_test_suites(self, solution: StudioSolution):
+        """
+        Refresh the test suites folder in the tree.
+
+        Locates the "Recordings" node and repopulates it using the provided
+        solution model.
+        """
+        if not self._tree:
+            return
+
+        root = self._tree.GetRootItem()
+        if not root.IsOk():
+            return
+
+        child, cookie = self._tree.GetFirstChild(root)
+
+        while child.IsOk():
+            if self._tree.GetItemText(child) == "Test Suites":
+                self._tree.DeleteChildren(child)
+                self._populate_test_suites(solution, child)
                 self._tree.Expand(child)
                 return
 

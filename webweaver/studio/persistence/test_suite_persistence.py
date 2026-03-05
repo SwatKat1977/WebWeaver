@@ -103,7 +103,7 @@ class TestSuitePersistence:
         Returns:
             A test suite filename of the form 'TestSuite_N'.
         """
-        timestamp: str = datetime.now().strftime('%Y-%m-%d')
+        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         return f"{TestSuitePersistence.FILENAME_PREFIX}{timestamp}" + \
                f"{TestSuitePersistence.FILENAME_EXTENSION}"
 

@@ -1193,7 +1193,7 @@ class StudioMainFrame(wx.Frame):
                 self)
             return
 
-        # self._solution_explorer_panel.refresh_recordings(self._current_solution)
+        self._solution_explorer_panel.refresh_test_suites(self._current_solution)
 
     def _delete_test_suite_event(self, _evt: wx.CommandEvent) -> None:
         ...
