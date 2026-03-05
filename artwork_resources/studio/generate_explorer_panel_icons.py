@@ -39,3 +39,7 @@ png_to_header("explorerTreeIcons/script.png",
 png_to_header("explorerTreeIcons/documents.png",
     "explorerTreeIcons/test_suites_icon.py",
     "test_suites_icon")
+
+png_to_header("explorerTreeIcons/test_suite.png",
+    "explorerTreeIcons/test_suite_icon.py",
+    "test_suite_icon")
