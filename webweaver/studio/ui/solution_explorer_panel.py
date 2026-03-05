@@ -36,7 +36,8 @@ from webweaver.studio.solution_explorer_icons import (
                                        load_pages_filter_icon,
                                        load_scripts_filter_icon,
                                        load_recordings_filter_icon,
-                                       load_test_suites_filter_icon)
+                                       load_test_suites_filter_icon,
+                                       load_test_suite_icon)
 
 # Context menu command IDs for recording items in the solution explorer.s
 ID_CONTEXT_MENU_REC_OPEN = wx.ID_HIGHEST + 3000
@@ -82,6 +83,8 @@ class SolutionExplorerPanel(wx.Panel):
         self._icon_pages: int = -1
         self._icon_scripts: int = -1
         self._icon_recordings: int = -1
+        self._icon_test_suites: int = -1
+        self._icon_test_suite: int = -1
 
         self._create_controls()
         self.show_no_solution()
@@ -172,8 +175,8 @@ class SolutionExplorerPanel(wx.Panel):
             self._tree.AppendItem(
                 node,
                 data.get("name"),
-                self._icon_recordings,
-                self._icon_recordings,
+                self._icon_test_suite,
+                self._icon_test_suite,
                 SolutionExplorerNodeData(ExplorerNodeType.TEST_SUITES_FILTER,
                                          suite))
 
@@ -258,7 +261,7 @@ class SolutionExplorerPanel(wx.Panel):
         self._icon_scripts = self._image_list.Add(load_scripts_filter_icon())
         self._icon_recordings = self._image_list.Add(load_recordings_filter_icon())
         self._icon_test_suites = self._image_list.Add(load_test_suites_filter_icon())
-
+        self._icon_test_suite = self._image_list.Add(load_test_suite_icon())
         self._tree.AssignImageList(self._image_list)
 
         # Layout
