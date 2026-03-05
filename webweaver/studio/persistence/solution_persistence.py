@@ -50,7 +50,7 @@ class SolutionDirectoryCreateStatus(enum.Enum):
     CANNOT_CREATE_PAGES = enum.auto()
     CANNOT_CREATE_SCRIPTS = enum.auto()
     CANNOT_CREATE_RECORDINGS = enum.auto()
-
+    CANNOT_CREATE_TEST_SUITES = enum.auto()
 
 class SolutionPersistence:
     """
@@ -91,6 +91,12 @@ class SolutionPersistence:
             solution.get_scripts_directory().mkdir(parents=True, exist_ok=True)
         except OSError:
             return SolutionDirectoryCreateStatus.CANNOT_CREATE_SCRIPTS
+
+        try:
+            solution.get_recordings_directory().mkdir(parents=True,
+                                                      exist_ok=True)
+        except OSError:
+            return SolutionDirectoryCreateStatus.CANNOT_CREATE_RECORDINGS
 
         try:
             solution.get_recordings_directory().mkdir(parents=True,
