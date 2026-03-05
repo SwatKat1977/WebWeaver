@@ -54,7 +54,7 @@ class SolutionExplorerNodeData:
 
     def __init__(self,
                  node_type: ExplorerNodeType,
-                 metadata: RecordingMetadata):
+                 metadata):
         """
         Create a new SolutionExplorerNodeData instance.
 
@@ -62,13 +62,13 @@ class SolutionExplorerNodeData:
         ----------
         node_type : ExplorerNodeType
             The type of the tree node.
-        metadata : RecordingMetadata
+        metadata
             Metadata associated with the node, typically representing a
             recording item. May be ``None`` for non-recording nodes.
         """
         super().__init__()
         self._node_type = node_type
-        self._recording = metadata
+        self._metadata = metadata
 
     @property
     def node_type(self) -> ExplorerNodeType:
@@ -83,14 +83,12 @@ class SolutionExplorerNodeData:
         return self._node_type
 
     @property
-    def metadata(self) -> RecordingMetadata:
+    def metadata(self):
         """
         Get the metadata associated with this explorer node.
 
         Returns
         -------
-        RecordingMetadata
-            The metadata object attached to this node. For recording nodes,
-            this contains information such as name, file path, and timestamps.
+        The metadata object attached to this node.
         """
-        return self._recording
+        return self._metadata

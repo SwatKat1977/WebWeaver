@@ -53,6 +53,16 @@ class TestSuitePersistence:
         try:
             text = suite_file.read_text(encoding="utf-8")
             data = json.loads(text)
+
+            required_fields = ["id", "name"]
+
+            for field in required_fields:
+                if field not in data:
+                    raise TestSuiteLoadError(f"Missing required field: '{field}'")
+
+                if not isinstance(data[field], str):
+                    raise TestSuiteLoadError(f"Field '{field}' must be a string")
+
             return TestSuiteDocument(suite_file, data)
 
         except (OSError, json.JSONDecodeError) as ex:
