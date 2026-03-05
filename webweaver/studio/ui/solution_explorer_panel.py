@@ -25,7 +25,10 @@ from webweaver.studio.persistence.test_suite_persistence import TestSuitePersist
 from webweaver.studio.recording.recording_events import (
     EVT_OPEN_RECORDING,
     EVT_RENAME_RECORDING,
-    EVT_DELETE_RECORDING)
+    EVT_DELETE_RECORDING,
+    EVT_NEW_TEST_SUITE,
+    EVT_DELETE_TEST_SUITE,
+    EVT_RENAME_TEST_SUITE)
 from webweaver.studio.recording_metadata import RecordingMetadata
 from webweaver.studio.studio_solution import StudioSolution
 from webweaver.studio.solution_explorer_node_data import (
@@ -45,7 +48,7 @@ ID_CONTEXT_MENU_REC_RENAME = wx.ID_HIGHEST + 3001
 ID_CONTEXT_MENU_REC_DELETE = wx.ID_HIGHEST + 3002
 ID_CONTEXT_MENU_TEST_SUITE_NEW = wx.ID_HIGHEST + 3003
 ID_CONTEXT_MENU_TEST_SUITE_DELETE = wx.ID_HIGHEST + 3004
-
+ID_CONTEXT_MENU_TEST_SUITE_RENAME = wx.ID_HIGHEST + 3005
 
 HIDE_DEV_WORK: bool = True
 
@@ -253,6 +256,16 @@ class SolutionExplorerPanel(wx.Panel):
                   self._on_delete_recording,
                   id=ID_CONTEXT_MENU_REC_DELETE)
 
+        self.Bind(wx.EVT_MENU,
+                  self._on_create_new_test_suite,
+                  id=ID_CONTEXT_MENU_TEST_SUITE_NEW)
+        self.Bind(wx.EVT_MENU,
+                  self._on_delete_test_suite,
+                  id=ID_CONTEXT_MENU_TEST_SUITE_DELETE)
+        self.Bind(wx.EVT_MENU,
+                  self._on_rename_test_suite,
+                  id=ID_CONTEXT_MENU_TEST_SUITE_RENAME)
+
         # Image list for solution explorer tree
         self._image_list = wx.ImageList(16, 16, True)
 
@@ -457,4 +470,25 @@ class SolutionExplorerPanel(wx.Panel):
         evt.SetClientData(recording)
         evt.SetEventObject(self)
 
+        wx.PostEvent(self.GetParent(), evt)
+
+    def _on_create_new_test_suite(self, _event: wx.CommandEvent) -> None:
+        if not self._context_item.IsOk():
+            return
+
+        evt: wx.CommandEvent = wx.CommandEvent(EVT_NEW_TEST_SUITE)
+        wx.PostEvent(self.GetParent(), evt)
+
+    def _on_delete_test_suite(self, _event: wx.CommandEvent) -> None:
+        if not self._context_item.IsOk():
+            return
+
+        evt: wx.CommandEvent = wx.CommandEvent(EVT_DELETE_TEST_SUITE)
+        wx.PostEvent(self.GetParent(), evt)
+
+    def _on_rename_test_suite(self, _event: wx.CommandEvent) -> None:
+        if not self._context_item.IsOk():
+            return
+
+        evt: wx.CommandEvent = wx.CommandEvent(EVT_RENAME_TEST_SUITE)
         wx.PostEvent(self.GetParent(), evt)

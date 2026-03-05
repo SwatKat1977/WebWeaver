@@ -28,8 +28,7 @@ from webweaver.studio.recording_metadata import (RecordingMetadata,
 from webweaver.studio.recording_view_context import RecordingViewContext
 from webweaver.studio.persistence.solution_persistence import \
     SolutionDirectoryCreateStatus
-from webweaver.studio.persistence.test_suite_persistence import (
-    TestSuitePersistence, TestSuiteLoadError)
+
 
 #: Current .WWS version number
 JSON_VERSION: int = 1

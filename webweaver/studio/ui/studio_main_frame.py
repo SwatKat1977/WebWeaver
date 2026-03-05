@@ -28,7 +28,11 @@ from selenium.common.exceptions import (WebDriverException,
 import wx
 import wx.aui
 
-from webweaver.studio.code_generation.code_generator_entry import CodeGeneratorRegistryEntry
+from webweaver.studio.code_generation.code_generator_entry import \
+    CodeGeneratorRegistryEntry
+from webweaver.studio.persistence.test_suite_document import TestSuiteDocument
+from webweaver.studio.persistence.test_suite_persistence import (
+    TestSuitePersistence, TestSuiteSaveError)
 from webweaver.studio.recent_solutions_manager import RecentSolutionsManager
 from webweaver.studio.recording_metadata import RecordingMetadata
 from webweaver.studio.persistence.solution_persistence import (
@@ -44,7 +48,10 @@ from webweaver.studio.recording_view_context import RecordingViewContext
 from webweaver.studio.recording.recording_events import (
     OpenRecordingEvent,
     RenameRecordingEvent,
-    DeleteRecordingEvent)
+    DeleteRecordingEvent,
+    DeleteTestSuiteEvent,
+    NewTestSuiteEvent,
+    RenameTestSuiteEvent)
 from webweaver.studio.recording.recording_session import RecordingSession
 from webweaver.studio.recording.recording_event_type import RecordingEventType
 from webweaver.studio.recording.recording_loader import \
@@ -303,6 +310,19 @@ class StudioMainFrame(wx.Frame):
 
         # Rename recording event.
         self.Bind(RenameRecordingEvent, self._rename_recording_event)
+
+        # --------------------------------------------------------------
+        # Test Suite events
+        # --------------------------------------------------------------
+
+        # Create new test suite event.
+        self.Bind(NewTestSuiteEvent, self._create_new_test_suite_event)
+
+        # Delete test suite event.
+        self.Bind(DeleteTestSuiteEvent, self._delete_test_suite_event)
+
+        # Rename test suite event.
+        self.Bind(RenameTestSuiteEvent, self._rename_test_suite_event)
 
         self.Bind(EVT_WORKSPACE_ACTIVE_CHANGED,
                   self._on_workspace_active_changed)
@@ -1134,6 +1154,57 @@ class StudioMainFrame(wx.Frame):
             self._workspace_panel.on_recording_deleted_by_id(selected_id)
 
         self._solution_explorer_panel.refresh_recordings(self._current_solution)
+
+    def _create_new_test_suite_event(self, _evt: wx.CommandEvent) -> None:
+        dlg: wx.TextEntryDialog = wx.TextEntryDialog(
+            self,
+            "Enter a name for the new test suite:",
+            "New Test Suite",
+            "")
+
+        if dlg.ShowModal() != wx.ID_OK:
+            return
+
+        new_name: str = dlg.GetValue()
+
+        if not new_name:
+            return
+
+        data = {
+            "id": "TO_BE_DONE",
+            "name": new_name
+        }
+
+        suites_path: Path = self._current_solution.get_test_suites_directory()
+        new_filename = TestSuitePersistence.generate_next_filename()
+        suite_filename = suites_path / new_filename
+        print("Whats up doc :", data)
+        print("random       :", suite_filename)
+        doc: TestSuiteDocument = TestSuiteDocument(suite_filename, data)
+
+        try:
+            TestSuitePersistence.save_to_disk(doc)
+
+        except TestSuiteSaveError:
+            wx.MessageBox(
+                "Failed to save test suite file",
+                "Create Test Suite",
+                wx.ICON_ERROR,
+                self)
+            return
+
+        # self._solution_explorer_panel.refresh_recordings(self._current_solution)
+
+    def _delete_test_suite_event(self, _evt: wx.CommandEvent) -> None:
+        ...
+
+    def _rename_test_suite_event(self, _evt: wx.CommandEvent) -> None:
+        ...
+
+
+
+
+
 
     def rebuild_recent_solutions_menu(self) -> None:
         """
