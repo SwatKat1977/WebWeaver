@@ -202,7 +202,7 @@ class SolutionExplorerPanel(wx.Panel):
         while child.IsOk():
             if self._tree.GetItemText(child) == "Recordings":
                 self._tree.DeleteChildren(child)
-                # self._populate_recordings(solution, child)
+                self._populate_recordings(solution, child)
                 self._tree.Expand(child)
                 return
 
