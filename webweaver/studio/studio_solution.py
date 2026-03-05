@@ -292,36 +292,6 @@ class StudioSolution:
 
         return recordings
 
-    def discover_test_suite_files(self) -> typing.List["TestSuiteDocument"]:
-        """
-        Scan the test suites directory for valid test suite files.
-
-        Returns:
-            A list of successfully loaded TestSuiteDocument objects.
-        """
-        suites: typing.List["TestSuiteDocument"] = []
-        suites_dir = self.get_test_suites_directory()
-
-        if not suites_dir.exists():
-            return suites
-
-        for entry in suites_dir.iterdir():
-            if not entry.is_file():
-                continue
-            if entry.suffix != ".wwsuite":
-                continue
-
-            try:
-                suite_doc = TestSuitePersistence.load_from_disk(entry)
-
-            except TestSuiteLoadError as ex:
-                wx.LogWarning(f"Skipping test suite {entry}:\n{str(ex)}")
-                continue
-
-            suites.append(suite_doc)
-
-        return suites
-
     def generate_next_recording_name(self) -> str:
         """
         Generate a unique sequential recording name.
