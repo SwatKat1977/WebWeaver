@@ -173,7 +173,7 @@ class SolutionExplorerPanel(wx.Panel):
                 data.get("name"),
                 self._icon_recordings,
                 self._icon_recordings,
-                SolutionExplorerNodeData(ExplorerNodeType.TEST_SUITES_ITEM,
+                SolutionExplorerNodeData(ExplorerNodeType.TEST_SUITES_FILTER,
                                          suite))
 
     def refresh_recordings(self, solution: StudioSolution):
@@ -310,11 +310,6 @@ class SolutionExplorerPanel(wx.Panel):
 
         self._populate_test_suites(solution, test_suites)
 
-        '''
-    FOLDER_TEST_SUITES = enum.auto()
-    TEST_SUITES_ITEM = enum.auto()
-        '''
-
     def _append_empty_node(self,
                            parent: wx.TreeItemId,
                            label: str,
@@ -357,12 +352,6 @@ class SolutionExplorerPanel(wx.Panel):
 
         menu = wx.Menu()
 
-        '''
-    FOLDER_TEST_SUITES = enum.auto()
-    TEST_SUITES_ITEM = enum.auto()
-    TEST_SUITES_FILTER = enum.auto()
-        '''
-
         if data.node_type == ExplorerNodeType.RECORDING_ITEM:
             menu.Append(ID_CONTEXT_MENU_REC_OPEN, "Open")
             menu.Append(ID_CONTEXT_MENU_REC_RENAME, "Rename")
@@ -370,10 +359,11 @@ class SolutionExplorerPanel(wx.Panel):
             menu.Append(ID_CONTEXT_MENU_REC_DELETE, "Delete")
 
         elif data.node_type == ExplorerNodeType.FOLDER_TEST_SUITES:
-            menu.Append(ID_CONTEXT_MENU_TEST_SUITE_NEW, "New")
+            menu.Append(ID_CONTEXT_MENU_TEST_SUITE_NEW, "Add new test suite")
 
         elif data.node_type == ExplorerNodeType.TEST_SUITES_FILTER:
-            menu.Append(ID_CONTEXT_MENU_TEST_SUITE_DELETE, "Delete")
+            menu.Append(ID_CONTEXT_MENU_TEST_SUITE_DELETE, "Delete suite")
+            menu.Append(ID_CONTEXT_MENU_TEST_SUITE_DELETE, "Rename suite")
 
         else:
             # No menu
