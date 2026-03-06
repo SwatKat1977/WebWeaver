@@ -511,7 +511,12 @@ class SolutionExplorerPanel(wx.Panel):
         if not self._context_item.IsOk():
             return
 
+        data = self._tree.GetItemData(self._context_item)
+        if not data or data.node_type != ExplorerNodeType.TEST_SUITES_FILTER:
+            return
+
         evt: wx.CommandEvent = wx.CommandEvent(EVT_DELETE_TEST_SUITE)
+        evt.SetClientData(Path(data.metadata.path))
         wx.PostEvent(self.GetParent(), evt)
 
     def _on_rename_test_suite(self, _event: wx.CommandEvent) -> None:
