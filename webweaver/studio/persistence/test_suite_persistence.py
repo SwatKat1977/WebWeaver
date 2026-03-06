@@ -17,8 +17,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from datetime import datetime
 import json
 from pathlib import Path
+import typing
+import wx
 from webweaver.studio.persistence.test_suite_document import TestSuiteDocument
 
 
@@ -36,6 +39,10 @@ class TestSuitePersistence:
 
     Responsible for loading and saving test suite documents to and from disk.
     """
+
+    FILENAME_EXTENSION: str = ".wwsuite"
+
+    FILENAME_PREFIX: str = "TestSuite_"
 
     @staticmethod
     def load_from_disk(suite_file: Path) -> TestSuiteDocument:
@@ -87,3 +94,45 @@ class TestSuitePersistence:
         except OSError as ex:
             raise TestSuiteSaveError(
                 f"Failed to save test_suite: {test_suite.path}") from ex
+
+    @staticmethod
+    def generate_next_filename() -> str:
+        """
+        Generate a unique test suite filename.
+
+        Returns:
+            A test suite filename of the form 'TestSuite_N'.
+        """
+        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        return f"{TestSuitePersistence.FILENAME_PREFIX}{timestamp}" + \
+               f"{TestSuitePersistence.FILENAME_EXTENSION}"
+
+    @staticmethod
+    def discover_files(suites_dir: Path) -> typing.List["TestSuiteDocument"]:
+        """
+        Scan the test suites directory for valid test suite files.
+
+        Returns:
+            A list of successfully loaded TestSuiteDocument objects.
+        """
+        suites: typing.List["TestSuiteDocument"] = []
+
+        if not suites_dir.exists():
+            return suites
+
+        for entry in suites_dir.iterdir():
+            if not entry.is_file():
+                continue
+            if entry.suffix != TestSuitePersistence.FILENAME_EXTENSION:
+                continue
+
+            try:
+                suite_doc = TestSuitePersistence.load_from_disk(entry)
+
+            except TestSuiteLoadError as ex:
+                wx.LogWarning(f"Skipping test suite {entry}:\n{str(ex)}")
+                continue
+
+            suites.append(suite_doc)
+
+        return suites

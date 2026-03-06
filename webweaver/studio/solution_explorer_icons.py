@@ -23,6 +23,7 @@ from .resources.explorer_tree_icons.pages_icon import PAGES_ICON
 from .resources.explorer_tree_icons.recordings_icon import RECORDINGS_ICON
 from .resources.explorer_tree_icons.root_icon import ROOT_ICON
 from .resources.explorer_tree_icons.scripts_icon import SCRIPTS_ICON
+from .resources.explorer_tree_icons.test_suite_icon import TEST_SUITE_ICON
 from .resources.explorer_tree_icons.test_suites_icon import TEST_SUITES_ICON
 
 
@@ -122,3 +123,15 @@ def load_test_suites_filter_icon() -> wx.Bitmap:
         The solution explorer icon.
     """
     return _load_icon(TEST_SUITES_ICON)
+
+
+def load_test_suite_icon() -> wx.Bitmap:
+    """
+    Load the test suite solution icon
+
+    Returns
+    -------
+    wx.Bitmap
+        The solution explorer icon.
+    """
+    return _load_icon(TEST_SUITE_ICON)
