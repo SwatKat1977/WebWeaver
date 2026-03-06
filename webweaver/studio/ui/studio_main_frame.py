@@ -1081,7 +1081,7 @@ class StudioMainFrame(wx.Frame):
                 self)
             return
 
-        recording = self._solution_explorer_panel.get_selected_recording()
+        recording = self._solution_explorer_panel.get_selected_metadata()
 
         dlg: wx.TextEntryDialog = wx.TextEntryDialog(
             self,
@@ -1147,7 +1147,7 @@ class StudioMainFrame(wx.Frame):
                 self)
             return
 
-        selected = self._solution_explorer_panel.get_selected_recording()
+        selected = self._solution_explorer_panel.get_selected_metadata()
         selected_id = selected.id if selected else ""
 
         if selected_id:
@@ -1178,8 +1178,6 @@ class StudioMainFrame(wx.Frame):
         suites_path: Path = self._current_solution.get_test_suites_directory()
         new_filename = TestSuitePersistence.generate_next_filename()
         suite_filename = suites_path / new_filename
-        print("Whats up doc :", data)
-        print("random       :", suite_filename)
         doc: TestSuiteDocument = TestSuiteDocument(suite_filename, data)
 
         try:
@@ -1199,12 +1197,48 @@ class StudioMainFrame(wx.Frame):
         ...
 
     def _rename_test_suite_event(self, _evt: wx.CommandEvent) -> None:
-        ...
+        if self._state_controller.state in (StudioState.RECORDING_RUNNING,
+                                            StudioState.RECORDING_PAUSED):
+            wx.MessageBox(
+                "Stop recording before renaming a test suite",
+                "Rename Test Suite",
+                wx.ICON_WARNING,
+                self)
+            return
 
+        metadata = self._solution_explorer_panel.get_selected_metadata()
 
+        old_name = metadata.data.get("name")
+        dlg: wx.TextEntryDialog = wx.TextEntryDialog(
+            self,
+            "Enter a new name for the test suite:",
+            "Rename Test Suite",
+            old_name)
 
+        if dlg.ShowModal() != wx.ID_OK:
+            return
 
+        new_name: str = dlg.GetValue()
 
+        if not new_name:
+            return
+
+        # Make a copy of the metadata to update.
+        updated_metadata: TestSuiteDocument = metadata
+        updated_metadata.data["name"] = new_name
+
+        try:
+            TestSuitePersistence.save_to_disk(updated_metadata)
+
+        except TestSuiteSaveError:
+            wx.MessageBox(
+                "Failed to update test suite file",
+                "Update Test Suite",
+                wx.ICON_ERROR,
+                self)
+            return
+
+        self._solution_explorer_panel.refresh_test_suites(self._current_solution)
 
     def rebuild_recent_solutions_menu(self) -> None:
         """
