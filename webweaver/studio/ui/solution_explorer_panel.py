@@ -21,6 +21,8 @@ from pathlib import Path
 from typing import Optional
 import wx
 import wx.aui
+
+from webweaver.studio.persistence.test_suite_document import TestSuiteDocument
 from webweaver.studio.persistence.test_suite_persistence import TestSuitePersistence
 from webweaver.studio.recording.recording_events import (
     EVT_OPEN_RECORDING,
@@ -233,15 +235,15 @@ class SolutionExplorerPanel(wx.Panel):
 
             child, cookie = self._tree.GetNextChild(root, cookie)
 
-    def  get_selected_recording(self) -> Optional[RecordingMetadata]:
+    def  get_selected_metadata(self):
         """
-        Get the recording associated with the current context item.
+        Get the metadata associated with the current context item.
 
         Returns
         -------
-        Optional[RecordingMetadata]
-            The selected recording's metadata, or ``None`` if no valid
-            recording item is selected.
+        Optional[Metadata]
+            The selected item's metadata, or ``None`` if no valid
+            item is selected.
         """
         if not self._context_item or not self._context_item.IsOk():
             return None
@@ -406,7 +408,7 @@ class SolutionExplorerPanel(wx.Panel):
 
         elif data.node_type == ExplorerNodeType.TEST_SUITES_FILTER:
             menu.Append(ID_CONTEXT_MENU_TEST_SUITE_DELETE, "Delete suite")
-            menu.Append(ID_CONTEXT_MENU_TEST_SUITE_DELETE, "Rename suite")
+            menu.Append(ID_CONTEXT_MENU_TEST_SUITE_RENAME, "Rename suite")
 
         else:
             # No menu
@@ -422,7 +424,7 @@ class SolutionExplorerPanel(wx.Panel):
 
         Posts an EVT_OPEN_RECORDING event to the parent window.
         """
-        recording = self.get_selected_recording()
+        recording = self.get_selected_metadata()
         if not recording:
             return
 
