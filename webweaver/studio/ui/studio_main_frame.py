@@ -1193,8 +1193,42 @@ class StudioMainFrame(wx.Frame):
 
         self._solution_explorer_panel.refresh_test_suites(self._current_solution)
 
-    def _delete_test_suite_event(self, _evt: wx.CommandEvent) -> None:
-        ...
+    def _delete_test_suite_event(self, evt: wx.CommandEvent) -> None:
+        if self._state_controller.state in (StudioState.RECORDING_RUNNING,
+                                            StudioState.RECORDING_PAUSED):
+            wx.MessageBox(
+                "You cannot delete test suite while a recording session is "
+                "active.\n\nStop the recording first.",
+                "Delete Test Suite",
+                wx.ICON_WARNING,
+                self)
+            return
+
+        path = Path(evt.GetClientData())
+        if not path or not self._current_solution:
+            return
+
+        filename = Path(path).name
+
+        return_code: int = wx.MessageBox(f"Delete test suite?\n\n{filename}",
+                                         "Delete Test Suite",
+                                         wx.YES_NO | wx.ICON_WARNING,
+                                         self)
+        if return_code is not wx.YES:
+            return
+
+        try:
+            Path(path).unlink()
+
+        except OSError as e:
+            wx.MessageBox(f"Failed to delete test suite:\n{e}",
+                          "Delete Test Suite Failure",
+                          wx.ICON_ERROR,
+                          self)
+            return
+
+        self._solution_explorer_panel.refresh_test_suites(
+            self._current_solution)
 
     def _rename_test_suite_event(self, _evt: wx.CommandEvent) -> None:
         if self._state_controller.state in (StudioState.RECORDING_RUNNING,
