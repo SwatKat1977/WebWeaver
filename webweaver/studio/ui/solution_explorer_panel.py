@@ -21,8 +21,6 @@ from pathlib import Path
 from typing import Optional
 import wx
 import wx.aui
-
-from webweaver.studio.persistence.test_suite_document import TestSuiteDocument
 from webweaver.studio.persistence.test_suite_persistence import TestSuitePersistence
 from webweaver.studio.recording.recording_events import (
     EVT_OPEN_RECORDING,
