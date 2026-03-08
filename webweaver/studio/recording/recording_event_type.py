@@ -38,6 +38,7 @@ class RecordingEventType(enum.Enum):
     NAV_GOTO = "nav.goto"
     REST_API = "rest_api"
     SCROLL = "scroll"
+    SENDKEY = "sendkey"
     WAIT = "wait"
     UNKNOWN = "unknown"
 

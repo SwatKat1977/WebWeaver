@@ -21,13 +21,27 @@ from enum import Enum
 
 
 class SendkeyModify(Enum):
+    """
+    Modifier keys that can be combined with other keys when sending keyboard
+    input.
+
+    These represent standard keyboard modifier keys that alter the behavior
+    of another key press (for example: CTRL+C, ALT+TAB, SHIFT+A).
+    """
     CTRL = "ctrl"
     ALT = "alt"
     SHIFT = "shift"
 
 
 class SendkeySpecialKey(Enum):
-    ENTER = "entre"
+    """
+    Special non-character keys that can be sent as part of keyboard automation.
+
+    These represent keys that do not correspond to printable characters but
+    instead perform control or navigation actions such as ENTER, TAB, or
+    arrow keys.
+    """
+    ENTER = "enter"
     TAB = "tab"
     ESCAPE = "escape"
     BACKSPACE = "backspace"
