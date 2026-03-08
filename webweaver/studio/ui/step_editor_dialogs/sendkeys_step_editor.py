@@ -40,8 +40,6 @@ class SendkeysStepEditor(wx.Dialog):
             self._sequence = list(payload.get("keys", []))
             self._target_input.SetValue(payload.get("target", ""))
 
-        print("Keys:", self._sequence)
-
         main_sizer.Add(wx.StaticText(panel, label="Sequence"), 0, wx.ALL, 5)
         main_sizer.Add(self._sequence_list, 1, wx.EXPAND | wx.ALL, 5)
 
@@ -86,15 +84,18 @@ class SendkeysStepEditor(wx.Dialog):
 
         self.refresh_list()
 
-    def format_item(self, item):
+    def format_item(self, item: dict):
+        type: str = item.get("type", "")
+        value: str = item.get("value", "")
+        modifiers: str = item.get("modifiers", "")
 
-        if item.type == "text":
-            return f"TEXT: {item.value}"
+        if type == "text":
+            return f"TEXT: {value}"
 
-        if item.modifiers:
-            return f"KEY: {item.modifiers} + {item.value}"
+        if modifiers:
+            return f"KEY: {modifiers} + {value}"
 
-        return f"KEY: {item.value}"
+        return f"KEY: {value}"
 
     def refresh_list(self):
 
@@ -124,13 +125,10 @@ class SendkeysStepEditor(wx.Dialog):
         if dlg.ShowModal() == wx.ID_OK:
             key, modifiers = dlg.get_result()
 
-            self._sequence.append(
-                SendkeysKeyDefinition(
-                    type="key",
-                    value=key,
-                    modifiers=modifiers
-                )
-            )
+            entry = {"type": "key",
+                     "value": key,
+                     "modifiers": modifiers}
+            self._sequence.append(entry)
 
             self.refresh_list()
 
