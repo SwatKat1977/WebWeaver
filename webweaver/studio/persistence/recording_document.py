@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 from webweaver.studio.recording.recording_event_type import RecordingEventType
 
 
@@ -226,6 +226,32 @@ class ScrollPayload:
     scroll_type: str
     x_scroll: int | None = None
     y_scroll: int | None = None
+
+
+"""
+{
+  "target": "#search",
+  "keys": [
+    { "type": "key", "key": "A", "modifiers": "CTRL+ALT" },
+    { "type": "key", "key": "DELETE" },
+    { "type": "text", "key": "test query" },
+    { "type": "key", "key": "ENTER" }
+  ]
+}
+"""
+
+
+@dataclass
+class SendkeysKeyDefinition:
+    type: str
+    value: str
+    modifiers: Optional[str] = None
+
+
+@dataclass
+class SendkeysPayload:
+    target: str
+    keys: List[SendkeysKeyDefinition]
 
 
 class RecordingDocument:
