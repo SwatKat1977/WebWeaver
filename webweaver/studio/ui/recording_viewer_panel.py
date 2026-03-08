@@ -410,6 +410,7 @@ class RecordingViewerPanel(wx.Panel):
                 event_type not in [RecordingEventType.DOM_GET,
                                    RecordingEventType.NAV_GOTO,
                                    RecordingEventType.REST_API,
+                                   RecordingEventType.SENDKEYS,
                                    RecordingEventType.SCROLL,
                                    RecordingEventType.WAIT]:
             payload["control_type"] = "unknown"

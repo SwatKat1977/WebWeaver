@@ -1,3 +1,4 @@
+import dataclasses
 import wx
 from webweaver.studio.persistence.recording_document import (
     SendkeysKeyDefinition, SendkeysPayload)
@@ -20,21 +21,26 @@ class SendkeysStepEditor(wx.Dialog):
         self._sequence = []
         self.changed = False
 
-        if event:
-            self._sequence = list(event.get("keys", []))
-
         panel = wx.Panel(self)
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # Target
         target_label = wx.StaticText(panel, label="Target Element")
-        self.target_input = wx.TextCtrl(panel)
+        self._target_input = wx.TextCtrl(panel)
 
         main_sizer.Add(target_label, 0, wx.ALL, 5)
-        main_sizer.Add(self.target_input, 0, wx.EXPAND | wx.ALL, 5)
+        main_sizer.Add(self._target_input, 0, wx.EXPAND | wx.ALL, 5)
 
         # Sequence list
         self._sequence_list = wx.ListBox(panel)
+
+        if event and "payload" in event:
+            payload = event["payload"]
+
+            self._sequence = list(payload.get("keys", []))
+            self._target_input.SetValue(payload.get("target", ""))
+
+        print("Keys:", self._sequence)
 
         main_sizer.Add(wx.StaticText(panel, label="Sequence"), 0, wx.ALL, 5)
         main_sizer.Add(self._sequence_list, 1, wx.EXPAND | wx.ALL, 5)
@@ -111,7 +117,7 @@ class SendkeysStepEditor(wx.Dialog):
 
         dlg.Destroy()
 
-    def _on_add_key(self, event):
+    def _on_add_key(self, _event):
 
         dlg = SendkeyKeySelectionDialog(self)
 
@@ -130,7 +136,7 @@ class SendkeysStepEditor(wx.Dialog):
 
         dlg.Destroy()
 
-    def _on_remove(self, event):
+    def _on_remove(self, _event):
 
         index = self._sequence_list.GetSelection()
 
@@ -138,7 +144,7 @@ class SendkeysStepEditor(wx.Dialog):
             del self._sequence[index]
             self.refresh_list()
 
-    def _on_move_up(self, event):
+    def _on_move_up(self, _event):
 
         index = self._sequence_list.GetSelection()
 
@@ -149,8 +155,7 @@ class SendkeysStepEditor(wx.Dialog):
             self.refresh_list()
             self._sequence_list.SetSelection(index - 1)
 
-    def _on_move_down(self, event):
-
+    def _on_move_down(self, _event):
         index = self._sequence_list.GetSelection()
 
         if index != wx.NOT_FOUND and index < len(self._sequence) - 1:
@@ -161,13 +166,10 @@ class SendkeysStepEditor(wx.Dialog):
             self.refresh_list()
             self._sequence_list.SetSelection(index + 1)
 
-    def _on_save(self, event):
-
-        target = self.target_input.GetValue()
-
-        self.result = SendkeysPayload(target=target,
-                                      keys=self._sequence)
-
+    def _on_save(self, _event):
+        target = self._target_input.GetValue()
+        payload: SendkeysPayload = SendkeysPayload(target=target,
+                                                   keys=self._sequence)
+        self._event["payload"] = dataclasses.asdict(payload)
         self.changed = True
-
         self.EndModal(wx.ID_OK)
