@@ -174,8 +174,10 @@ class SendkeysStepEditor(wx.Dialog):
 
             text = dlg.GetValue()
 
-            self._sequence.append(SendkeysKeyDefinition(type="text",
-                                                        value=text))
+            payload: dict = {
+                "type": "text",
+                "value": text}
+            self._sequence.append(payload)
             self._refresh_list()
 
         dlg.Destroy()
