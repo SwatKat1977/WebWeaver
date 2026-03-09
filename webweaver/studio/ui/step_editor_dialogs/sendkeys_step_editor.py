@@ -1,3 +1,22 @@
+"""
+This source file is part of Web Weaver
+For the latest info, see https://github.com/SwatKat1977/WebWeaver
+
+Copyright 2025-2026 SwatKat1977
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+"""
 import dataclasses
 import wx
 from webweaver.studio.persistence.recording_document import (
@@ -7,6 +26,26 @@ from webweaver.studio.ui.step_editor_dialogs.sendkey_key_selection_dialog \
 
 
 class SendkeysStepEditor(wx.Dialog):
+    """Dialog used to edit a Send Keys step.
+
+    This dialog allows the user to configure a sequence of keyboard inputs
+    that will be sent to a target element during playback. The sequence can
+    contain both literal text and special keys (with optional modifiers).
+
+    The user can add text entries, add key presses, remove entries, and
+    reorder the sequence before saving.
+
+    Attributes:
+        KEY_CHOICES (list[str]): List of available special keys that may be
+            inserted into the sequence.
+        _event (dict): The event dictionary that will receive the edited
+            payload when the dialog is saved.
+        _sequence (list[dict]): Ordered list of key definitions representing
+            the send-keys sequence.
+        changed (bool): Indicates whether the dialog resulted in a change
+            that should be persisted.
+    """
+    # pylint: disable=too-many-instance-attributes, too-few-public-methods
 
     KEY_CHOICES = [
         "ENTER", "TAB", "ESCAPE", "BACKSPACE", "DELETE",
@@ -15,6 +54,15 @@ class SendkeysStepEditor(wx.Dialog):
     ]
 
     def __init__(self, parent, _index: int, event: dict = None):
+        """Initializes the Send Keys step editor dialog.
+
+        Args:
+            parent (wx.Window): Parent window that owns this dialog.
+            _index (int): Index of the step being edited. Currently unused
+                but retained for interface consistency.
+            event (dict, optional): Existing event definition containing a
+                payload to populate the dialog with. Defaults to None.
+        """
         super().__init__(parent, title="Send Keys", size=(500, 400))
 
         self._event = event
@@ -82,14 +130,24 @@ class SendkeysStepEditor(wx.Dialog):
         self._down_btn.Bind(wx.EVT_BUTTON, self._on_move_down)
         save_btn.Bind(wx.EVT_BUTTON, self._on_save)
 
-        self.refresh_list()
+        self._refresh_list()
 
     def format_item(self, item: dict):
-        type: str = item.get("type", "")
+        """Formats a sequence entry for display in the list box.
+
+        Args:
+            item (dict): A key definition containing `type`, `value`,
+                and optional `modifiers`.
+
+        Returns:
+            str: Human-readable representation of the sequence entry.
+        """
+
+        item_type: str = item.get("type", "")
         value: str = item.get("value", "")
         modifiers: str = item.get("modifiers", "")
 
-        if type == "text":
+        if item_type == "text":
             return f"TEXT: {value}"
 
         if modifiers:
@@ -97,15 +155,19 @@ class SendkeysStepEditor(wx.Dialog):
 
         return f"KEY: {value}"
 
-    def refresh_list(self):
-
+    def _refresh_list(self):
+        """Refreshes the visible list of sequence items."""
         self._sequence_list.Clear()
 
         for item in self._sequence:
             self._sequence_list.Append(self.format_item(item))
 
-    def _on_add_text(self, event):
+    def _on_add_text(self, _event):
+        """Handles the Add Text button.
 
+        Prompts the user for text input and appends a text entry to the
+        send-keys sequence if confirmed.
+        """
         dlg = wx.TextEntryDialog(self, "Enter text to send", "Add Text")
 
         if dlg.ShowModal() == wx.ID_OK:
@@ -114,12 +176,16 @@ class SendkeysStepEditor(wx.Dialog):
 
             self._sequence.append(SendkeysKeyDefinition(type="text",
                                                         value=text))
-            self.refresh_list()
+            self._refresh_list()
 
         dlg.Destroy()
 
     def _on_add_key(self, _event):
+        """Handles the Add Key button.
 
+        Opens the key selection dialog and appends the chosen key
+        definition to the sequence.
+        """
         dlg = SendkeyKeySelectionDialog(self)
 
         if dlg.ShowModal() == wx.ID_OK:
@@ -130,30 +196,31 @@ class SendkeysStepEditor(wx.Dialog):
                      "modifiers": modifiers}
             self._sequence.append(entry)
 
-            self.refresh_list()
+            self._refresh_list()
 
         dlg.Destroy()
 
     def _on_remove(self, _event):
-
+        """Removes the currently selected sequence item."""
         index = self._sequence_list.GetSelection()
 
         if index != wx.NOT_FOUND:
             del self._sequence[index]
-            self.refresh_list()
+            self._refresh_list()
 
     def _on_move_up(self, _event):
-
+        """Moves the selected sequence item one position upward."""
         index = self._sequence_list.GetSelection()
 
         if index > 0:
             self._sequence[index], self._sequence[index - 1] = \
                 self._sequence[index - 1], self._sequence[index]
 
-            self.refresh_list()
+            self._refresh_list()
             self._sequence_list.SetSelection(index - 1)
 
     def _on_move_down(self, _event):
+        """Moves the selected sequence item one position downward."""
         index = self._sequence_list.GetSelection()
 
         if index != wx.NOT_FOUND and index < len(self._sequence) - 1:
@@ -161,10 +228,16 @@ class SendkeysStepEditor(wx.Dialog):
             self._sequence[index], self._sequence[index + 1] = \
                 self._sequence[index + 1], self._sequence[index]
 
-            self.refresh_list()
+            self._refresh_list()
             self._sequence_list.SetSelection(index + 1)
 
     def _on_save(self, _event):
+        """Saves the edited send-keys sequence into the event payload.
+
+        The target element and sequence are serialized into a
+        ``SendkeysPayload`` object and written back into the provided
+        event dictionary.
+        """
         target = self._target_input.GetValue()
         payload: SendkeysPayload = SendkeysPayload(target=target,
                                                    keys=self._sequence)

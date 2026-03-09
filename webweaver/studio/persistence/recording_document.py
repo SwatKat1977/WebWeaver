@@ -228,21 +228,25 @@ class ScrollPayload:
     y_scroll: int | None = None
 
 
-"""
-{
-  "target": "#search",
-  "keys": [
-    { "type": "key", "key": "A", "modifiers": "CTRL+ALT" },
-    { "type": "key", "key": "DELETE" },
-    { "type": "text", "key": "test query" },
-    { "type": "key", "key": "ENTER" }
-  ]
-}
-"""
-
-
 @dataclass
 class SendkeysKeyDefinition:
+    """Represents a single key entry in a send-keys sequence.
+
+    A key definition may represent either literal text to type or a
+    special key press (optionally with modifiers such as CTRL or SHIFT).
+
+    Attributes:
+        type (str): The type of entry. Typically `"text"` for literal text
+            input or `"key"` for a special key press.
+        value (str): The value associated with the entry. For `"text"`
+            entries, this is the string to type. For `"key"` entries,
+            this is the name of the key (e.g. `"ENTER"` or `"TAB"`).
+        modifiers (Optional[str]): Optional modifier combination applied
+            to the key press, represented as a `+` separated string
+            (e.g. `"CTRL+SHIFT"`). This is usually ``None`` for text
+            entries or keys without modifiers.
+    """
+
     type: str
     value: str
     modifiers: Optional[str] = None
@@ -250,6 +254,18 @@ class SendkeysKeyDefinition:
 
 @dataclass
 class SendkeysPayload:
+    """Payload describing a send-keys action for an automation step.
+
+    This payload defines the target element that will receive the input
+    and the ordered sequence of key definitions to execute.
+
+    Attributes:
+        target (str): Identifier for the target element that will receive
+            the keyboard input.
+        keys (List[SendkeysKeyDefinition]): Ordered list of key definitions
+            representing the send-keys sequence to perform.
+    """
+
     target: str
     keys: List[SendkeysKeyDefinition]
 
