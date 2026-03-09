@@ -186,7 +186,7 @@ class RecordingPlaybackSession:
         This method is crash-safe: any exception raised during execution is
         caught and converted into a PlaybackStepResult failure.
         """
-        # pylint: disable=too-many-return-statements
+        # pylint: disable=too-many-return-statements, too-many-branches
 
         try:
             event_type = event.get("type")
@@ -497,39 +497,45 @@ class RecordingPlaybackSession:
             self._browser.playback_sendkeys(payload)
             return PlaybackStepResult.success()
 
+        action_chains = ActionChains(self._browser.raw)
+
         for send_entry in keys:
-            print(f"[KEY] {send_entry}")
+            entry_type = send_entry.get("type")
+            entry_value = send_entry.get("value")
 
-            actions = ActionChains(self._browser.raw())
+            if entry_type == "text":
+                action_chains.send_keys(entry_value)
 
-            """
-            from selenium.webdriver.common.action_chains import ActionChains
-            from selenium.webdriver.common.keys import Keys
+            elif entry_type == "key":
+                raw_modifiers = send_entry.get("modifiers")
 
-            actions = ActionChains(driver)
+                if raw_modifiers:
+                    modifiers = raw_modifiers.split("+")
 
-            actions.send_keys("hello")
-            actions.send_keys(Keys.TAB)
-            actions.send_keys("world")
-            actions.perform()
-            """
+                    for modifier in modifiers:
+                        action_chains.key_down(getattr(Keys, modifier))
 
-            #self._browser.
-            '''
-            file_input = driver.find_element(By.CSS_SELECTOR, "input[type='file']")
-            file_input.send_keys(r"C:\test\file.pdf")
-            '''
+                action_chains.send_keys(self._resolve_key(entry_value))
+
+                if raw_modifiers:
+                    modifiers = raw_modifiers.split("+")
+
+                    for m in reversed(modifiers):
+                        action_chains.key_up(getattr(Keys, m))
+
+        action_chains.perform()
+
         return PlaybackStepResult.success()
 
+    def _resolve_key(self, key: str):
+        """Convert a recorded key name to a Selenium key."""
 
-"""
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.common.keys import Keys
+        if not key:
+            return None
 
-actions = ActionChains(driver)
+        # letters and digits
+        if len(key) == 1:
+            return key.lower()
 
-actions.send_keys("hello")
-actions.send_keys(Keys.TAB)
-actions.send_keys("world")
-actions.perform()
-"""
+        # special keys
+        return getattr(Keys, key, key)

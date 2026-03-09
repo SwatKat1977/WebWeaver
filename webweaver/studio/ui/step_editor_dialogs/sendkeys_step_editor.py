@@ -19,8 +19,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import dataclasses
 import wx
-from webweaver.studio.persistence.recording_document import (
-    SendkeysKeyDefinition, SendkeysPayload)
+from webweaver.studio.persistence.recording_document import SendkeysPayload
 from webweaver.studio.ui.step_editor_dialogs.sendkey_key_selection_dialog \
     import SendkeyKeySelectionDialog
 
