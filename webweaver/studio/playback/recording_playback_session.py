@@ -24,6 +24,8 @@ from logging import Logger
 import time
 import typing
 import selenium
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
 from webweaver.studio.api_client import ApiClient
 from webweaver.studio.browsing.studio_browser import (PlaybackStepResult,
                                                       StudioBrowser)
@@ -234,10 +236,15 @@ class RecordingPlaybackSession:
                 self._perform_page_scroll(event)
                 return PlaybackStepResult.success()
 
+            if event_type == "sendkeys":
+                self._logger.debug("[PLAYBACK EVENT] Sendkeys: %s", payload)
+                return self._perform_sendkeys(event)
+
             if event_type == "wait":
                 self._logger.debug("[PLAYBACK EVENT] Wait: %s ms", payload)
                 self._perform_wait(event)
                 return PlaybackStepResult.success()
+
 
             self._logger.debug("[PLAYBACK EVENT] Unknown event: %s", event_type)
             return PlaybackStepResult.success()
@@ -471,3 +478,58 @@ class RecordingPlaybackSession:
 
         raise AssertionFailure(
             f"Boolean comparison requires boolean value, got '{value}'")
+
+    def _perform_sendkeys(self, event):
+        payload = event.get("payload", {})
+        keys = payload.get("keys", [])
+        target = payload.get("target", None)
+
+        if target:
+            # Nothing to do
+            if not keys:
+                print("NOT KEYS")
+                return PlaybackStepResult.success()
+
+            if keys[0].get("type") != "text":
+                print("key combo not allowed with targetted")
+                return PlaybackStepResult.fail("Special key combo not allowed")
+
+            self._browser.playback_sendkeys(payload)
+            return PlaybackStepResult.success()
+
+        for send_entry in keys:
+            print(f"[KEY] {send_entry}")
+
+            actions = ActionChains(self._browser.raw())
+
+            """
+            from selenium.webdriver.common.action_chains import ActionChains
+            from selenium.webdriver.common.keys import Keys
+
+            actions = ActionChains(driver)
+
+            actions.send_keys("hello")
+            actions.send_keys(Keys.TAB)
+            actions.send_keys("world")
+            actions.perform()
+            """
+
+            #self._browser.
+            '''
+            file_input = driver.find_element(By.CSS_SELECTOR, "input[type='file']")
+            file_input.send_keys(r"C:\test\file.pdf")
+            '''
+        return PlaybackStepResult.success()
+
+
+"""
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
+
+actions = ActionChains(driver)
+
+actions.send_keys("hello")
+actions.send_keys(Keys.TAB)
+actions.send_keys("world")
+actions.perform()
+"""

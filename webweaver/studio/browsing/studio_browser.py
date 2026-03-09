@@ -455,6 +455,21 @@ class StudioBrowser:
             self._last_url = current_url
             self._on_navigation()
 
+    def playback_sendkeys(self, payload: dict) -> PlaybackStepResult:
+        target = payload.get("target")
+        key = payload.get("keys")[0]
+        value = key.get("value")
+
+        def do_action(element):
+            try:
+                element.send_keys(value)
+                return
+
+            except WebDriverException as ex:
+                self._logger.debug("Native send_keys failed: %s", ex)
+
+        return self._playback_element(target, do_action, settle_after=True)
+
     def _on_navigation(self) -> None:
         try:
             WebDriverWait(self._driver, 10).until(
