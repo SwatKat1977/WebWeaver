@@ -24,6 +24,8 @@ from logging import Logger
 import time
 import typing
 import selenium
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
 from webweaver.studio.api_client import ApiClient
 from webweaver.studio.browsing.studio_browser import (PlaybackStepResult,
                                                       StudioBrowser)
@@ -184,7 +186,7 @@ class RecordingPlaybackSession:
         This method is crash-safe: any exception raised during execution is
         caught and converted into a PlaybackStepResult failure.
         """
-        # pylint: disable=too-many-return-statements
+        # pylint: disable=too-many-return-statements, too-many-branches
 
         try:
             event_type = event.get("type")
@@ -234,10 +236,15 @@ class RecordingPlaybackSession:
                 self._perform_page_scroll(event)
                 return PlaybackStepResult.success()
 
+            if event_type == "sendkeys":
+                self._logger.debug("[PLAYBACK EVENT] Sendkeys: %s", payload)
+                return self._perform_sendkeys(event)
+
             if event_type == "wait":
                 self._logger.debug("[PLAYBACK EVENT] Wait: %s ms", payload)
                 self._perform_wait(event)
                 return PlaybackStepResult.success()
+
 
             self._logger.debug("[PLAYBACK EVENT] Unknown event: %s", event_type)
             return PlaybackStepResult.success()
@@ -471,3 +478,64 @@ class RecordingPlaybackSession:
 
         raise AssertionFailure(
             f"Boolean comparison requires boolean value, got '{value}'")
+
+    def _perform_sendkeys(self, event):
+        payload = event.get("payload", {})
+        keys = payload.get("keys", [])
+        target = payload.get("target", None)
+
+        if target:
+            # Nothing to do
+            if not keys:
+                print("NOT KEYS")
+                return PlaybackStepResult.success()
+
+            if keys[0].get("type") != "text":
+                print("key combo not allowed with targetted")
+                return PlaybackStepResult.fail("Special key combo not allowed")
+
+            self._browser.playback_sendkeys(payload)
+            return PlaybackStepResult.success()
+
+        action_chains = ActionChains(self._browser.raw)
+
+        for send_entry in keys:
+            entry_type = send_entry.get("type")
+            entry_value = send_entry.get("value")
+
+            if entry_type == "text":
+                action_chains.send_keys(entry_value)
+
+            elif entry_type == "key":
+                raw_modifiers = send_entry.get("modifiers")
+
+                if raw_modifiers:
+                    modifiers = raw_modifiers.split("+")
+
+                    for modifier in modifiers:
+                        action_chains.key_down(getattr(Keys, modifier))
+
+                action_chains.send_keys(self._resolve_key(entry_value))
+
+                if raw_modifiers:
+                    modifiers = raw_modifiers.split("+")
+
+                    for m in reversed(modifiers):
+                        action_chains.key_up(getattr(Keys, m))
+
+        action_chains.perform()
+
+        return PlaybackStepResult.success()
+
+    def _resolve_key(self, key: str):
+        """Convert a recorded key name to a Selenium key."""
+
+        if not key:
+            return None
+
+        # letters and digits
+        if len(key) == 1:
+            return key.lower()
+
+        # special keys
+        return getattr(Keys, key, key)

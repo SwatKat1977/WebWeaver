@@ -31,6 +31,7 @@ from webweaver.studio.persistence.recording_document import (
                                               NavGotoPayload,
                                               RestApiPayload,
                                               ScrollPayload,
+                                              SendkeysPayload,
                                               WaitPayload)
 
 
@@ -44,6 +45,7 @@ RECORDING_EVENT_TYPE_LABELS: list[tuple[str, RecordingEventType]] = [
     ("Navigate", RecordingEventType.NAV_GOTO),
     ("Rest API", RecordingEventType.REST_API),
     ("Scroll", RecordingEventType.SCROLL),
+    ("SendKeys", RecordingEventType.SENDKEYS),
     ("Wait", RecordingEventType.WAIT),
 ]
 """
@@ -93,11 +95,11 @@ def default_payload_for(event_type: RecordingEventType):
             output_variable="",
             body=""
         ),
-        RecordingEventType.SCROLL: lambda: ScrollPayload(
-            scroll_type="custom",
-            x_scroll=0,
-            y_scroll=0
-        ),
+        RecordingEventType.SCROLL: lambda: ScrollPayload(scroll_type="custom",
+                                                         x_scroll=0,
+                                                         y_scroll=0),
+        RecordingEventType.SENDKEYS: lambda: SendkeysPayload(target="",
+                                                             keys=[]),
         RecordingEventType.WAIT: lambda: WaitPayload(duration_ms=1000),
     }
 
