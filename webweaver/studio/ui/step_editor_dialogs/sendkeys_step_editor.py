@@ -97,6 +97,9 @@ class SendkeysStepEditor(wx.Dialog):
 
         self._add_text_btn = wx.Button(panel, label="Add Text")
         self._add_key_btn = wx.Button(panel, label="Add Key")
+        self._add_key_btn.SetToolTip(
+            "Key shortcuts are only available when no target element is "
+            "specified.")
         self._remove_btn = wx.Button(panel, label="Remove")
         self._up_btn = wx.Button(panel, label="Move Up")
         self._down_btn = wx.Button(panel, label="Move Down")
@@ -108,6 +111,8 @@ class SendkeysStepEditor(wx.Dialog):
         btn_sizer.Add(self._down_btn, 0, wx.ALL, 5)
 
         main_sizer.Add(btn_sizer, 0, wx.CENTER)
+
+        self._target_input.Bind(wx.EVT_TEXT, self._on_target_changed)
 
         # Save/Cancel
         action_sizer = wx.StdDialogButtonSizer()
@@ -132,6 +137,8 @@ class SendkeysStepEditor(wx.Dialog):
         save_btn.Bind(wx.EVT_BUTTON, self._on_save)
 
         self._refresh_list()
+
+        self._on_target_changed(None)
 
     def format_item(self, item: dict):
         """Formats a sequence entry for display in the list box.
@@ -181,6 +188,8 @@ class SendkeysStepEditor(wx.Dialog):
             self._sequence.append(payload)
             self._refresh_list()
 
+            self._on_target_changed(None)
+
         dlg.Destroy()
 
     def _on_add_key(self, _event):
@@ -201,6 +210,8 @@ class SendkeysStepEditor(wx.Dialog):
 
             self._refresh_list()
 
+            self._on_target_changed(None)
+
         dlg.Destroy()
 
     def _on_remove(self, _event):
@@ -210,6 +221,8 @@ class SendkeysStepEditor(wx.Dialog):
         if index != wx.NOT_FOUND:
             del self._sequence[index]
             self._refresh_list()
+
+            self._on_target_changed(None)
 
     def _on_move_up(self, _event):
         """Moves the selected sequence item one position upward."""
@@ -242,6 +255,18 @@ class SendkeysStepEditor(wx.Dialog):
         event dictionary.
         """
         target = self._target_input.GetValue()
+
+        if target:
+            for item in self._sequence:
+                if item.get("type") == "key":
+                    wx.MessageBox(
+                        "Key shortcuts cannot be used when a target element is"
+                        "specified.\n"
+                        "Please remove the key entries.",
+                        "Invalid Send Keys Step",
+                        wx.OK | wx.ICON_ERROR)
+                    return
+
         payload: SendkeysPayload = SendkeysPayload(target=target,
                                                    keys=self._sequence)
         self._event["payload"] = dataclasses.asdict(payload)
@@ -311,3 +336,29 @@ class SendkeysStepEditor(wx.Dialog):
             self._sequence_list.SetSelection(index)
 
         dlg.Destroy()
+
+    def _on_target_changed(self, _event):
+        """Enforces rules when a target element is specified."""
+
+        target = self._target_input.GetValue().strip()
+
+        has_target = bool(target)
+        button_enabled = not (has_target and self._sequence)
+
+        # Disable key shortcuts if a target is present
+        self._add_key_btn.Enable(not has_target)
+        self._add_text_btn.Enable(button_enabled)
+        self._up_btn.Enable(button_enabled)
+        self._down_btn.Enable(button_enabled)
+
+        # Optional: warn if the sequence already contains key entries
+        if has_target:
+            for item in self._sequence:
+                if item.get("type") == "key":
+                    wx.MessageBox(
+                        "Key shortcuts cannot be used when a target element "
+                        "is specified. Please remove the key entries.",
+                        "Invalid Send Keys Configuration",
+                        wx.OK | wx.ICON_WARNING
+                    )
+                    break
