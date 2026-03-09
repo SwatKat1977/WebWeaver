@@ -49,7 +49,7 @@ class SendkeyKeySelectionDialog(wx.Dialog):
         "HOME", "END"
     ]
 
-    def __init__(self, parent):
+    def __init__(self, parent, key=None, modifiers=None):
         """Initializes the key selection dialog.
 
         Args:
@@ -64,7 +64,7 @@ class SendkeyKeySelectionDialog(wx.Dialog):
         main_sizer.Add(wx.StaticText(panel, label="Key"), 0, wx.ALL, 5)
 
         self.key_choice = wx.Choice(panel, choices=self.KEY_CHOICES)
-        self.key_choice.SetSelection(0)
+        self.key_choice.SetStringSelection(key or self.KEY_CHOICES[0])
 
         main_sizer.Add(self.key_choice, 0, wx.EXPAND | wx.ALL, 5)
 
@@ -75,6 +75,13 @@ class SendkeyKeySelectionDialog(wx.Dialog):
         self.alt = wx.CheckBox(panel, label="ALT")
         self.shift = wx.CheckBox(panel, label="SHIFT")
         self.meta = wx.CheckBox(panel, label="META")
+
+        if modifiers:
+            parts = modifiers.split("+")
+            self.ctrl.SetValue("CTRL" in parts)
+            self.alt.SetValue("ALT" in parts)
+            self.shift.SetValue("SHIFT" in parts)
+            self.meta.SetValue("META" in parts)
 
         main_sizer.Add(self.ctrl, 0, wx.ALL, 2)
         main_sizer.Add(self.alt, 0, wx.ALL, 2)

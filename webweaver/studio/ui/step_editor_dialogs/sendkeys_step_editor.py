@@ -81,6 +81,7 @@ class SendkeysStepEditor(wx.Dialog):
 
         # Sequence list
         self._sequence_list = wx.ListBox(panel)
+        self._sequence_list.Bind(wx.EVT_LISTBOX_DCLICK, self._on_edit_item)
 
         if event and "payload" in event:
             payload = event["payload"]
@@ -246,3 +247,67 @@ class SendkeysStepEditor(wx.Dialog):
         self._event["payload"] = dataclasses.asdict(payload)
         self.changed = True
         self.EndModal(wx.ID_OK)
+
+    def _on_edit_item(self, _event):
+        """Handles editing an existing sequence entry."""
+
+        index = self._sequence_list.GetSelection()
+
+        if index == wx.NOT_FOUND:
+            return
+
+        item = self._sequence[index]
+
+        if item.get("type") == "text":
+            self._edit_text(index, item)
+
+        elif item.get("type") == "key":
+            self._edit_key(index, item)
+
+    def _edit_text(self, index: int, item: dict):
+        """Opens the text editor for an existing text entry."""
+
+        dlg = wx.TextEntryDialog(
+            self,
+            "Edit text to send",
+            "Edit Text",
+            value=item.get("value", "")
+        )
+
+        if dlg.ShowModal() == wx.ID_OK:
+
+            text = dlg.GetValue()
+
+            self._sequence[index] = {
+                "type": "text",
+                "value": text
+            }
+
+            self._refresh_list()
+            self._sequence_list.SetSelection(index)
+
+        dlg.Destroy()
+
+    def _edit_key(self, index: int, item: dict):
+        """Opens the key editor for an existing key entry."""
+
+        dlg = SendkeyKeySelectionDialog(
+            self,
+            key=item.get("value"),
+            modifiers=item.get("modifiers")
+        )
+
+        if dlg.ShowModal() == wx.ID_OK:
+
+            key, modifiers = dlg.get_result()
+
+            self._sequence[index] = {
+                "type": "key",
+                "value": key,
+                "modifiers": modifiers
+            }
+
+            self._refresh_list()
+            self._sequence_list.SetSelection(index)
+
+        dlg.Destroy()
