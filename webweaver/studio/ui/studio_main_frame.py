@@ -1274,6 +1274,16 @@ class StudioMainFrame(wx.Frame):
         toolbar_state = PlaybackToolbarState()
         current_state = self._current_state
 
+        if current_state == StudioState.SOLUTION_LOADED:
+            if self._workspace_panel.has_active_recording():
+                toolbar_state = PlaybackToolbarState(can_start_playback=True,
+                                                     can_step_playback=False,
+                                                     can_stop_playback=False)
+            else:
+                toolbar_state = PlaybackToolbarState(can_start_playback=False,
+                                                     can_step_playback=False,
+                                                     can_stop_playback=False)
+
         if current_state == StudioState.SOLUTION_LOADED and \
            self._workspace_panel.has_active_recording():
             toolbar_state = PlaybackToolbarState(can_start_playback=True,
@@ -1337,10 +1347,11 @@ class StudioMainFrame(wx.Frame):
 
         elif self._current_state == StudioState.INSPECTING:
             state = ToolbarState(can_save=True, can_close=True,
-                                 can_record=True, can_inspect=True)
+                                 can_record=False, can_inspect=True)
 
         elif self._current_state == StudioState.RECORDING_PLAYBACK_RUNNING:
-            pass
+            state = ToolbarState(can_save=True, can_close=False,
+                                 can_record=False, can_inspect=False)
 
         elif self._current_state == StudioState.RECORDING_PLAYBACK_PAUSED:
             state = ToolbarState(can_playback_recording=has_recording)
@@ -1557,7 +1568,6 @@ class StudioMainFrame(wx.Frame):
         if pane.IsOk():
             pane.Show(show)
             self._aui_mgr.Update()
-            MainToolbar.set_all_playback_disabled(self._toolbar)
 
     def _on_workspace_active_changed(self, _evt):
 

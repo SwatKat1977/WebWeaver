@@ -379,11 +379,6 @@ class MainToolbar:
         The toolbar is re-realized and refreshed after all changes are applied.
         """
 
-        # Disable all state-dependent buttons for 'playback' functionality
-        toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_START, False)
-        toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_PAUSE, False)
-        toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_STOP, False)
-
         # Enable / disable
         toolbar.EnableTool(TOOLBAR_ID_PLAYBACK_START,
                            playback_state.can_start_playback)
