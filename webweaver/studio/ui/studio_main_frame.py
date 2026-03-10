@@ -868,54 +868,6 @@ class StudioMainFrame(wx.Frame):
                 self._state_controller.on_inspector_toggle(True)
                 self._show_inspector_panel(True)
 
-    ## DEPRECIATED ##
-    def on_playback_mode_event(self, _event: wx.CommandEvent):
-        """
-        Handle the user toggling playback mode from the main toolbar.
-
-        This method acts as a mode switch between normal editing mode and
-        playback mode:
-
-        - If the studio is not currently in any playback state, playback mode
-          is entered by transitioning to RECORDING_PLAYBACK_IDLE.
-        - If the studio is already in a playback state, playback mode is exited
-          and the studio returns to the SOLUTION_LOADED state.
-
-        The visibility of the playback toolbar is also updated to match the new
-        mode.
-        """
-        in_playback = self._current_state in {
-            StudioState.RECORDING_PLAYBACK_IDLE,
-            StudioState.RECORDING_PLAYBACK_RUNNING,
-            StudioState.RECORDING_PLAYBACK_PAUSED}
-
-        if not in_playback:
-            self._state_controller.on_recording_playback_idle()
-        else:
-            self._state_controller.on_solution_loaded()
-
-        self._show_playback_toolbar(not in_playback)
-
-    def _show_playback_toolbar(self, show: bool) -> None:
-        """
-        Show or hide the playback toolbar pane.
-
-        This method controls the visibility of the secondary playback toolbar
-        managed by the AUI layout system. Callers should not manipulate the
-        AUI pane directly.
-
-        :param show: True to show the playback toolbar, False to hide it.
-        """
-        pane = self._aui_mgr.GetPane("PlaybackToolbar")
-
-        if not pane.IsOk():
-            self._logger.info("PlaybackToolbar pane not found in AUI manager")
-            return
-
-        pane.Show(show)
-
-        self._aui_mgr.Update()
-
     def on_web_browser_event(self, _event: wx.CommandEvent):
         """
         Handle the Start/Stop Browser action.
@@ -1621,7 +1573,6 @@ class StudioMainFrame(wx.Frame):
         pane = self._aui_mgr.GetPane("StepsToolbar")
 
         if not self._workspace_panel.has_active_recording():
-            self._show_playback_toolbar(False)
             self._state_controller.on_solution_loaded()
             # self._toolbox_panel.show_no_recording()
 
