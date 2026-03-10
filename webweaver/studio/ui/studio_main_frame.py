@@ -1295,24 +1295,6 @@ class StudioMainFrame(wx.Frame):
 
         state = ToolbarState()
 
-        has_recording = self._workspace_panel.has_active_recording()
-
-        """
-        elif current_state == StudioState.RECORDING_PLAYBACK_RUNNING:
-            toolbar_state = PlaybackToolbarState(can_pause_playback=True,
-                                                 can_stop_playback=True,
-                                                 is_playback_running=True)
-
-        elif current_state == StudioState.RECORDING_PLAYBACK_PAUSED:
-            toolbar_state = PlaybackToolbarState(can_start_playback=True,
-                                                 can_step_playback=True,
-                                                 can_stop_playback=True,
-                                                 is_playback_paused=True)
-
-        MainToolbar.apply_playback_state(self._toolbar, toolbar_state)
-        self._aui_mgr.Update()
-        """
-
         # Only New/Open make sense
         if self._current_state == StudioState.NO_SOLUTION:
             pass
