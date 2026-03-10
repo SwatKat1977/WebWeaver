@@ -8,7 +8,8 @@ class StepTree(wx.TreeCtrl):
             parent,
             style=wx.TR_DEFAULT_STYLE |
                   wx.TR_HAS_BUTTONS |
-                  wx.TR_LINES_AT_ROOT
+                  wx.TR_LINES_AT_ROOT |
+                  wx.TR_FULL_ROW_HIGHLIGHT
         )
 
         self.drag_item = None
@@ -19,8 +20,8 @@ class StepTree(wx.TreeCtrl):
 
         self._build_demo_data()
 
-        self.Bind(wx.EVT_TREE_BEGIN_DRAG, self.on_begin_drag)
-        self.Bind(wx.EVT_TREE_END_DRAG, self.on_end_drag)
+        self.Bind(wx.EVT_TREE_BEGIN_DRAG, self._on_begin_drag)
+        self.Bind(wx.EVT_TREE_END_DRAG, self._on_end_drag)
 
         self.ExpandAll()
 
@@ -72,70 +73,103 @@ class StepTree(wx.TreeCtrl):
 
     # ------------------------------------------------
 
-    def on_begin_drag(self, evt):
+    def _on_begin_drag(self, evt):
+
         item = evt.GetItem()
 
         if item == self.root:
-            return  # root cannot be dragged
+            return
 
         self.drag_item = item
         evt.Allow()
 
     # ------------------------------------------------
 
-    def on_end_drag(self, evt):
+    def _on_end_drag(self, evt):
 
         if not self.drag_item:
             return
 
-        target = evt.GetItem()
+        pos = self.ScreenToClient(wx.GetMousePosition())
+        target, flags = self.HitTest(pos)
 
         if not target.IsOk():
+            self.drag_item = None
             return
-
-        # If dropping onto a step, move to its parent group
-        if target != self.root and not self.ItemHasChildren(target):
-            target = self.GetItemParent(target)
 
         if target == self.drag_item:
+            self.drag_item = None
             return
 
-        new_item = self.AppendItem(
-            target,
-            self.GetItemText(self.drag_item)
-        )
+        if self._is_descendant(self.drag_item, target):
+            self.drag_item = None
+            return
 
-        # copy icon
+        text = self.GetItemText(self.drag_item)
         icon = self.GetItemImage(self.drag_item)
-        if icon != -1:
-            self.SetItemImage(new_item, icon)
 
-        self.copy_children(self.drag_item, new_item)
+        # save children
+        children = []
+        child, cookie = self.GetFirstChild(self.drag_item)
+
+        while child.IsOk():
+            children.append((self.GetItemText(child), self.GetItemImage(child)))
+            child, cookie = self.GetNextChild(self.drag_item, cookie)
 
         self.Delete(self.drag_item)
 
-        self.drag_item = None
+        # -------------------------
+        # DROP ON GROUP
+        # -------------------------
 
-        self.Expand(target)
+        if self.ItemHasChildren(target) or target == self.root:
+
+            parent = target
+            new_item = self.AppendItem(parent, text)
+
+        else:
+
+            parent = self.GetItemParent(target)
+
+            rect = self.GetBoundingRect(target)
+            insert_after = pos.y > rect.y + rect.height / 2
+
+            if insert_after:
+                new_item = self.InsertItem(parent, target, text)
+            else:
+                prev = self.GetPrevSibling(target)
+
+                if prev.IsOk():
+                    new_item = self.InsertItem(parent, prev, text)
+                else:
+                    new_item = self.PrependItem(parent, text)
+
+        if icon != -1:
+            self.SetItemImage(new_item, icon)
+
+        # restore children
+        for t, i in children:
+            c = self.AppendItem(new_item, t)
+            if i != -1:
+                self.SetItemImage(c, i)
+
+        self.drag_item = None
+        self.Expand(parent)
 
     # ------------------------------------------------
 
-    def copy_children(self, src, dst):
+    def _is_descendant(self, parent, child):
 
-        child, cookie = self.GetFirstChild(src)
+        item = child
 
-        while child.IsOk():
+        while item.IsOk():
 
-            new_child = self.AppendItem(dst, self.GetItemText(child))
+            if item == parent:
+                return True
 
-            icon = self.GetItemImage(child)
-            if icon != -1:
-                self.SetItemImage(new_child, icon)
+            item = self.GetItemParent(item)
 
-            self.copy_children(child, new_child)
-
-            child, cookie = self.GetNextChild(src, cookie)
-
+        return False
 
 # ------------------------------------------------
 
