@@ -668,6 +668,9 @@ class StudioMainFrame(wx.Frame):
 
         self._status_bar.set_status_bar_current_solution(None)
 
+        if self._web_browser and self._web_browser.is_alive():
+            self._web_browser.quit()
+
     def on_record_start_stop_event(self, _event: wx.CommandEvent):
         """
         Handle the toolbar/menu command to start or stop recording.
