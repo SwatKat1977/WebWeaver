@@ -218,8 +218,7 @@ class MainToolbar:
             TOOLBAR_ID_PLAYBACK_START,
             "",
             load_playback_toolbar_play_icon(),
-            "Start Playback",
-            wx.ITEM_CHECK)
+            "Start Playback")
 
         toolbar.AddTool(
             TOOLBAR_ID_PLAYBACK_PAUSE,

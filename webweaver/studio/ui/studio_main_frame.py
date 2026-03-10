@@ -1280,11 +1280,6 @@ class StudioMainFrame(wx.Frame):
                                                  can_step_playback=False,
                                                  can_stop_playback=False)
 
-        elif current_state == StudioState.RECORDING_PLAYBACK_IDLE:
-            toolbar_state = PlaybackToolbarState(can_start_playback=True,
-                                                 can_step_playback=False,
-                                                 can_stop_playback=False)
-
         elif current_state == StudioState.RECORDING_PLAYBACK_RUNNING:
             toolbar_state = PlaybackToolbarState(can_pause_playback=True,
                                                  can_stop_playback=True,
@@ -1343,10 +1338,6 @@ class StudioMainFrame(wx.Frame):
         elif self._current_state == StudioState.INSPECTING:
             state = ToolbarState(can_save=True, can_close=True,
                                  can_record=True, can_inspect=True)
-
-        elif self._current_state == StudioState.RECORDING_PLAYBACK_IDLE:
-            state = ToolbarState(can_save=True, can_close=True,
-                                 can_playback_recording=True)
 
         elif self._current_state == StudioState.RECORDING_PLAYBACK_RUNNING:
             pass
@@ -1631,7 +1622,7 @@ class StudioMainFrame(wx.Frame):
         """
         Handle the recording playback 'stop' button being pressed.
         """
-        self._state_controller.on_recording_playback_idle()
+        self._state_controller.on_solution_loaded()
         # self._stop_playback()
 
     def _on_playback_timer(self, _evt):
@@ -1641,7 +1632,7 @@ class StudioMainFrame(wx.Frame):
         still_running = self._playback_session.step()
         if not still_running:
             self._playback_timer.Stop()
-            self._state_controller.on_recording_playback_idle()
+            self._state_controller.on_solution_loaded()
 
     def _on_playback_step_started(self, index: int):
         viewer = self._workspace_panel.get_active_viewer()
@@ -1657,7 +1648,7 @@ class StudioMainFrame(wx.Frame):
         # Stop playback immediately
         self._playback_timer.Stop()
         self._playback_session = None
-        self._state_controller.on_recording_playback_idle()
+        self._state_controller.on_solution_loaded()
 
         viewer = self._workspace_panel.get_active_viewer()
         if viewer:
