@@ -183,13 +183,6 @@ class MainToolbar:
         toolbar.AddSeparator()
 
         toolbar.AddTool(
-            TOOLBAR_ID_INSPECTOR_MODE,
-            "",
-            load_toolbar_inspect_icon(),
-            "Inspector Mode",
-            wx.ITEM_CHECK)
-
-        toolbar.AddTool(
             TOOLBAR_ID_START_STOP_RECORD,
             "",
             load_toolbar_start_record_icon(),
@@ -209,6 +202,13 @@ class MainToolbar:
             "",
             load_toolbar_web_browser_icon(),
             "Open Web Browser",
+            wx.ITEM_CHECK)
+
+        toolbar.AddTool(
+            TOOLBAR_ID_INSPECTOR_MODE,
+            "",
+            load_toolbar_inspect_icon(),
+            "Inspector Mode",
             wx.ITEM_CHECK)
 
         # --- Group break ---
