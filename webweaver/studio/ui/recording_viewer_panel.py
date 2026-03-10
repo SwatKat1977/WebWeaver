@@ -415,6 +415,10 @@ class RecordingViewerPanel(wx.Panel):
                                    RecordingEventType.WAIT]:
             payload["control_type"] = "unknown"
 
+        # Ensure that a default label is always present.
+        if "label" not in payload:
+            payload["label"] = ""
+
         if event_type == RecordingEventType.ASSERT:
             step_editor = AssertionStepEditor(self, index, event)
 
