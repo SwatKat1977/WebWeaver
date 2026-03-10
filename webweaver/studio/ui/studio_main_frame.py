@@ -78,8 +78,7 @@ from webweaver.studio.ui.solution_create_wizard.solution_widget_ids import \
     SOLUTION_WIZARD_BACK_BUTTON_ID
 from webweaver.studio.ui.solution_explorer_panel import SolutionExplorerPanel
 from webweaver.studio.ui.workspace_panel import WorkspacePanel
-from webweaver.studio.ui.main_toolbar import (MainToolbar, ToolbarState,
-                                              PlaybackToolbarState)
+from webweaver.studio.ui.main_toolbar import MainToolbar, ToolbarState
 from webweaver.studio.ui.main_menu import create_main_menu
 from webweaver.studio.ui.main_status_bar import MainStatusBar
 from webweaver.studio.ui.inspector_panel import InspectorPanel
@@ -294,7 +293,6 @@ class StudioMainFrame(wx.Frame):
         # --------------------------------------------------------------
         self._status_bar = MainStatusBar(self)
         self._update_toolbar_state()
-        self._update_playback_toolbar_state()
 
         self._create_inspector_panel()
 
@@ -499,7 +497,6 @@ class StudioMainFrame(wx.Frame):
         """
         self._current_state = new_state
         self._update_toolbar_state()
-        self._update_playback_toolbar_state()
 
     def on_new_solution_event(self, _event: wx.CommandEvent):
         """
@@ -667,6 +664,9 @@ class StudioMainFrame(wx.Frame):
         self._workspace_panel.clear()
 
         self._status_bar.set_status_bar_current_solution(None)
+
+        if self._web_browser and self._web_browser.is_alive():
+            self._web_browser.quit()
 
     def on_record_start_stop_event(self, _event: wx.CommandEvent):
         """
@@ -885,9 +885,19 @@ class StudioMainFrame(wx.Frame):
         reflect the new state.
         """
         if not self._web_browser:
-            self._web_browser = create_driver_from_solution(
-                self._current_solution, self._logger)
-            self._web_browser.open_page(self._current_solution.base_url)
+            try:
+                self._web_browser = create_driver_from_solution(
+                    self._current_solution, self._logger)
+                self._web_browser.open_page(self._current_solution.base_url)
+            except WebDriverException as ex:
+                wx.MessageBox(
+                    "Browser open/close failed : " + str(ex.msg),
+                    "Browser Error",
+                    wx.ICON_ERROR)
+                if self._web_browser and self._web_browser.is_alive():
+                    self._web_browser.quit()
+
+                return
 
         else:
             if self._web_browser.is_alive():
@@ -1021,7 +1031,7 @@ class StudioMainFrame(wx.Frame):
         self._workspace_panel.open_recording(ctx)
 
         # 3. Update UI
-        self._update_playback_toolbar_state()
+        self._update_toolbar_state()
 
     def _rename_recording_event(self, _evt: wx.CommandEvent) -> None:
         if self._state_controller.state in (StudioState.RECORDING_RUNNING,
@@ -1268,42 +1278,6 @@ class StudioMainFrame(wx.Frame):
         self._recording_session = RecordingSession(
             self._current_solution)
 
-    def _update_playback_toolbar_state(self):
-        MainToolbar.set_all_playback_disabled(self._toolbar)
-
-        toolbar_state = PlaybackToolbarState()
-        current_state = self._current_state
-
-        if current_state == StudioState.SOLUTION_LOADED:
-            if self._workspace_panel.has_active_recording():
-                toolbar_state = PlaybackToolbarState(can_start_playback=True,
-                                                     can_step_playback=False,
-                                                     can_stop_playback=False)
-            else:
-                toolbar_state = PlaybackToolbarState(can_start_playback=False,
-                                                     can_step_playback=False,
-                                                     can_stop_playback=False)
-
-        if current_state == StudioState.SOLUTION_LOADED and \
-           self._workspace_panel.has_active_recording():
-            toolbar_state = PlaybackToolbarState(can_start_playback=True,
-                                                 can_step_playback=False,
-                                                 can_stop_playback=False)
-
-        elif current_state == StudioState.RECORDING_PLAYBACK_RUNNING:
-            toolbar_state = PlaybackToolbarState(can_pause_playback=True,
-                                                 can_stop_playback=True,
-                                                 is_playback_running=True)
-
-        elif current_state == StudioState.RECORDING_PLAYBACK_PAUSED:
-            toolbar_state = PlaybackToolbarState(can_start_playback=True,
-                                                 can_step_playback=True,
-                                                 can_stop_playback=True,
-                                                 is_playback_paused=True)
-
-        MainToolbar.apply_playback_state(self._toolbar, toolbar_state)
-        self._aui_mgr.Update()
-
     def _update_toolbar_state(self) -> None:
         """
         Recompute and apply the toolbar UI state based on the current studio state.
@@ -1321,8 +1295,6 @@ class StudioMainFrame(wx.Frame):
 
         state = ToolbarState()
 
-        has_recording = self._workspace_panel.has_active_recording()
-
         # Only New/Open make sense
         if self._current_state == StudioState.NO_SOLUTION:
             pass
@@ -1330,31 +1302,49 @@ class StudioMainFrame(wx.Frame):
         elif self._current_state == StudioState.SOLUTION_LOADED:
             browser_is_alive = self._web_browser is not None and \
                 self._web_browser.is_alive()
+            can_start_playback = self._workspace_panel.has_active_recording() \
+                        and browser_is_alive
 
-            state = ToolbarState(can_save=True, can_close=True,
+            state = ToolbarState(can_close=True,
                                  can_inspect=browser_is_alive,
                                  can_record=browser_is_alive,
                                  can_browse=True,
-                                 can_playback_recording=has_recording)
+                                 can_start_playback=can_start_playback,
+                                 can_step_playback=False,
+                                 can_stop_playback=False)
 
         elif self._current_state == StudioState.RECORDING_RUNNING:
-            state = ToolbarState(can_record=True, can_pause=True,
-                                 is_recording=True)
+            state = ToolbarState(can_record=True,
+                                 can_pause=True,
+                                 is_recording=True,
+                                 can_pause_playback=True,
+                                 can_stop_playback=True,
+                                 is_playback_running=True)
 
         elif self._current_state == StudioState.RECORDING_PAUSED:
-            state = ToolbarState(can_record=True, can_pause=True,
-                                 is_recording=True, is_recording_paused=True)
+            state = ToolbarState(can_record=True,
+                                 can_pause=True,
+                                 is_recording=True,
+                                 is_recording_paused=True,
+                                 can_start_playback=True,
+                                 can_step_playback=True,
+                                 can_stop_playback=True,
+                                 is_playback_paused=True)
 
         elif self._current_state == StudioState.INSPECTING:
-            state = ToolbarState(can_save=True, can_close=True,
+            state = ToolbarState(can_close=True,
                                  can_record=False, can_inspect=True)
 
         elif self._current_state == StudioState.RECORDING_PLAYBACK_RUNNING:
-            state = ToolbarState(can_save=True, can_close=False,
-                                 can_record=False, can_inspect=False)
+            state = ToolbarState(can_close=False,
+                                 can_record=False,
+                                 can_inspect=False,
+                                 can_step_playback=True,
+                                 can_stop_playback=True)
 
         elif self._current_state == StudioState.RECORDING_PLAYBACK_PAUSED:
-            state = ToolbarState(can_playback_recording=has_recording)
+            state = ToolbarState(can_pause=True,
+                                 is_playback_paused=True)
 
         MainToolbar.apply_core_state(self._toolbar, state)
         self._manage_browser_state()
@@ -1591,7 +1581,6 @@ class StudioMainFrame(wx.Frame):
             self._request_recording_toolbar_update()
 
         self._update_toolbar_state()
-        self._update_playback_toolbar_state()
         self.rebuild_code_generation_menu()
 
     def on_start_recording_playback(self, _evt):
