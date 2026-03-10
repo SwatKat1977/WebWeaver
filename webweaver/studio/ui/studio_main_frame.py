@@ -885,9 +885,19 @@ class StudioMainFrame(wx.Frame):
         reflect the new state.
         """
         if not self._web_browser:
-            self._web_browser = create_driver_from_solution(
-                self._current_solution, self._logger)
-            self._web_browser.open_page(self._current_solution.base_url)
+            try:
+                self._web_browser = create_driver_from_solution(
+                    self._current_solution, self._logger)
+                self._web_browser.open_page(self._current_solution.base_url)
+            except WebDriverException as ex:
+                wx.MessageBox(
+                    "Browser open/close failed : " + str(ex.msg),
+                    "Browser Error",
+                    wx.ICON_ERROR)
+                if self._web_browser and self._web_browser.is_alive():
+                    self._web_browser.quit()
+
+                return
 
         else:
             if self._web_browser.is_alive():
