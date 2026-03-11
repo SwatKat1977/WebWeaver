@@ -303,7 +303,7 @@ class StepTree(wx.TreeCtrl):
 
         # remember candidate hover item and restart timer
         self.pending_hover_item = item
-        self.hover_timer.StartOnce(150)
+        self.hover_timer.StartOnce(75)
 
         evt.Skip()
 
