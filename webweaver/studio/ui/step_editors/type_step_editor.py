@@ -48,10 +48,14 @@ class TypeStepEditor(wx.Dialog):
 
         payload = DomTypePayload(**event.get("payload", {}))
 
+        self.step_label_ctrl = wx.TextCtrl(self, value=payload.label)
         self.xpath_ctrl = wx.TextCtrl(self, value=payload.xpath)
         self.value_ctrl = wx.TextCtrl(self, value=payload.value)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
+
+        sizer.Add(wx.StaticText(self, label="Step Label:"), 0, wx.ALL, 5)
+        sizer.Add(self.step_label_ctrl, 0, wx.EXPAND | wx.ALL, 5)
 
         sizer.Add(wx.StaticText(self, label="XPath:"), 0, wx.ALL, 5)
         sizer.Add(self.xpath_ctrl, 0, wx.EXPAND | wx.ALL, 5)
@@ -74,9 +78,9 @@ class TypeStepEditor(wx.Dialog):
         with an OK result.
         """
         new_payload = DomTypePayload(
+            label=self.step_label_ctrl.GetValue(),
             xpath=self.xpath_ctrl.GetValue(),
-            value=self.value_ctrl.GetValue(),
-        )
+            value=self.value_ctrl.GetValue())
 
         self._event["payload"] = dataclasses.asdict(new_payload)
         self.changed = True

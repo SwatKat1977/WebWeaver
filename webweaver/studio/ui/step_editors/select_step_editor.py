@@ -50,16 +50,20 @@ class SelectStepEditor(wx.Dialog):
 
         payload = DomSelectPayload(**event.get("payload", {}))
 
-        self.xpath_ctrl = wx.TextCtrl(self, value=payload.xpath)
-        self.value_ctrl = wx.TextCtrl(self, value=payload.value)
+        self._step_label_ctrl = wx.TextCtrl(self, value=payload.label)
+        self._xpath_ctrl = wx.TextCtrl(self, value=payload.xpath)
+        self._value_ctrl = wx.TextCtrl(self, value=payload.value)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
 
+        sizer.Add(wx.StaticText(self, label="Label:"), 0, wx.ALL, 5)
+        sizer.Add(self._step_label_ctrl, 0, wx.EXPAND | wx.ALL, 5)
+
         sizer.Add(wx.StaticText(self, label="XPath:"), 0, wx.ALL, 5)
-        sizer.Add(self.xpath_ctrl, 0, wx.EXPAND | wx.ALL, 5)
+        sizer.Add(self._xpath_ctrl, 0, wx.EXPAND | wx.ALL, 5)
 
         sizer.Add(wx.StaticText(self, label="Selected Value:"), 0, wx.ALL, 5)
-        sizer.Add(self.value_ctrl, 0, wx.EXPAND | wx.ALL, 5)
+        sizer.Add(self._value_ctrl, 0, wx.EXPAND | wx.ALL, 5)
 
         sizer.Add(self.CreateButtonSizer(wx.OK | wx.CANCEL),
                   0, wx.ALL | wx.ALIGN_RIGHT, 10)
@@ -76,8 +80,9 @@ class SelectStepEditor(wx.Dialog):
         closes the dialog with an OK result.
         """
         new_payload = DomSelectPayload(
-            xpath=self.xpath_ctrl.GetValue(),
-            value=self.value_ctrl.GetValue(),
+            label=self._step_label_ctrl.GetValue(),
+            xpath=self._xpath_ctrl.GetValue(),
+            value=self._value_ctrl.GetValue(),
         )
 
         self._event["payload"] = dataclasses.asdict(new_payload)

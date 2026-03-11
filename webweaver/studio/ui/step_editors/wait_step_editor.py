@@ -48,7 +48,9 @@ class WaitStepEditor(wx.Dialog):
 
         payload = WaitPayload(**event.get("payload", {}))
 
-        self.duration_ctrl = wx.SpinCtrl(
+        self._step_label_ctrl = wx.TextCtrl(self, value=payload.label)
+
+        self._duration_ctrl = wx.SpinCtrl(
             self,
             min=0,
             max=600000,
@@ -57,8 +59,11 @@ class WaitStepEditor(wx.Dialog):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
 
+        sizer.Add(wx.StaticText(self, label="Step Label:"), 0, wx.ALL, 5)
+        sizer.Add(self._step_label_ctrl, 0, wx.ALL, 5)
+
         sizer.Add(wx.StaticText(self, label="Duration (ms):"), 0, wx.ALL, 5)
-        sizer.Add(self.duration_ctrl, 0, wx.ALL, 5)
+        sizer.Add(self._duration_ctrl, 0, wx.ALL, 5)
 
         sizer.Add(self.CreateButtonSizer(wx.OK | wx.CANCEL),
                   0, wx.ALL | wx.ALIGN_RIGHT, 10)
@@ -75,8 +80,8 @@ class WaitStepEditor(wx.Dialog):
         with an OK result.
         """
         new_payload = WaitPayload(
-            duration_ms=self.duration_ctrl.GetValue()
-        )
+            label=self._step_label_ctrl.GetValue().strip(),
+            duration_ms=self._duration_ctrl.GetValue())
 
         self._event["payload"] = dataclasses.asdict(new_payload)
         self.changed = True
