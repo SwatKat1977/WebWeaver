@@ -6,7 +6,8 @@ class StepInspector(wx.PopupTransientWindow):
     def __init__(self, parent):
         super().__init__(parent)
 
-        panel = wx.Panel(self)
+        panel = wx.Panel(self, style=wx.BORDER_SIMPLE)
+        panel.SetBackgroundColour(wx.Colour(255, 255, 240))
 
         self.title = wx.StaticText(panel, label="")
         self.title.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT,
