@@ -286,25 +286,33 @@ class StepTree(wx.TreeCtrl):
 
         if not item.IsOk():
             self.inspector.Hide()
-            evt.Skip()
-            return
-
-        if item == self.hover_item:
+            self.hover_item = None
+            self.UnselectAll()
             evt.Skip()
             return
 
         data = self.GetItemData(item)
 
+        # if this is a group (no data), reset hover
         if not data:
             self.inspector.Hide()
+            self.hover_item = None
+            self.UnselectAll()
             evt.Skip()
             return
 
-        # highlight hovered row
-        self.SelectItem(item)
+        # if we're already hovering this step, do nothing
+        if item == self.hover_item:
+            evt.Skip()
+            return
 
+        # remember hovered step
         self.hover_item = item
 
+        # highlight step
+        self.SelectItem(item)
+
+        # update popup
         self.inspector.update(data)
 
         screen_pos = self.ClientToScreen(pos)
