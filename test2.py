@@ -76,6 +76,8 @@ class StepTree(wx.TreeCtrl):
         self.drag_item = None
         self.inspector = StepInspector(self)
         self.hover_item = None
+        self.hover_timer = wx.Timer(self)
+        self.pending_hover_item = None
 
         self._create_images()
 
@@ -87,6 +89,7 @@ class StepTree(wx.TreeCtrl):
         self.Bind(wx.EVT_TREE_END_DRAG, self._on_end_drag)
         self.Bind(wx.EVT_MOTION, self._on_mouse_move)
         self.Bind(wx.EVT_LEAVE_WINDOW, self._on_mouse_leave)
+        self.Bind(wx.EVT_TIMER, self._on_hover_timer, self.hover_timer)
 
         self.ExpandAll()
 
@@ -273,6 +276,8 @@ class StepTree(wx.TreeCtrl):
         item, flags = self.HitTest(pos)
 
         if not item.IsOk():
+            self.hover_timer.Stop()
+            self.pending_hover_item = None
             self.inspector.Hide()
             self.hover_item = None
             self.UnselectAll()
@@ -281,44 +286,59 @@ class StepTree(wx.TreeCtrl):
 
         data = self.GetItemData(item)
 
-        # if this is a group (no data), reset hover
+        # group node, not a real step
         if not data:
+            self.hover_timer.Stop()
+            self.pending_hover_item = None
             self.inspector.Hide()
             self.hover_item = None
             self.UnselectAll()
             evt.Skip()
             return
 
-        # if we're already hovering this step, do nothing
+        # already showing this item
         if item == self.hover_item:
             evt.Skip()
             return
 
-        # remember hovered step
-        self.hover_item = item
+        # remember candidate hover item and restart timer
+        self.pending_hover_item = item
+        self.hover_timer.StartOnce(150)
 
-        # highlight step
+        evt.Skip()
+
+    def _on_mouse_leave(self, evt):
+        self.hover_timer.Stop()
+        self.pending_hover_item = None
+        self.inspector.Hide()
+        self.hover_item = None
+        self.UnselectAll()
+
+        evt.Skip()
+
+    def _on_hover_timer(self, _evt):
+        item = self.pending_hover_item
+
+        if not item or not item.IsOk():
+            return
+
+        data = self.GetItemData(item)
+
+        if not data:
+            return
+
+        self.hover_item = item
         self.SelectItem(item)
 
-        # update popup
         self.inspector.update(data)
 
+        pos = self.ScreenToClient(wx.GetMousePosition())
         screen_pos = self.ClientToScreen(pos)
         screen_pos.y += 20
 
         self.inspector.Position(screen_pos, (0, 0))
         self.inspector.Popup()
 
-        evt.Skip()
-
-    def _on_mouse_leave(self, evt):
-
-        self.inspector.Hide()
-        self.hover_item = None
-
-        self.UnselectAll()
-
-        evt.Skip()
 
 # ------------------------------------------------
 
