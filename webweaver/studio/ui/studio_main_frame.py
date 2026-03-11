@@ -27,7 +27,6 @@ from selenium.common.exceptions import (WebDriverException,
                                         InvalidSessionIdException)
 import wx
 import wx.aui
-
 from webweaver.studio.code_generation.code_generator_entry import \
     CodeGeneratorRegistryEntry
 from webweaver.studio.persistence.test_suite_document import TestSuiteDocument
