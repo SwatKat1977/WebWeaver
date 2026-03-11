@@ -22,6 +22,7 @@ class StepTree(wx.TreeCtrl):
 
         self.Bind(wx.EVT_TREE_BEGIN_DRAG, self._on_begin_drag)
         self.Bind(wx.EVT_TREE_END_DRAG, self._on_end_drag)
+        self.Bind(wx.EVT_MOTION, self._on_mouse_move)
 
         self.ExpandAll()
 
@@ -47,10 +48,12 @@ class StepTree(wx.TreeCtrl):
 
     # ------------------------------------------------
 
-    def add_step(self, parent, text, icon):
+    def add_step(self, parent, text, icon, step_data):
 
         item = self.AppendItem(parent, text)
         self.SetItemImage(item, icon)
+
+        self.SetItemData(item, step_data)
 
         return item
 
@@ -61,15 +64,55 @@ class StepTree(wx.TreeCtrl):
         login = self.AppendItem(self.root, "Login")
         self.SetItemBold(login)
 
-        self.add_step(login, "Click login button", self.icon_play)
-        self.add_step(login, "Type username", self.icon_pass)
-        self.add_step(login, "Type password", self.icon_pass)
+        self.add_step(
+            login,
+            "Click login button",
+            self.icon_play,
+            {
+                "type": "click",
+                "xpath": "//button[@id=login]",
+                "value": None})
+
+        self.add_step(
+            login,
+            "Type username",
+            self.icon_pass,
+            {
+                "type": "type",
+                "xpath": "//input[@id=user]",
+                "value": "username"})
+
+        self.add_step(
+            login,
+            "Type password",
+            self.icon_pass,
+            {
+                "type": "type",
+                "xpath": "//input[@id=pass]",
+                "value": "password"})
 
         payment = self.AppendItem(self.root, "Make Payment")
         self.SetItemBold(payment)
 
-        self.add_step(payment, "Click pay button", self.icon_play)
-        self.add_step(payment, "Assert payment value", self.icon_fail)
+        self.add_step(
+            payment,
+            "Click pay button",
+            self.icon_play,
+            {
+                "type": "click",
+                "xpath": "//button[@id=pay]",
+                "value": None})
+
+        self.add_step(
+            payment,
+            "Assert payment value",
+            self.icon_fail,
+            {
+                "type": "assert",
+                "xpath": "//div[@id=payment]",
+                "assert_type": "equals",
+                "expected": "Success",
+                "soft": True})
 
     # ------------------------------------------------
 
@@ -170,6 +213,60 @@ class StepTree(wx.TreeCtrl):
             item = self.GetItemParent(item)
 
         return False
+
+    def _on_mouse_move(self, evt):
+
+        pos = evt.GetPosition()
+
+        item, flags = self.HitTest(pos)
+
+        if not item.IsOk():
+            self.SetToolTip(None)
+            evt.Skip()
+            return
+
+        data = self.GetItemData(item)
+
+        if not data:
+            self.SetToolTip(None)
+            evt.Skip()
+            return
+
+        tooltip = self._format_tooltip(data)
+
+        self.SetToolTip(tooltip)
+
+        evt.Skip()
+
+    def _format_tooltip(self, step):
+
+        if step["type"] == "click":
+
+            return (
+                "Action: Click\n"
+                f"XPath: {step['xpath']}\n"
+                f"Value: {step.get('value', '-')}"
+            )
+
+        if step["type"] == "type":
+
+            return (
+                "Action: Type\n"
+                f"XPath: {step['xpath']}\n"
+                f"Value: {step['value']}"
+            )
+
+        if step["type"] == "assert":
+
+            return (
+                "Action: Assert\n"
+                f"XPath: {step['xpath']}\n"
+                f"Type: {step['assert_type']}\n"
+                f"Expected: {step['expected']}\n"
+                f"Soft Assert: {step['soft']}"
+            )
+
+        return "Step"
 
 # ------------------------------------------------
 
