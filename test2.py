@@ -17,8 +17,8 @@ class StepInspector(wx.PopupTransientWindow):
         self.body = wx.StaticText(panel, label="")
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.title, 0, wx.ALL, 5)
-        sizer.Add(self.body, 0, wx.ALL, 5)
+        sizer.Add(self.title, 0, wx.ALL, 8)
+        sizer.Add(self.body, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
         panel.SetSizer(sizer)
 
@@ -300,6 +300,9 @@ class StepTree(wx.TreeCtrl):
             evt.Skip()
             return
 
+        # highlight hovered row
+        self.SelectItem(item)
+
         self.hover_item = item
 
         self.inspector.update(data)
@@ -316,6 +319,8 @@ class StepTree(wx.TreeCtrl):
 
         self.inspector.Hide()
         self.hover_item = None
+
+        self.UnselectAll()
 
         evt.Skip()
 
