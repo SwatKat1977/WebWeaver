@@ -99,6 +99,9 @@ from webweaver.studio.ui.app_settings_dialog.general_settings_page \
     import GeneralSettingsPage as AppSettingsGeneralPage
 from webweaver.studio.ui.about_dialog import AboutDialog
 from webweaver.studio.ui.toolbox_panel import ToolboxPanel
+from webweaver.studio.recording_step_editor_registry import \
+    register_step_editors
+
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -221,6 +224,9 @@ class StudioMainFrame(wx.Frame):
 
         # Menu Bar
         create_main_menu(self)
+
+        # Register step editors for a recording
+        register_step_editors()
 
         self.Bind(wx.EVT_CLOSE, self._on_close_app)
 

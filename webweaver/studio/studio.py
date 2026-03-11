@@ -27,6 +27,23 @@ from webweaver.studio.version import __version__ as studio_version
 
 
 def resource_path(path):
+    """
+    Resolve the absolute path to a resource file.
+
+    This helper allows code to access resource files both when running
+    normally from source and when packaged with PyInstaller. When the
+    application is bundled, PyInstaller extracts files into a temporary
+    directory stored in ``sys._MEIPASS``. If that attribute exists, the
+    resource path is resolved relative to that directory.
+
+    Args:
+        path (str): Relative path to the resource file.
+
+    Returns:
+        str: Absolute path to the resource file.
+    """
+    # pylint: disable=protected-access
+
     if hasattr(sys, "_MEIPASS"):
         return os.path.join(sys._MEIPASS, path)
     return os.path.abspath(path)
