@@ -4,7 +4,7 @@ import wx
 class StepInspector(wx.PopupTransientWindow):
 
     def __init__(self, parent):
-        super().__init__(parent, style=wx.BORDER_SIMPLE)
+        super().__init__(parent)
 
         panel = wx.Panel(self)
 
