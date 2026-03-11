@@ -220,13 +220,11 @@ class StepTree(wx.TreeCtrl):
         # -------------------------
         # DROP ON GROUP
         # -------------------------
-        if self.ItemHasChildren(target) or target == self.root:
-
+        if not self.GetItemData(target) or target == self.root:
             parent = target
             new_item = self.AppendItem(parent, text)
 
         else:
-
             parent = self.GetItemParent(target)
 
             rect = self.GetBoundingRect(target)
