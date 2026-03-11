@@ -30,28 +30,22 @@ from webweaver.studio.recording.recording_event_type import RecordingEventType
 from webweaver.studio.ui.add_step_dialog import (AddStepDialog,
                                                  default_payload_for)
 from webweaver.studio.ui.events import WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE
-from webweaver.studio.ui.step_editor_dialogs.dom_get_step_editor import \
-    DomGetStepEditor
-from webweaver.studio.ui.step_editor_dialogs.check_step_editor import \
-    CheckStepEditor
-from webweaver.studio.ui.step_editor_dialogs.click_step_editor import \
-    ClickStepEditor
-from webweaver.studio.ui.step_editor_dialogs.navgoto_step_editor import \
+from webweaver.studio.ui.step_editors.dom_get_step_editor import DomGetStepEditor
+from webweaver.studio.ui.step_editors.check_step_editor import CheckStepEditor
+from webweaver.studio.ui.step_editors.click_step_editor import ClickStepEditor
+from webweaver.studio.ui.step_editors.navgoto_step_editor import \
     NavGotoStepEditor
-from webweaver.studio.ui.step_editor_dialogs.rest_api_step_editor import \
+from webweaver.studio.ui.step_editors.rest_api_step_editor import \
     RestApiStepEditor
-from webweaver.studio.ui.step_editor_dialogs.select_step_editor import \
-    SelectStepEditor
-from webweaver.studio.ui.step_editor_dialogs.scroll_step_editor import \
+from webweaver.studio.ui.step_editors.select_step_editor import SelectStepEditor
+from webweaver.studio.ui.step_editors.scroll_step_editor import \
     ScrollStepEditor
-from webweaver.studio.ui.step_editor_dialogs.assert_step_editor \
+from webweaver.studio.ui.step_editors.assert_step_editor \
     import AssertionStepEditor
-from webweaver.studio.ui.step_editor_dialogs.sendkeys_step_editor \
+from webweaver.studio.ui.step_editors.sendkeys_step_editor \
     import SendkeysStepEditor
-from webweaver.studio.ui.step_editor_dialogs.type_step_editor import \
-    TypeStepEditor
-from webweaver.studio.ui.step_editor_dialogs.wait_step_editor import \
-    WaitStepEditor
+from webweaver.studio.ui.step_editors.type_step_editor import TypeStepEditor
+from webweaver.studio.ui.step_editors.wait_step_editor import WaitStepEditor
 from webweaver.studio.persistence.recording_persistence import (
                                                  RecordingPersistence,
                                                  RecordingLoadError)
