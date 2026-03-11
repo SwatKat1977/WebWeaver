@@ -73,6 +73,17 @@ class FancyDialogBase(wx.Dialog):
 
         return ctrl
 
+    def add_help(self, text):
+        box = wx.StaticBox(self, label="Tips")
+        sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
+
+        tip = wx.StaticText(self, label=text)
+        tip.Wrap(350)
+
+        sizer.Add(tip, 0, wx.ALL, 8)
+
+        self.GetSizer().Insert(2, sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 10)
+
     def _validate(self):
         return True
 
@@ -88,8 +99,12 @@ class ClickStepEditor(FancyDialogBase):
             parent,
             "Edit Click Step",
             "Edit Click Step",
-            "Configure how the automation performs a click."
-        )
+            "Configure how the automation performs a click.")
+
+        # Add help panel here
+        self.add_help(
+            "XPath should uniquely identify the element.\n"
+            "Example: //button[@id='login']")
 
         self.step_label = self.add_field("Step Label:", wx.TextCtrl)
         self.xpath = self.add_field("XPath:", wx.TextCtrl)
