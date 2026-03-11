@@ -53,6 +53,11 @@ class NavGotoStepEditor(wx.Dialog):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
 
+        # Step Label
+        sizer.Add(wx.StaticText(self, label="Step Label:"), 0, wx.ALL, 5)
+        self._step_label_ctrl = wx.TextCtrl(self, value=payload.label)
+        sizer.Add(self._step_label_ctrl, 0, wx.EXPAND | wx.ALL, 5)
+
         sizer.Add(wx.StaticText(self, label="URL:"), 0, wx.ALL, 5)
         sizer.Add(self.url_ctrl, 0, wx.EXPAND | wx.ALL, 5)
 
@@ -71,8 +76,8 @@ class NavGotoStepEditor(wx.Dialog):
         the dialog with an OK result.
         """
         new_payload = NavGotoPayload(
-            url=self.url_ctrl.GetValue()
-        )
+            label=self._step_label_ctrl.GetValue().strip(),
+            url=self.url_ctrl.GetValue().strip())
 
         self._event["payload"] = dataclasses.asdict(new_payload)
         self.changed = True

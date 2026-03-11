@@ -67,17 +67,24 @@ class DomGetStepEditor(wx.Dialog):
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        grid = wx.FlexGridSizer(rows=3, cols=2, hgap=10, vgap=10)
+        grid = wx.FlexGridSizer(rows=4, cols=2, hgap=10, vgap=10)
         grid.AddGrowableCol(1, 1)  # Make second column expand
 
         payload = event.get("payload")
+
+        # --- Step Label ---
+        step_label_label = wx.StaticText(self, label="Step Label:")
+        self._step_label_ctrl = wx.TextCtrl(
+            self,
+            value=payload.get("label", ""))
+        grid.Add(step_label_label, 0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(self._step_label_ctrl, 1, wx.EXPAND)
 
         # --- XPath ---
         xpath_label = wx.StaticText(self, label="XPath:")
         self._xpath_ctrl = wx.TextCtrl(
             self,
             value=payload.get("xpath", ""))
-
         grid.Add(xpath_label, 0, wx.ALIGN_CENTER_VERTICAL)
         grid.Add(self._xpath_ctrl, 1, wx.EXPAND)
 
@@ -88,7 +95,6 @@ class DomGetStepEditor(wx.Dialog):
             choices=["text", "value", "checked", "html"])
         current_property = payload.get("property_type", "text")
         self._property_choice.SetStringSelection(current_property)
-
         grid.Add(property_label, 0, wx.ALIGN_CENTER_VERTICAL)
         grid.Add(self._property_choice, 1, wx.EXPAND)
 
@@ -97,7 +103,6 @@ class DomGetStepEditor(wx.Dialog):
         self._variable_ctrl = wx.TextCtrl(
             self,
             value=payload.get("output_variable", ""))
-
         grid.Add(variable_label, 0, wx.ALIGN_CENTER_VERTICAL)
         grid.Add(self._variable_ctrl, 1, wx.EXPAND)
 
@@ -133,18 +138,21 @@ class DomGetStepEditor(wx.Dialog):
         with ``wx.ID_OK``.
         """
 
+        new_step_label = self._step_label_ctrl.GetValue()
         new_xpath = self._xpath_ctrl.GetValue()
         new_property = self._property_choice.GetStringSelection()
         new_output = self._variable_ctrl.GetValue()
 
         if (new_xpath != self._original_payload.get("xpath") or
                 new_property != self._original_payload.get("property_type") or
-                new_output != self._original_payload.get("output_variable")):
+                new_output != self._original_payload.get("output_variable") or
+                new_step_label != self._original_payload.get("label")):
 
             # Update payload in place
-            self._event["payload"]["xpath"] = self._xpath_ctrl.GetValue()
-            self._event["payload"]["property_type"] = self._property_choice.GetStringSelection()
-            self._event["payload"]["output_variable"] = self._variable_ctrl.GetValue()
+            self._event["payload"]["label"] = new_step_label
+            self._event["payload"]["xpath"] = new_xpath
+            self._event["payload"]["property_type"] = new_property
+            self._event["payload"]["output_variable"] = new_output
 
             self.changed = True
 

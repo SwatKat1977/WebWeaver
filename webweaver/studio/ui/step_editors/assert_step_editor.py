@@ -107,6 +107,10 @@ class AssertionStepEditor(wx.Dialog):
         # Controls
         # ----------------------------
 
+        # Step Label
+        self._step_label_ctrl = wx.TextCtrl(self,
+                                            value=payload.get("label", ""))
+
         self._left_ctrl = wx.TextCtrl(
             self,
             value=payload.get("left_value", "")
@@ -155,6 +159,10 @@ class AssertionStepEditor(wx.Dialog):
 
         form = wx.FlexGridSizer(cols=2, hgap=8, vgap=12)
         form.AddGrowableCol(1, 1)
+
+        form.Add(wx.StaticText(self, label="Step Label:"),
+                 0, wx.ALIGN_CENTER_VERTICAL)
+        form.Add(self._step_label_ctrl, 1, wx.EXPAND)
 
         # Left
         form.Add(wx.StaticText(self, label="Left Value:"),
@@ -212,6 +220,7 @@ class AssertionStepEditor(wx.Dialog):
         _, operator = ASSERTION_OPERATOR_LABELS[selected_index]
 
         payload = {
+            "label": self._step_label_ctrl.GetValue(),
             "operator": operator.value,
             "left_value": left_value,
             "soft_assert": self._soft_checkbox.GetValue(),

@@ -55,6 +55,12 @@ class CheckStepEditor(wx.Dialog):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
 
+        # Step Label
+        sizer.Add(wx.StaticText(self, label="Step Label:"), 0, wx.ALL, 5)
+        self._step_label_ctrl = wx.TextCtrl(self)
+        self._step_label_ctrl.SetValue(payload.label)
+        sizer.Add(self._step_label_ctrl, 0, wx.EXPAND | wx.ALL, 5)
+
         sizer.Add(wx.StaticText(self, label="XPath:"), 0, wx.ALL, 5)
         sizer.Add(self.xpath_ctrl, 0, wx.EXPAND | wx.ALL, 5)
 
@@ -75,6 +81,7 @@ class CheckStepEditor(wx.Dialog):
         the dialog with an OK result.
         """
         new_payload = DomCheckPayload(
+            label=self._step_label_ctrl.GetValue(),
             xpath=self.xpath_ctrl.GetValue(),
             value=self.checked_ctrl.GetValue(),
         )
