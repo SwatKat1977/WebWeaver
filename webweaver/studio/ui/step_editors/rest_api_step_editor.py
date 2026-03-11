@@ -88,6 +88,9 @@ class RestApiStepEditor(wx.Dialog):
 
         # --- controls ---
 
+        # Step Label
+        self._step_label_ctrl = wx.TextCtrl(self, value=payload.label)
+
         # Base URL Control
         self._base_url_ctrl = wx.TextCtrl(
             self,
@@ -127,6 +130,10 @@ class RestApiStepEditor(wx.Dialog):
 
         form = wx.FlexGridSizer(cols=2, hgap=2, vgap=8)
         form.AddGrowableCol(1, 1)
+
+        form.Add(wx.StaticText(self, label="Step Label:"),
+                 0, wx.ALIGN_CENTER_VERTICAL)
+        form.Add(self._step_label_ctrl, 1, wx.EXPAND)
 
         form.Add(wx.StaticText(self, label="Base URL:"),
                  0, wx.ALIGN_CENTER_VERTICAL)
@@ -186,6 +193,7 @@ class RestApiStepEditor(wx.Dialog):
             - Sets ``self.changed`` to True.
             - Closes the dialog with ``wx.ID_OK``.
         """
+        step_label = self._step_label_ctrl.GetValue()
         base_url = self._base_url_ctrl.GetValue().strip()
         rest_call = self._rest_call_ctrl.GetValue().strip()
         output_variable = self._output_variable_ctrl.GetValue().strip()
@@ -213,6 +221,7 @@ class RestApiStepEditor(wx.Dialog):
         body_text = self._body_ctrl.GetValue().strip()
 
         self._event["payload"] = {
+            "label": step_label,
             "base_url": base_url,
             "call_type": enum_val.value,
             "rest_call": rest_call,

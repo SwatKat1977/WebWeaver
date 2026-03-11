@@ -87,6 +87,9 @@ class ScrollStepEditor(wx.Dialog):
 
         payload = ScrollPayload(**event.get("payload", {}))
 
+        # Step Label Control
+        self._step_label_ctrl = wx.TextCtrl(self, value=payload.label)
+
         # Scroll Method Control
         self._method_choice_ctrl = wx.Choice(
             self,
@@ -116,6 +119,11 @@ class ScrollStepEditor(wx.Dialog):
 
         form = wx.FlexGridSizer(cols=2, hgap=2, vgap=10)
         form.AddGrowableCol(1, 1)
+
+        # Scroll method row
+        form.Add(wx.StaticText(self, label="Step Label:"),
+                 0, wx.ALIGN_CENTER_VERTICAL)
+        form.Add(self._step_label_ctrl, 1, wx.EXPAND)
 
         # Scroll method row
         form.Add(wx.StaticText(self, label="Scroll Method:"),
@@ -177,6 +185,7 @@ class ScrollStepEditor(wx.Dialog):
                 return
 
         self._event["payload"] = {
+            "label": self._step_label_ctrl.GetValue().strip(),
             "scroll_type": enum_val.value,
             "x_scroll": x_val,
             "y_scroll": y_val }
