@@ -30,33 +30,24 @@ class StepInspector(wx.PopupTransientWindow):
     def update(self, step):
 
         if step["type"] == "click":
-
             self.title.SetLabel("Click")
-
             self.body.SetLabel(
                 f"XPath:\n{step['xpath']}\n\n"
-                f"Value:\n{step.get('value','-')}"
-            )
+                f"Value:\n{step.get('value','-')}")
 
         elif step["type"] == "type":
-
             self.title.SetLabel("Type")
-
             self.body.SetLabel(
                 f"XPath:\n{step['xpath']}\n\n"
-                f"Value:\n{step['value']}"
-            )
+                f"Value:\n{step['value']}")
 
         elif step["type"] == "assert":
-
             self.title.SetLabel("Assert")
-
             self.body.SetLabel(
                 f"XPath:\n{step['xpath']}\n\n"
                 f"Type: {step['assert_type']}\n"
                 f"Expected: {step['expected']}\n"
-                f"Soft: {step['soft']}"
-            )
+                f"Soft: {step['soft']}")
 
         self.Layout()
         self.Fit()
@@ -70,8 +61,7 @@ class StepTree(wx.TreeCtrl):
             style=wx.TR_DEFAULT_STYLE |
                   wx.TR_HAS_BUTTONS |
                   wx.TR_LINES_AT_ROOT |
-                  wx.TR_FULL_ROW_HIGHLIGHT
-        )
+                  wx.TR_FULL_ROW_HIGHLIGHT)
 
         self.drag_item = None
         self.inspector = StepInspector(self)
@@ -98,16 +88,13 @@ class StepTree(wx.TreeCtrl):
         self.images = wx.ImageList(16, 16)
 
         self.icon_play = self.images.Add(
-            wx.ArtProvider.GetBitmap(wx.ART_GO_FORWARD, wx.ART_OTHER, (16, 16))
-        )
+            wx.ArtProvider.GetBitmap(wx.ART_GO_FORWARD, wx.ART_OTHER, (16, 16)))
 
         self.icon_pass = self.images.Add(
-            wx.ArtProvider.GetBitmap(wx.ART_TICK_MARK, wx.ART_OTHER, (16, 16))
-        )
+            wx.ArtProvider.GetBitmap(wx.ART_TICK_MARK, wx.ART_OTHER, (16, 16)))
 
         self.icon_fail = self.images.Add(
-            wx.ArtProvider.GetBitmap(wx.ART_CROSS_MARK, wx.ART_OTHER, (16, 16))
-        )
+            wx.ArtProvider.GetBitmap(wx.ART_CROSS_MARK, wx.ART_OTHER, (16, 16)))
 
         self.AssignImageList(self.images)
 
@@ -349,8 +336,7 @@ class MainFrame(wx.Frame):
         super().__init__(
             None,
             title="Step Editor Demo",
-            size=(600, 400)
-        )
+            size=(600, 400))
 
         panel = wx.Panel(self)
 
