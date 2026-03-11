@@ -194,13 +194,20 @@ class StepTree(wx.TreeCtrl):
 
         text = self.GetItemText(self.drag_item)
         icon = self.GetItemImage(self.drag_item)
+        data = self.GetItemData(self.drag_item)
+        bold = self.IsBold(self.drag_item)
 
         # save children
         children = []
         child, cookie = self.GetFirstChild(self.drag_item)
 
         while child.IsOk():
-            children.append((self.GetItemText(child), self.GetItemImage(child)))
+            children.append((
+                self.GetItemText(child),
+                self.GetItemImage(child),
+                self.GetItemData(child),
+                self.IsBold(child)
+            ))
             child, cookie = self.GetNextChild(self.drag_item, cookie)
 
         self.Delete(self.drag_item)
@@ -234,11 +241,22 @@ class StepTree(wx.TreeCtrl):
         if icon != -1:
             self.SetItemImage(new_item, icon)
 
+        self.SetItemData(new_item, data)
+
+        if bold:
+            self.SetItemBold(new_item)
+
         # restore children
-        for t, i in children:
+        for t, i, d, b in children:
             c = self.AppendItem(new_item, t)
+
             if i != -1:
                 self.SetItemImage(c, i)
+
+            self.SetItemData(c, d)
+
+            if b:
+                self.SetItemBold(c)
 
         self.drag_item = None
         self.Expand(parent)
