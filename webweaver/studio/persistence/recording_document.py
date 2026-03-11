@@ -30,7 +30,7 @@ class BasePayload:
     Attributes:
         label: Optional label to make step more human-readable.
     """
-    xpath: str
+    label: str
 
 
 @dataclass
@@ -41,7 +41,7 @@ class DomPayload(BasePayload):
         xpath: XPath expression identifying the target DOM element.
     """
     xpath: str
-    label: str
+
 
 @dataclass
 class AssertPayload(BasePayload):

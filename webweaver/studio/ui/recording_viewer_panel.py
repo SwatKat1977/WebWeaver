@@ -271,6 +271,10 @@ class RecordingViewerPanel(wx.Panel):
         event_type = RecordingEventType(event.get("type"))
         action = event_type.name.replace("_", " ").title()
         payload = event.get("payload", {})
+        step_label = payload.get("label", "")
+
+        if step_label:
+            action = step_label
 
         value = ""
         target = ""

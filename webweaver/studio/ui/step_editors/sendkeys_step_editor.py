@@ -20,7 +20,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import dataclasses
 import wx
 from webweaver.studio.persistence.recording_document import SendkeysPayload
-from webweaver.studio.ui.step_editor_dialogs.sendkey_key_selection_dialog \
+from webweaver.studio.ui.step_editors.sendkey_key_selection_dialog \
     import SendkeyKeySelectionDialog
 
 
@@ -64,6 +64,11 @@ class SendkeysStepEditor(wx.Dialog):
         """
         super().__init__(parent, title="Send Keys", size=(500, 400))
 
+        if event and "payload" in event:
+            payload = event["payload"]
+        else:
+            payload = None
+
         self._event = event
         self._sequence = []
         self.changed = False
@@ -71,9 +76,19 @@ class SendkeysStepEditor(wx.Dialog):
         panel = wx.Panel(self)
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
+        # Step Label
+        step_label_label = wx.StaticText(panel, label="Step Label")
+        self._step_label_input = wx.TextCtrl(panel)
+        step_label = "" if not payload else payload.get("label", "")
+        self._step_label_input.SetValue(step_label)
+
+        main_sizer.Add(step_label_label, 0, wx.ALL, 5)
+        main_sizer.Add(self._step_label_input, 0, wx.EXPAND | wx.ALL, 5)
+
         # Target
         target_label = wx.StaticText(panel, label="Target Element")
         self._target_input = wx.TextCtrl(panel)
+
 
         main_sizer.Add(target_label, 0, wx.ALL, 5)
         main_sizer.Add(self._target_input, 0, wx.EXPAND | wx.ALL, 5)
@@ -254,6 +269,7 @@ class SendkeysStepEditor(wx.Dialog):
         event dictionary.
         """
         target = self._target_input.GetValue()
+        step_label = self._step_label_input.GetValue()
 
         if target:
             for item in self._sequence:
@@ -266,7 +282,8 @@ class SendkeysStepEditor(wx.Dialog):
                         wx.OK | wx.ICON_ERROR)
                     return
 
-        payload: SendkeysPayload = SendkeysPayload(target=target,
+        payload: SendkeysPayload = SendkeysPayload(label=step_label,
+                                                   target=target,
                                                    keys=self._sequence)
         self._event["payload"] = dataclasses.asdict(payload)
         self.changed = True
