@@ -17,6 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+from typing import Callable
 import wx
 
 
@@ -85,7 +86,11 @@ class FancyDialogBase(wx.Dialog):
     and override `_validate()` to perform validation before the dialog closes.
     """
 
-    def __init__(self, parent, title, header_title, header_desc):
+    def __init__(self,
+                 parent: wx.Window,
+                 title: str,
+                 header_title: str,
+                 header_desc: str):
         """
         Initialize the base dialog layout.
 
@@ -128,7 +133,9 @@ class FancyDialogBase(wx.Dialog):
 
         self.Bind(wx.EVT_BUTTON, self._on_ok, id=wx.ID_OK)
 
-    def add_field(self, label, control):
+    def add_field(self,
+                  label: str,
+                  control: Callable[[wx.Window], wx.Window]):
         """
         Add a labeled input field to the dialog content area.
 
@@ -157,7 +164,7 @@ class FancyDialogBase(wx.Dialog):
 
         return ctrl
 
-    def add_help(self, text):
+    def add_help(self, text: str):
         """
         Add a help or tips section to the dialog.
 
@@ -200,7 +207,7 @@ class FancyDialogBase(wx.Dialog):
         If validation succeeds, the dialog will close with wx.ID_OK.
 
         Args:
-            event (wx.CommandEvent):
+            _event (wx.CommandEvent):
                 The button event triggered by the OK button.
         """
         if self._validate():
