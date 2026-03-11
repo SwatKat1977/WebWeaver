@@ -59,7 +59,8 @@ a = Analysis(
     ['webweaver/studio/studio.py'],
     pathex=['.'],
     binaries=[],
-    datas=[],
+    datas=[
+    ('artwork_resources/studio/app_logo.ico', 'artwork_resources/studio')],
     hiddenimports=['wx',
                    'wx.adv',
                    'wx.lib.mixins.listctrl',
@@ -105,7 +106,8 @@ exe = EXE(
     strip=False,
     upx=False,
     version=version_info,
-    console=False
+    console=False,
+    icon='artwork_resources/studio/app_logo.ico'
 )
 
 coll = COLLECT(

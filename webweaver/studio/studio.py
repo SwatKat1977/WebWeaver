@@ -17,11 +17,19 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import os
+import sys
 import wx
 from webweaver.studio.ui.studio_main_frame import StudioMainFrame
 from webweaver.studio.ui.studio_splash_screen import StudioSplashScreen
 from webweaver.version import __version__ as core_version
 from webweaver.studio.version import __version__ as studio_version
+
+
+def resource_path(path):
+    if hasattr(sys, "_MEIPASS"):
+        return os.path.join(sys._MEIPASS, path)
+    return os.path.abspath(path)
 
 
 class WebWeaverStudioApp(wx.App):
@@ -54,6 +62,9 @@ class WebWeaverStudioApp(wx.App):
         splash.Show()
 
         frame = StudioMainFrame(parent=None)
+        icon_path = resource_path("artwork_resources/studio/app_logo.ico")
+        icon = wx.Icon(icon_path, wx.BITMAP_TYPE_ICO)
+        frame.SetIcon(icon)
         frame.Hide()
 
         # Tell the splash what to show when it closes
