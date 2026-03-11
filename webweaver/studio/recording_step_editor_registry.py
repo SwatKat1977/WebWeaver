@@ -18,7 +18,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import wx
-
 from webweaver.studio.recording.recording_event_type import RecordingEventType
 from webweaver.studio.ui.step_editors.assert_step_editor import \
     AssertionStepEditor

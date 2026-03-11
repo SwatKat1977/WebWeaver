@@ -143,7 +143,8 @@ class DemoFrame(wx.Frame):
         dlg.Destroy()
 
 
-app = wx.App()
-frame = DemoFrame()
-frame.Show()
-app.MainLoop()
+if __name__ == '__main__':
+    app = wx.App()
+    frame = DemoFrame()
+    frame.Show()
+    app.MainLoop()
