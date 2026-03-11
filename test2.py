@@ -68,6 +68,7 @@ class StepTree(wx.TreeCtrl):
         self.hover_item = None
         self.hover_timer = wx.Timer(self)
         self.pending_hover_item = None
+        self.drop_indicator_y = None
 
         self._create_images()
 
@@ -80,6 +81,7 @@ class StepTree(wx.TreeCtrl):
         self.Bind(wx.EVT_MOTION, self._on_mouse_move)
         self.Bind(wx.EVT_LEAVE_WINDOW, self._on_mouse_leave)
         self.Bind(wx.EVT_TIMER, self._on_hover_timer, self.hover_timer)
+        self.Bind(wx.EVT_PAINT, self._on_paint)
 
         self.ExpandAll()
 
@@ -174,6 +176,8 @@ class StepTree(wx.TreeCtrl):
 
     def _on_end_drag(self, _evt):
 
+        self._clear_drop_indicator()
+
         if not self.drag_item:
             return
 
@@ -216,7 +220,6 @@ class StepTree(wx.TreeCtrl):
         # -------------------------
         # DROP ON GROUP
         # -------------------------
-
         if self.ItemHasChildren(target) or target == self.root:
 
             parent = target
@@ -246,9 +249,6 @@ class StepTree(wx.TreeCtrl):
 
         if bold:
             self.SetItemBold(new_item)
-
-        if expanded:
-            self.Expand(new_item)
 
         # restore children
         for t, i, d, b in children:
@@ -283,6 +283,15 @@ class StepTree(wx.TreeCtrl):
         return False
 
     def _on_mouse_move(self, evt):
+
+        if self.drag_item:
+            pos = evt.GetPosition()
+            item, flags = self.HitTest(pos)
+
+            if item.IsOk():
+                rect = self.GetBoundingRect(item)
+                self.drop_indicator_y = rect.y + rect.height // 2
+                self.Refresh()
 
         pos = evt.GetPosition()
 
@@ -352,6 +361,32 @@ class StepTree(wx.TreeCtrl):
         self.inspector.Position(screen_pos, (0, 0))
         self.inspector.Popup()
 
+    def _on_paint(self, evt):
+
+        evt.Skip()
+
+        if self.drop_indicator_y is None:
+            return
+
+        wx.CallAfter(self._draw_drop_indicator)
+
+    def _draw_drop_indicator(self):
+
+        if self.drop_indicator_y is None:
+            return
+
+        dc = wx.ClientDC(self)
+
+        dc.SetPen(wx.Pen(wx.Colour(0, 120, 215), 2))
+
+        width, _ = self.GetClientSize()
+
+        dc.DrawLine(0, self.drop_indicator_y, width, self.drop_indicator_y)
+
+    def _clear_drop_indicator(self):
+        if self.drop_indicator_y is not None:
+            self.drop_indicator_y = None
+            self.Refresh()
 
 # ------------------------------------------------
 
