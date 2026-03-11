@@ -1,4 +1,13 @@
+from enum import Enum
 import wx
+
+
+class StepStatus(Enum):
+    NOT_RUN = 0
+    RUNNING = 1
+    PASSED = 2
+    FAILED = 3
+    WARNING = 4
 
 
 class StepInspector(wx.PopupTransientWindow):
@@ -89,16 +98,30 @@ class StepTree(wx.TreeCtrl):
 
         self.images = wx.ImageList(16, 16)
 
-        self.icon_play = self.images.Add(
+        self._icon_not_run = self.images.Add(
+            wx.ArtProvider.GetBitmap(wx.ART_QUESTION, wx.ART_OTHER, (16, 16)))
+
+        self._icon_running = self.images.Add(
             wx.ArtProvider.GetBitmap(wx.ART_GO_FORWARD, wx.ART_OTHER, (16, 16)))
 
-        self.icon_pass = self.images.Add(
+        self._icon_pass = self.images.Add(
             wx.ArtProvider.GetBitmap(wx.ART_TICK_MARK, wx.ART_OTHER, (16, 16)))
 
-        self.icon_fail = self.images.Add(
+        self._icon_fail = self.images.Add(
             wx.ArtProvider.GetBitmap(wx.ART_CROSS_MARK, wx.ART_OTHER, (16, 16)))
 
+        self._icon_warning = self.images.Add(
+            wx.ArtProvider.GetBitmap(wx.ART_WARNING, wx.ART_OTHER, (16, 16)))
+
         self.AssignImageList(self.images)
+
+        self._status_icons = {
+            StepStatus.NOT_RUN: self._icon_not_run,
+            StepStatus.RUNNING: self._icon_running,
+            StepStatus.PASSED: self._icon_pass,
+            StepStatus.FAILED: self._icon_fail,
+            StepStatus.WARNING: self._icon_warning
+        }
 
     def add_step(self, parent, text, icon, step_data):
 
@@ -109,6 +132,35 @@ class StepTree(wx.TreeCtrl):
 
         return item
 
+    def set_step_status(self, item, status: StepStatus):
+
+        if not item or not item.IsOk():
+            return
+
+        icon = self._status_icons.get(status, -1)
+
+        if icon == -1:
+            self.SetItemImage(item, -1)
+        else:
+            self.SetItemImage(item, icon)
+
+    def reset_statuses(self):
+
+        def walk(parent):
+
+            child, cookie = self.GetFirstChild(parent)
+
+            while child.IsOk():
+
+                if self.GetItemData(child):  # step node
+                    self.SetItemImage(child, self._status_icons[StepStatus.NOT_RUN])
+
+                walk(child)
+
+                child, cookie = self.GetNextChild(parent, cookie)
+
+        walk(self.root)
+
     def _build_demo_data(self):
 
         login = self.AppendItem(self.root, "Login")
@@ -117,7 +169,7 @@ class StepTree(wx.TreeCtrl):
         self.add_step(
             login,
             "Click login button",
-            self.icon_play,
+            self._icon_running,
             {
                 "type": "click",
                 "xpath": "//button[@id=login]",
@@ -126,7 +178,7 @@ class StepTree(wx.TreeCtrl):
         self.add_step(
             login,
             "Type username",
-            self.icon_pass,
+            self._icon_warning,
             {
                 "type": "type",
                 "xpath": "//input[@id=user]",
@@ -135,7 +187,7 @@ class StepTree(wx.TreeCtrl):
         self.add_step(
             login,
             "Type password",
-            self.icon_pass,
+            self._icon_warning,
             {
                 "type": "type",
                 "xpath": "//input[@id=pass]",
@@ -147,7 +199,7 @@ class StepTree(wx.TreeCtrl):
         self.add_step(
             payment,
             "Click pay button",
-            self.icon_play,
+            self._icon_fail,
             {
                 "type": "click",
                 "xpath": "//button[@id=pay]",
@@ -156,7 +208,7 @@ class StepTree(wx.TreeCtrl):
         self.add_step(
             payment,
             "Assert payment value",
-            self.icon_fail,
+            self._icon_fail,
             {
                 "type": "assert",
                 "xpath": "//div[@id=payment]",
@@ -400,6 +452,16 @@ class MainFrame(wx.Frame):
         panel = wx.Panel(self)
 
         tree = StepTree(panel)
+
+        tree.reset_statuses()
+
+        """
+        tree.set_step_status(step1, StepStatus.RUNNING)
+        tree.set_step_status(step1, StepStatus.PASSED)
+
+        tree.set_step_status(step2, StepStatus.RUNNING)
+        tree.set_step_status(step2, StepStatus.FAILED)
+        """
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(tree, 1, wx.EXPAND | wx.ALL, 5)
