@@ -90,8 +90,6 @@ class StepTree(wx.TreeCtrl):
 
         self.ExpandAll()
 
-    # ------------------------------------------------
-
     def _create_images(self):
 
         self.images = wx.ImageList(16, 16)
@@ -110,8 +108,6 @@ class StepTree(wx.TreeCtrl):
 
         self.AssignImageList(self.images)
 
-    # ------------------------------------------------
-
     def add_step(self, parent, text, icon, step_data):
 
         item = self.AppendItem(parent, text)
@@ -120,8 +116,6 @@ class StepTree(wx.TreeCtrl):
         self.SetItemData(item, step_data)
 
         return item
-
-    # ------------------------------------------------
 
     def _build_demo_data(self):
 
@@ -178,8 +172,6 @@ class StepTree(wx.TreeCtrl):
                 "expected": "Success",
                 "soft": True})
 
-    # ------------------------------------------------
-
     def _on_begin_drag(self, evt):
 
         item = evt.GetItem()
@@ -190,9 +182,7 @@ class StepTree(wx.TreeCtrl):
         self.drag_item = item
         evt.Allow()
 
-    # ------------------------------------------------
-
-    def _on_end_drag(self, evt):
+    def _on_end_drag(self, _evt):
 
         if not self.drag_item:
             return
@@ -262,8 +252,6 @@ class StepTree(wx.TreeCtrl):
 
         self.drag_item = None
         self.Expand(parent)
-
-    # ------------------------------------------------
 
     def _is_descendant(self, parent, child):
 
