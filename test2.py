@@ -196,6 +196,7 @@ class StepTree(wx.TreeCtrl):
         icon = self.GetItemImage(self.drag_item)
         data = self.GetItemData(self.drag_item)
         bold = self.IsBold(self.drag_item)
+        expanded = self.IsExpanded(self.drag_item)
 
         # save children
         children = []
@@ -246,6 +247,9 @@ class StepTree(wx.TreeCtrl):
         if bold:
             self.SetItemBold(new_item)
 
+        if expanded:
+            self.Expand(new_item)
+
         # restore children
         for t, i, d, b in children:
             c = self.AppendItem(new_item, t)
@@ -260,6 +264,10 @@ class StepTree(wx.TreeCtrl):
 
         self.drag_item = None
         self.Expand(parent)
+
+        # ensure moved groups stay expanded
+        if expanded:
+            self.Expand(new_item)
 
     def _is_descendant(self, parent, child):
 
