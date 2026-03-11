@@ -1,6 +1,66 @@
 import wx
 
 
+class StepInspector(wx.PopupTransientWindow):
+
+    def __init__(self, parent):
+        super().__init__(parent, style=wx.BORDER_SIMPLE)
+
+        panel = wx.Panel(self)
+
+        self.title = wx.StaticText(panel, label="")
+        self.title.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT,
+                                   wx.FONTSTYLE_NORMAL,
+                                   wx.FONTWEIGHT_BOLD))
+
+        self.body = wx.StaticText(panel, label="")
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.title, 0, wx.ALL, 5)
+        sizer.Add(self.body, 0, wx.ALL, 5)
+
+        panel.SetSizer(sizer)
+
+        main = wx.BoxSizer(wx.VERTICAL)
+        main.Add(panel)
+
+        self.SetSizerAndFit(main)
+
+    def update(self, step):
+
+        if step["type"] == "click":
+
+            self.title.SetLabel("Click")
+
+            self.body.SetLabel(
+                f"XPath:\n{step['xpath']}\n\n"
+                f"Value:\n{step.get('value','-')}"
+            )
+
+        elif step["type"] == "type":
+
+            self.title.SetLabel("Type")
+
+            self.body.SetLabel(
+                f"XPath:\n{step['xpath']}\n\n"
+                f"Value:\n{step['value']}"
+            )
+
+        elif step["type"] == "assert":
+
+            self.title.SetLabel("Assert")
+
+            self.body.SetLabel(
+                f"XPath:\n{step['xpath']}\n\n"
+                f"Type: {step['assert_type']}\n"
+                f"Expected: {step['expected']}\n"
+                f"Soft: {step['soft']}"
+            )
+
+        self.Layout()
+        self.Fit()
+
+
 class StepTree(wx.TreeCtrl):
 
     def __init__(self, parent):
@@ -13,6 +73,8 @@ class StepTree(wx.TreeCtrl):
         )
 
         self.drag_item = None
+        self.inspector = StepInspector(self)
+        self.hover_item = None
 
         self._create_images()
 
@@ -23,6 +85,7 @@ class StepTree(wx.TreeCtrl):
         self.Bind(wx.EVT_TREE_BEGIN_DRAG, self._on_begin_drag)
         self.Bind(wx.EVT_TREE_END_DRAG, self._on_end_drag)
         self.Bind(wx.EVT_MOTION, self._on_mouse_move)
+        self.Bind(wx.EVT_LEAVE_WINDOW, self._on_mouse_leave)
 
         self.ExpandAll()
 
@@ -221,52 +284,39 @@ class StepTree(wx.TreeCtrl):
         item, flags = self.HitTest(pos)
 
         if not item.IsOk():
-            self.SetToolTip(None)
+            self.inspector.Hide()
+            evt.Skip()
+            return
+
+        if item == self.hover_item:
             evt.Skip()
             return
 
         data = self.GetItemData(item)
 
         if not data:
-            self.SetToolTip(None)
+            self.inspector.Hide()
             evt.Skip()
             return
 
-        tooltip = self._format_tooltip(data)
+        self.hover_item = item
 
-        self.SetToolTip(tooltip)
+        self.inspector.update(data)
+
+        screen_pos = self.ClientToScreen(pos)
+        screen_pos.y += 20
+
+        self.inspector.Position(screen_pos, (0, 0))
+        self.inspector.Popup()
 
         evt.Skip()
 
-    def _format_tooltip(self, step):
+    def _on_mouse_leave(self, evt):
 
-        if step["type"] == "click":
+        self.inspector.Hide()
+        self.hover_item = None
 
-            return (
-                "Action: Click\n"
-                f"XPath: {step['xpath']}\n"
-                f"Value: {step.get('value', '-')}"
-            )
-
-        if step["type"] == "type":
-
-            return (
-                "Action: Type\n"
-                f"XPath: {step['xpath']}\n"
-                f"Value: {step['value']}"
-            )
-
-        if step["type"] == "assert":
-
-            return (
-                "Action: Assert\n"
-                f"XPath: {step['xpath']}\n"
-                f"Type: {step['assert_type']}\n"
-                f"Expected: {step['expected']}\n"
-                f"Soft Assert: {step['soft']}"
-            )
-
-        return "Step"
+        evt.Skip()
 
 # ------------------------------------------------
 
