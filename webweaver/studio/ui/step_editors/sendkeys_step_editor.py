@@ -22,9 +22,10 @@ import wx
 from webweaver.studio.persistence.recording_document import SendkeysPayload
 from webweaver.studio.ui.step_editors.sendkey_key_selection_dialog \
     import SendkeyKeySelectionDialog
+from webweaver.studio.ui.fancy_dialog_base import FancyDialogBase
 
 
-class SendkeysStepEditor(wx.Dialog):
+class SendkeysStepEditor(FancyDialogBase):
     """Dialog used to edit a Send Keys step.
 
     This dialog allows the user to configure a sequence of keyboard inputs
@@ -52,7 +53,7 @@ class SendkeysStepEditor(wx.Dialog):
         "ARROW_LEFT", "ARROW_RIGHT", "HOME", "END"
     ]
 
-    def __init__(self, parent, _index: int, event: dict = None):
+    def __init__(self, parent, index: int, event):
         """Initializes the Send Keys step editor dialog.
 
         Args:
@@ -62,93 +63,60 @@ class SendkeysStepEditor(wx.Dialog):
             event (dict, optional): Existing event definition containing a
                 payload to populate the dialog with. Defaults to None.
         """
-        super().__init__(parent, title="Send Keys", size=(500, 400))
-
-        if event and "payload" in event:
-            payload = event["payload"]
-        else:
-            payload = None
+        super().__init__(
+            parent,
+            "Send Keys Step",
+            "Edit Send Keys Step",
+            "Configure how the automation sends keystrokes.")
 
         self._event = event
+        self._index = index
         self._sequence = []
         self.changed = False
 
-        panel = wx.Panel(self)
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        payload = SendkeysPayload(**event.get("payload", {}))
 
-        # Step Label
-        step_label_label = wx.StaticText(panel, label="Step Label")
-        self._step_label_input = wx.TextCtrl(panel)
-        step_label = "" if not payload else payload.get("label", "")
-        self._step_label_input.SetValue(step_label)
+        # Step label
+        self._field_step_label = self.add_field("Step Label:", wx.TextCtrl)
+        self._field_step_label.SetValue(payload.label)
 
-        main_sizer.Add(step_label_label, 0, wx.ALL, 5)
-        main_sizer.Add(self._step_label_input, 0, wx.EXPAND | wx.ALL, 5)
+        # Target Element
+        self._field_target_element = self.add_field("Target Element:",
+                                                    wx.TextCtrl)
+        self._field_target_element.SetValue(payload.label)
 
-        # Target
-        target_label = wx.StaticText(panel, label="Target Element")
-        self._target_input = wx.TextCtrl(panel)
+        # Keystroke Sequence
+        # pylint: disable=unnecessary-lambda
+        self._field_sequence = self.add_full_width_field(
+            "Sequence:",
+            lambda parent: wx.ListBox(parent))
+        self._field_sequence.SetMinSize((-1, 150))
+        self._field_sequence.Bind(wx.EVT_LISTBOX_DCLICK, self._on_edit_item)
 
+        self._sequence = list(payload.keys)
+        self._field_target_element.SetValue(payload.target)
 
-        main_sizer.Add(target_label, 0, wx.ALL, 5)
-        main_sizer.Add(self._target_input, 0, wx.EXPAND | wx.ALL, 5)
-
-        # Sequence list
-        self._sequence_list = wx.ListBox(panel)
-        self._sequence_list.Bind(wx.EVT_LISTBOX_DCLICK, self._on_edit_item)
-
-        if event and "payload" in event:
-            payload = event["payload"]
-
-            self._sequence = list(payload.get("keys", []))
-            self._target_input.SetValue(payload.get("target", ""))
-
-        main_sizer.Add(wx.StaticText(panel, label="Sequence"), 0, wx.ALL, 5)
-        main_sizer.Add(self._sequence_list, 1, wx.EXPAND | wx.ALL, 5)
-
-        # Buttons
-        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-
-        self._add_text_btn = wx.Button(panel, label="Add Text")
-        self._add_key_btn = wx.Button(panel, label="Add Key")
+        buttons_list = [
+            ("Add Text", self._on_add_text),
+            ("Add Key", self._on_add_key),
+            ("Remove", self._on_remove),
+            ("Move Up", self._on_move_up),
+            ("Move Down", self._on_move_down),
+        ]
+        button_ctrls = self.add_centered_buttons(buttons_list)
+        self._add_text_btn = button_ctrls[0]
+        self._add_key_btn = button_ctrls[1]
+        self._remove_btn = button_ctrls[2]
+        self._up_btn = button_ctrls[3]
+        self._down_btn = button_ctrls[4]
         self._add_key_btn.SetToolTip(
             "Key shortcuts are only available when no target element is "
             "specified.")
-        self._remove_btn = wx.Button(panel, label="Remove")
-        self._up_btn = wx.Button(panel, label="Move Up")
-        self._down_btn = wx.Button(panel, label="Move Down")
 
-        btn_sizer.Add(self._add_text_btn, 0, wx.ALL, 5)
-        btn_sizer.Add(self._add_key_btn, 0, wx.ALL, 5)
-        btn_sizer.Add(self._remove_btn, 0, wx.ALL, 5)
-        btn_sizer.Add(self._up_btn, 0, wx.ALL, 5)
-        btn_sizer.Add(self._down_btn, 0, wx.ALL, 5)
+        self._field_target_element.Bind(wx.EVT_TEXT,
+                                        self._on_target_changed)
 
-        main_sizer.Add(btn_sizer, 0, wx.CENTER)
-
-        self._target_input.Bind(wx.EVT_TEXT, self._on_target_changed)
-
-        # Save/Cancel
-        action_sizer = wx.StdDialogButtonSizer()
-
-        save_btn = wx.Button(panel, wx.ID_OK)
-        cancel_btn = wx.Button(panel, wx.ID_CANCEL)
-
-        action_sizer.AddButton(save_btn)
-        action_sizer.AddButton(cancel_btn)
-        action_sizer.Realize()
-
-        main_sizer.Add(action_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 10)
-
-        panel.SetSizer(main_sizer)
-
-        # Bindings
-        self._add_text_btn.Bind(wx.EVT_BUTTON, self._on_add_text)
-        self._add_key_btn.Bind(wx.EVT_BUTTON, self._on_add_key)
-        self._remove_btn.Bind(wx.EVT_BUTTON, self._on_remove)
-        self._up_btn.Bind(wx.EVT_BUTTON, self._on_move_up)
-        self._down_btn.Bind(wx.EVT_BUTTON, self._on_move_down)
-        save_btn.Bind(wx.EVT_BUTTON, self._on_save)
+        self.finalise()
 
         self._refresh_list()
 
@@ -179,10 +147,10 @@ class SendkeysStepEditor(wx.Dialog):
 
     def _refresh_list(self):
         """Refreshes the visible list of sequence items."""
-        self._sequence_list.Clear()
+        self._field_sequence.Clear()
 
         for item in self._sequence:
-            self._sequence_list.Append(self.format_item(item))
+            self._field_sequence.Append(self.format_item(item))
 
     def _on_add_text(self, _event):
         """Handles the Add Text button.
@@ -230,7 +198,7 @@ class SendkeysStepEditor(wx.Dialog):
 
     def _on_remove(self, _event):
         """Removes the currently selected sequence item."""
-        index = self._sequence_list.GetSelection()
+        index = self._field_sequence.GetSelection()
 
         if index != wx.NOT_FOUND:
             del self._sequence[index]
@@ -240,18 +208,18 @@ class SendkeysStepEditor(wx.Dialog):
 
     def _on_move_up(self, _event):
         """Moves the selected sequence item one position upward."""
-        index = self._sequence_list.GetSelection()
+        index = self._field_sequence.GetSelection()
 
         if index > 0:
             self._sequence[index], self._sequence[index - 1] = \
                 self._sequence[index - 1], self._sequence[index]
 
             self._refresh_list()
-            self._sequence_list.SetSelection(index - 1)
+            self._field_sequence.SetSelection(index - 1)
 
     def _on_move_down(self, _event):
         """Moves the selected sequence item one position downward."""
-        index = self._sequence_list.GetSelection()
+        index = self._field_sequence.GetSelection()
 
         if index != wx.NOT_FOUND and index < len(self._sequence) - 1:
 
@@ -259,17 +227,11 @@ class SendkeysStepEditor(wx.Dialog):
                 self._sequence[index + 1], self._sequence[index]
 
             self._refresh_list()
-            self._sequence_list.SetSelection(index + 1)
+            self._field_sequence.SetSelection(index + 1)
 
-    def _on_save(self, _event):
-        """Saves the edited send-keys sequence into the event payload.
-
-        The target element and sequence are serialized into a
-        ``SendkeysPayload`` object and written back into the provided
-        event dictionary.
-        """
-        target = self._target_input.GetValue()
-        step_label = self._step_label_input.GetValue()
+    def _ok_event(self):
+        target = self._field_target_element.GetValue()
+        step_label = self._field_step_label.GetValue()
 
         if target:
             for item in self._sequence:
@@ -292,7 +254,7 @@ class SendkeysStepEditor(wx.Dialog):
     def _on_edit_item(self, _event):
         """Handles editing an existing sequence entry."""
 
-        index = self._sequence_list.GetSelection()
+        index = self._field_sequence.GetSelection()
 
         if index == wx.NOT_FOUND:
             return
@@ -325,7 +287,7 @@ class SendkeysStepEditor(wx.Dialog):
             }
 
             self._refresh_list()
-            self._sequence_list.SetSelection(index)
+            self._field_sequence.SetSelection(index)
 
         dlg.Destroy()
 
@@ -349,14 +311,14 @@ class SendkeysStepEditor(wx.Dialog):
             }
 
             self._refresh_list()
-            self._sequence_list.SetSelection(index)
+            self._field_sequence.SetSelection(index)
 
         dlg.Destroy()
 
     def _on_target_changed(self, _event):
         """Enforces rules when a target element is specified."""
 
-        target = self._target_input.GetValue().strip()
+        target = self._field_target_element.GetValue().strip()
 
         has_target = bool(target)
         button_enabled = not (has_target and self._sequence)
