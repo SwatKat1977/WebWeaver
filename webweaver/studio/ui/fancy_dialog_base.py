@@ -1,0 +1,498 @@
+"""
+This source file is part of Web Weaver
+For the latest info, see https://github.com/SwatKat1977/WebWeaver
+
+Copyright 2025-2026 SwatKat1977
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+"""
+from typing import Callable
+import wx
+
+
+class DialogHeader(wx.Panel):
+    """
+    Header panel used in dialogs to display an icon, title, and description.
+
+    This component is intended to provide a consistent visual header for
+    dialogs. It displays a large icon on the left and a bold title with a
+    description on the right.
+    """
+    # pylint: disable=too-few-public-methods
+
+    def __init__(self, parent, title, description, icon=wx.ART_INFORMATION):
+        """
+        Initialize the dialog header.
+
+        Args:
+            parent (wx.Window):
+                The parent window for the panel.
+            title (str):
+                The main title displayed in bold.
+            description (str):
+                A short descriptive text displayed below the title.
+            icon (wx.ArtID, optional):
+                The wxWidgets art provider identifier used to retrieve
+                the icon. Defaults to wx.ART_INFORMATION.
+        """
+        super().__init__(parent)
+
+        main = wx.BoxSizer(wx.HORIZONTAL)
+
+        bmp = wx.ArtProvider.GetBitmap(icon, wx.ART_OTHER, (32, 32))
+        icon_ctrl = wx.StaticBitmap(self, bitmap=bmp)
+
+        text_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        title_text = wx.StaticText(self, label=title)
+        font = title_text.GetFont()
+        font.MakeBold()
+        font.SetPointSize(font.GetPointSize() + 4)
+        title_text.SetFont(font)
+
+        desc_text = wx.StaticText(self, label=description)
+
+        text_sizer.Add(title_text, 0, wx.BOTTOM, 4)
+        text_sizer.Add(desc_text, 0)
+
+        main.Add(icon_ctrl, 0, wx.ALL | wx.ALIGN_TOP, 12)
+        main.Add(text_sizer, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 12)
+
+        self.SetSizer(main)
+
+
+class FancyDialogBase(wx.Dialog):
+    """
+    Base class for dialogs with a styled header and structured content area.
+
+    This dialog provides a reusable layout consisting of:
+        - A header with title and description
+        - A separator line
+        - A flexible two-column content area for form fields
+        - Standard OK/Cancel buttons
+
+    Subclasses can populate the dialog using `add_field()` and `add_help()`,
+    and override `_validate()` to perform validation before the dialog closes.
+    """
+
+    def __init__(self,
+                 parent: wx.Window,
+                 title: str,
+                 header_title: str,
+                 header_desc: str):
+        """
+        Initialize the base dialog layout.
+
+        Args:
+            parent (wx.Window):
+                The parent window for the dialog.
+            title (str):
+                The window title of the dialog.
+            header_title (str):
+                The title displayed in the dialog header.
+            header_desc (str):
+                The descriptive text displayed in the dialog header.
+        """
+        super().__init__(parent, title=title)
+
+        self._label_width = 110
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Header
+        header = DialogHeader(self, header_title, header_desc)
+        main_sizer.Add(header, 0, wx.EXPAND)
+
+        # Divider
+        line = wx.StaticLine(self)
+        main_sizer.Add(line, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
+
+        # Content area
+        self.content = wx.Panel(self)
+        self.content_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.content.SetSizer(self.content_sizer)
+
+        main_sizer.Add(self.content,
+                       0,
+                       wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP,
+                       15)
+
+        btn_sizer = self.CreateButtonSizer(wx.OK | wx.CANCEL)
+        main_sizer.Add(btn_sizer, 0, wx.ALL | wx.ALIGN_RIGHT, 6)
+
+        self.SetSizer(main_sizer)
+
+        self.Bind(wx.EVT_BUTTON, self._on_ok, id=wx.ID_OK)
+
+    def add_field(self,
+                  label: str,
+                  control: Callable[[wx.Window], wx.Window]):
+        """
+        Add a labeled input field to the dialog content area.
+
+        The control will be created and added to the two-column layout,
+        with the label on the left and the control on the right.
+
+        Args:
+            label (str):
+                The label displayed next to the control.
+            control (Callable[[wx.Window], wx.Window]):
+                A callable used to create the control. It will be called
+                with the content panel as its parent.
+
+        Returns:
+            wx.Window:
+                The created control instance.
+        """
+        row = wx.BoxSizer(wx.HORIZONTAL)
+
+        label_ctrl = wx.StaticText(self.content, label=label)
+        label_ctrl.SetMinSize((self._label_width, -1))
+
+        ctrl = control(self.content)
+
+        row.Add(label_ctrl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
+        row.Add(ctrl, 1, wx.EXPAND)
+
+        self.content_sizer.Add(row, 0, wx.EXPAND | wx.BOTTOM, 6)
+
+        return ctrl
+
+    def add_full_width_field(self,
+                             label: str,
+                             control_factory: Callable[[wx.Window], wx.Window]):
+        """
+        Add a full-width control block.
+
+        The label is displayed above the control, allowing the control
+        to occupy the full available width.
+
+        Args:
+            label (str):
+                Label displayed above the control.
+            control_factory (Callable[[wx.Window], wx.Window]):
+                Factory function used to create the control.
+
+        Returns:
+            wx.Window:
+                The created control instance.
+        """
+        block = wx.BoxSizer(wx.VERTICAL)
+
+        label_ctrl = wx.StaticText(self.content, label=label)
+        ctrl = control_factory(self.content)
+
+        block.Add(label_ctrl, 0, wx.BOTTOM, 6)
+        block.Add(ctrl, 0, wx.EXPAND)
+
+        self.content_sizer.Add(block, 1, wx.EXPAND | wx.BOTTOM, 10)
+
+        return ctrl
+
+    def add_field_with_buttons(
+            self,
+            label: str,
+            control_factory: Callable[[wx.Window], wx.Window],
+            buttons: list[tuple[str, Callable]]):
+        """
+        Add a labeled field with buttons aligned to the right.
+
+        Args:
+            label (str):
+                Text label displayed next to the control.
+            control_factory (Callable[[wx.Window], wx.Window]):
+                Factory used to create the input control.
+            buttons (list[tuple[str, Callable]]):
+                List of button definitions containing the button label
+                and the event handler function.
+
+        Returns:
+            tuple[wx.Window, list[wx.Button]]:
+                The created control and a list of created buttons.
+        """
+
+        row = wx.BoxSizer(wx.HORIZONTAL)
+
+        label_ctrl = wx.StaticText(self.content, label=label)
+        ctrl = control_factory(self.content)
+
+        row.Add(label_ctrl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
+        row.Add(ctrl, 1, wx.EXPAND | wx.RIGHT, 6)
+
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        created_buttons = []
+
+        for btn_label, handler in buttons:
+            btn = wx.Button(self.content, label=btn_label)
+            btn.Bind(wx.EVT_BUTTON, handler)
+            btn_sizer.Add(btn, 0, wx.LEFT, 4)
+            created_buttons.append(btn)
+
+        row.Add(btn_sizer, 0, wx.ALIGN_CENTER_VERTICAL)
+
+        self.content_sizer.Add(row, 0, wx.EXPAND | wx.BOTTOM, 6)
+
+        return ctrl, created_buttons
+
+    def add_field_with_buttons_centered(
+            self,
+            label: str,
+            control_factory: Callable[[wx.Window], wx.Window],
+            buttons: list[tuple[str, Callable]]):
+        """
+        Add a labeled field with buttons centered below the control.
+
+        Args:
+            label (str):
+                Label text for the control.
+            control_factory (Callable[[wx.Window], wx.Window]):
+                Factory used to create the control.
+            buttons (list[tuple[str, Callable]]):
+                List of button definitions containing the button label
+                and event handler.
+
+        Returns:
+            tuple[wx.Window, list[wx.Button]]:
+                The created control and list of buttons.
+        """
+
+        block = wx.BoxSizer(wx.VERTICAL)
+
+        row = wx.BoxSizer(wx.HORIZONTAL)
+
+        label_ctrl = wx.StaticText(self.content, label=label)
+        ctrl = control_factory(self.content)
+
+        row.Add(label_ctrl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
+        row.Add(ctrl, 1, wx.EXPAND)
+
+        block.Add(row, 0, wx.EXPAND | wx.BOTTOM, 4)
+
+        btn_row = wx.BoxSizer(wx.HORIZONTAL)
+
+        created_buttons = []
+
+        for btn_label, handler in buttons:
+            btn = wx.Button(self.content, label=btn_label)
+            btn.Bind(wx.EVT_BUTTON, handler)
+            btn_row.Add(btn, 0, wx.LEFT | wx.RIGHT, 4)
+            created_buttons.append(btn)
+
+        block.Add(btn_row, 0, wx.ALIGN_CENTER)
+
+        self.content_sizer.Add(block, 0, wx.EXPAND | wx.BOTTOM, 8)
+
+        return ctrl, created_buttons
+
+    def add_centered_buttons(self, buttons):
+        """
+        Add a row of centered buttons to the dialog.
+
+        Args:
+            buttons (list[tuple[str, Callable]]):
+                List of button definitions containing button labels and
+                their corresponding event handlers.
+
+        Returns:
+            list[wx.Button]:
+                The list of created button instances.
+        """
+        row = wx.BoxSizer(wx.HORIZONTAL)
+
+        created_buttons = []
+
+        for label, handler in buttons:
+            btn = wx.Button(self.content, label=label)
+            btn.Bind(wx.EVT_BUTTON, handler)
+            row.Add(btn, 0, wx.LEFT | wx.RIGHT, 5)
+            created_buttons.append(btn)
+
+        self.content_sizer.Add(row, 0, wx.ALIGN_CENTER | wx.BOTTOM, 8)
+
+        return created_buttons
+
+    def add_two_labeled_fields(self,
+                               label: str,
+                               label1: str,
+                               control1: Callable[[wx.Window], wx.Window],
+                               label2: str,
+                               control2: Callable[[wx.Window], wx.Window]):
+        """Add a row containing two labeled controls to the layout.
+
+        The row begins with a main label, followed by two sub-labels and their
+        associated controls. Each control is created using the supplied factory
+        callable and added to a horizontal sizer.
+
+        Args:
+            label: The main label displayed at the start of the row.
+            label1: The label displayed immediately before the first control.
+            control1: A callable that accepts a parent ``wx.Window`` and returns
+                the first control instance.
+            label2: The label displayed immediately before the second control.
+            control2: A callable that accepts a parent ``wx.Window`` and returns
+                the second control instance.
+
+        Returns:
+            Tuple[wx.Window, wx.Window]: The two created control instances
+            ``(ctrl1, ctrl2)`` so the caller can configure or bind events to them.
+        """
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
+        row = wx.BoxSizer(wx.HORIZONTAL)
+
+        main_label = wx.StaticText(self.content, label=label)
+        main_label.SetMinSize((self._label_width, -1))
+
+        sub_label1 = wx.StaticText(self.content, label=label1)
+        ctrl1 = control1(self.content)
+
+        sub_label2 = wx.StaticText(self.content, label=label2)
+        ctrl2 = control2(self.content)
+
+        row.Add(main_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
+
+        row.Add(sub_label1, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        row.Add(ctrl1, 1, wx.EXPAND | wx.RIGHT, 10)
+
+        row.Add(sub_label2, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        row.Add(ctrl2, 1, wx.EXPAND)
+
+        self.content_sizer.Add(row, 0, wx.EXPAND | wx.BOTTOM, 6)
+
+        return ctrl1, ctrl2
+
+    def add_two_connected_fields(self,
+                                 label: str,
+                                 control1: Callable[[wx.Window], wx.Window],
+                                 control1_label: str,
+                                 control2: Callable[[wx.Window], wx.Window],
+                                 control2_label: str):
+        """Add a row containing two related controls with labels.
+
+        This method creates a row consisting of a main label followed by two
+        labeled controls that represent connected or related values (for example,
+        X/Y coordinates or width/height). The controls are created using the
+        provided factory callables.
+
+        Args:
+            label: The main label displayed at the start of the row.
+            control1: A callable that accepts a parent ``wx.Window`` and returns
+                the first control instance.
+            control1_label: The label displayed before the first control.
+            control2: A callable that accepts a parent ``wx.Window`` and returns
+                the second control instance.
+            control2_label: The label displayed before the second control.
+
+        Returns:
+            Tuple[wx.Window, wx.Window]: The two created control instances
+            ``(ctrl_x, ctrl_y)`` for further configuration or event binding.
+        """
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
+        row = wx.BoxSizer(wx.HORIZONTAL)
+
+        label_ctrl = wx.StaticText(self.content, label=label)
+        label_ctrl.SetMinSize((self._label_width, -1))
+
+        x_label = wx.StaticText(self.content, label=control1_label)
+        y_label = wx.StaticText(self.content, label=control2_label)
+
+        ctrl_x = control1(self.content)
+        ctrl_y = control2(self.content)
+
+        row.Add(label_ctrl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
+
+        row.Add(x_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        row.Add(ctrl_x, 1, wx.EXPAND | wx.RIGHT, 10)
+
+        row.Add(y_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        row.Add(ctrl_y, 1, wx.EXPAND)
+
+        self.content_sizer.Add(row, 0, wx.EXPAND | wx.BOTTOM, 6)
+
+        return ctrl_x, ctrl_y
+
+    def add_help(self, text: str):
+        """
+        Add a help or tips section to the dialog.
+
+        A boxed section labeled "Tips" will be inserted into the dialog
+        layout containing the provided explanatory text.
+
+        Args:
+            text (str):
+                The help text to display inside the tips section.
+
+        Returns:
+            None
+        """
+        box = wx.StaticBox(self, label="Tips")
+        sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
+
+        tip = wx.StaticText(self, label=text)
+        tip.Wrap(350)
+
+        sizer.Add(tip, 0, wx.ALL, 8)
+
+        self.GetSizer().Insert(2,
+                               sizer,
+                               0,
+                               wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP,
+                               10)
+
+    def finalise(self):
+        """
+        Finalize the dialog layout.
+
+        This method recalculates layout sizes, fits the dialog to its
+        contents, and sets the minimum size to prevent shrinking below
+        the calculated dimensions.
+        """
+        self.content.Layout()
+        self.Layout()
+        self.Fit()
+        self.SetMinSize(self.GetSize())
+
+    def _validate(self):
+        """
+        Validate the dialog inputs before closing.
+
+        Subclasses can override this method to implement validation logic.
+
+        Returns:
+            bool:
+                True if the dialog can close, otherwise False.
+        """
+        return True
+
+    def _ok_event(self):
+        """
+        OK button press event.
+
+        Subclasses can override this method to implement OK event logic.
+        """
+
+    def _on_ok(self, _event):
+        """
+        Handle the OK button click.
+
+        If validation succeeds, the dialog will close with wx.ID_OK.
+
+        Args:
+            _event (wx.CommandEvent):
+                The button event triggered by the OK button.
+        """
+        if not self._validate():
+            return
+
+        self.EndModal(wx.ID_OK)
+        self._ok_event()

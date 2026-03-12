@@ -20,6 +20,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 from enum import Enum
 import wx
 from webweaver.studio.persistence.recording_document import RestApiPayload
+from webweaver.studio.ui.fancy_dialog_base import FancyDialogBase
 
 
 class RestApiCallType(Enum):
@@ -42,7 +43,7 @@ REST_API_EVENT_TYPE_LABELS: list[tuple[str, RestApiCallType]] = [
 ]
 
 
-class RestApiStepEditor(wx.Dialog):
+class RestApiStepEditor(FancyDialogBase):
     """
     Dialog for creating or editing a REST API playback step.
 
@@ -62,118 +63,79 @@ class RestApiStepEditor(wx.Dialog):
         _event (dict):
             The recording step event being edited.
     """
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods, too-many-instance-attributes
 
-    def __init__(self, parent, _index: int, event: dict):
+    def __init__(self, parent, event: dict):
         """
         Initialize the REST API step editor dialog.
 
         Args:
             parent:
                 Parent wx widget.
-            _index (int):
-                Step index in the recording timeline. Currently unused but
-                kept for API consistency with other step editors.
             event (dict):
                 Event dictionary containing an optional ``payload`` key.
                 The payload is parsed into a ``RestApiPayload`` model and
                 written back when saved.
         """
-        super().__init__(parent, title="Edit REST API Step")
+        super().__init__(
+            parent,
+            "Edit REST API Step",
+            "Edit REST API Step",
+            "Configure how the automation performs a REST API.")
 
         self.changed = False
         self._event = event
 
         payload = RestApiPayload(**event.get("payload", {}))
 
-        # --- controls ---
+        # -- Step Label
+        self._field_step_label = self.add_field("Step Label:", wx.TextCtrl)
+        self._field_step_label.SetValue(payload.label)
 
-        # Base URL Control
-        self._base_url_ctrl = wx.TextCtrl(
-            self,
-            value=payload.base_url)
+        # -- Base URL
+        self._field_base_url = self.add_field("Base URL:", wx.TextCtrl)
+        self._field_base_url.SetValue(payload.base_url)
 
-        # REST API Call Control
-        self._rest_call_ctrl = wx.TextCtrl(
-            self,
-            value=payload.rest_call)
+        # -- Call Method
+        self._field_call_method: wx.Choice = self.add_field(
+            "Call Method:",
+            lambda parent: wx.Choice(parent,
+                                     choices=[label for label, _ in
+                                              REST_API_EVENT_TYPE_LABELS]))
 
-        # REST API Call Method Control
-        self._method_choice_ctrl = wx.Choice(
-            self,
-            choices=[label for label, _ in REST_API_EVENT_TYPE_LABELS])
-
-        # Set current selection
+        # Set current call method selection
         current_method = payload.call_type.upper()
         for i, (label, _) in enumerate(REST_API_EVENT_TYPE_LABELS):
             if label == current_method:
-                self._method_choice_ctrl.SetSelection(i)
+                self._field_call_method.SetSelection(i)
                 break
         else:
-            self._method_choice_ctrl.SetSelection(0)
+            self._field_call_method.SetSelection(0)
 
-        # Output variable Control
-        self._output_variable_ctrl = wx.TextCtrl(
-            self,
-            value=getattr(payload, "output_variable", "") or "")
+        # -- REST Call
+        self._field_rest_call = self.add_field("REST Call:", wx.TextCtrl)
+        self._field_rest_call.SetValue(payload.rest_call)
 
-        # REST API call
-        self._body_ctrl = wx.TextCtrl(
-            self,
-            value=payload.body or "",
-            style=wx.TE_MULTILINE)
+        # -- Output variable
+        self._field_output_variable = self.add_field("Output Variable (optional):",
+                                                     wx.TextCtrl)
+        self._field_output_variable.SetValue(payload.output_variable)
 
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        # -- Call body
+        self._field_call_body = self.add_full_width_field(
+            "Body (optional):",
+            lambda parent: wx.TextCtrl(parent,
+                                       value=payload.body or "",
+                                       style=wx.TE_MULTILINE))
+        self._field_call_body.SetMinSize((450, 150))
 
-        form = wx.FlexGridSizer(cols=2, hgap=2, vgap=8)
-        form.AddGrowableCol(1, 1)
+        self.finalise()
 
-        form.Add(wx.StaticText(self, label="Base URL:"),
-                 0, wx.ALIGN_CENTER_VERTICAL)
-        form.Add(self._base_url_ctrl, 1, wx.EXPAND)
-
-        form.Add(wx.StaticText(self, label="Call Type:"),
-                 0, wx.ALIGN_CENTER_VERTICAL)
-        form.Add(self._method_choice_ctrl, 1, wx.EXPAND)
-
-        form.Add(wx.StaticText(self, label="REST Call:"),
-                 0, wx.ALIGN_CENTER_VERTICAL)
-        form.Add(self._rest_call_ctrl, 1, wx.EXPAND)
-
-        form.Add(wx.StaticText(self, label="Output Variable (Optional):"),
-                 0, wx.ALIGN_CENTER_VERTICAL)
-        form.Add(self._output_variable_ctrl, 1, wx.EXPAND)
-
-        main_sizer.Add(form, 0, wx.EXPAND | wx.ALL, 10)
-
-        main_sizer.Add(wx.StaticText(self, label="Body (optional):"),
-                       0,
-                       wx.LEFT | wx.RIGHT | wx.TOP,
-                       10)
-        main_sizer.Add(self._body_ctrl,
-                       1,
-                       wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM,
-                       10)
-
-        main_sizer.Add(self.CreateButtonSizer(wx.OK | wx.CANCEL),
-                       0, wx.ALL | wx.ALIGN_RIGHT, 10)
-
-        # Set minimum size for the controls.
-        self._base_url_ctrl.SetMinSize((450, -1))
-        self._rest_call_ctrl.SetMinSize((450, -1))
-        self._body_ctrl.SetMinSize((450, 150))
-
-        self.SetSizer(main_sizer)
-        self.Fit()
-        self.SetMinSize(self.GetSize())
-        self.CentreOnParent()
-
-        self.Bind(wx.EVT_BUTTON, self._on_ok, id=wx.ID_OK)
-        self._method_choice_ctrl.Bind(wx.EVT_CHOICE, self._on_method_changed)
+        self._field_call_method.Bind(wx.EVT_CHOICE, self._on_method_changed)
 
         self._update_body_enabled()
 
-    def _on_ok(self, _evt):
+    def _validate(self):
         """
         Validate inputs and persist dialog values back into the event payload.
 
@@ -186,9 +148,10 @@ class RestApiStepEditor(wx.Dialog):
             - Sets ``self.changed`` to True.
             - Closes the dialog with ``wx.ID_OK``.
         """
-        base_url = self._base_url_ctrl.GetValue().strip()
-        rest_call = self._rest_call_ctrl.GetValue().strip()
-        output_variable = self._output_variable_ctrl.GetValue().strip()
+        step_label = self._field_step_label.GetValue()
+        base_url = self._field_base_url.GetValue().strip()
+        rest_call = self._field_rest_call.GetValue().strip()
+        output_variable = self._field_output_variable.GetValue().strip()
 
         # --- validation ---
         if not base_url:
@@ -196,23 +159,24 @@ class RestApiStepEditor(wx.Dialog):
                 "Base URL is required.",
                 "Validation Error",
                 wx.OK | wx.ICON_WARNING)
-            self._base_url_ctrl.SetFocus()
-            return
+            self._field_base_url.SetFocus()
+            return False
 
         if not rest_call:
             wx.MessageBox(
                 "REST call is required.",
                 "Validation Error",
                 wx.OK | wx.ICON_WARNING)
-            self._rest_call_ctrl.SetFocus()
-            return
+            self._field_rest_call.SetFocus()
+            return False
 
         _, enum_val = REST_API_EVENT_TYPE_LABELS[
-            self._method_choice_ctrl.GetSelection()]
+            self._field_call_method.GetSelection()]
 
-        body_text = self._body_ctrl.GetValue().strip()
+        body_text = self._field_call_body.GetValue().strip()
 
         self._event["payload"] = {
+            "label": step_label,
             "base_url": base_url,
             "call_type": enum_val.value,
             "rest_call": rest_call,
@@ -221,7 +185,7 @@ class RestApiStepEditor(wx.Dialog):
         }
 
         self.changed = True
-        self.EndModal(wx.ID_OK)
+        return True
 
     def _update_body_enabled(self):
         """
@@ -230,15 +194,15 @@ class RestApiStepEditor(wx.Dialog):
         The body field is only enabled when POST is selected, reflecting
         the intended use of request payloads within recorded REST steps.
         """
-        selected_index = self._method_choice_ctrl.GetSelection()
+        selected_index = self._field_call_method.GetSelection()
 
         if selected_index == wx.NOT_FOUND:
-            self._body_ctrl.Enable(False)
+            self._field_call_body.Enable(False)
             return
 
         _, method = REST_API_EVENT_TYPE_LABELS[selected_index]
 
-        self._body_ctrl.Enable(method == RestApiCallType.POST)
+        self._field_call_body.Enable(method == RestApiCallType.POST)
 
     def _on_method_changed(self, _evt):
         """

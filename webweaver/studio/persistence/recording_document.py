@@ -24,7 +24,17 @@ from webweaver.studio.recording.recording_event_type import RecordingEventType
 
 
 @dataclass
-class DomPayload:
+class BasePayload:
+    """Base payload for events.
+
+    Attributes:
+        label: Optional label to make step more human-readable.
+    """
+    label: str
+
+
+@dataclass
+class DomPayload(BasePayload):
     """Base payload for DOM-related events.
 
     Attributes:
@@ -32,8 +42,9 @@ class DomPayload:
     """
     xpath: str
 
+
 @dataclass
-class AssertPayload:
+class AssertPayload(BasePayload):
     """
     Structured payload for an assertion step.
 
@@ -142,7 +153,7 @@ class DomTypePayload(DomPayload):
 
 
 @dataclass
-class NavGotoPayload:
+class NavGotoPayload(BasePayload):
     """Payload for a navigation action.
 
     Attributes:
@@ -152,7 +163,7 @@ class NavGotoPayload:
 
 
 @dataclass
-class WaitPayload:
+class WaitPayload(BasePayload):
     """Payload representing a timed wait step.
 
     Attributes:
@@ -162,7 +173,7 @@ class WaitPayload:
 
 
 @dataclass
-class RestApiPayload:
+class RestApiPayload(BasePayload):
     """
     Represents the data required to execute a REST API request.
 
@@ -200,7 +211,7 @@ class RestApiPayload:
 
 
 @dataclass
-class ScrollPayload:
+class ScrollPayload(BasePayload):
     """
     Describes a scrolling action for UI or automation workflows.
 
@@ -253,7 +264,7 @@ class SendkeysKeyDefinition:
 
 
 @dataclass
-class SendkeysPayload:
+class SendkeysPayload(BasePayload):
     """Payload describing a send-keys action for an automation step.
 
     This payload defines the target element that will receive the input

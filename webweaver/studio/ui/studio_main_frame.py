@@ -2,7 +2,7 @@
 This source file is part of Web Weaver
 For the latest info, see https://github.com/SwatKat1977/WebWeaver
 
-Copyright 2025 SwatKat1977
+Copyright 2025-2026 SwatKat1977
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -11,11 +11,11 @@ the Free Software Foundation, either version 3 of the License, or
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
+along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # pylint: disable=too-many-lines
 import json
@@ -27,7 +27,6 @@ from selenium.common.exceptions import (WebDriverException,
                                         InvalidSessionIdException)
 import wx
 import wx.aui
-
 from webweaver.studio.code_generation.code_generator_entry import \
     CodeGeneratorRegistryEntry
 from webweaver.studio.persistence.test_suite_document import TestSuiteDocument
@@ -100,6 +99,9 @@ from webweaver.studio.ui.app_settings_dialog.general_settings_page \
     import GeneralSettingsPage as AppSettingsGeneralPage
 from webweaver.studio.ui.about_dialog import AboutDialog
 from webweaver.studio.ui.toolbox_panel import ToolboxPanel
+from webweaver.studio.recording_step_editor_registry import \
+    register_step_editors
+
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -222,6 +224,9 @@ class StudioMainFrame(wx.Frame):
 
         # Menu Bar
         create_main_menu(self)
+
+        # Register step editors for a recording
+        register_step_editors()
 
         self.Bind(wx.EVT_CLOSE, self._on_close_app)
 

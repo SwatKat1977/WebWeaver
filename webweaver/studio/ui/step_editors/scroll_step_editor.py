@@ -20,6 +20,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 from enum import Enum
 import wx
 from webweaver.studio.persistence.recording_document import ScrollPayload
+from webweaver.studio.ui.fancy_dialog_base import FancyDialogBase
 
 
 class ScrollType(Enum):
@@ -46,7 +47,7 @@ SCROLL_EVENT_TYPE_LABELS: list[tuple[str, ScrollType]] = [
 ]
 
 
-class ScrollStepEditor(wx.Dialog):
+class ScrollStepEditor(FancyDialogBase):
     """
     Dialog for creating or editing a scroll playback step.
 
@@ -66,31 +67,38 @@ class ScrollStepEditor(wx.Dialog):
     """
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, parent, _index: int, event: dict):
+    def __init__(self, parent, event: dict):
         """
         Initialize the scroll step editor dialog.
 
         Args:
             parent:
                 Parent wx widget.
-            _index (int):
-                Step index in the recording timeline. Currently unused
-                but retained for consistency with other step editors.
             event (dict):
                 The event dictionary containing an optional ``payload``
                 describing the existing scroll configuration.
         """
-        super().__init__(parent, title="Edit Scroll Step")
+        super().__init__(
+            parent,
+            "Edit Scroll Step",
+            "Edit Scroll Step",
+            "Configure how the automation performs a Scroll.")
 
         self.changed = False
         self._event = event
 
         payload = ScrollPayload(**event.get("payload", {}))
 
-        # Scroll Method Control
-        self._method_choice_ctrl = wx.Choice(
-            self,
-            choices=[label for label, _ in SCROLL_EVENT_TYPE_LABELS])
+        # -- Step Label
+        self._field_step_label = self.add_field("Step Label:", wx.TextCtrl)
+        self._field_step_label.SetValue(payload.label)
+
+        # -- Scroll Method
+        self._field_scroll_method = self.add_field(
+            "Scroll Method:",
+            lambda parent: wx.Choice(
+                parent,
+                choices=[label for label, _ in SCROLL_EVENT_TYPE_LABELS]))
 
         # --- Scroll Method ---
         try:
@@ -100,50 +108,30 @@ class ScrollStepEditor(wx.Dialog):
 
         for i, (_, enum_val) in enumerate(SCROLL_EVENT_TYPE_LABELS):
             if enum_val == current_type:
-                self._method_choice_ctrl.SetSelection(i)
+                self._field_scroll_method.SetSelection(i)
                 break
         else:
-            self._method_choice_ctrl.SetSelection(0)
+            self._field_scroll_method.SetSelection(0)
 
-        # --- Location controls ---
-        self._x_ctrl = wx.TextCtrl(self, value=str(payload.x_scroll or ""))
-        self._y_ctrl = wx.TextCtrl(self, value=str(payload.y_scroll or ""))
+        x_y_fields = self.add_two_connected_fields("Location:",
+                                                   wx.TextCtrl,
+                                                   "[X]",
+                                                   wx.TextCtrl,
+                                                   "[Y]")
+        self._field_x = x_y_fields[0]
+        x_value = str(payload.x_scroll) if payload.x_scroll else ""
+        y_value = str(payload.y_scroll) if payload.y_scroll else ""
+        self._field_x.SetValue(x_value)
+        self._field_y = x_y_fields[1]
+        self._field_y.SetValue(str(y_value))
 
-        # ======================
-        # Layout
-        # ======================
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.finalise()
 
-        form = wx.FlexGridSizer(cols=2, hgap=2, vgap=10)
-        form.AddGrowableCol(1, 1)
-
-        # Scroll method row
-        form.Add(wx.StaticText(self, label="Scroll Method:"),
-                 0, wx.ALIGN_CENTER_VERTICAL)
-        form.Add(self._method_choice_ctrl, 1, wx.EXPAND)
-
-        # Location row (custom horizontal layout)
-        form.Add(wx.StaticText(self, label="Location (X / Y):"),
-                 0, wx.ALIGN_CENTER_VERTICAL)
-        xy_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        xy_sizer.Add(self._x_ctrl, 1, wx.RIGHT, 5)
-        xy_sizer.Add(self._y_ctrl, 1)
-        form.Add(xy_sizer, 1, wx.EXPAND)
-        main_sizer.Add(form, 0, wx.EXPAND | wx.ALL, 10)
-
-        main_sizer.Add(self.CreateButtonSizer(wx.OK | wx.CANCEL),
-                       0, wx.ALL | wx.ALIGN_RIGHT, 10)
-
-        self.SetSizer(main_sizer)
-        main_sizer.Fit(self)
-        self.CentreOnParent()
-
-        self.Bind(wx.EVT_BUTTON, self._on_ok, id=wx.ID_OK)
-        self._method_choice_ctrl.Bind(wx.EVT_CHOICE, self._on_method_changed)
+        self._field_scroll_method.Bind(wx.EVT_CHOICE, self._on_method_changed)
 
         self._update_location_enabled()
 
-    def _on_ok(self, _evt):
+    def _validate(self):
         """
         Validate inputs and persist dialog values into the event payload.
 
@@ -157,8 +145,7 @@ class ScrollStepEditor(wx.Dialog):
             - Closes the dialog with ``wx.ID_OK``.
         """
         _, enum_val = SCROLL_EVENT_TYPE_LABELS[
-            self._method_choice_ctrl.GetSelection()
-        ]
+            self._field_scroll_method.GetSelection()]
 
         x_val = None
         y_val = None
@@ -166,23 +153,25 @@ class ScrollStepEditor(wx.Dialog):
         # Only required for CUSTOM scroll
         if enum_val == ScrollType.CUSTOM:
             try:
-                x_val = int(self._x_ctrl.GetValue().strip())
-                y_val = int(self._y_ctrl.GetValue().strip())
+                x_val = int(self._field_x.GetValue().strip())
+                y_val = int(self._field_y.GetValue().strip())
+
             except ValueError:
                 wx.MessageBox(
                     "X and Y are required for custom scrolling.",
                     "Validation Error",
                     wx.OK | wx.ICON_WARNING
                 )
-                return
+                return False
 
         self._event["payload"] = {
+            "label": self._field_step_label.GetValue().strip(),
             "scroll_type": enum_val.value,
             "x_scroll": x_val,
             "y_scroll": y_val }
 
         self.changed = True
-        self.EndModal(wx.ID_OK)
+        return True
 
     def _update_location_enabled(self):
         """
@@ -191,17 +180,17 @@ class ScrollStepEditor(wx.Dialog):
         X and Y input controls are only enabled when the selected
         scroll method is ``CUSTOM``.
         """
-        selected_index = self._method_choice_ctrl.GetSelection()
+        selected_index = self._field_scroll_method.GetSelection()
 
         if selected_index == wx.NOT_FOUND:
-            self._x_ctrl.Enable(False)
-            self._y_ctrl.Enable(False)
+            self._field_x.Enable(False)
+            self._field_y.Enable(False)
             return
 
         _, method = SCROLL_EVENT_TYPE_LABELS[selected_index]
 
-        self._x_ctrl.Enable(method == ScrollType.CUSTOM)
-        self._y_ctrl.Enable(method == ScrollType.CUSTOM)
+        self._field_x.Enable(method == ScrollType.CUSTOM)
+        self._field_y.Enable(method == ScrollType.CUSTOM)
 
     def _on_method_changed(self, _evt):
         """

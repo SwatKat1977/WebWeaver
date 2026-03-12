@@ -20,9 +20,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import dataclasses
 import wx
 from webweaver.studio.persistence.recording_document import NavGotoPayload
+from webweaver.studio.ui.fancy_dialog_base import FancyDialogBase
 
 
-class NavGotoStepEditor(wx.Dialog):
+class NavGotoStepEditor(FancyDialogBase):
     """Dialog for editing a navigation step.
 
     Allows the user to modify the destination URL associated with a
@@ -31,39 +32,36 @@ class NavGotoStepEditor(wx.Dialog):
     Attributes:
         changed: Indicates whether the event was modified by the user.
     """
-    # pylint: disable=too-few-public-methods
+    # __pylint disable=too-few-public-methods
 
-    def __init__(self, parent, _index: int, event: dict):
+    def __init__(self, parent, event: dict):
         """Initialize the NavGotoStepEditor dialog.
 
         Args:
             parent: The parent wxPython window.
-            _index: Index of the step being edited (unused but included
-                for interface consistency with other editors).
             event: The event dictionary containing the payload to edit.
         """
-        super().__init__(parent, title="Edit Navigate Step")
+        super().__init__(parent,
+                         "Edit Navigation Step",
+                         "Edit Navigation Step",
+                         "Configure how the automation navigates.")
 
         self.changed = False
         self._event = event
 
         payload = NavGotoPayload(**event.get("payload", {}))
 
-        self.url_ctrl = wx.TextCtrl(self, value=payload.url)
+        # Step Label
+        self._field_step_label = self.add_field("Step Label:", wx.TextCtrl)
+        self._field_step_label.SetValue(payload.label)
 
-        sizer = wx.BoxSizer(wx.VERTICAL)
+        # URL
+        self._field_url = self.add_field("URL:", wx.TextCtrl)
+        self._field_url.SetValue(payload.url)
 
-        sizer.Add(wx.StaticText(self, label="URL:"), 0, wx.ALL, 5)
-        sizer.Add(self.url_ctrl, 0, wx.EXPAND | wx.ALL, 5)
+        self.finalise()
 
-        sizer.Add(self.CreateButtonSizer(wx.OK | wx.CANCEL),
-                  0, wx.ALL | wx.ALIGN_RIGHT, 10)
-
-        self.SetSizerAndFit(sizer)
-
-        self.Bind(wx.EVT_BUTTON, self._on_ok, id=wx.ID_OK)
-
-    def _on_ok(self, _evt):
+    def _ok_event(self):
         """Handle confirmation of the dialog.
 
         Updates the event payload with the modified XPath and
@@ -71,9 +69,8 @@ class NavGotoStepEditor(wx.Dialog):
         the dialog with an OK result.
         """
         new_payload = NavGotoPayload(
-            url=self.url_ctrl.GetValue()
-        )
+            label=self._field_step_label.GetValue().strip(),
+            url=self._field_url.GetValue().strip())
 
         self._event["payload"] = dataclasses.asdict(new_payload)
         self.changed = True
-        self.EndModal(wx.ID_OK)
