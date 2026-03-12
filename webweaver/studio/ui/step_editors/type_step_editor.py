@@ -20,9 +20,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import dataclasses
 import wx
 from webweaver.studio.persistence.recording_document import DomTypePayload
+from webweaver.studio.ui.fancy_dialog_base import FancyDialogBase
 
 
-class TypeStepEditor(wx.Dialog):
+class TypeStepEditor(FancyDialogBase):
     """Dialog for editing a DOM typing step.
 
     Allows the user to modify the XPath target and the text value
@@ -33,7 +34,7 @@ class TypeStepEditor(wx.Dialog):
     """
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, parent, _index: int, event: dict):
+    def __init__(self, parent, index: int, event: dict):
         """Initialize the DomTypeEditor dialog.
 
         Args:
@@ -41,36 +42,28 @@ class TypeStepEditor(wx.Dialog):
             index: The index of the step being edited.
             event: The event dictionary containing the payload to edit.
         """
-        super().__init__(parent, title="Edit Type Step")
+        super().__init__(
+            parent,
+            "Edit Type Step",
+            "Edit Type Step",
+            "Configure how automation performs a DOM type.")
 
         self.changed = False
         self._event = event
+        self._index = index
 
         payload = DomTypePayload(**event.get("payload", {}))
 
-        self.step_label_ctrl = wx.TextCtrl(self, value=payload.label)
-        self.xpath_ctrl = wx.TextCtrl(self, value=payload.xpath)
-        self.value_ctrl = wx.TextCtrl(self, value=payload.value)
+        self._field_step_label = self.add_field("Step Label:", wx.TextCtrl)
+        self._field_step_label.SetValue(payload.label)
+        self._field_xpath = self.add_field("XPath:", wx.TextCtrl)
+        self._field_xpath.SetValue(payload.xpath)
+        self._field_value = self.add_field("Value:", wx.TextCtrl)
+        self._field_value.SetValue(payload.value)
 
-        sizer = wx.BoxSizer(wx.VERTICAL)
+        self.finalise()
 
-        sizer.Add(wx.StaticText(self, label="Step Label:"), 0, wx.ALL, 5)
-        sizer.Add(self.step_label_ctrl, 0, wx.EXPAND | wx.ALL, 5)
-
-        sizer.Add(wx.StaticText(self, label="XPath:"), 0, wx.ALL, 5)
-        sizer.Add(self.xpath_ctrl, 0, wx.EXPAND | wx.ALL, 5)
-
-        sizer.Add(wx.StaticText(self, label="Value:"), 0, wx.ALL, 5)
-        sizer.Add(self.value_ctrl, 0, wx.EXPAND | wx.ALL, 5)
-
-        sizer.Add(self.CreateButtonSizer(wx.OK | wx.CANCEL),
-                  0, wx.ALL | wx.ALIGN_RIGHT, 10)
-
-        self.SetSizerAndFit(sizer)
-
-        self.Bind(wx.EVT_BUTTON, self._on_ok, id=wx.ID_OK)
-
-    def _on_ok(self, _evt):
+    def _ok_event(self):
         """Handle confirmation of the dialog.
 
         Updates the event payload with the modified values,
@@ -78,11 +71,9 @@ class TypeStepEditor(wx.Dialog):
         with an OK result.
         """
         new_payload = DomTypePayload(
-            label=self.step_label_ctrl.GetValue(),
-            xpath=self.xpath_ctrl.GetValue(),
-            value=self.value_ctrl.GetValue())
+            label=self._field_step_label.GetValue(),
+            xpath=self._field_xpath.GetValue(),
+            value=self._field_value.GetValue())
 
         self._event["payload"] = dataclasses.asdict(new_payload)
         self.changed = True
-
-        self.EndModal(wx.ID_OK)
