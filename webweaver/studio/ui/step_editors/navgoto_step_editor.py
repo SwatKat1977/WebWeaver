@@ -34,13 +34,11 @@ class NavGotoStepEditor(FancyDialogBase):
     """
     # __pylint disable=too-few-public-methods
 
-    def __init__(self, parent, index: int, event: dict):
+    def __init__(self, parent, event: dict):
         """Initialize the NavGotoStepEditor dialog.
 
         Args:
             parent: The parent wxPython window.
-            index: Index of the step being edited (unused but included
-                for interface consistency with other editors).
             event: The event dictionary containing the payload to edit.
         """
         super().__init__(parent,
@@ -49,7 +47,6 @@ class NavGotoStepEditor(FancyDialogBase):
                          "Configure how the automation navigates.")
 
         self.changed = False
-        self._index = index
         self._event = event
 
         payload = NavGotoPayload(**event.get("payload", {}))

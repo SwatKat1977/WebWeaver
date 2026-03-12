@@ -33,13 +33,11 @@ class SelectStepEditor(FancyDialogBase):
         changed: Indicates whether the event was modified by the user.
     """
 
-    def __init__(self, parent, index: int, event: dict):
+    def __init__(self, parent, event: dict):
         """Initialize the SelectStepEditor dialog.
 
         Args:
             parent: The parent wxPython window.
-            index: Index of the step being edited (unused but included
-                for interface consistency with other editors).
             event: The event dictionary containing the payload to edit.
         """
         super().__init__(
@@ -49,7 +47,6 @@ class SelectStepEditor(FancyDialogBase):
             "Configure how the automation performs a DOM Select.")
 
         self.changed = False
-        self._index = index
         self._event = event
 
         payload = DomSelectPayload(**event.get("payload", {}))

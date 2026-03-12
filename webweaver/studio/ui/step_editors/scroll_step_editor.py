@@ -67,16 +67,13 @@ class ScrollStepEditor(FancyDialogBase):
     """
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, parent, index: int, event: dict):
+    def __init__(self, parent, event: dict):
         """
         Initialize the scroll step editor dialog.
 
         Args:
             parent:
                 Parent wx widget.
-            index (int):
-                Step index in the recording timeline. Currently unused
-                but retained for consistency with other step editors.
             event (dict):
                 The event dictionary containing an optional ``payload``
                 describing the existing scroll configuration.
@@ -88,7 +85,6 @@ class ScrollStepEditor(FancyDialogBase):
             "Configure how the automation performs a Scroll.")
 
         self.changed = False
-        self._index = index
         self._event = event
 
         payload = ScrollPayload(**event.get("payload", {}))

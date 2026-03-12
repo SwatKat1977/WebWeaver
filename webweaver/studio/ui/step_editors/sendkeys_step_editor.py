@@ -53,13 +53,11 @@ class SendkeysStepEditor(FancyDialogBase):
         "ARROW_LEFT", "ARROW_RIGHT", "HOME", "END"
     ]
 
-    def __init__(self, parent, index: int, event):
+    def __init__(self, parent, event):
         """Initializes the Send Keys step editor dialog.
 
         Args:
             parent (wx.Window): Parent window that owns this dialog.
-            _index (int): Index of the step being edited. Currently unused
-                but retained for interface consistency.
             event (dict, optional): Existing event definition containing a
                 payload to populate the dialog with. Defaults to None.
         """
@@ -70,7 +68,6 @@ class SendkeysStepEditor(FancyDialogBase):
             "Configure how the automation sends keystrokes.")
 
         self._event = event
-        self._index = index
         self._sequence = []
         self.changed = False
 

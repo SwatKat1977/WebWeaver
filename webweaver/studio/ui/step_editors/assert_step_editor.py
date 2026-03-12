@@ -83,9 +83,6 @@ class AssertionStepEditor(FancyDialogBase):
     ----------
     parent : wx.Window
         The parent window.
-    _index : int
-        The index of the step being edited (currently unused but kept
-        for interface consistency with other step editors).
     event : dict
         The step event dictionary. Its "payload" key will be read and
         updated in-place upon confirmation.
@@ -97,7 +94,7 @@ class AssertionStepEditor(FancyDialogBase):
     """
     # pylint: disable=too-few-public-methods, too-many-instance-attributes
 
-    def __init__(self, parent, index: int, event: dict):
+    def __init__(self, parent, event: dict):
 
         super().__init__(
             parent,
@@ -107,7 +104,6 @@ class AssertionStepEditor(FancyDialogBase):
 
         self.changed = False
         self._event = event
-        self._index = index
 
         payload = AssertPayload(**event.get("payload", {}))
 

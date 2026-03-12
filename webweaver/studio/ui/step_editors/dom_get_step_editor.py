@@ -39,23 +39,18 @@ class DomGetStepEditor(FancyDialogBase):
     Attributes:
         _event (dict):
             The recording event dictionary being edited.
-        _index (int):
-            The step index within the recording timeline (currently informational).
         changed (bool):
             Indicates whether the dialog resulted in a confirmed modification.
     """
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, parent, index, event: dict):
+    def __init__(self, parent, event: dict):
         """
         Initialise the DOM getter step editor dialog.
 
         Args:
             parent:
                 The parent wxPython window.
-            index (int):
-                Index of the step being edited in the timeline.
-                Included for interface consistency with other step editors.
             event (dict):
                 The event dictionary containing a ``payload`` entry
                 representing the DOM_GET step configuration.
@@ -67,7 +62,6 @@ class DomGetStepEditor(FancyDialogBase):
             "Configure how the automation performs a DOM Get.")
 
         self.changed = False
-        self._index = index
         self._event = event
         self._original_payload = event["payload"].copy()
 

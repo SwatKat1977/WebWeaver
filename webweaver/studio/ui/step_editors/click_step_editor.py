@@ -36,13 +36,12 @@ class ClickStepEditor(FancyDialogBase):
     """
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, parent, index: int, event: dict):
+    def __init__(self, parent, event: dict):
         """
         Initialize the ClickStepEditor dialog.
 
         Args:
             parent: The parent wxPython window.
-            index (int): The index of the step being edited.
             event (dict): The event data dictionary containing a "payload"
                 field with click information.
         """
@@ -53,7 +52,6 @@ class ClickStepEditor(FancyDialogBase):
             "Configure how the automation performs a DOM click.")
 
         self.changed = False
-        self._index = index
         self._event = event
 
         payload = DomClickPayload(**event.get("payload", {}))

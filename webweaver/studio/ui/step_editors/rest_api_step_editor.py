@@ -65,16 +65,13 @@ class RestApiStepEditor(FancyDialogBase):
     """
     # pylint: disable=too-few-public-methods, too-many-instance-attributes
 
-    def __init__(self, parent, index: int, event: dict):
+    def __init__(self, parent, event: dict):
         """
         Initialize the REST API step editor dialog.
 
         Args:
             parent:
                 Parent wx widget.
-            index (int):
-                Step index in the recording timeline. Currently unused but
-                kept for API consistency with other step editors.
             event (dict):
                 Event dictionary containing an optional ``payload`` key.
                 The payload is parsed into a ``RestApiPayload`` model and
@@ -87,7 +84,6 @@ class RestApiStepEditor(FancyDialogBase):
             "Configure how the automation performs a REST API.")
 
         self.changed = False
-        self._index = index
         self._event = event
 
         payload = RestApiPayload(**event.get("payload", {}))

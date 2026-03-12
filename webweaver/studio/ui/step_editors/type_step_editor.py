@@ -34,12 +34,11 @@ class TypeStepEditor(FancyDialogBase):
     """
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, parent, index: int, event: dict):
+    def __init__(self, parent, event: dict):
         """Initialize the DomTypeEditor dialog.
 
         Args:
             parent: The parent wxPython window.
-            index: The index of the step being edited.
             event: The event dictionary containing the payload to edit.
         """
         super().__init__(
@@ -50,7 +49,6 @@ class TypeStepEditor(FancyDialogBase):
 
         self.changed = False
         self._event = event
-        self._index = index
 
         payload = DomTypePayload(**event.get("payload", {}))
 

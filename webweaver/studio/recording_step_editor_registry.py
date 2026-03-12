@@ -72,25 +72,16 @@ class RecordingStepEditorRegistry:
         cls._registry[step_type] = editor_class
 
     @classmethod
-    def create_editor(cls,
-                      parent: wx.Dialog,
-                      step_type: RecordingEventType,
-                      payload: dict):
-        """
-        Create an editor dialog for the given recording step type.
+    def create_editor(cls, step_type: RecordingEventType):
+        """Return the editor dialog class registered for a step type.
 
         Args:
-            parent (wx.Dialog):
-                The parent dialog or window that will own the editor dialog.
-            step_type (str):
+            step_type (RecordingEventType):
                 The identifier of the recording step type.
-            payload (dict):
-                The payload data associated with the step, which will be
-                provided to the editor for editing.
 
         Returns:
-            wx.Dialog:
-                An instance of the registered editor dialog for the step type.
+            Type[wx.Dialog]:
+                The editor dialog class registered for the step type.
 
         Raises:
             ValueError:
@@ -101,7 +92,7 @@ class RecordingStepEditorRegistry:
         if not editor_class:
             raise ValueError(f"No editor registered for '{step_type}'")
 
-        return editor_class(parent, payload)
+        return editor_class
 
 
 def register_step_editors():

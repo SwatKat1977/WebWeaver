@@ -34,13 +34,11 @@ class CheckStepEditor(FancyDialogBase):
     """
     # _____pylint: disables=too-few-public-methods
 
-    def __init__(self, parent, index: int, event: dict):
+    def __init__(self, parent, event: dict):
         """Initialize the CheckStepEditor dialog.
 
         Args:
             parent: The parent wxPython window.
-            index: Index of the step being edited (unused but included
-                for interface consistency with other editors).
             event: The event dictionary containing the payload to edit.
         """
         super().__init__(
@@ -50,7 +48,6 @@ class CheckStepEditor(FancyDialogBase):
             "Configure how the automation performs a DOM checkb.")
 
         self.changed = False
-        self._index = index
         self._event = event
 
         payload = DomCheckPayload(**event.get("payload", {}))
