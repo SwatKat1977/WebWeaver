@@ -414,7 +414,8 @@ class RecordingViewerPanel(wx.Panel):
 
         payload = event.get("payload", {})
         if "control_type" not in payload and \
-                event_type not in [RecordingEventType.DOM_GET,
+                event_type not in [RecordingEventType.ASSERT,
+                                   RecordingEventType.DOM_GET,
                                    RecordingEventType.NAV_GOTO,
                                    RecordingEventType.REST_API,
                                    RecordingEventType.SENDKEYS,
