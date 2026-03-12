@@ -32,7 +32,6 @@ class SelectStepEditor(FancyDialogBase):
     Attributes:
         changed: Indicates whether the event was modified by the user.
     """
-    # p___ylint disable=too-few-public-methods
 
     def __init__(self, parent, index: int, event: dict):
         """Initialize the SelectStepEditor dialog.
