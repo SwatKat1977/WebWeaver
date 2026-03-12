@@ -20,9 +20,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import dataclasses
 import wx
 from webweaver.studio.persistence.recording_document import DomCheckPayload
+from webweaver.studio.ui.fancy_dialog_base import FancyDialogBase
 
 
-class CheckStepEditor(wx.Dialog):
+class CheckStepEditor(FancyDialogBase):
     """Dialog for editing a DOM check step.
 
     Allows the user to modify the XPath target and the checked state
@@ -31,49 +32,41 @@ class CheckStepEditor(wx.Dialog):
     Attributes:
         changed: Indicates whether the event was modified by the user.
     """
-    # pylint: disable=too-few-public-methods
+    # _____pylint: disables=too-few-public-methods
 
-    def __init__(self, parent, _index: int, event: dict):
+    def __init__(self, parent, index: int, event: dict):
         """Initialize the CheckStepEditor dialog.
 
         Args:
             parent: The parent wxPython window.
-            _index: Index of the step being edited (unused but included
+            index: Index of the step being edited (unused but included
                 for interface consistency with other editors).
             event: The event dictionary containing the payload to edit.
         """
-        super().__init__(parent, title="Edit Check Step")
+        super().__init__(
+            parent,
+            "Edit Check Step",
+            "Edit Check Step",
+            "Configure how the automation performs a DOM checkb.")
 
         self.changed = False
+        self._index = index
         self._event = event
 
         payload = DomCheckPayload(**event.get("payload", {}))
 
-        self.xpath_ctrl = wx.TextCtrl(self, value=payload.xpath)
-        self.checked_ctrl = wx.CheckBox(self, label="Checked")
-        self.checked_ctrl.SetValue(bool(payload.value))
+        self._field_step_label = self.add_field("Step Label:", wx.TextCtrl)
+        self._field_step_label.SetValue(payload.label)
+        self._field_xpath = self.add_field("XPath:", wx.TextCtrl)
+        self._field_xpath.SetValue(payload.xpath)
+        self._field_is_checked = self.add_field("Checked:", wx.CheckBox)
+        self._field_is_checked.SetValue(bool(payload.value))
 
-        sizer = wx.BoxSizer(wx.VERTICAL)
+        self.Layout()
+        self.Fit()
+        self.SetMinSize(self.GetSize())
 
-        # Step Label
-        sizer.Add(wx.StaticText(self, label="Step Label:"), 0, wx.ALL, 5)
-        self._step_label_ctrl = wx.TextCtrl(self)
-        self._step_label_ctrl.SetValue(payload.label)
-        sizer.Add(self._step_label_ctrl, 0, wx.EXPAND | wx.ALL, 5)
-
-        sizer.Add(wx.StaticText(self, label="XPath:"), 0, wx.ALL, 5)
-        sizer.Add(self.xpath_ctrl, 0, wx.EXPAND | wx.ALL, 5)
-
-        sizer.Add(self.checked_ctrl, 0, wx.ALL, 5)
-
-        sizer.Add(self.CreateButtonSizer(wx.OK | wx.CANCEL),
-                  0, wx.ALL | wx.ALIGN_RIGHT, 10)
-
-        self.SetSizerAndFit(sizer)
-
-        self.Bind(wx.EVT_BUTTON, self._on_ok, id=wx.ID_OK)
-
-    def _on_ok(self, _evt):
+    def _ok_event(self):
         """Handle confirmation of the dialog.
 
         Updates the event payload with the modified XPath and
@@ -81,11 +74,10 @@ class CheckStepEditor(wx.Dialog):
         the dialog with an OK result.
         """
         new_payload = DomCheckPayload(
-            label=self._step_label_ctrl.GetValue(),
-            xpath=self.xpath_ctrl.GetValue(),
-            value=self.checked_ctrl.GetValue(),
+            label=self._field_step_label.GetValue(),
+            xpath=self._field_xpath.GetValue(),
+            value=self._field_is_checked.GetValue(),
         )
 
         self._event["payload"] = dataclasses.asdict(new_payload)
         self.changed = True
-        self.EndModal(wx.ID_OK)
