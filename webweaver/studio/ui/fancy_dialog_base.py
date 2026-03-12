@@ -106,6 +106,8 @@ class FancyDialogBase(wx.Dialog):
         """
         super().__init__(parent, title=title)
 
+        self._label_width = 110
+
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # Header
@@ -118,16 +120,13 @@ class FancyDialogBase(wx.Dialog):
 
         # Content area
         self.content = wx.Panel(self)
-        self.content_sizer = wx.FlexGridSizer(cols=2, hgap=10, vgap=10)
-        self.content_sizer.AddGrowableCol(1)
-
+        self.content_sizer = wx.BoxSizer(wx.VERTICAL)
         self.content.SetSizer(self.content_sizer)
 
-        main_sizer.Add(self.content, 1, wx.EXPAND | wx.ALL, 15)
+        main_sizer.Add(self.content, 0, wx.EXPAND | wx.ALL, 15)
 
-        # Buttons
         btn_sizer = self.CreateButtonSizer(wx.OK | wx.CANCEL)
-        main_sizer.Add(btn_sizer, 0, wx.ALL | wx.ALIGN_RIGHT, 10)
+        main_sizer.Add(btn_sizer, 0, wx.ALL | wx.ALIGN_RIGHT, 6)
 
         self.SetSizer(main_sizer)
 
@@ -153,14 +152,32 @@ class FancyDialogBase(wx.Dialog):
             wx.Window:
                 The created control instance.
         """
-        self.content_sizer.Add(
-            wx.StaticText(self.content, label=label),
-            0, wx.ALIGN_CENTER_VERTICAL,
-            5)
+        row = wx.BoxSizer(wx.HORIZONTAL)
+
+        label_ctrl = wx.StaticText(self.content, label=label)
+        label_ctrl.SetMinSize((self._label_width, -1))
 
         ctrl = control(self.content)
 
-        self.content_sizer.Add(ctrl, 1, wx.EXPAND)
+        row.Add(label_ctrl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
+        row.Add(ctrl, 1, wx.EXPAND)
+
+        self.content_sizer.Add(row, 0, wx.EXPAND | wx.BOTTOM, 10)
+
+        return ctrl
+
+    def add_full_width_field(self,
+                             label: str,
+                             control_factory: Callable[[wx.Window], wx.Window]):
+        block = wx.BoxSizer(wx.VERTICAL)
+
+        label_ctrl = wx.StaticText(self.content, label=label)
+        ctrl = control_factory(self.content)
+
+        block.Add(label_ctrl, 0, wx.BOTTOM, 6)
+        block.Add(ctrl, 1, wx.EXPAND)
+
+        self.content_sizer.Add(block, 1, wx.EXPAND | wx.BOTTOM, 10)
 
         return ctrl
 
@@ -186,7 +203,17 @@ class FancyDialogBase(wx.Dialog):
 
         sizer.Add(tip, 0, wx.ALL, 8)
 
-        self.GetSizer().Insert(2, sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 10)
+        self.GetSizer().Insert(2,
+                               sizer,
+                               0,
+                               wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP,
+                               10)
+
+    def finalize(self):
+        self.content.Layout()
+        self.Layout()
+        self.Fit()
+        self.SetMinSize(self.GetSize())
 
     def _validate(self):
         """
@@ -200,6 +227,13 @@ class FancyDialogBase(wx.Dialog):
         """
         return True
 
+    def _ok_event(self):
+        """
+        OK button press event.
+
+        Subclasses can override this method to implement OK event logic.
+        """
+
     def _on_ok(self, _event):
         """
         Handle the OK button click.
@@ -212,3 +246,5 @@ class FancyDialogBase(wx.Dialog):
         """
         if self._validate():
             self.EndModal(wx.ID_OK)
+
+        self._ok_event()
