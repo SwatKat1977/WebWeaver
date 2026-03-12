@@ -328,7 +328,26 @@ class FancyDialogBase(wx.Dialog):
                                control1: Callable[[wx.Window], wx.Window],
                                label2: str,
                                control2: Callable[[wx.Window], wx.Window]):
+        """Add a row containing two labeled controls to the layout.
 
+        The row begins with a main label, followed by two sub-labels and their
+        associated controls. Each control is created using the supplied factory
+        callable and added to a horizontal sizer.
+
+        Args:
+            label: The main label displayed at the start of the row.
+            label1: The label displayed immediately before the first control.
+            control1: A callable that accepts a parent ``wx.Window`` and returns
+                the first control instance.
+            label2: The label displayed immediately before the second control.
+            control2: A callable that accepts a parent ``wx.Window`` and returns
+                the second control instance.
+
+        Returns:
+            Tuple[wx.Window, wx.Window]: The two created control instances
+            ``(ctrl1, ctrl2)`` so the caller can configure or bind events to them.
+        """
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
         row = wx.BoxSizer(wx.HORIZONTAL)
 
         main_label = wx.StaticText(self.content, label=label)
@@ -358,6 +377,27 @@ class FancyDialogBase(wx.Dialog):
                                  control1_label: str,
                                  control2: Callable[[wx.Window], wx.Window],
                                  control2_label: str):
+        """Add a row containing two related controls with labels.
+
+        This method creates a row consisting of a main label followed by two
+        labeled controls that represent connected or related values (for example,
+        X/Y coordinates or width/height). The controls are created using the
+        provided factory callables.
+
+        Args:
+            label: The main label displayed at the start of the row.
+            control1: A callable that accepts a parent ``wx.Window`` and returns
+                the first control instance.
+            control1_label: The label displayed before the first control.
+            control2: A callable that accepts a parent ``wx.Window`` and returns
+                the second control instance.
+            control2_label: The label displayed before the second control.
+
+        Returns:
+            Tuple[wx.Window, wx.Window]: The two created control instances
+            ``(ctrl_x, ctrl_y)`` for further configuration or event binding.
+        """
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
         row = wx.BoxSizer(wx.HORIZONTAL)
 
         label_ctrl = wx.StaticText(self.content, label=label)
