@@ -392,7 +392,8 @@ class FancyDialogBase(wx.Dialog):
             _event (wx.CommandEvent):
                 The button event triggered by the OK button.
         """
-        if self._validate():
-            self.EndModal(wx.ID_OK)
+        if not self._validate():
+            return
 
+        self.EndModal(wx.ID_OK)
         self._ok_event()
