@@ -281,6 +281,12 @@ class SendkeysPayload(BasePayload):
     keys: List[SendkeysKeyDefinition]
 
 
+@dataclass
+class UserVariablePayload(BasePayload):
+    name: str
+    value: str
+
+
 class RecordingDocument:
     """
     File-backed document model representing a loaded recording.
