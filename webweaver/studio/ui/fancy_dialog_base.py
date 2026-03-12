@@ -123,7 +123,10 @@ class FancyDialogBase(wx.Dialog):
         self.content_sizer = wx.BoxSizer(wx.VERTICAL)
         self.content.SetSizer(self.content_sizer)
 
-        main_sizer.Add(self.content, 0, wx.EXPAND | wx.ALL, 15)
+        main_sizer.Add(self.content,
+                       0,
+                       wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP,
+                       15)
 
         btn_sizer = self.CreateButtonSizer(wx.OK | wx.CANCEL)
         main_sizer.Add(btn_sizer, 0, wx.ALL | wx.ALIGN_RIGHT, 6)
@@ -162,7 +165,7 @@ class FancyDialogBase(wx.Dialog):
         row.Add(label_ctrl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
         row.Add(ctrl, 1, wx.EXPAND)
 
-        self.content_sizer.Add(row, 0, wx.EXPAND | wx.BOTTOM, 10)
+        self.content_sizer.Add(row, 0, wx.EXPAND | wx.BOTTOM, 6)
 
         return ctrl
 
@@ -209,7 +212,8 @@ class FancyDialogBase(wx.Dialog):
                                wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP,
                                10)
 
-    def finalize(self):
+    def finalise(self):
+        self.content_sizer.AddStretchSpacer()
         self.content.Layout()
         self.Layout()
         self.Fit()
