@@ -18,9 +18,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import wx
+from webweaver.studio.persistence.recording_document import DomGetPayload
+from webweaver.studio.ui.fancy_dialog_base import FancyDialogBase
 
 
-class DomGetStepEditor(wx.Dialog):
+class DomGetStepEditor(FancyDialogBase):
     """
     Dialog for creating or editing a DOM_GET playback step.
 
@@ -42,7 +44,7 @@ class DomGetStepEditor(wx.Dialog):
         changed (bool):
             Indicates whether the dialog resulted in a confirmed modification.
     """
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(self, parent, index, event: dict):
         """
@@ -58,72 +60,44 @@ class DomGetStepEditor(wx.Dialog):
                 The event dictionary containing a ``payload`` entry
                 representing the DOM_GET step configuration.
         """
-        super().__init__(parent, title="Edit DOM Getter")
+        super().__init__(
+            parent,
+            "Edit DOM Get Step",
+            "Edit DOM Get Step",
+            "Configure how the automation performs a DOM Get.")
 
-        self._event = event
         self.changed = False
         self._index = index
+        self._event = event
         self._original_payload = event["payload"].copy()
 
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        payload = DomGetPayload(**event.get("payload", {}))
 
-        grid = wx.FlexGridSizer(rows=4, cols=2, hgap=10, vgap=10)
-        grid.AddGrowableCol(1, 1)  # Make second column expand
+        # --- Step Label
+        self._field_step_label = self.add_field("Step Label:", wx.TextCtrl)
+        self._field_step_label.SetValue(payload.label)
 
-        payload = event.get("payload")
+        # --- XPath
+        self._field_xpath = self.add_field("XPath:", wx.TextCtrl)
+        self._field_xpath.SetValue(payload.xpath)
 
-        # --- Step Label ---
-        step_label_label = wx.StaticText(self, label="Step Label:")
-        self._step_label_ctrl = wx.TextCtrl(
-            self,
-            value=payload.get("label", ""))
-        grid.Add(step_label_label, 0, wx.ALIGN_CENTER_VERTICAL)
-        grid.Add(self._step_label_ctrl, 1, wx.EXPAND)
+        # --- Property Type
+        self._field_property_type = self.add_field(
+            "Property Type:",
+            lambda parent: wx.Choice(parent,
+                                   choices=["text", "value","checked",
+                                            "html"]))
+        current_property = payload.property_type
+        self._field_property_type.SetStringSelection(current_property)
 
-        # --- XPath ---
-        xpath_label = wx.StaticText(self, label="XPath:")
-        self._xpath_ctrl = wx.TextCtrl(
-            self,
-            value=payload.get("xpath", ""))
-        grid.Add(xpath_label, 0, wx.ALIGN_CENTER_VERTICAL)
-        grid.Add(self._xpath_ctrl, 1, wx.EXPAND)
+        # --- Output Variable
+        self._field_output_variable = self.add_field("Output Variable:",
+                                                     wx.TextCtrl)
+        self._field_output_variable.SetValue(payload.output_variable)
 
-        # --- Property Type ---
-        property_label = wx.StaticText(self, label="Property Type:")
-        self._property_choice = wx.Choice(
-            self,
-            choices=["text", "value", "checked", "html"])
-        current_property = payload.get("property_type", "text")
-        self._property_choice.SetStringSelection(current_property)
-        grid.Add(property_label, 0, wx.ALIGN_CENTER_VERTICAL)
-        grid.Add(self._property_choice, 1, wx.EXPAND)
+        self.finalise()
 
-        # --- Output Variable ---
-        variable_label = wx.StaticText(self, label="Output Variable:")
-        self._variable_ctrl = wx.TextCtrl(
-            self,
-            value=payload.get("output_variable", ""))
-        grid.Add(variable_label, 0, wx.ALIGN_CENTER_VERTICAL)
-        grid.Add(self._variable_ctrl, 1, wx.EXPAND)
-
-        main_sizer.Add(grid, 0, wx.ALL | wx.EXPAND, 20)
-
-        # --- Buttons ---
-        button_sizer = self.CreateButtonSizer(wx.OK | wx.CANCEL)
-        main_sizer.Add(button_sizer, 0, wx.ALL | wx.ALIGN_RIGHT, 10)
-
-        self.SetSizer(main_sizer)
-        self.Fit()
-
-        w, h = self.GetSize()
-        self.SetSize((w + 60, h))
-        self.SetMinSize((w + 60, h))
-
-        self.Centre()
-
-        self.Bind(wx.EVT_BUTTON, self._on_ok, id=wx.ID_OK)
-
-    def _on_ok(self, _evt):
+    def _ok_event(self):
         """
         Persist the edited values back into the event payload.
 
@@ -138,10 +112,10 @@ class DomGetStepEditor(wx.Dialog):
         with ``wx.ID_OK``.
         """
 
-        new_step_label = self._step_label_ctrl.GetValue()
-        new_xpath = self._xpath_ctrl.GetValue()
-        new_property = self._property_choice.GetStringSelection()
-        new_output = self._variable_ctrl.GetValue()
+        new_step_label = self._field_step_label.GetValue()
+        new_xpath = self._field_xpath.GetValue()
+        new_property = self._field_property_type.GetStringSelection()
+        new_output = self._field_output_variable.GetValue()
 
         if (new_xpath != self._original_payload.get("xpath") or
                 new_property != self._original_payload.get("property_type") or
