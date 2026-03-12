@@ -178,11 +178,90 @@ class FancyDialogBase(wx.Dialog):
         ctrl = control_factory(self.content)
 
         block.Add(label_ctrl, 0, wx.BOTTOM, 6)
-        block.Add(ctrl, 1, wx.EXPAND)
+        block.Add(ctrl, 0, wx.EXPAND)
 
         self.content_sizer.Add(block, 1, wx.EXPAND | wx.BOTTOM, 10)
 
         return ctrl
+
+    def add_field_with_buttons(
+            self,
+            label: str,
+            control_factory: Callable[[wx.Window], wx.Window],
+            buttons: list[tuple[str, Callable]]):
+
+        row = wx.BoxSizer(wx.HORIZONTAL)
+
+        label_ctrl = wx.StaticText(self.content, label=label)
+        ctrl = control_factory(self.content)
+
+        row.Add(label_ctrl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
+        row.Add(ctrl, 1, wx.EXPAND | wx.RIGHT, 6)
+
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        created_buttons = []
+
+        for btn_label, handler in buttons:
+            btn = wx.Button(self.content, label=btn_label)
+            btn.Bind(wx.EVT_BUTTON, handler)
+            btn_sizer.Add(btn, 0, wx.LEFT, 4)
+            created_buttons.append(btn)
+
+        row.Add(btn_sizer, 0, wx.ALIGN_CENTER_VERTICAL)
+
+        self.content_sizer.Add(row, 0, wx.EXPAND | wx.BOTTOM, 6)
+
+        return ctrl, created_buttons
+
+    def add_field_with_buttons_centered(
+            self,
+            label: str,
+            control_factory: Callable[[wx.Window], wx.Window],
+            buttons: list[tuple[str, Callable]]):
+
+        block = wx.BoxSizer(wx.VERTICAL)
+
+        row = wx.BoxSizer(wx.HORIZONTAL)
+
+        label_ctrl = wx.StaticText(self.content, label=label)
+        ctrl = control_factory(self.content)
+
+        row.Add(label_ctrl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
+        row.Add(ctrl, 1, wx.EXPAND)
+
+        block.Add(row, 0, wx.EXPAND | wx.BOTTOM, 4)
+
+        btn_row = wx.BoxSizer(wx.HORIZONTAL)
+
+        created_buttons = []
+
+        for btn_label, handler in buttons:
+            btn = wx.Button(self.content, label=btn_label)
+            btn.Bind(wx.EVT_BUTTON, handler)
+            btn_row.Add(btn, 0, wx.LEFT | wx.RIGHT, 4)
+            created_buttons.append(btn)
+
+        block.Add(btn_row, 0, wx.ALIGN_CENTER)
+
+        self.content_sizer.Add(block, 0, wx.EXPAND | wx.BOTTOM, 8)
+
+        return ctrl, created_buttons
+
+    def add_centered_buttons(self, buttons):
+
+        row = wx.BoxSizer(wx.HORIZONTAL)
+
+        created_buttons = []
+
+        for label, handler in buttons:
+            btn = wx.Button(self.content, label=label)
+            btn.Bind(wx.EVT_BUTTON, handler)
+            row.Add(btn, 0, wx.LEFT | wx.RIGHT, 5)
+            created_buttons.append(btn)
+
+        self.content_sizer.Add(row, 0, wx.ALIGN_CENTER | wx.BOTTOM, 8)
+
+        return created_buttons
 
     def add_help(self, text: str):
         """
@@ -213,7 +292,6 @@ class FancyDialogBase(wx.Dialog):
                                10)
 
     def finalise(self):
-        self.content_sizer.AddStretchSpacer()
         self.content.Layout()
         self.Layout()
         self.Fit()

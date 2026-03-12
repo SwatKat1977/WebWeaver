@@ -62,9 +62,7 @@ class CheckStepEditor(FancyDialogBase):
         self._field_is_checked = self.add_field("Checked:", wx.CheckBox)
         self._field_is_checked.SetValue(bool(payload.value))
 
-        self.Layout()
-        self.Fit()
-        self.SetMinSize(self.GetSize())
+        self.finalise()
 
     def _ok_event(self):
         """Handle confirmation of the dialog.
