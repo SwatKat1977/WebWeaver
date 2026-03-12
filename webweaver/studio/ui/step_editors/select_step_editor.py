@@ -67,6 +67,8 @@ class SelectStepEditor(FancyDialogBase):
         self._field_selection = self.add_field("Selection:", wx.TextCtrl)
         self._field_selection.SetValue(payload.value)
 
+        self.finalise()
+
     def _ok_event(self):
         """Handle confirmation of the dialog.
 
