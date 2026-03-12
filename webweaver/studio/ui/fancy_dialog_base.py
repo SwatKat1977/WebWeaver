@@ -322,6 +322,65 @@ class FancyDialogBase(wx.Dialog):
 
         return created_buttons
 
+    def add_two_labeled_fields(self,
+                               label: str,
+                               label1: str,
+                               control1: Callable[[wx.Window], wx.Window],
+                               label2: str,
+                               control2: Callable[[wx.Window], wx.Window]):
+
+        row = wx.BoxSizer(wx.HORIZONTAL)
+
+        main_label = wx.StaticText(self.content, label=label)
+        main_label.SetMinSize((self._label_width, -1))
+
+        sub_label1 = wx.StaticText(self.content, label=label1)
+        ctrl1 = control1(self.content)
+
+        sub_label2 = wx.StaticText(self.content, label=label2)
+        ctrl2 = control2(self.content)
+
+        row.Add(main_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
+
+        row.Add(sub_label1, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        row.Add(ctrl1, 1, wx.EXPAND | wx.RIGHT, 10)
+
+        row.Add(sub_label2, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        row.Add(ctrl2, 1, wx.EXPAND)
+
+        self.content_sizer.Add(row, 0, wx.EXPAND | wx.BOTTOM, 6)
+
+        return ctrl1, ctrl2
+
+    def add_two_connected_fields(self,
+                                 label: str,
+                                 control1: Callable[[wx.Window], wx.Window],
+                                 control1_label: str,
+                                 control2: Callable[[wx.Window], wx.Window],
+                                 control2_label: str):
+        row = wx.BoxSizer(wx.HORIZONTAL)
+
+        label_ctrl = wx.StaticText(self.content, label=label)
+        label_ctrl.SetMinSize((self._label_width, -1))
+
+        x_label = wx.StaticText(self.content, label=control1_label)
+        y_label = wx.StaticText(self.content, label=control2_label)
+
+        ctrl_x = control1(self.content)
+        ctrl_y = control2(self.content)
+
+        row.Add(label_ctrl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
+
+        row.Add(x_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        row.Add(ctrl_x, 1, wx.EXPAND | wx.RIGHT, 10)
+
+        row.Add(y_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        row.Add(ctrl_y, 1, wx.EXPAND)
+
+        self.content_sizer.Add(row, 0, wx.EXPAND | wx.BOTTOM, 6)
+
+        return ctrl_x, ctrl_y
+
     def add_help(self, text: str):
         """
         Add a help or tips section to the dialog.
