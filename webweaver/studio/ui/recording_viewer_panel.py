@@ -753,6 +753,7 @@ class RecordingViewerPanel(wx.Panel):
                             xpath: str,
                             property_type: str,
                             output_variable: str) -> DomGetPayload:
-        return DomGetPayload(xpath=xpath,
+        return DomGetPayload(label="",
+                             xpath=xpath,
                              property_type=property_type,
                              output_variable=output_variable)
