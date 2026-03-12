@@ -172,6 +172,22 @@ class FancyDialogBase(wx.Dialog):
     def add_full_width_field(self,
                              label: str,
                              control_factory: Callable[[wx.Window], wx.Window]):
+        """
+        Add a full-width control block.
+
+        The label is displayed above the control, allowing the control
+        to occupy the full available width.
+
+        Args:
+            label (str):
+                Label displayed above the control.
+            control_factory (Callable[[wx.Window], wx.Window]):
+                Factory function used to create the control.
+
+        Returns:
+            wx.Window:
+                The created control instance.
+        """
         block = wx.BoxSizer(wx.VERTICAL)
 
         label_ctrl = wx.StaticText(self.content, label=label)
@@ -189,6 +205,22 @@ class FancyDialogBase(wx.Dialog):
             label: str,
             control_factory: Callable[[wx.Window], wx.Window],
             buttons: list[tuple[str, Callable]]):
+        """
+        Add a labeled field with buttons aligned to the right.
+
+        Args:
+            label (str):
+                Text label displayed next to the control.
+            control_factory (Callable[[wx.Window], wx.Window]):
+                Factory used to create the input control.
+            buttons (list[tuple[str, Callable]]):
+                List of button definitions containing the button label
+                and the event handler function.
+
+        Returns:
+            tuple[wx.Window, list[wx.Button]]:
+                The created control and a list of created buttons.
+        """
 
         row = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -218,6 +250,22 @@ class FancyDialogBase(wx.Dialog):
             label: str,
             control_factory: Callable[[wx.Window], wx.Window],
             buttons: list[tuple[str, Callable]]):
+        """
+        Add a labeled field with buttons centered below the control.
+
+        Args:
+            label (str):
+                Label text for the control.
+            control_factory (Callable[[wx.Window], wx.Window]):
+                Factory used to create the control.
+            buttons (list[tuple[str, Callable]]):
+                List of button definitions containing the button label
+                and event handler.
+
+        Returns:
+            tuple[wx.Window, list[wx.Button]]:
+                The created control and list of buttons.
+        """
 
         block = wx.BoxSizer(wx.VERTICAL)
 
@@ -248,7 +296,18 @@ class FancyDialogBase(wx.Dialog):
         return ctrl, created_buttons
 
     def add_centered_buttons(self, buttons):
+        """
+        Add a row of centered buttons to the dialog.
 
+        Args:
+            buttons (list[tuple[str, Callable]]):
+                List of button definitions containing button labels and
+                their corresponding event handlers.
+
+        Returns:
+            list[wx.Button]:
+                The list of created button instances.
+        """
         row = wx.BoxSizer(wx.HORIZONTAL)
 
         created_buttons = []
@@ -292,6 +351,13 @@ class FancyDialogBase(wx.Dialog):
                                10)
 
     def finalise(self):
+        """
+        Finalize the dialog layout.
+
+        This method recalculates layout sizes, fits the dialog to its
+        contents, and sets the minimum size to prevent shrinking below
+        the calculated dimensions.
+        """
         self.content.Layout()
         self.Layout()
         self.Fit()
