@@ -20,6 +20,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import json
 import wx
 from webweaver.common.assertion_operator import AssertionOperator
+from webweaver.studio.persistence.recording_document import AssertPayload
+from webweaver.studio.ui.fancy_dialog_base import FancyDialogBase
 
 
 ASSERTION_OPERATOR_LABELS: list[tuple[str, AssertionOperator]] = [
@@ -57,7 +59,7 @@ UNARY_ASSERTION_OPERATORS = {
 }
 
 
-class AssertionStepEditor(wx.Dialog):
+class AssertionStepEditor(FancyDialogBase):
     """
     Modal dialog for editing an assertion step's payload.
 
@@ -93,143 +95,98 @@ class AssertionStepEditor(wx.Dialog):
     changed : bool
         Indicates whether the user confirmed changes (True after OK).
     """
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods, too-many-instance-attributes
 
-    def __init__(self, parent, _index: int, event: dict):
-        super().__init__(parent, title="Edit Assertion Step")
+    def __init__(self, parent, index: int, event: dict):
+
+        super().__init__(
+            parent,
+            "Edit Asset Step",
+            "Edit Assert Step",
+            "Configure how the automation performs assert.")
 
         self.changed = False
         self._event = event
+        self._index = index
 
-        payload = event.get("payload", {})
-
-        # ----------------------------
-        # Controls
-        # ----------------------------
+        payload = AssertPayload(**event.get("payload", {}))
 
         # Step Label
-        self._step_label_ctrl = wx.TextCtrl(self,
-                                            value=payload.get("label", ""))
+        self._field_step_label = self.add_field("Step Label:", wx.TextCtrl)
+        self._field_step_label.SetValue(payload.label)
 
-        self._left_ctrl = wx.TextCtrl(
-            self,
-            value=payload.get("left_value", "")
-        )
+        # -- Left Value
+        self._field_left = self.add_field("Left Value:", wx.TextCtrl)
+        self._field_left.SetValue(payload.left_value)
 
-        self._operator_choice = wx.Choice(
-            self,
-            choices=[label for label, _ in ASSERTION_OPERATOR_LABELS]
-        )
+        # -- Operator
+        self._field_operator: wx.Choice = self.add_field(
+            "Operator:",
+            lambda parent: wx.Choice(parent,
+                                     choices=[label for label, _ in \
+                                              ASSERTION_OPERATOR_LABELS]))
 
-        self._right_ctrl = wx.TextCtrl(
-            self,
-            value=payload.get("right_value", "")
-        )
-
-        self._soft_checkbox = wx.CheckBox(
-            self,
-            label="Soft assertion (continue on failure)"
-        )
-        self._soft_checkbox.SetValue(payload.get("soft_assert", False))
-
-        self._hint_label = wx.StaticText(
-            self,
-            label="Use {{property_name}} to reference stored variables."
-        )
-        self._hint_label.SetForegroundColour(wx.Colour(120, 120, 120))
-
-        # ----------------------------
         # Set existing selection
-        # ----------------------------
-
-        current_operator = payload.get("operator")
-
         for i, (_, op) in enumerate(ASSERTION_OPERATOR_LABELS):
-            if op.value == current_operator:
-                self._operator_choice.SetSelection(i)
+            if op.value == payload.operator:
+                self._field_operator.SetSelection(i)
                 break
         else:
-            self._operator_choice.SetSelection(0)
+            self._field_operator.SetSelection(0)
 
-        # ----------------------------
-        # Layout
-        # ----------------------------
+        # -- Right Value
+        self._field_right = self.add_field("Right Value:", wx.TextCtrl)
+        self._field_right.SetValue("" if not payload.right_value else
+                                   payload.right_value)
 
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        # -- Soft Assertion Flag
+        self._field_soft_assert = self.add_field("Soft Assert:", wx.CheckBox)
+        self._field_soft_assert.SetValue(bool(payload.soft_assert))
+        self._field_soft_assert.SetToolTip("Soft assertion (continue on failure)")
 
-        form = wx.FlexGridSizer(cols=2, hgap=8, vgap=12)
-        form.AddGrowableCol(1, 1)
+        # -- Hint information
+        self._field_hint = self.add_full_width_field(
+            "",
+            lambda parent: wx.StaticText(
+                parent,
+                label="Use {{property_name}} to reference stored variables."))
+        self._field_hint.SetForegroundColour(wx.Colour(120, 120, 120))
 
-        form.Add(wx.StaticText(self, label="Step Label:"),
-                 0, wx.ALIGN_CENTER_VERTICAL)
-        form.Add(self._step_label_ctrl, 1, wx.EXPAND)
+        self.finalise()
 
-        # Left
-        form.Add(wx.StaticText(self, label="Left Value:"),
-                 0, wx.ALIGN_CENTER_VERTICAL)
-        form.Add(self._left_ctrl, 1, wx.EXPAND)
-
-        # Operator
-        form.Add(wx.StaticText(self, label="Operator:"),
-                 0, wx.ALIGN_CENTER_VERTICAL)
-        form.Add(self._operator_choice, 1, wx.EXPAND)
-
-        # Right
-        form.Add(wx.StaticText(self, label="Right Value:"),
-                 0, wx.ALIGN_CENTER_VERTICAL)
-        form.Add(self._right_ctrl, 1, wx.EXPAND)
-
-        # Soft assertion flag
-
-        main_sizer.Add(form, 0, wx.EXPAND | wx.ALL, 15)
-        form.Add(self._soft_checkbox,
-                       0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
-        main_sizer.Add(self._hint_label, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
-        main_sizer.Add(self.CreateButtonSizer(wx.OK | wx.CANCEL),
-                       0, wx.ALL | wx.ALIGN_RIGHT, 10)
-
-        self.SetSizer(main_sizer)
-        self.Fit()
-        self.CentreOnParent()
-
-        # ----------------------------
-        # Bindings
-        # ----------------------------
-        self.Bind(wx.EVT_BUTTON, self._on_ok, id=wx.ID_OK)
-        self._operator_choice.Bind(wx.EVT_CHOICE, self._on_operator_changed)
-
+        self._field_operator.Bind(wx.EVT_CHOICE, self._on_operator_changed)
         self._update_right_enabled()
 
     def _update_right_enabled(self):
 
-        selected_index = self._operator_choice.GetSelection()
+        selected_index = self._field_operator.GetSelection()
 
         if selected_index == wx.NOT_FOUND:
-            self._right_ctrl.Enable(False)
+            self._field_right.Enable(False)
             return
 
         _, operator = ASSERTION_OPERATOR_LABELS[selected_index]
 
-        self._right_ctrl.Enable(operator not in UNARY_ASSERTION_OPERATORS)
+        self._field_right.Enable(operator not in UNARY_ASSERTION_OPERATORS)
 
-    def _on_ok(self, _evt):
+    def _ok_event(self):
 
-        left_value = self._left_ctrl.GetValue().strip()
+        left_value = self._field_left.GetValue().strip()
 
-        selected_index = self._operator_choice.GetSelection()
+        selected_index = self._field_operator.GetSelection()
         _, operator = ASSERTION_OPERATOR_LABELS[selected_index]
 
         payload = {
-            "label": self._step_label_ctrl.GetValue(),
+            "label": self._field_step_label.GetValue(),
             "operator": operator.value,
             "left_value": left_value,
-            "soft_assert": self._soft_checkbox.GetValue(),
+            "soft_assert": self._field_soft_assert.GetValue(),
         }
 
         right_value = None
 
         if operator not in UNARY_ASSERTION_OPERATORS:
-            right_value = self._right_ctrl.GetValue().strip()
+            right_value = self._field_right.GetValue().strip()
             payload["right_value"] = right_value
 
         if operator == AssertionOperator.IN:
@@ -253,10 +210,9 @@ class AssertionStepEditor(wx.Dialog):
         self._event["payload"] = payload
 
         self.changed = True
-        self.EndModal(wx.ID_OK)
 
     def _on_operator_changed(self, _evt):
-        selected_index = self._operator_choice.GetSelection()
+        selected_index = self._field_operator.GetSelection()
 
         if selected_index == wx.NOT_FOUND:
             self._update_right_enabled()
@@ -265,14 +221,14 @@ class AssertionStepEditor(wx.Dialog):
         _, operator = ASSERTION_OPERATOR_LABELS[selected_index]
 
         if operator in UNARY_ASSERTION_OPERATORS:
-            self._right_ctrl.SetValue("")
+            self._field_right.SetValue("")
 
         if operator == AssertionOperator.IN:
-            self._hint_label.SetLabel(
+            self._field_hint.SetLabel(
                 "Right value must be a JSON array, e.g. "
                 "[\"apple\", \"banana\"].")
         else:
-            self._hint_label.SetLabel(
+            self._field_hint.SetLabel(
                 "Use {{property_name}} to reference stored variables.")
 
         self._update_right_enabled()
