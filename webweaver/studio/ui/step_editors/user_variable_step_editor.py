@@ -24,28 +24,30 @@ from webweaver.studio.ui.fancy_dialog_base import FancyDialogBase
 
 
 class UserVariableStepEditor(FancyDialogBase):
-    """Dialog for editing a DOM typing step.
+    """Dialog for editing a user variable recording step.
 
-    Allows the user to modify the XPath target and the text value
-    associated with a DOM_TYPE recording event.
-
-    Attributes:
-        changed: Indicates whether the event was modified by the user.
+    This dialog allows the user to configure a variable name and value
+    associated with a recording step. The existing payload is loaded into
+    editable fields and, if validation succeeds, the updated values are
+    written back into the event payload.
     """
     # pylint: disable=too-few-public-methods
 
     def __init__(self, parent, event: dict):
-        """Initialize the DomTypeEditor dialog.
+        """Initialize the user variable editor dialog.
 
         Args:
-            parent: The parent wxPython window.
-            event: The event dictionary containing the payload to edit.
+            parent (wx.Window):
+                The parent window that owns the dialog.
+            event (dict):
+                The recording step event dictionary containing a ``payload``
+                entry with the user variable data to edit.
         """
         super().__init__(
             parent,
-            "Edit Type Step",
-            "Edit Type Step",
-            "Configure how automation performs a DOM type.")
+            "Edit User Variable",
+            "Edit User Variable",
+            "Configure a user variable.")
 
         self.changed = False
         self._event = event
@@ -60,3 +62,34 @@ class UserVariableStepEditor(FancyDialogBase):
         self._field_variable_value.SetValue(payload.value)
 
         self.finalise()
+
+    def _validate(self):
+        """Validate user input and update the event payload.
+
+        Ensures that the variable name field is populated. If validation
+        succeeds, a new :class:`UserVariablePayload` is constructed from the
+        field values and written back into the event dictionary.
+
+        Returns:
+            bool: ``True`` if validation succeeds and the payload was updated,
+            otherwise ``False``.
+        """
+        field_label = self._field_step_label.GetValue().strip()
+        field_name = self._field_variable_name.GetValue().strip()
+        field_value = self._field_variable_value.GetValue().strip()
+
+        if not field_name:
+            wx.MessageBox("User variable name is required",
+                          "Validation Error", wx.ICON_ERROR)
+            self._field_variable_name.SetFocus()
+            return False
+
+        new_payload = UserVariablePayload(
+            label=field_label,
+            name=field_name,
+            value=field_value)
+
+        self._event["payload"] = dataclasses.asdict(new_payload)
+        self.changed = True
+
+        return True

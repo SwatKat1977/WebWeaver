@@ -22,17 +22,17 @@ import wx
 from webweaver.studio.recording.recording_event_type import \
     RecordingEventType
 from webweaver.studio.persistence.recording_document import (
-                                              AssertPayload,
-                                              DomCheckPayload,
-                                              DomClickPayload,
-                                              DomGetPayload,
-                                              DomSelectPayload,
-                                              DomTypePayload,
-                                              NavGotoPayload,
-                                              RestApiPayload,
-                                              ScrollPayload,
-                                              SendkeysPayload,
-                                              WaitPayload)
+    AssertPayload,
+    DomCheckPayload,
+    DomClickPayload,
+    DomGetPayload,
+    DomSelectPayload,
+    DomTypePayload,
+    NavGotoPayload,
+    RestApiPayload,
+    ScrollPayload,
+    SendkeysPayload,
+    WaitPayload, UserVariablePayload)
 
 
 RECORDING_EVENT_TYPE_LABELS: list[tuple[str, RecordingEventType]] = [
@@ -46,6 +46,7 @@ RECORDING_EVENT_TYPE_LABELS: list[tuple[str, RecordingEventType]] = [
     ("Rest API", RecordingEventType.REST_API),
     ("Scroll", RecordingEventType.SCROLL),
     ("SendKeys", RecordingEventType.SENDKEYS),
+    ("User Variable", RecordingEventType.USER_VARIABLE),
     ("Wait", RecordingEventType.WAIT),
 ]
 """
@@ -112,6 +113,9 @@ def default_payload_for(event_type: RecordingEventType):
         RecordingEventType.SENDKEYS: lambda: SendkeysPayload(label="",
                                                              target="",
                                                              keys=[]),
+        RecordingEventType.USER_VARIABLE: lambda: UserVariablePayload(label="",
+                                                                      name="",
+                                                                      value=""),
         RecordingEventType.WAIT: lambda: WaitPayload(label="",
                                                      duration_ms=1000),
     }

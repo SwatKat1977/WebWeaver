@@ -402,6 +402,7 @@ class RecordingViewerPanel(wx.Panel):
                                    RecordingEventType.REST_API,
                                    RecordingEventType.SENDKEYS,
                                    RecordingEventType.SCROLL,
+                                   RecordingEventType.USER_VARIABLE,
                                    RecordingEventType.WAIT]:
             payload["control_type"] = "unknown"
 
