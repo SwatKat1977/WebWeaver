@@ -464,6 +464,11 @@ class RecordingPlaybackSession:
         elif operator == AssertionOperator.IS_NOT_NONE:
             asserter.assert_that(left_value).is_not_none()
 
+    def _playback_user_variable(self,
+                                variable_name: str,
+                                variable_value: str):
+        self._context.set_variable(variable_name, variable_value)
+
     def _parse_boolean(self, value: str) -> bool:
         if isinstance(value, bool):
             return value
