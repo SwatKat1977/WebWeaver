@@ -40,6 +40,7 @@ class RecordingEventType(enum.Enum):
     SCROLL = "scroll"
     SENDKEYS = "sendkeys"
     WAIT = "wait"
+    USER_VARIABLE = "user_variable"
     UNKNOWN = "unknown"
 
 

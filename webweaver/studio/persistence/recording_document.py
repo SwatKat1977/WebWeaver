@@ -281,6 +281,24 @@ class SendkeysPayload(BasePayload):
     keys: List[SendkeysKeyDefinition]
 
 
+@dataclass
+class UserVariablePayload(BasePayload):
+    """Payload representing a user-defined variable recording step.
+
+    This payload stores the name and value of a user variable defined
+    within a recording step. The variable can later be referenced by
+    other steps during playback.
+
+    Attributes:
+        name (str):
+            The name of the user-defined variable.
+        value (str):
+            The value assigned to the variable.
+    """
+    name: str
+    value: str
+
+
 class RecordingDocument:
     """
     File-backed document model representing a loaded recording.

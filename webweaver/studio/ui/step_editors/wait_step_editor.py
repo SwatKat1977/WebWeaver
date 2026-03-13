@@ -66,8 +66,8 @@ class WaitStepEditor(FancyDialogBase):
 
     def _ok_event(self):
         new_payload = WaitPayload(
-            label=self._step_label_ctrl.GetValue().strip(),
-            duration_ms=self._duration_ctrl.GetValue())
+            label=self._field_step_label.GetValue().strip(),
+            duration_ms=self._field_duration.GetValue())
 
         self._event["payload"] = dataclasses.asdict(new_payload)
         self.changed = True

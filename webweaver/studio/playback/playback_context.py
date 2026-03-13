@@ -20,6 +20,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import re
 
 
+class PlaybackVariableError(Exception):
+    """Raised when a required playback variable is missing."""
+
+
 class PlaybackContext:
     """
     Stores and resolves runtime variables used during playback.
@@ -52,18 +56,23 @@ class PlaybackContext:
         """
         self._variables[name] = value
 
-    def get_variable(self, name: str, default=None):
-        """
-        Retrieve a variable value.
+    def get_variable(self, name: str):
+        """Return a stored variable.
 
         Args:
             name: Variable name.
-            default: Value returned if the variable does not exist.
 
         Returns:
-            The stored variable value, or `default` if missing.
+            The stored variable value.
+
+        Raises:
+            PlaybackVariableError: If the variable does not exist.
         """
-        return self._variables.get(name, default)
+        try:
+            return self._variables[name]
+        except KeyError as ex:
+            raise PlaybackVariableError(
+                f"Playback variable '{name}' was not found") from ex
 
     def has_variable(self, name: str) -> bool:
         """
@@ -76,23 +85,6 @@ class PlaybackContext:
             True if the variable exists, otherwise False.
         """
         return name in self._variables
-
-    def require_variable(self, name: str):
-        """
-        Retrieve a variable, raising if it does not exist.
-
-        Args:
-            name: Variable name.
-
-        Returns:
-            The stored variable value.
-
-        Raises:
-            KeyError: If the variable is not present.
-        """
-        if name not in self._variables:
-            raise KeyError(f"Playback variable '{name}' not found")
-        return self._variables[name]
 
     def variables(self) -> dict[str, object]:
         """
@@ -127,7 +119,8 @@ class PlaybackContext:
 
         def replace(match):
             name = match.group(1)
-            value = self.get_variable(name, "")
+            print(self._variables)
+            value = self.get_variable(name)
             return str(value)
 
         return self._template_pattern.sub(replace, text)

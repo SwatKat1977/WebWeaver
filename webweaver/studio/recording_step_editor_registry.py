@@ -39,6 +39,8 @@ from webweaver.studio.ui.step_editors.sendkeys_step_editor import \
     SendkeysStepEditor
 from webweaver.studio.ui.step_editors.type_step_editor import \
     TypeStepEditor
+from webweaver.studio.ui.step_editors.user_variable_step_editor import \
+    UserVariableStepEditor
 from webweaver.studio.ui.step_editors.wait_step_editor import \
     WaitStepEditor
 
@@ -131,5 +133,7 @@ def register_step_editors():
                                          ScrollType)
     RecordingStepEditorRegistry.register(RecordingEventType.SENDKEYS,
                                          SendkeysStepEditor)
+    RecordingStepEditorRegistry.register(RecordingEventType.USER_VARIABLE,
+                                         UserVariableStepEditor)
     RecordingStepEditorRegistry.register(RecordingEventType.WAIT,
                                          WaitStepEditor)
