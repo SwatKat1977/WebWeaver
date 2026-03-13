@@ -23,7 +23,6 @@ import json
 from logging import Logger
 import time
 import typing
-import selenium
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 from webweaver.studio.api_client import ApiClient
