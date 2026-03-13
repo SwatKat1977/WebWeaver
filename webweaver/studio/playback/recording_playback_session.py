@@ -292,31 +292,6 @@ class RecordingPlaybackSession:
         self._logger.debug("[PLAYBACK EVENT] Type: %s", updated_payload)
         return self._browser.playback_type(updated_payload)
 
-    '''
-                updated_payload = payload.copy()
-                xpath = updated_payload.get("xpath", "")
-                value = updated_payload.get("value", "")
-
-                try:
-                    xpath = self._context.resolve_template(xpath)
-                except PlaybackVariableError:
-                    return PlaybackStepResult.fail(
-                        f"DOM Type xpath variable '{xpath}' is not defined")
-
-                try:
-                    value = self._context.resolve_template(value)
-                except PlaybackVariableError:
-                    return PlaybackStepResult.fail(
-                        f"DOM Type value variable '{value}' is not defined")
-
-                updated_payload["xpath"] = xpath
-                updated_payload["value"] = value
-
-                self._logger.debug("[PLAYBACK EVENT] Text: %s", updated_payload)
-                return self._browser.playback_type(updated_payload)
-
-    '''
-
     def _perform_wait(self, event):
         payload = event.get("payload", {})
         duration = payload.get("duration_ms")
