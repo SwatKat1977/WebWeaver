@@ -209,61 +209,10 @@ class RecordingPlaybackSession:
                 return self._browser.playback_get(payload, self._context)
 
             if event_type == "dom.select":
-                updated_payload = payload.copy()
-                xpath = updated_payload.get("xpath", "")
-                value = updated_payload.get("value", "")
-
-                try:
-                    xpath = self._context.resolve_template(xpath)
-                except PlaybackVariableError:
-                    return PlaybackStepResult.fail(
-                        f"DOM Type xpath variable '{xpath}' is not defined")
-
-                try:
-                    value = self._context.resolve_template(value)
-                except PlaybackVariableError:
-                    return PlaybackStepResult.fail(
-                        f"DOM Type value variable '{value}' is not defined")
-
-                updated_payload["xpath"] = xpath
-                updated_payload["value"] = value
-
-                self._logger.debug("[PLAYBACK EVENT] Dropdown: %s", updated_payload)
-                return self._browser.playback_select(updated_payload)
+                return self._perform_dom_select(payload)
 
             if event_type == "dom.type":
-                updated_payload = payload.copy()
-                xpath = updated_payload.get("xpath", "")
-                value = updated_payload.get("value", "")
-
-                try:
-                    xpath = self._context.resolve_template(xpath)
-                except PlaybackVariableError:
-                    return PlaybackStepResult.fail(
-                        f"DOM Type xpath variable '{xpath}' is not defined")
-
-                try:
-                    value = self._context.resolve_template(value)
-                except PlaybackVariableError:
-                    return PlaybackStepResult.fail(
-                        f"DOM Type value variable '{value}' is not defined")
-
-                updated_payload["xpath"] = xpath
-                updated_payload["value"] = value
-
-                self._logger.debug("[PLAYBACK EVENT] Text: %s", updated_payload)
-                return self._browser.playback_type(updated_payload)
-
-            if event_type == "nav.goto":
-                url: str = payload.get("url")
-                self._logger.debug("[PLAYBACK EVENT] Navigate to '%s'", url)
-
-                try:
-                    self._browser.open_page(url)
-                except selenium.common.exceptions.WebDriverException:
-                    return PlaybackStepResult.fail(f"Unable to navigate to '{url}'")
-
-                return PlaybackStepResult.success()
+                return self._perform_dom_type(payload)
 
             if event_type == "rest_api":
                 self._logger.debug("[PLAYBACK EVENT] REST API: %s ", payload)
@@ -296,6 +245,77 @@ class RecordingPlaybackSession:
             # Absolute last-resort safety net
             self._logger.exception("Playback event crashed")
             return PlaybackStepResult.fail(str(e))
+
+    def _perform_dom_select(self, payload):
+        updated_payload = payload.copy()
+        xpath = updated_payload.get("xpath", "")
+        value = updated_payload.get("value", "")
+
+        try:
+            xpath = self._context.resolve_template(xpath)
+        except PlaybackVariableError:
+            return PlaybackStepResult.fail(
+                f"DOM Select xpath variable '{xpath}' is not defined")
+
+        try:
+            value = self._context.resolve_template(value)
+        except PlaybackVariableError:
+            return PlaybackStepResult.fail(
+                f"DOM Select value variable '{value}' is not defined")
+
+        updated_payload["xpath"] = xpath
+        updated_payload["value"] = value
+
+        self._logger.debug("[PLAYBACK EVENT] Text: %s", updated_payload)
+        return self._browser.playback_select(updated_payload)
+
+    def _perform_dom_type(self, payload):
+        updated_payload = payload.copy()
+        xpath = updated_payload.get("xpath", "")
+        value = updated_payload.get("value", "")
+
+        try:
+            xpath = self._context.resolve_template(xpath)
+        except PlaybackVariableError:
+            return PlaybackStepResult.fail(
+                f"DOM Type xpath variable '{xpath}' is not defined")
+
+        try:
+            value = self._context.resolve_template(value)
+        except PlaybackVariableError:
+            return PlaybackStepResult.fail(
+                f"DOM Type value variable '{value}' is not defined")
+
+        updated_payload["xpath"] = xpath
+        updated_payload["value"] = value
+
+        self._logger.debug("[PLAYBACK EVENT] Type: %s", updated_payload)
+        return self._browser.playback_type(updated_payload)
+
+    '''
+                updated_payload = payload.copy()
+                xpath = updated_payload.get("xpath", "")
+                value = updated_payload.get("value", "")
+
+                try:
+                    xpath = self._context.resolve_template(xpath)
+                except PlaybackVariableError:
+                    return PlaybackStepResult.fail(
+                        f"DOM Type xpath variable '{xpath}' is not defined")
+
+                try:
+                    value = self._context.resolve_template(value)
+                except PlaybackVariableError:
+                    return PlaybackStepResult.fail(
+                        f"DOM Type value variable '{value}' is not defined")
+
+                updated_payload["xpath"] = xpath
+                updated_payload["value"] = value
+
+                self._logger.debug("[PLAYBACK EVENT] Text: %s", updated_payload)
+                return self._browser.playback_type(updated_payload)
+
+    '''
 
     def _perform_wait(self, event):
         payload = event.get("payload", {})
