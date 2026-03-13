@@ -29,7 +29,7 @@ from selenium.webdriver.common.keys import Keys
 from webweaver.studio.api_client import ApiClient
 from webweaver.studio.browsing.studio_browser import (PlaybackStepResult,
                                                       StudioBrowser)
-from webweaver.studio.playback.playback_context import PlaybackContext
+from webweaver.studio.playback.playback_context import PlaybackContext, PlaybackVariableError
 from webweaver.studio.recording.recording import Recording
 from webweaver.common.assertion import Assertions, AssertionFailure
 from webweaver.common.assertion_operator import (AssertionOperator,
@@ -240,6 +240,11 @@ class RecordingPlaybackSession:
                 self._logger.debug("[PLAYBACK EVENT] Sendkeys: %s", payload)
                 return self._perform_sendkeys(event)
 
+            if event_type == "user_variable":
+                self._logger.debug("[PLAYBACK EVENT] User Variable: %s", payload)
+                return self._playback_user_variable(payload.get("name"),
+                                                    payload.get("value"))
+
             if event_type == "wait":
                 self._logger.debug("[PLAYBACK EVENT] Wait: %s ms", payload)
                 self._perform_wait(event)
@@ -341,6 +346,18 @@ class RecordingPlaybackSession:
         soft_assert: bool = bool(payload.get("soft_assert"))
         left_value = payload.get("left_value")
         right_value = payload.get("right_value")
+
+        try:
+            left_value = self._context.resolve_template(left_value)
+        except PlaybackVariableError:
+            return PlaybackStepResult.fail(
+                f"Assert left variable '{left_value}' is not defined")
+
+        try:
+            right_value = self._context.resolve_template(right_value)
+        except PlaybackVariableError:
+            return PlaybackStepResult.fail(
+                f"Assert right variable '{left_value}' is not defined")
 
         operator_enum = AssertionOperator(operator)
 
@@ -468,6 +485,7 @@ class RecordingPlaybackSession:
                                 variable_name: str,
                                 variable_value: str):
         self._context.set_variable(variable_name, variable_value)
+        return PlaybackStepResult.success()
 
     def _parse_boolean(self, value: str) -> bool:
         if isinstance(value, bool):
