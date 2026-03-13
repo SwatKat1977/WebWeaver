@@ -120,9 +120,7 @@ class PlaybackContext:
         def replace(match):
             name = match.group(1)
             print(self._variables)
-            value = self.get_variable(name, "")
-            print("Get variable is: ", value)
+            value = self.get_variable(name)
             return str(value)
 
-        print(f"I need to resolve '{text}'")
         return self._template_pattern.sub(replace, text)
