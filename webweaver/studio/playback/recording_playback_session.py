@@ -209,12 +209,50 @@ class RecordingPlaybackSession:
                 return self._browser.playback_get(payload, self._context)
 
             if event_type == "dom.select":
-                self._logger.debug("[PLAYBACK EVENT] Dropdown: %s", payload)
-                return self._browser.playback_select(payload)
+                updated_payload = payload.copy()
+                xpath = updated_payload.get("xpath", "")
+                value = updated_payload.get("value", "")
+
+                try:
+                    xpath = self._context.resolve_template(xpath)
+                except PlaybackVariableError:
+                    return PlaybackStepResult.fail(
+                        f"DOM Type xpath variable '{xpath}' is not defined")
+
+                try:
+                    value = self._context.resolve_template(value)
+                except PlaybackVariableError:
+                    return PlaybackStepResult.fail(
+                        f"DOM Type value variable '{value}' is not defined")
+
+                updated_payload["xpath"] = xpath
+                updated_payload["value"] = value
+
+                self._logger.debug("[PLAYBACK EVENT] Dropdown: %s", updated_payload)
+                return self._browser.playback_select(updated_payload)
 
             if event_type == "dom.type":
-                self._logger.debug("[PLAYBACK EVENT] Text: %s", payload)
-                return self._browser.playback_type(payload)
+                updated_payload = payload.copy()
+                xpath = updated_payload.get("xpath", "")
+                value = updated_payload.get("value", "")
+
+                try:
+                    xpath = self._context.resolve_template(xpath)
+                except PlaybackVariableError:
+                    return PlaybackStepResult.fail(
+                        f"DOM Type xpath variable '{xpath}' is not defined")
+
+                try:
+                    value = self._context.resolve_template(value)
+                except PlaybackVariableError:
+                    return PlaybackStepResult.fail(
+                        f"DOM Type value variable '{value}' is not defined")
+
+                updated_payload["xpath"] = xpath
+                updated_payload["value"] = value
+
+                self._logger.debug("[PLAYBACK EVENT] Text: %s", updated_payload)
+                return self._browser.playback_type(updated_payload)
 
             if event_type == "nav.goto":
                 url: str = payload.get("url")
@@ -271,6 +309,18 @@ class RecordingPlaybackSession:
         rest_call = payload.get("rest_call")
         call_body = payload.get("body")
         output_name = payload.get("output_variable")
+
+        try:
+            base_url = self._context.resolve_template(base_url)
+        except PlaybackVariableError:
+            return PlaybackStepResult.fail(
+                f"REST API base url variable '{base_url}' is not defined")
+
+        try:
+            call_body = self._context.resolve_template(call_body)
+        except PlaybackVariableError:
+            return PlaybackStepResult.fail(
+                f"REST API body variable '{call_body}' is not defined")
 
         api_client = ApiClient()
 
