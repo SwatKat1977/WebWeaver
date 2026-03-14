@@ -103,7 +103,7 @@ class RecordingPlaybackSession:
         self._running = False
         self._logger = logger.getChild(__name__)
         self.callback_events = PlaybackCallbackEvents()
-        self._context = PlaybackContext()
+        self._context = PlaybackContext(self._browser.raw)
         self._hard_assert: Assertions = Assertions(soft=False,
                                                    logger=self._logger)
         self._soft_assert: Assertions = Assertions(soft=True,
