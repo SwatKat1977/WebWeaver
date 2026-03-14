@@ -17,7 +17,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from dataclasses import dataclass
 from urllib.parse import urlparse, parse_qs
 import re
 
@@ -113,6 +112,29 @@ class PlaybackContext:
         self._variables.clear()
 
     def resolve_template(self, text: str) -> str:
+        """
+        Resolve template variables within the given text.
+
+        This method scans the input string for template expressions matching
+        the instance's template pattern and replaces them with their resolved
+        values. Resolution occurs in two ways:
+
+        1. **Built-in variables** – If the template name matches a registered
+           built-in handler in ``self._builtins``, the corresponding callable is
+           executed with the optional argument captured from the template.
+        2. **User variables** – If the name is not a built-in, the value is
+           retrieved from the user-defined variables via ``self.get_variable``.
+
+        Each resolved value is converted to a string before substitution.
+
+        Args:
+            text (str): The input string containing template expressions to
+                resolve.
+
+        Returns:
+            str: A new string where all template expressions have been replaced
+            with their resolved values.
+        """
 
         def replace(match):
             name = match.group(1)
@@ -129,19 +151,16 @@ class PlaybackContext:
 
         return self._template_pattern.sub(replace, text)
 
-    def _builtin_current_url(self, arg=None):
+    def _builtin_current_url(self, _arg=None):
         return self._driver.current_url
 
-
-    def _builtin_domain(self, arg=None):
+    def _builtin_domain(self, _arg=None):
         return urlparse(self._driver.current_url).hostname or ""
 
-
-    def _builtin_protocol(self, arg=None):
+    def _builtin_protocol(self, _arg=None):
         return urlparse(self._driver.current_url).scheme
 
-
-    def _builtin_path(self, arg=None):
+    def _builtin_path(self, _arg=None):
         return urlparse(self._driver.current_url).path
 
     def _builtin_url_parameter(self, arg):
