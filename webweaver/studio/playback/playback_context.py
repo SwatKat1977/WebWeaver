@@ -17,6 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from urllib.parse import urlparse, parse_qs
 import re
 
 
@@ -38,13 +39,22 @@ class PlaybackContext:
         # -> "Hello alice"
     """
 
-    _template_pattern = re.compile(r"\{\{([a-zA-Z0-9_\.\-]+)\}\}")
+    _template_pattern = re.compile(r"\{\{([a-zA-Z0-9_\.\-]+)(?:\|([^}]+))?\}\}")
 
-    def __init__(self):
+    def __init__(self, driver):
         """
         Initialise an empty playback context.
         """
+        self._driver = driver
         self._variables: dict[str, object] = {}
+
+        self._builtins = {
+            "CURRENT_URL": self._builtin_current_url,
+            "URL_DOMAIN": self._builtin_domain,
+            "URL_PROTOCOL": self._builtin_protocol,
+            "URL_PATH": self._builtin_path,
+            "URL_PARAMETER": self._builtin_url_parameter
+        }
 
     def set_variable(self, name: str, value):
         """
@@ -103,24 +113,59 @@ class PlaybackContext:
 
     def resolve_template(self, text: str) -> str:
         """
-        Replace {{variable}} placeholders in text using stored variables.
+        Resolve template variables within the given text.
 
-        Variable names may include letters, digits, underscores,
-        dots, and hyphens.
+        This method scans the input string for template expressions matching
+        the instance's template pattern and replaces them with their resolved
+        values. Resolution occurs in two ways:
 
-        Missing variables resolve to an empty string.
+        1. **Built-in variables** – If the template name matches a registered
+           built-in handler in ``self._builtins``, the corresponding callable is
+           executed with the optional argument captured from the template.
+        2. **User variables** – If the name is not a built-in, the value is
+           retrieved from the user-defined variables via ``self.get_variable``.
+
+        Each resolved value is converted to a string before substitution.
 
         Args:
-            text: Input text containing optional template placeholders.
+            text (str): The input string containing template expressions to
+                resolve.
 
         Returns:
-            The resolved string with placeholders replaced.
+            str: A new string where all template expressions have been replaced
+            with their resolved values.
         """
 
         def replace(match):
             name = match.group(1)
-            print(self._variables)
+            arg = match.group(2)
+
+            # Built-in variable
+            if name in self._builtins:
+                value = self._builtins[name](arg)
+                return str(value)
+
+            # User variable
             value = self.get_variable(name)
             return str(value)
 
         return self._template_pattern.sub(replace, text)
+
+    def _builtin_current_url(self, _arg=None):
+        return self._driver.current_url
+
+    def _builtin_domain(self, _arg=None):
+        return urlparse(self._driver.current_url).hostname or ""
+
+    def _builtin_protocol(self, _arg=None):
+        return urlparse(self._driver.current_url).scheme
+
+    def _builtin_path(self, _arg=None):
+        return urlparse(self._driver.current_url).path
+
+    def _builtin_url_parameter(self, arg):
+        if not arg:
+            return ""
+
+        params = parse_qs(urlparse(self._driver.current_url).query)
+        return params.get(arg, [""])[0]

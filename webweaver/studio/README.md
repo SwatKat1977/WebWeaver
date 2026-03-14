@@ -1,3 +1,29 @@
+
+
+# Built-In User Variables
+
+User variables are enclosed in {{ and }}
+
+## CURRENT_URL
+
+The current url from the browser, e.g. https://www.saucedemo.com/
+
+## URL_DOMAIN
+For the current url, return just the domain name, so for https://www.saucedemo.com/,
+the value returned would be www.saucedemo.com.
+
+## URL_PROTOCOL
+For the current url, return just the protocol, so for https://www.saucedemo.com/,
+the value returned would be https.
+
+## URL_PATH
+For the current url, return just the url path, so for https://www.saucedemo.com/level1/level2,
+the value returned would be /level1/level2.
+
+## URL_PARAMETER
+For the current url, return a url parameter. If url was https://www.saucedemo.com/?name=SwatKat,
+to get the value of name you would use {{URL_PARAMETER|name}}, SwatKat is returned.
+
 # Assertions
 
 <table>
