@@ -322,6 +322,19 @@ class MainToolbar:
     @staticmethod
     def set_playback_start_stop_button(toolbar: wx.aui.AuiToolBar,
                                        started: bool):
+        """Updates the playback start/stop toolbar button.
+
+        Changes the toolbar button icon and tooltip depending on whether
+        playback is currently running.
+
+        Args:
+            toolbar (wx.aui.AuiToolBar): The toolbar containing the playback
+                start/stop tool.
+            started (bool): True if playback has started and the button should
+                display the "Stop" icon and tooltip. False if playback is not
+                running and the button should display the "Start" icon and
+                tooltip.
+        """
         if started:
             toolbar.SetToolBitmap(TOOLBAR_ID_PLAYBACK_START_STOP,
                                   load_playback_toolbar_stop_icon())
