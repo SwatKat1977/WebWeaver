@@ -186,8 +186,6 @@ class StudioMainFrame(wx.Frame):
         # Recording Playback Parameters
         # --------------------------------------------------------------
         self._playback_session: Optional[RecordingPlaybackSession] = None
-        self._playback_timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self._on_playback_timer, self._playback_timer)
 
         # Recording timer for capturing elements.
         self._recording_timer = wx.Timer(self)
@@ -1613,7 +1611,6 @@ class StudioMainFrame(wx.Frame):
         self._playback_session.callback_events.on_playback_finished = self._on_playback_finished
 
         self._playback_session.start()
-        self._playback_timer.Start(200)
 
     def on_pause_recording_playback(self, _evt):
         """
@@ -1629,15 +1626,6 @@ class StudioMainFrame(wx.Frame):
         self._state_controller.on_solution_loaded()
         # self._stop_playback()
 
-    def _on_playback_timer(self, _evt):
-        if not self._playback_session:
-            return
-
-        still_running = self._playback_session.step()
-        if not still_running:
-            self._playback_timer.Stop()
-            self._state_controller.on_solution_loaded()
-
     def _on_playback_step_started(self, index: int):
         viewer = self._workspace_panel.get_active_viewer()
         if viewer:
@@ -1649,8 +1637,7 @@ class StudioMainFrame(wx.Frame):
             viewer.timeline_mark_passed(index)
 
     def _on_playback_step_failed(self, index: int, error: str):
-        # Stop playback immediately
-        self._playback_timer.Stop()
+        # Stop playback session.
         self._playback_session = None
         self._state_controller.on_solution_loaded()
 
@@ -1660,7 +1647,8 @@ class StudioMainFrame(wx.Frame):
             wx.MessageBox(error, "Playback Failed", wx.ICON_ERROR)
 
     def _on_playback_finished(self):
-        self._playback_timer.Stop()
+        self._playback_session = None
+        self._state_controller.on_solution_loaded()
 
     def _request_recording_toolbar_update(self):
         if self._pending_recording_toolbar_update:
