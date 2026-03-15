@@ -21,8 +21,9 @@ import asyncio
 from dataclasses import dataclass
 import json
 from logging import Logger
-import time
+import threading
 import typing
+import wx
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 from webweaver.studio.api_client import ApiClient
@@ -108,6 +109,8 @@ class RecordingPlaybackSession:
                                                    logger=self._logger)
         self._soft_assert: Assertions = Assertions(soft=True,
                                                    logger=self._logger)
+        self._thread = None
+        self._stop_event = threading.Event()
 
     def start(self):
         """
@@ -121,6 +124,14 @@ class RecordingPlaybackSession:
         self._index = 0
         self._context.clear()
 
+        self._stop_event.clear()
+
+        self._thread = threading.Thread(
+            target=self._playback_loop,
+            daemon=True
+        )
+        self._thread.start()
+
     def stop(self):
         """
         Stop playback.
@@ -129,6 +140,7 @@ class RecordingPlaybackSession:
         executed until start() is called again.
         """
         self._running = False
+        self._stop_event.set()
 
     def step(self) -> bool:
         """
@@ -150,33 +162,41 @@ class RecordingPlaybackSession:
         if self._index >= len(self._recording.events):
             self.stop()
             if self.callback_events.on_playback_finished:
-                self.callback_events.on_playback_finished()
+                wx.CallAfter(self.callback_events.on_playback_finished)
 
             return False
 
         current_index = self._index
 
         if self.callback_events.on_step_started:
-            self.callback_events.on_step_started(current_index)
+            wx.CallAfter(self.callback_events.on_step_started, current_index)
 
         event = self._recording.events[current_index]
         result = self._execute_event(event)
 
         if not result.ok:
             if self.callback_events.on_step_failed:
-                self.callback_events.on_step_failed(current_index,
-                                                     result.error)
+                wx.CallAfter(self.callback_events.on_step_failed,
+                             current_index,
+                             result.error)
 
             self.stop()
             return False
 
         # success
         if self.callback_events.on_step_passed:
-            self.callback_events.on_step_passed(current_index)
+            wx.CallAfter(self.callback_events.on_step_passed, current_index)
 
         self._index += 1
 
         return True
+
+    def _playback_loop(self):
+        while self._running and not self._stop_event.is_set():
+            still_running = self.step()
+
+            if not still_running:
+                break
 
     def _execute_event(self, event: dict):
         """
@@ -233,9 +253,7 @@ class RecordingPlaybackSession:
 
             if event_type == "wait":
                 self._logger.debug("[PLAYBACK EVENT] Wait: %s ms", payload)
-                self._perform_wait(event)
-                return PlaybackStepResult.success()
-
+                return self._perform_wait(event)
 
             self._logger.debug("[PLAYBACK EVENT] Unknown event: %s", event_type)
             return PlaybackStepResult.success()
@@ -294,7 +312,12 @@ class RecordingPlaybackSession:
     def _perform_wait(self, event):
         payload = event.get("payload", {})
         duration = payload.get("duration_ms")
-        time.sleep(duration / 1000)
+
+        interrupted = self._stop_event.wait(duration / 1000)
+        if interrupted:
+            return PlaybackStepResult.fail("Playback stopped")
+
+        return PlaybackStepResult.success()
 
     def _perform_rest_api(self, event):
         payload = event.get("payload", {})
