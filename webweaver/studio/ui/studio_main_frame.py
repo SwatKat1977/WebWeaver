@@ -1293,9 +1293,6 @@ class StudioMainFrame(wx.Frame):
         enabled and updated according to the current StudioState. Browser-related
         toolbar state is updated separately.
         """
-        # First: disable everything that is state-dependent
-        MainToolbar.set_all_core_disabled(self._toolbar)
-
         state = ToolbarState()
 
         # Only New/Open make sense
@@ -1306,7 +1303,7 @@ class StudioMainFrame(wx.Frame):
             browser_is_alive = self._web_browser is not None and \
                 self._web_browser.is_alive()
             can_start_playback = self._workspace_panel.has_active_recording() \
-                        and browser_is_alive
+                                 and browser_is_alive
 
             state = ToolbarState(can_close=True,
                                  can_inspect=browser_is_alive,
@@ -1342,6 +1339,8 @@ class StudioMainFrame(wx.Frame):
             state = ToolbarState(can_close=False,
                                  can_record=False,
                                  can_inspect=False,
+                                 is_playback_running=True,
+                                 can_start_playback=True,
                                  can_step_playback=True,
                                  can_stop_playback=True)
 
@@ -1349,7 +1348,7 @@ class StudioMainFrame(wx.Frame):
             state = ToolbarState(can_pause=True,
                                  is_playback_paused=True)
 
-        MainToolbar.apply_core_state(self._toolbar, state)
+        MainToolbar.apply_state(self._toolbar, state)
         self._manage_browser_state()
 
     def _update_recording_toolbar_state(self) -> None:
@@ -1586,7 +1585,7 @@ class StudioMainFrame(wx.Frame):
         self._update_toolbar_state()
         self.rebuild_code_generation_menu()
 
-    def on_start_recording_playback(self, _evt):
+    def on_recording_playback_start_stop(self, _evt):
         """
         Handle the recording playback 'play' button being pressed.
         """
@@ -1598,19 +1597,33 @@ class StudioMainFrame(wx.Frame):
         if viewer:
             viewer.timeline_reset_playback_state()
 
-        self._state_controller.on_recording_playback_running()
+        if self._current_state in (StudioState.RECORDING_PLAYBACK_RUNNING,
+                                   StudioState.RECORDING_PLAYBACK_PAUSED):
 
-        recording = load_recording_from_context(ctx)
+            if self._playback_session:
+                self._playback_session.stop()
+                self._playback_session = None
 
-        self._playback_session = RecordingPlaybackSession(self._web_browser,
-                                                          recording,
-                                                          self._logger)
-        self._playback_session.callback_events.on_step_started = self._on_playback_step_started
-        self._playback_session.callback_events.on_step_passed = self._on_playback_step_passed
-        self._playback_session.callback_events.on_step_failed = self._on_playback_step_failed
-        self._playback_session.callback_events.on_playback_finished = self._on_playback_finished
+            self._state_controller.on_solution_loaded()
 
-        self._playback_session.start()
+        else:
+            self._state_controller.on_recording_playback_running()
+
+            recording = load_recording_from_context(ctx)
+
+            self._playback_session = RecordingPlaybackSession(self._web_browser,
+                                                              recording,
+                                                              self._logger)
+            self._playback_session.callback_events.on_step_started = \
+                self._on_playback_step_started
+            self._playback_session.callback_events.on_step_passed = \
+                self._on_playback_step_passed
+            self._playback_session.callback_events.on_step_failed = \
+                self._on_playback_step_failed
+            self._playback_session.callback_events.on_playback_finished = \
+                self._on_playback_finished
+
+            self._playback_session.start()
 
     def on_pause_recording_playback(self, _evt):
         """
@@ -1618,16 +1631,6 @@ class StudioMainFrame(wx.Frame):
         """
         self._state_controller.on_recording_playback_pause()
         # self._pause_playback(ctx)
-
-    def on_stop_recording_playback(self, _evt):
-        """
-        Handle the recording playback 'stop' button being pressed.
-        """
-        if self._playback_session:
-            self._playback_session.stop()
-            self._playback_session = None
-
-        self._state_controller.on_solution_loaded()
 
     def _on_playback_step_started(self, index: int):
         viewer = self._workspace_panel.get_active_viewer()
