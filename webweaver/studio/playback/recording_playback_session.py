@@ -253,9 +253,7 @@ class RecordingPlaybackSession:
 
             if event_type == "wait":
                 self._logger.debug("[PLAYBACK EVENT] Wait: %s ms", payload)
-                self._perform_wait(event)
-                return PlaybackStepResult.success()
-
+                return self._perform_wait(event)
 
             self._logger.debug("[PLAYBACK EVENT] Unknown event: %s", event_type)
             return PlaybackStepResult.success()
@@ -314,7 +312,12 @@ class RecordingPlaybackSession:
     def _perform_wait(self, event):
         payload = event.get("payload", {})
         duration = payload.get("duration_ms")
-        self._stop_event.wait(duration / 1000)
+
+        interrupted = self._stop_event.wait(duration / 1000)
+        if interrupted:
+            return PlaybackStepResult.fail("Playback stopped")
+
+        return PlaybackStepResult.success()
 
     def _perform_rest_api(self, event):
         payload = event.get("payload", {})

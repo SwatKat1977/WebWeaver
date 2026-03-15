@@ -1623,8 +1623,11 @@ class StudioMainFrame(wx.Frame):
         """
         Handle the recording playback 'stop' button being pressed.
         """
+        if self._playback_session:
+            self._playback_session.stop()
+            self._playback_session = None
+
         self._state_controller.on_solution_loaded()
-        # self._stop_playback()
 
     def _on_playback_step_started(self, index: int):
         viewer = self._workspace_panel.get_active_viewer()
