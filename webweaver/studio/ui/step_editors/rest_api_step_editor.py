@@ -198,18 +198,22 @@ class RestApiStepEditor(FancyDialogBase):
             self._field_rest_call.SetFocus()
             return False
 
-        _, enum_val = REST_API_EVENT_TYPE_LABELS[
+        _, call_method_enum = REST_API_EVENT_TYPE_LABELS[
             self._field_call_method.GetSelection()]
+
+        _, body_type_enum = REST_API_BODY_TYPE_LABELS[
+            self._field_body_type.GetSelection()]
 
         body_text = self._field_call_body.GetValue().strip()
 
         self._event["payload"] = {
             "label": step_label,
             "base_url": base_url,
-            "call_type": enum_val.value,
+            "call_type": call_method_enum.value,
             "rest_call": rest_call,
             "output_variable": output_variable,
-            "body": body_text or None
+            "body": body_text or None,
+            "body_type": body_type_enum.value
         }
 
         self.changed = True
@@ -231,6 +235,7 @@ class RestApiStepEditor(FancyDialogBase):
         _, method = REST_API_EVENT_TYPE_LABELS[selected_index]
 
         self._field_call_body.Enable(method == RestApiCallType.POST)
+        self._field_body_type.Enable(method == RestApiCallType.POST)
 
     def _on_method_changed(self, _evt):
         """
