@@ -334,10 +334,17 @@ class RecordingPlaybackSession:
                 f"REST API base url variable '{base_url}' is not defined")
 
         try:
-            call_body = self._context.resolve_template(call_body)
+            rest_call = self._context.resolve_template(rest_call)
         except PlaybackVariableError:
             return PlaybackStepResult.fail(
-                f"REST API body variable '{call_body}' is not defined")
+                f"REST API call variable '{rest_call}' is not defined")
+
+        if call_body:
+            try:
+                call_body = self._context.resolve_template(call_body)
+            except PlaybackVariableError:
+                return PlaybackStepResult.fail(
+                    f"REST API body variable '{call_body}' is not defined")
 
         api_client = ApiClient()
 
@@ -347,12 +354,17 @@ class RecordingPlaybackSession:
             # -----------------------------
             if call_type == "get":
                 response = asyncio.run(api_client.call_api_get(
-                                       url=f"{base_url}{rest_call}",
-                                       json_data=call_body))
+                                       url=f"{base_url}{rest_call}"))
 
             elif call_type == "post":
+                if call_body is None:
+                    return PlaybackStepResult.fail("")
+
                 response = asyncio.run(api_client.call_api_post(
-                                       url=f"{base_url}{rest_call}"))
+                                       url=f"{base_url}{rest_call}",
+                                       body=call_body))
+
+                print(f"Response: Status = {response.status_code} | Body: {response.body}")
 
             else:
                 return PlaybackStepResult.fail(
