@@ -19,7 +19,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 from enum import Enum
 import wx
-from webweaver.studio.persistence.recording_document import RestApiPayload
+from webweaver.studio.persistence.recording_document import (RestApiPayload,
+                                                             RestApiBodyType)
 from webweaver.studio.ui.fancy_dialog_base import FancyDialogBase
 
 
@@ -34,12 +35,6 @@ class RestApiCallType(Enum):
     GET = "get"
     DELETE = "delete"
     POST = "post"
-
-
-class RestApiBodyType(Enum):
-    TEXT = 'raw_text'
-    JSON = 'JSON'
-    XML = 'XML'
 
 
 REST_API_EVENT_TYPE_LABELS: list[tuple[str, RestApiCallType]] = [

@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from dataclasses import asdict, dataclass
+from enum import Enum
 from pathlib import Path
 from typing import List, Optional
 from webweaver.studio.recording.recording_event_type import RecordingEventType
@@ -79,6 +80,7 @@ class AssertPayload(BasePayload):
     left_value: str = ""
     right_value: None | str = None
     soft_assert: bool = False
+
 
 @dataclass
 class DomCheckPayload(DomPayload):
@@ -170,6 +172,12 @@ class WaitPayload(BasePayload):
         duration_ms: Amount of time to wait, in milliseconds.
     """
     duration_ms: int
+
+
+class RestApiBodyType(Enum):
+    TEXT = 'Text'
+    JSON = 'JSON'
+    XML = 'XML'
 
 
 @dataclass

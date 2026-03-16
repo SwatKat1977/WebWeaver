@@ -19,16 +19,16 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
 import asyncio
 from dataclasses import dataclass
-from enum import Enum
 from typing import Any
-
 import aiohttp
+from webweaver.studio.persistence.recording_document import RestApiBodyType
 
 
-class RestApiBodyType(Enum):
-    TEXT = 'text/plain'
-    JSON = 'application/json'
-    XML = 'application/xml'
+REST_API_CONTENT_TYPE: dict[RestApiBodyType, str] = {
+    RestApiBodyType.TEXT: "text/plain",
+    RestApiBodyType.JSON: "application/json",
+    RestApiBodyType.XML: "application/xml"
+}
 
 
 @dataclass()
@@ -67,8 +67,8 @@ class ApiResponse:
     def __init__(self,
                  status_code: int = 0,
                  body: dict | str = None,
-                 content_type : str = None,
-                 exception_msg : str = None):
+                 content_type: str = None,
+                 exception_msg: str = None):
         """
         Initialise an ApiResponse instance.
 
@@ -135,7 +135,7 @@ class ApiClient:
         Returns:
             ApiResponse containing the result or error information.
         """
-        return await self._call_api("get", url, timeout)
+        return await self._call_api("get", url, timeout=timeout)
 
     async def call_api_delete(self, url: str, timeout: int = 2):
         """
@@ -148,7 +148,7 @@ class ApiClient:
         Returns:
             ApiResponse containing the result or error information.
         """
-        return await self._call_api("delete", url, timeout)
+        return await self._call_api("delete", url, timeout=timeout)
 
     async def call_api_patch(self,
                              url: str,
@@ -161,6 +161,7 @@ class ApiClient:
         Args:
             url: Target endpoint URL.
             body: Patch payload.
+            body_type: If using a body, specify the format of the message
             timeout: Total request timeout in seconds.
 
         Returns:
@@ -201,14 +202,14 @@ class ApiClient:
             or an error condition.
         """
         try:
-            async with aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=timeout)) as session:
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(
+                    total=timeout)) as session:
                 # Dynamically get the aiohttp method (get, post, delete, etc.)
                 http_method = getattr(session, method.lower())
 
-                headers = { "Content-Type": body_type.value }
+                headers = {"Content-Type": REST_API_CONTENT_TYPE[body_type]}
 
-                async with http_method(url, body=body, headers=headers) as resp:
+                async with http_method(url, data=body, headers=headers) as resp:
                     if resp.content_type == self.CONTENT_TYPE_JSON:
                         body = await resp.json()
                     else:
