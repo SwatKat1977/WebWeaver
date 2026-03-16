@@ -36,10 +36,22 @@ class RestApiCallType(Enum):
     POST = "post"
 
 
+class RestApiBodyType(Enum):
+    TEXT = 'raw_text'
+    JSON = 'JSON'
+    XML = 'XML'
+
+
 REST_API_EVENT_TYPE_LABELS: list[tuple[str, RestApiCallType]] = [
     ("GET", RestApiCallType.GET),
     ("DELETE", RestApiCallType.DELETE),
     ("POST", RestApiCallType.POST)
+]
+
+REST_API_BODY_TYPE_LABELS: list[tuple[str, RestApiBodyType]] = [
+    ("Text", RestApiBodyType.TEXT),
+    ("JSON", RestApiBodyType.JSON),
+    ("XML", RestApiBodyType.XML)
 ]
 
 
@@ -116,10 +128,21 @@ class RestApiStepEditor(FancyDialogBase):
         self._field_rest_call = self.add_field("REST Call:", wx.TextCtrl)
         self._field_rest_call.SetValue(payload.rest_call)
 
-        # -- Output variable
-        self._field_output_variable = self.add_field("Output Variable (optional):",
-                                                     wx.TextCtrl)
-        self._field_output_variable.SetValue(payload.output_variable)
+        # -- Body Type
+        self._field_body_type: wx.Choice = self.add_field(
+            "Body Type:",
+            lambda parent: wx.Choice(parent,
+                                     choices=[label for label, _ in
+                                              REST_API_BODY_TYPE_LABELS]))
+
+        # Set current body type selection
+        current_body_type = payload.body_type
+        for i, (label, _) in enumerate(REST_API_BODY_TYPE_LABELS):
+            if label == current_body_type:
+                self._field_body_type.SetSelection(i)
+                break
+        else:
+            self._field_body_type.SetSelection(0)
 
         # -- Call body
         self._field_call_body = self.add_full_width_field(
@@ -128,6 +151,11 @@ class RestApiStepEditor(FancyDialogBase):
                                        value=payload.body or "",
                                        style=wx.TE_MULTILINE))
         self._field_call_body.SetMinSize((450, 150))
+
+        # -- Output variable
+        self._field_output_variable = self.add_field("Output Variable (optional):",
+                                                     wx.TextCtrl)
+        self._field_output_variable.SetValue(payload.output_variable)
 
         self.finalise()
 

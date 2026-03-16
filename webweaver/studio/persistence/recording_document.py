@@ -202,12 +202,16 @@ class RestApiPayload(BasePayload):
         body (str | None):
             Optional request body payload, usually JSON-encoded text.
             ``None`` indicates that no body is sent.
+
+        body_type (str | None):
+            Optional request body payload.
     """
     base_url: str
     call_type: str
     rest_call: str
     output_variable: str | None = None
     body: str | None = None
+    body_type: str | None = None
 
 
 @dataclass
