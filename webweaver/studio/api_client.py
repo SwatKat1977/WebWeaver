@@ -19,6 +19,7 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
 import asyncio
 from dataclasses import dataclass
+import json
 from typing import Any
 import aiohttp
 from webweaver.studio.persistence.recording_document import RestApiBodyType
@@ -207,9 +208,21 @@ class ApiClient:
                 # Dynamically get the aiohttp method (get, post, delete, etc.)
                 http_method = getattr(session, method.lower())
 
-                headers = {"Content-Type": REST_API_CONTENT_TYPE[body_type]}
+                request_kwargs = {}
+                headers = {}
 
-                async with http_method(url, data=body, headers=headers) as resp:
+                if body is not None:
+                    if body_type == RestApiBodyType.JSON:
+                        if isinstance(body, str):
+                            body = json.loads(body)
+
+                        request_kwargs = {"json": body}
+                    else:
+                        headers = {"Content-Type": REST_API_CONTENT_TYPE[body_type]}
+
+                        request_kwargs = {"data": body}
+
+                async with http_method(url, headers=headers, **request_kwargs) as resp:
                     if resp.content_type == self.CONTENT_TYPE_JSON:
                         body = await resp.json()
                     else:

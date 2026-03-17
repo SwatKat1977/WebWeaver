@@ -29,6 +29,7 @@ from selenium.webdriver.common.keys import Keys
 from webweaver.studio.api_client import ApiClient
 from webweaver.studio.browsing.studio_browser import (PlaybackStepResult,
                                                       StudioBrowser)
+from webweaver.studio.persistence.recording_document import RestApiBodyType
 from webweaver.studio.playback.playback_context import PlaybackContext, PlaybackVariableError
 from webweaver.studio.recording.recording import Recording
 from webweaver.common.assertion import Assertions, AssertionFailure
@@ -324,6 +325,7 @@ class RecordingPlaybackSession:
         call_type = payload.get("call_type")
         base_url = payload.get("base_url")
         rest_call = payload.get("rest_call")
+        body_type = payload.get("body_type", RestApiBodyType.TEXT.value)
         call_body = payload.get("body")
         output_name = payload.get("output_variable")
 
@@ -348,23 +350,24 @@ class RecordingPlaybackSession:
 
         api_client = ApiClient()
 
+        body_type = RestApiBodyType[body_type.upper()]
+        call_url = f"{base_url}{rest_call}"
+
         try:
             # -----------------------------
             # Perform HTTP call
             # -----------------------------
             if call_type == "get":
-                response = asyncio.run(api_client.call_api_get(
-                                       url=f"{base_url}{rest_call}"))
+                response = asyncio.run(api_client.call_api_get(url=call_url))
 
             elif call_type == "post":
-                if call_body is None:
-                    return PlaybackStepResult.fail("")
-
                 response = asyncio.run(api_client.call_api_post(
-                                       url=f"{base_url}{rest_call}",
-                                       body=call_body))
+                    url=call_url, body=call_body, body_type=body_type))
 
                 print(f"Response: Status = {response.status_code} | Body: {response.body}")
+
+            elif call_type == "delete":
+                response = asyncio.run(api_client.call_api_delete(url=call_url))
 
             else:
                 return PlaybackStepResult.fail(
