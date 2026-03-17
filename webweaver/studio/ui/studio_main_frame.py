@@ -653,6 +653,23 @@ class StudioMainFrame(wx.Frame):
         dlg.Destroy()
 
     def on_close_solution_event(self, _event: wx.CommandEvent):
+        """Handle closing of the current solution and perform safe teardown.
+
+        This method coordinates shutdown of all runtime components tied to
+        the active solution. It stops playback, halts timers to prevent
+        concurrent updates during teardown, clears UI state, and releases
+        the browser instance.
+
+        The browser is terminated asynchronously to avoid blocking the UI
+        thread, and re-entrancy is guarded to prevent duplicate teardown.
+
+        Args:
+            _event (wx.CommandEvent): The wx event that triggered the handler.
+                This parameter is unused.
+
+        Returns:
+            None
+        """
         if self._closing_solution:
             return
 
@@ -789,9 +806,23 @@ class StudioMainFrame(wx.Frame):
         dialog.Destroy()
 
     def _quit_browser_safely(self, browser):
+        """Attempt to close the browser without raising exceptions.
+
+        This method calls ``browser.quit()`` and suppresses any exceptions
+        raised during shutdown. It is intended for use in cleanup or teardown
+        logic where failures during browser termination should not interrupt
+        execution.
+
+        Args:
+            browser: The browser instance to close. Expected to implement
+                a ``quit()`` method (e.g., a Selenium WebDriver wrapper).
+
+        Returns:
+            None
+        """
         try:
             browser.quit()
-        except Exception:
+        except WebDriverException:
             pass
 
     def _stop_recording_session(self):
