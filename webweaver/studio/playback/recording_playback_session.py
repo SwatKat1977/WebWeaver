@@ -143,6 +143,13 @@ class RecordingPlaybackSession:
         self._running = False
         self._stop_event.set()
 
+        if self._thread and self._thread.is_alive() \
+                and threading.current_thread() != self._thread:
+            self._thread.join(timeout=2)
+
+            if self._thread.is_alive():
+                self._logger.warning("Playback thread did not stop in time")
+
     def step(self) -> bool:
         """
         Execute the next event in the recording.
@@ -194,6 +201,9 @@ class RecordingPlaybackSession:
 
     def _playback_loop(self):
         while self._running and not self._stop_event.is_set():
+            if self._stop_event.is_set():
+                break
+
             still_running = self.step()
 
             if not still_running:
@@ -322,7 +332,6 @@ class RecordingPlaybackSession:
 
     def _perform_rest_api(self, event):
         # pylint: disable=too-many-return-statements
-
         payload = event.get("payload", {})
         call_type = payload.get("call_type")
         base_url = payload.get("base_url")

@@ -20,6 +20,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # pylint: disable=too-many-lines
 import json
 import logging
+import threading
 from pathlib import Path
 import sys
 from typing import Optional
@@ -157,6 +158,7 @@ class StudioMainFrame(wx.Frame):
         handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
         self._logger.addHandler(handler)
         self._pending_recording_toolbar_update = False
+        self._closing_solution = False
 
         self._toolbar = None
         """The main application toolbar (AUI-managed)."""
@@ -651,25 +653,45 @@ class StudioMainFrame(wx.Frame):
         dlg.Destroy()
 
     def on_close_solution_event(self, _event: wx.CommandEvent):
-        """
-        Handle the "Close Solution" command.
+        if self._closing_solution:
+            return
 
-        Closes the currently loaded solution, resets the application state,
-        and updates the UI to reflect that no solution is open.
-        """
-        self._current_solution = None
-        self._state_controller.on_solution_closed()
+        self._closing_solution = True
+        try:
+            if self._playback_session:
+                self._playback_session.stop()
+                self._playback_session = None
 
-        # Clear down solution explorer panel on close
-        self._solution_explorer_panel.show_no_solution()
+            # Stop timers first so they don't fight teardown
+            if self._recording_timer.IsRunning():
+                self._recording_timer.Stop()
 
-        # Clear down workspace panel on close
-        self._workspace_panel.clear()
+            if self._web_browser_heartbeat_timer.IsRunning():
+                self._web_browser_heartbeat_timer.Stop()
 
-        self._status_bar.set_status_bar_current_solution(None)
+            if self._inspector_timer.IsRunning():
+                self._inspector_timer.Stop()
 
-        if self._web_browser and self._web_browser.is_alive():
-            self._web_browser.quit()
+            # Hide inspector immediately if relevant
+            self._show_inspector_panel(False)
+
+            # Detach browser reference before UI/state churn
+            browser = self._web_browser
+            self._web_browser = None
+
+            self._current_solution = None
+            self._state_controller.on_solution_closed()
+
+            self._solution_explorer_panel.show_no_solution()
+            self._workspace_panel.clear()
+            self._status_bar.set_status_bar_current_solution(None)
+
+            if browser and browser.is_alive():
+                threading.Thread(target=self._quit_browser_safely,
+                                 args=(browser,),
+                                 daemon=True).start()
+        finally:
+            self._closing_solution = False
 
     def on_record_start_stop_event(self, _event: wx.CommandEvent):
         """
@@ -765,6 +787,12 @@ class StudioMainFrame(wx.Frame):
                     self._app_settings.code_generators_path
 
         dialog.Destroy()
+
+    def _quit_browser_safely(self, browser):
+        try:
+            browser.quit()
+        except Exception:
+            pass
 
     def _stop_recording_session(self):
         ok = self._recording_session.stop()
@@ -1562,6 +1590,9 @@ class StudioMainFrame(wx.Frame):
             self._aui_mgr.Update()
 
     def _on_workspace_active_changed(self, _evt):
+
+        if self._closing_solution or self._current_solution is None:
+            return
 
         pane = self._aui_mgr.GetPane("StepsToolbar")
 
