@@ -321,6 +321,8 @@ class RecordingPlaybackSession:
         return PlaybackStepResult.success()
 
     def _perform_rest_api(self, event):
+        # pylint: disable=too-many-return-statements
+
         payload = event.get("payload", {})
         call_type = payload.get("call_type")
         base_url = payload.get("base_url")

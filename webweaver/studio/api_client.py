@@ -202,6 +202,8 @@ class ApiClient:
             ApiResponse representing either a successful response
             or an error condition.
         """
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
+
         try:
             async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(
                     total=timeout)) as session:

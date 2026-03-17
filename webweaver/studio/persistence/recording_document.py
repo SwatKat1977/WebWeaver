@@ -175,6 +175,18 @@ class WaitPayload(BasePayload):
 
 
 class RestApiBodyType(Enum):
+    """Enumeration of supported REST API request body formats.
+
+    This enum defines the possible content types that can be used when
+    sending a request body in a REST API call. It is typically used to
+    determine how the request payload should be interpreted or serialized
+    before being sent.
+
+    Attributes:
+        TEXT: Plain text request body.
+        JSON: JSON-formatted request body.
+        XML: XML-formatted request body.
+    """
     TEXT = 'Text'
     JSON = 'JSON'
     XML = 'XML'
