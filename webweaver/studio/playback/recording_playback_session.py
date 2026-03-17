@@ -24,6 +24,7 @@ from logging import Logger
 import threading
 import typing
 import wx
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 from webweaver.studio.api_client import ApiClient
@@ -243,6 +244,17 @@ class RecordingPlaybackSession:
 
             if event_type == "dom.type":
                 return self._perform_dom_type(payload)
+
+            if event_type == "nav.goto":
+                url: str = payload.get("url")
+                self._logger.debug("[PLAYBACK EVENT] Navigate to '%s'", url)
+
+                try:
+                    self._browser.open_page(url)
+                except WebDriverException:
+                    return PlaybackStepResult.fail(f"Unable to navigate to '{url}'")
+
+                return PlaybackStepResult.success()
 
             if event_type == "rest_api":
                 self._logger.debug("[PLAYBACK EVENT] REST API: %s ", payload)
