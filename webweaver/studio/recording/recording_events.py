@@ -19,6 +19,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import wx
 
+# Recording context menu events
 EVT_OPEN_RECORDING = wx.NewEventType()
 EVT_DELETE_RECORDING = wx.NewEventType()
 EVT_RENAME_RECORDING = wx.NewEventType()
@@ -26,3 +27,12 @@ EVT_RENAME_RECORDING = wx.NewEventType()
 OpenRecordingEvent = wx.PyEventBinder(EVT_OPEN_RECORDING, 1)
 DeleteRecordingEvent = wx.PyEventBinder(EVT_DELETE_RECORDING, 1)
 RenameRecordingEvent = wx.PyEventBinder(EVT_RENAME_RECORDING, 1)
+
+# Test suite context menu events
+EVT_NEW_TEST_SUITE = wx.NewEventType()
+EVT_DELETE_TEST_SUITE = wx.NewEventType()
+EVT_RENAME_TEST_SUITE = wx.NewEventType()
+
+NewTestSuiteEvent = wx.PyEventBinder(EVT_NEW_TEST_SUITE, 1)
+DeleteTestSuiteEvent = wx.PyEventBinder(EVT_DELETE_TEST_SUITE, 1)
+RenameTestSuiteEvent = wx.PyEventBinder(EVT_RENAME_TEST_SUITE, 1)

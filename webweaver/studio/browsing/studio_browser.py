@@ -455,6 +455,57 @@ class StudioBrowser:
             self._last_url = current_url
             self._on_navigation()
 
+    def playback_sendkeys(self, payload: dict) -> PlaybackStepResult:
+        """
+        Executes a playback step that sends keyboard input to a target element.
+
+        This method retrieves the target element specified in the playback
+        payload and attempts to send the provided key value using Selenium's
+        ``send_keys``. The action is executed through ``_playback_element`` to
+        ensure consistent element lookup, error handling, and post-action
+        settling behaviour.
+
+        If Selenium raises a ``WebDriverException`` while sending the keys, the
+        failure is logged at debug level and the playback framework handles the
+        result according to the surrounding playback logic.
+
+        Args:
+            payload (dict):
+                Step payload containing the action parameters. Expected
+                structure:
+                {
+                    "target": <element locator information>,
+                    "keys": [
+                        {
+                            "value": <string to send to the element>
+                        }
+                    ]
+                }
+
+        Returns:
+            PlaybackStepResult:
+                The result returned by ``_playback_element`` indicating whether
+                the step passed or failed during playback.
+
+        Notes:
+            - Only the first entry in the ``keys`` list is currently used.
+            - ``settle_after=True`` ensures the playback engine waits for DOM
+              stability after the input action.
+        """
+        target = payload.get("target")
+        key = payload.get("keys")[0]
+        value = key.get("value")
+
+        def do_action(element):
+            try:
+                element.send_keys(value)
+                return
+
+            except WebDriverException as ex:
+                self._logger.debug("Native send_keys failed: %s", ex)
+
+        return self._playback_element(target, do_action, settle_after=True)
+
     def _on_navigation(self) -> None:
         try:
             WebDriverWait(self._driver, 10).until(

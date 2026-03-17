@@ -10,3 +10,9 @@ Pages - browser
 
 Scripts
 <a href="https://www.flaticon.com/free-icons/script" title="script icons">Script icons created by Smashicons - Flaticon</a>
+
+Test Suites - documents.png
+<a href="https://www.flaticon.com/free-icons/fact" title="fact icons">Fact icons created by Smashicons - Flaticon</a>
+
+Test Suite - test_suite.png
+<a href="https://www.flaticon.com/free-icons/paper" title="paper icons">Paper icons created by Freepik - Flaticon</a>

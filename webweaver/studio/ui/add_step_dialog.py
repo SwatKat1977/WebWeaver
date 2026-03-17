@@ -22,16 +22,17 @@ import wx
 from webweaver.studio.recording.recording_event_type import \
     RecordingEventType
 from webweaver.studio.persistence.recording_document import (
-                                              AssertPayload,
-                                              DomCheckPayload,
-                                              DomClickPayload,
-                                              DomGetPayload,
-                                              DomSelectPayload,
-                                              DomTypePayload,
-                                              NavGotoPayload,
-                                              RestApiPayload,
-                                              ScrollPayload,
-                                              WaitPayload)
+    AssertPayload,
+    DomCheckPayload,
+    DomClickPayload,
+    DomGetPayload,
+    DomSelectPayload,
+    DomTypePayload,
+    NavGotoPayload,
+    RestApiPayload,
+    ScrollPayload,
+    SendkeysPayload,
+    WaitPayload, UserVariablePayload)
 
 
 RECORDING_EVENT_TYPE_LABELS: list[tuple[str, RecordingEventType]] = [
@@ -44,6 +45,8 @@ RECORDING_EVENT_TYPE_LABELS: list[tuple[str, RecordingEventType]] = [
     ("Navigate", RecordingEventType.NAV_GOTO),
     ("Rest API", RecordingEventType.REST_API),
     ("Scroll", RecordingEventType.SCROLL),
+    ("SendKeys", RecordingEventType.SENDKEYS),
+    ("User Variable", RecordingEventType.USER_VARIABLE),
     ("Wait", RecordingEventType.WAIT),
 ]
 """
@@ -75,30 +78,46 @@ def default_payload_for(event_type: RecordingEventType):
     """
 
     payload_factories: dict[RecordingEventType, Callable[[], object]] = {
-        RecordingEventType.ASSERT: lambda: AssertPayload(operator="is_equal_to",
+        RecordingEventType.ASSERT: lambda: AssertPayload(label="",
+                                                         operator="is_equal_to",
                                                          left_value="",
                                                          right_value=""),
-        RecordingEventType.DOM_CLICK: lambda: DomClickPayload(xpath=""),
-        RecordingEventType.DOM_GET: lambda: DomGetPayload(xpath="",
+        RecordingEventType.DOM_CLICK: lambda: DomClickPayload(label="",
+                                                              xpath=""),
+        RecordingEventType.DOM_GET: lambda: DomGetPayload(label="",
+                                                          xpath="",
                                                           property_type="text",
                                                           output_variable=""),
-        RecordingEventType.DOM_TYPE: lambda: DomTypePayload(xpath="", value=""),
-        RecordingEventType.DOM_SELECT: lambda: DomSelectPayload(xpath="", value=""),
-        RecordingEventType.DOM_CHECK: lambda: DomCheckPayload(xpath="", value=True),
-        RecordingEventType.NAV_GOTO: lambda: NavGotoPayload(url=""),
+        RecordingEventType.DOM_TYPE: lambda: DomTypePayload(label="",
+                                                            xpath="", value=""),
+        RecordingEventType.DOM_SELECT: lambda: DomSelectPayload(label="",
+                                                                xpath="",
+                                                                value=""),
+        RecordingEventType.DOM_CHECK: lambda: DomCheckPayload(label="",
+                                                              xpath="",
+                                                              value=True),
+        RecordingEventType.NAV_GOTO: lambda: NavGotoPayload(label="",
+                                                            url=""),
         RecordingEventType.REST_API: lambda: RestApiPayload(
+            label="",
             base_url="",
             call_type="GET",
             rest_call="",
             output_variable="",
             body=""
         ),
-        RecordingEventType.SCROLL: lambda: ScrollPayload(
-            scroll_type="custom",
-            x_scroll=0,
-            y_scroll=0
-        ),
-        RecordingEventType.WAIT: lambda: WaitPayload(duration_ms=1000),
+        RecordingEventType.SCROLL: lambda: ScrollPayload(label="",
+                                                         scroll_type="custom",
+                                                         x_scroll=0,
+                                                         y_scroll=0),
+        RecordingEventType.SENDKEYS: lambda: SendkeysPayload(label="",
+                                                             target="",
+                                                             keys=[]),
+        RecordingEventType.USER_VARIABLE: lambda: UserVariablePayload(label="",
+                                                                      name="",
+                                                                      value=""),
+        RecordingEventType.WAIT: lambda: WaitPayload(label="",
+                                                     duration_ms=1000),
     }
 
     try:

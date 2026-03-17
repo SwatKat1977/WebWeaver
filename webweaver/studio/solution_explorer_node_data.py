@@ -18,7 +18,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import enum
-from webweaver.studio.recording_metadata import RecordingMetadata
 
 
 class ExplorerNodeType(enum.Enum):
@@ -35,6 +34,9 @@ class ExplorerNodeType(enum.Enum):
     FOLDER_SCRIPTS = enum.auto()
     FOLDER_RECORDINGS = enum.auto()
     RECORDING_ITEM = enum.auto()
+    FOLDER_TEST_SUITES = enum.auto()
+    TEST_SUITES_ITEM = enum.auto()
+    TEST_SUITES_FILTER = enum.auto()
 
 
 class SolutionExplorerNodeData:
@@ -51,7 +53,7 @@ class SolutionExplorerNodeData:
 
     def __init__(self,
                  node_type: ExplorerNodeType,
-                 metadata: RecordingMetadata):
+                 metadata):
         """
         Create a new SolutionExplorerNodeData instance.
 
@@ -59,13 +61,13 @@ class SolutionExplorerNodeData:
         ----------
         node_type : ExplorerNodeType
             The type of the tree node.
-        metadata : RecordingMetadata
+        metadata
             Metadata associated with the node, typically representing a
             recording item. May be ``None`` for non-recording nodes.
         """
         super().__init__()
         self._node_type = node_type
-        self._recording = metadata
+        self._metadata = metadata
 
     @property
     def node_type(self) -> ExplorerNodeType:
@@ -80,14 +82,12 @@ class SolutionExplorerNodeData:
         return self._node_type
 
     @property
-    def metadata(self) -> RecordingMetadata:
+    def metadata(self):
         """
         Get the metadata associated with this explorer node.
 
         Returns
         -------
-        RecordingMetadata
-            The metadata object attached to this node. For recording nodes,
-            this contains information such as name, file path, and timestamps.
+        The metadata object attached to this node.
         """
-        return self._recording
+        return self._metadata

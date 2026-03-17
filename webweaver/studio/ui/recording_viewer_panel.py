@@ -2,7 +2,7 @@
 This source file is part of Web Weaver
 For the latest info, see https://github.com/SwatKat1977/WebWeaver
 
-Copyright 2025 SwatKat1977
+Copyright 2025-2026 SwatKat1977
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -11,11 +11,11 @@ the Free Software Foundation, either version 3 of the License, or
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
+along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import dataclasses
 from datetime import datetime
@@ -24,23 +24,14 @@ import string
 import typing
 import wx
 import wx.dataview as dataview
+from webweaver.studio.recording_step_editor_registry import RecordingStepEditorRegistry
 from webweaver.studio.recording_view_context import RecordingViewContext
 from webweaver.studio.recording.recording_loader import \
     load_recording_from_context
 from webweaver.studio.recording.recording_event_type import RecordingEventType
 from webweaver.studio.ui.add_step_dialog import (AddStepDialog,
                                                  default_payload_for)
-from webweaver.studio.ui.dom_get_step_editor import DomGetStepEditor
 from webweaver.studio.ui.events import WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE
-from webweaver.studio.ui.check_step_editor import CheckStepEditor
-from webweaver.studio.ui.click_step_editor import ClickStepEditor
-from webweaver.studio.ui.navgoto_step_editor import NavGotoStepEditor
-from webweaver.studio.ui.rest_api_step_editor import RestApiStepEditor
-from webweaver.studio.ui.select_step_editor import SelectStepEditor
-from webweaver.studio.ui.scroll_step_editor import ScrollStepEditor
-from webweaver.studio.ui.step_editor_dialogs.assert_step_editor_dialog import AssertionStepEditor
-from webweaver.studio.ui.type_step_editor import TypeStepEditor
-from webweaver.studio.ui.wait_step_editor import WaitStepEditor
 from webweaver.studio.persistence.recording_persistence import (
                                                  RecordingPersistence,
                                                  RecordingLoadError)
@@ -266,6 +257,10 @@ class RecordingViewerPanel(wx.Panel):
         event_type = RecordingEventType(event.get("type"))
         action = event_type.name.replace("_", " ").title()
         payload = event.get("payload", {})
+        step_label = payload.get("label", "")
+
+        if step_label:
+            action = step_label
 
         value = ""
         target = ""
@@ -436,51 +431,30 @@ class RecordingViewerPanel(wx.Panel):
     def _create_step_editor_dialog(
             self,
             event_type: RecordingEventType,
-            index: int,
             event: dict) -> typing.Optional[wx.Dialog]:
-
-        step_editor = None
 
         payload = event.get("payload", {})
         if "control_type" not in payload and \
-                event_type not in [RecordingEventType.DOM_GET,
+                event_type not in [RecordingEventType.ASSERT,
+                                   RecordingEventType.DOM_GET,
                                    RecordingEventType.NAV_GOTO,
                                    RecordingEventType.REST_API,
+                                   RecordingEventType.SENDKEYS,
                                    RecordingEventType.SCROLL,
+                                   RecordingEventType.USER_VARIABLE,
                                    RecordingEventType.WAIT]:
             payload["control_type"] = "unknown"
 
-        if event_type == RecordingEventType.ASSERT:
-            step_editor = AssertionStepEditor(self, index, event)
+        # Ensure that a default label is always present.
+        if "label" not in payload:
+            payload["label"] = ""
 
-        if event_type == RecordingEventType.DOM_CLICK:
-            step_editor = ClickStepEditor(self, index, event)
+        # Version 0.1.0 recordings support - To be removed soon
+        payload.pop("__kind", None)
 
-        if event_type == RecordingEventType.DOM_GET:
-            step_editor = DomGetStepEditor(self, index, event)
+        editor_class = RecordingStepEditorRegistry.create_editor(event_type)
 
-        if event_type == RecordingEventType.DOM_TYPE:
-            step_editor = TypeStepEditor(self, index, event)
-
-        if event_type == RecordingEventType.DOM_SELECT:
-            step_editor = SelectStepEditor(self, index, event)
-
-        if event_type == RecordingEventType.DOM_CHECK:
-            step_editor = CheckStepEditor(self, index, event)
-
-        if event_type == RecordingEventType.NAV_GOTO:
-            step_editor = NavGotoStepEditor(self, index, event)
-
-        if event_type == RecordingEventType.REST_API:
-            step_editor = RestApiStepEditor(self, index, event)
-
-        if event_type == RecordingEventType.SCROLL:
-            step_editor = ScrollStepEditor(self, index, event)
-
-        if event_type == RecordingEventType.WAIT:
-            step_editor = WaitStepEditor(self, index, event)
-
-        return step_editor
+        return editor_class(self, event)
 
     def edit_step(self, index: int):
         """
@@ -500,7 +474,7 @@ class RecordingViewerPanel(wx.Panel):
         event = self._document.get_step(index)
         event_type = RecordingEventType(event["type"])
 
-        dlg = self._create_step_editor_dialog(event_type, index, event)
+        dlg = self._create_step_editor_dialog(event_type, event)
 
         if dlg is None:
             wx.MessageBox("No editor for this step type yet")
@@ -551,7 +525,7 @@ class RecordingViewerPanel(wx.Panel):
         # Create temporary event dict for the editor
         temp_event = {"payload": dataclasses.asdict(payload)}
 
-        editor = self._create_step_editor_dialog(event_type, 0, temp_event)
+        editor = self._create_step_editor_dialog(event_type, temp_event)
 
         if editor is None:
             wx.MessageBox("No editor for this step type yet")
@@ -773,6 +747,7 @@ class RecordingViewerPanel(wx.Panel):
                             xpath: str,
                             property_type: str,
                             output_variable: str) -> DomGetPayload:
-        return DomGetPayload(xpath=xpath,
+        return DomGetPayload(label="",
+                             xpath=xpath,
                              property_type=property_type,
                              output_variable=output_variable)

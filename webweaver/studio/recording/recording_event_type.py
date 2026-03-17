@@ -38,7 +38,9 @@ class RecordingEventType(enum.Enum):
     NAV_GOTO = "nav.goto"
     REST_API = "rest_api"
     SCROLL = "scroll"
+    SENDKEYS = "sendkeys"
     WAIT = "wait"
+    USER_VARIABLE = "user_variable"
     UNKNOWN = "unknown"
 
 
@@ -86,6 +88,9 @@ def event_type_from_str(value: str) -> RecordingEventType:
 
     elif value == "rest_api":
         event_type = RecordingEventType.REST_API
+
+    elif value == "sendkeys":
+        event_type = RecordingEventType.SENDKEYS
 
     elif value == "scroll":
         event_type = RecordingEventType.SCROLL

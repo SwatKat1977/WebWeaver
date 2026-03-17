@@ -35,3 +35,11 @@ png_to_header("explorerTreeIcons/landing-page.png",
 png_to_header("explorerTreeIcons/script.png",
     "explorerTreeIcons/scripts_icon.py",
     "scripts_icon")
+
+png_to_header("explorerTreeIcons/documents.png",
+    "explorerTreeIcons/test_suites_icon.py",
+    "test_suites_icon")
+
+png_to_header("explorerTreeIcons/test_suite.png",
+    "explorerTreeIcons/test_suite_icon.py",
+    "test_suite_icon")

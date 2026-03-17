@@ -20,9 +20,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import dataclasses
 import wx
 from webweaver.studio.persistence.recording_document import DomClickPayload
+from webweaver.studio.ui.fancy_dialog_base import FancyDialogBase
 
 
-class ClickStepEditor(wx.Dialog):
+class ClickStepEditor(FancyDialogBase):
     """
     Dialog window for editing a DOM click step event.
 
@@ -35,40 +36,34 @@ class ClickStepEditor(wx.Dialog):
     """
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, parent, index: int, event: dict):
+    def __init__(self, parent, event: dict):
         """
         Initialize the ClickStepEditor dialog.
 
         Args:
             parent: The parent wxPython window.
-            index (int): The index of the step being edited.
             event (dict): The event data dictionary containing a "payload"
                 field with click information.
         """
-        super().__init__(parent, title="Edit Click Step")
+        super().__init__(
+            parent,
+            "Edit Click Step",
+            "Edit Click Step",
+            "Configure how the automation performs a DOM click.")
 
         self.changed = False
-        self._index = index
         self._event = event
 
         payload = DomClickPayload(**event.get("payload", {}))
 
-        self.xpath_ctrl = wx.TextCtrl(self, value=payload.xpath)
+        self._field_step_label = self.add_field("Step Label:", wx.TextCtrl)
+        self._field_step_label.SetValue(payload.label)
+        self._field_xpath = self.add_field("XPath:", wx.TextCtrl)
+        self._field_xpath.SetValue(payload.xpath)
 
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(wx.StaticText(self, label="XPath:"), 0, wx.ALL, 5)
-        sizer.Add(self.xpath_ctrl, 0, wx.EXPAND | wx.ALL, 5)
+        self.finalise()
 
-        sizer.Add(
-            self.CreateButtonSizer(wx.OK | wx.CANCEL),
-            0, wx.ALL | wx.ALIGN_RIGHT, 10
-        )
-
-        self.SetSizerAndFit(sizer)
-
-        self.Bind(wx.EVT_BUTTON, self._on_ok, id=wx.ID_OK)
-
-    def _on_ok(self, _evt):
+    def _ok_event(self):
         """
         Handle the OK button event.
 
@@ -77,10 +72,8 @@ class ClickStepEditor(wx.Dialog):
         an OK result.
         """
         new_payload = DomClickPayload(
-            xpath=self.xpath_ctrl.GetValue()
-        )
+            label=self._field_step_label.GetValue(),
+            xpath=self._field_xpath.GetValue())
 
         self._event["payload"] = dataclasses.asdict(new_payload)
         self.changed = True
-
-        self.EndModal(wx.ID_OK)

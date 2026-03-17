@@ -21,10 +21,14 @@ from pathlib import Path
 from typing import Optional
 import wx
 import wx.aui
+from webweaver.studio.persistence.test_suite_persistence import TestSuitePersistence
 from webweaver.studio.recording.recording_events import (
     EVT_OPEN_RECORDING,
     EVT_RENAME_RECORDING,
-    EVT_DELETE_RECORDING)
+    EVT_DELETE_RECORDING,
+    EVT_NEW_TEST_SUITE,
+    EVT_DELETE_TEST_SUITE,
+    EVT_RENAME_TEST_SUITE)
 from webweaver.studio.recording_metadata import RecordingMetadata
 from webweaver.studio.studio_solution import StudioSolution
 from webweaver.studio.solution_explorer_node_data import (
@@ -34,12 +38,19 @@ from webweaver.studio.solution_explorer_icons import (
                                        load_root_icon,
                                        load_pages_filter_icon,
                                        load_scripts_filter_icon,
-                                       load_recordings_filter_icon)
+                                       load_recordings_filter_icon,
+                                       load_test_suites_filter_icon,
+                                       load_test_suite_icon)
 
 # Context menu command IDs for recording items in the solution explorer.s
 ID_CONTEXT_MENU_REC_OPEN = wx.ID_HIGHEST + 3000
 ID_CONTEXT_MENU_REC_RENAME = wx.ID_HIGHEST + 3001
 ID_CONTEXT_MENU_REC_DELETE = wx.ID_HIGHEST + 3002
+ID_CONTEXT_MENU_TEST_SUITE_NEW = wx.ID_HIGHEST + 3003
+ID_CONTEXT_MENU_TEST_SUITE_DELETE = wx.ID_HIGHEST + 3004
+ID_CONTEXT_MENU_TEST_SUITE_RENAME = wx.ID_HIGHEST + 3005
+
+HIDE_DEV_WORK: bool = True
 
 
 class SolutionExplorerPanel(wx.Panel):
@@ -75,6 +86,8 @@ class SolutionExplorerPanel(wx.Panel):
         self._icon_pages: int = -1
         self._icon_scripts: int = -1
         self._icon_recordings: int = -1
+        self._icon_test_suites: int = -1
+        self._icon_test_suite: int = -1
 
         self._create_controls()
         self.show_no_solution()
@@ -117,9 +130,9 @@ class SolutionExplorerPanel(wx.Panel):
         """
         self._tree.DeleteAllItems()
 
-    def populate_recordings(self,
-                            solution: StudioSolution,
-                            recordings_node: wx.TreeItemId) -> None:
+    def _populate_recordings(self,
+                             solution: StudioSolution,
+                             recordings_node: wx.TreeItemId) -> None:
         """
         Populate the recordings folder node with recording items.
 
@@ -147,8 +160,28 @@ class SolutionExplorerPanel(wx.Panel):
                 rec.name,
                 self._icon_recordings,
                 self._icon_recordings,
-                SolutionExplorerNodeData(ExplorerNodeType.RECORDING_ITEM, rec)
-            )
+                SolutionExplorerNodeData(ExplorerNodeType.RECORDING_ITEM, rec))
+
+    def _populate_test_suites(self,
+                              solution: StudioSolution,
+                              node: wx.TreeItemId) -> None:
+        suite_dir: Path = solution.get_test_suites_directory()
+        test_suites = TestSuitePersistence.discover_files(suite_dir)
+
+        if not test_suites:
+            self._tree.AppendItem(node, "(empty)")
+            return
+
+        for suite in test_suites:
+            data = suite.data
+
+            self._tree.AppendItem(
+                node,
+                data.get("name"),
+                self._icon_test_suite,
+                self._icon_test_suite,
+                SolutionExplorerNodeData(ExplorerNodeType.TEST_SUITES_FILTER,
+                                         suite))
 
     def refresh_recordings(self, solution: StudioSolution):
         """
@@ -168,21 +201,47 @@ class SolutionExplorerPanel(wx.Panel):
 
         while child.IsOk():
             if self._tree.GetItemText(child) == "Recordings":
-                self.populate_recordings(solution, child)
+                self._tree.DeleteChildren(child)
+                self._populate_recordings(solution, child)
                 self._tree.Expand(child)
                 return
 
             child, cookie = self._tree.GetNextChild(root, cookie)
 
-    def  get_selected_recording(self) -> Optional[RecordingMetadata]:
+    def refresh_test_suites(self, solution: StudioSolution):
         """
-        Get the recording associated with the current context item.
+        Refresh the test suites folder in the tree.
+
+        Locates the "Recordings" node and repopulates it using the provided
+        solution model.
+        """
+        if not self._tree:
+            return
+
+        root = self._tree.GetRootItem()
+        if not root.IsOk():
+            return
+
+        child, cookie = self._tree.GetFirstChild(root)
+
+        while child.IsOk():
+            if self._tree.GetItemText(child) == "Test Suites":
+                self._tree.DeleteChildren(child)
+                self._populate_test_suites(solution, child)
+                self._tree.Expand(child)
+                return
+
+            child, cookie = self._tree.GetNextChild(root, cookie)
+
+    def  get_selected_metadata(self):
+        """
+        Get the metadata associated with the current context item.
 
         Returns
         -------
-        Optional[RecordingMetadata]
-            The selected recording's metadata, or ``None`` if no valid
-            recording item is selected.
+        Optional[Metadata]
+            The selected item's metadata, or ``None`` if no valid
+            item is selected.
         """
         if not self._context_item or not self._context_item.IsOk():
             return None
@@ -204,14 +263,12 @@ class SolutionExplorerPanel(wx.Panel):
 
         self._placeholder = wx.StaticText(
             self,
-            label="No solution loaded"
-        )
+            label="No solution loaded")
         self._placeholder.SetForegroundColour(wx.Colour(120, 120, 120))
 
         self._tree = wx.TreeCtrl(
             self,
-            style=wx.TR_HAS_BUTTONS | wx.TR_LINES_AT_ROOT # | wx.TR_HIDE_ROOT
-        )
+            style=wx.TR_HAS_BUTTONS | wx.TR_LINES_AT_ROOT)
 
         self._tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self._on_item_activated)
         self.Bind(wx.EVT_TREE_ITEM_MENU, self._on_item_context_menu)
@@ -225,6 +282,16 @@ class SolutionExplorerPanel(wx.Panel):
                   self._on_delete_recording,
                   id=ID_CONTEXT_MENU_REC_DELETE)
 
+        self.Bind(wx.EVT_MENU,
+                  self._on_create_new_test_suite,
+                  id=ID_CONTEXT_MENU_TEST_SUITE_NEW)
+        self.Bind(wx.EVT_MENU,
+                  self._on_delete_test_suite,
+                  id=ID_CONTEXT_MENU_TEST_SUITE_DELETE)
+        self.Bind(wx.EVT_MENU,
+                  self._on_rename_test_suite,
+                  id=ID_CONTEXT_MENU_TEST_SUITE_RENAME)
+
         # Image list for solution explorer tree
         self._image_list = wx.ImageList(16, 16, True)
 
@@ -232,7 +299,8 @@ class SolutionExplorerPanel(wx.Panel):
         self._icon_pages = self._image_list.Add(load_pages_filter_icon())
         self._icon_scripts = self._image_list.Add(load_scripts_filter_icon())
         self._icon_recordings = self._image_list.Add(load_recordings_filter_icon())
-
+        self._icon_test_suites = self._image_list.Add(load_test_suites_filter_icon())
+        self._icon_test_suite = self._image_list.Add(load_test_suite_icon())
         self._tree.AssignImageList(self._image_list)
 
         # Layout
@@ -259,11 +327,11 @@ class SolutionExplorerPanel(wx.Panel):
             self._icon_solution,
             self._icon_solution,
             SolutionExplorerNodeData(ExplorerNodeType.SOLUTION_ROOT,
-                                     RecordingMetadata())
-        )
+                                     RecordingMetadata()))
 
-        self._append_empty_node(root, "Pages", self._icon_pages)
-        self._append_empty_node(root, "Scripts", self._icon_scripts)
+        if not HIDE_DEV_WORK:
+            self._append_empty_node(root, "Pages", self._icon_pages)
+            self._append_empty_node(root, "Scripts", self._icon_scripts)
 
         recordings: wx.TreeItemId = self._tree.AppendItem(
             root,
@@ -273,7 +341,17 @@ class SolutionExplorerPanel(wx.Panel):
             SolutionExplorerNodeData(ExplorerNodeType.FOLDER_RECORDINGS,
                                      RecordingMetadata()))
 
-        self.populate_recordings(solution, recordings)
+        self._populate_recordings(solution, recordings)
+
+        test_suites: wx.TreeItemId = self._tree.AppendItem(
+            root,
+            "Test Suites",
+            self._icon_test_suites,
+            self._icon_test_suites,
+            SolutionExplorerNodeData(ExplorerNodeType.FOLDER_TEST_SUITES,
+                                     RecordingMetadata()))
+
+        self._populate_test_suites(solution, test_suites)
 
     def _append_empty_node(self,
                            parent: wx.TreeItemId,
@@ -323,6 +401,13 @@ class SolutionExplorerPanel(wx.Panel):
             menu.AppendSeparator()
             menu.Append(ID_CONTEXT_MENU_REC_DELETE, "Delete")
 
+        elif data.node_type == ExplorerNodeType.FOLDER_TEST_SUITES:
+            menu.Append(ID_CONTEXT_MENU_TEST_SUITE_NEW, "Add new test suite")
+
+        elif data.node_type == ExplorerNodeType.TEST_SUITES_FILTER:
+            menu.Append(ID_CONTEXT_MENU_TEST_SUITE_DELETE, "Delete suite")
+            menu.Append(ID_CONTEXT_MENU_TEST_SUITE_RENAME, "Rename suite")
+
         else:
             # No menu
             return
@@ -337,7 +422,7 @@ class SolutionExplorerPanel(wx.Panel):
 
         Posts an EVT_OPEN_RECORDING event to the parent window.
         """
-        recording = self.get_selected_recording()
+        recording = self.get_selected_metadata()
         if not recording:
             return
 
@@ -411,4 +496,30 @@ class SolutionExplorerPanel(wx.Panel):
         evt.SetClientData(recording)
         evt.SetEventObject(self)
 
+        wx.PostEvent(self.GetParent(), evt)
+
+    def _on_create_new_test_suite(self, _event: wx.CommandEvent) -> None:
+        if not self._context_item.IsOk():
+            return
+
+        evt: wx.CommandEvent = wx.CommandEvent(EVT_NEW_TEST_SUITE)
+        wx.PostEvent(self.GetParent(), evt)
+
+    def _on_delete_test_suite(self, _event: wx.CommandEvent) -> None:
+        if not self._context_item.IsOk():
+            return
+
+        data = self._tree.GetItemData(self._context_item)
+        if not data or data.node_type != ExplorerNodeType.TEST_SUITES_FILTER:
+            return
+
+        evt: wx.CommandEvent = wx.CommandEvent(EVT_DELETE_TEST_SUITE)
+        evt.SetClientData(Path(data.metadata.path))
+        wx.PostEvent(self.GetParent(), evt)
+
+    def _on_rename_test_suite(self, _event: wx.CommandEvent) -> None:
+        if not self._context_item.IsOk():
+            return
+
+        evt: wx.CommandEvent = wx.CommandEvent(EVT_RENAME_TEST_SUITE)
         wx.PostEvent(self.GetParent(), evt)

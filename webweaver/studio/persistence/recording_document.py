@@ -19,12 +19,22 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 from webweaver.studio.recording.recording_event_type import RecordingEventType
 
 
 @dataclass
-class DomPayload:
+class BasePayload:
+    """Base payload for events.
+
+    Attributes:
+        label: Optional label to make step more human-readable.
+    """
+    label: str
+
+
+@dataclass
+class DomPayload(BasePayload):
     """Base payload for DOM-related events.
 
     Attributes:
@@ -32,8 +42,9 @@ class DomPayload:
     """
     xpath: str
 
+
 @dataclass
-class AssertPayload:
+class AssertPayload(BasePayload):
     """
     Structured payload for an assertion step.
 
@@ -142,7 +153,7 @@ class DomTypePayload(DomPayload):
 
 
 @dataclass
-class NavGotoPayload:
+class NavGotoPayload(BasePayload):
     """Payload for a navigation action.
 
     Attributes:
@@ -152,7 +163,7 @@ class NavGotoPayload:
 
 
 @dataclass
-class WaitPayload:
+class WaitPayload(BasePayload):
     """Payload representing a timed wait step.
 
     Attributes:
@@ -162,7 +173,7 @@ class WaitPayload:
 
 
 @dataclass
-class RestApiPayload:
+class RestApiPayload(BasePayload):
     """
     Represents the data required to execute a REST API request.
 
@@ -200,7 +211,7 @@ class RestApiPayload:
 
 
 @dataclass
-class ScrollPayload:
+class ScrollPayload(BasePayload):
     """
     Describes a scrolling action for UI or automation workflows.
 
@@ -226,6 +237,66 @@ class ScrollPayload:
     scroll_type: str
     x_scroll: int | None = None
     y_scroll: int | None = None
+
+
+@dataclass
+class SendkeysKeyDefinition:
+    """Represents a single key entry in a send-keys sequence.
+
+    A key definition may represent either literal text to type or a
+    special key press (optionally with modifiers such as CTRL or SHIFT).
+
+    Attributes:
+        type (str): The type of entry. Typically `"text"` for literal text
+            input or `"key"` for a special key press.
+        value (str): The value associated with the entry. For `"text"`
+            entries, this is the string to type. For `"key"` entries,
+            this is the name of the key (e.g. `"ENTER"` or `"TAB"`).
+        modifiers (Optional[str]): Optional modifier combination applied
+            to the key press, represented as a `+` separated string
+            (e.g. `"CTRL+SHIFT"`). This is usually ``None`` for text
+            entries or keys without modifiers.
+    """
+
+    type: str
+    value: str
+    modifiers: Optional[str] = None
+
+
+@dataclass
+class SendkeysPayload(BasePayload):
+    """Payload describing a send-keys action for an automation step.
+
+    This payload defines the target element that will receive the input
+    and the ordered sequence of key definitions to execute.
+
+    Attributes:
+        target (str): Identifier for the target element that will receive
+            the keyboard input.
+        keys (List[SendkeysKeyDefinition]): Ordered list of key definitions
+            representing the send-keys sequence to perform.
+    """
+
+    target: str
+    keys: List[SendkeysKeyDefinition]
+
+
+@dataclass
+class UserVariablePayload(BasePayload):
+    """Payload representing a user-defined variable recording step.
+
+    This payload stores the name and value of a user variable defined
+    within a recording step. The variable can later be referenced by
+    other steps during playback.
+
+    Attributes:
+        name (str):
+            The name of the user-defined variable.
+        value (str):
+            The value assigned to the variable.
+    """
+    name: str
+    value: str
 
 
 class RecordingDocument:

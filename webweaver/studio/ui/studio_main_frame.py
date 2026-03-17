@@ -2,7 +2,7 @@
 This source file is part of Web Weaver
 For the latest info, see https://github.com/SwatKat1977/WebWeaver
 
-Copyright 2025 SwatKat1977
+Copyright 2025-2026 SwatKat1977
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -11,11 +11,11 @@ the Free Software Foundation, either version 3 of the License, or
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
+along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # pylint: disable=too-many-lines
 import json
@@ -27,8 +27,11 @@ from selenium.common.exceptions import (WebDriverException,
                                         InvalidSessionIdException)
 import wx
 import wx.aui
-
-from webweaver.studio.code_generation.code_generator_entry import CodeGeneratorRegistryEntry
+from webweaver.studio.code_generation.code_generator_entry import \
+    CodeGeneratorRegistryEntry
+from webweaver.studio.persistence.test_suite_document import TestSuiteDocument
+from webweaver.studio.persistence.test_suite_persistence import (
+    TestSuitePersistence, TestSuiteSaveError)
 from webweaver.studio.recent_solutions_manager import RecentSolutionsManager
 from webweaver.studio.recording_metadata import RecordingMetadata
 from webweaver.studio.persistence.solution_persistence import (
@@ -44,7 +47,10 @@ from webweaver.studio.recording_view_context import RecordingViewContext
 from webweaver.studio.recording.recording_events import (
     OpenRecordingEvent,
     RenameRecordingEvent,
-    DeleteRecordingEvent)
+    DeleteRecordingEvent,
+    DeleteTestSuiteEvent,
+    NewTestSuiteEvent,
+    RenameTestSuiteEvent)
 from webweaver.studio.recording.recording_session import RecordingSession
 from webweaver.studio.recording.recording_event_type import RecordingEventType
 from webweaver.studio.recording.recording_loader import \
@@ -71,8 +77,7 @@ from webweaver.studio.ui.solution_create_wizard.solution_widget_ids import \
     SOLUTION_WIZARD_BACK_BUTTON_ID
 from webweaver.studio.ui.solution_explorer_panel import SolutionExplorerPanel
 from webweaver.studio.ui.workspace_panel import WorkspacePanel
-from webweaver.studio.ui.main_toolbar import (MainToolbar, ToolbarState,
-                                              PlaybackToolbarState)
+from webweaver.studio.ui.main_toolbar import MainToolbar, ToolbarState
 from webweaver.studio.ui.main_menu import create_main_menu
 from webweaver.studio.ui.main_status_bar import MainStatusBar
 from webweaver.studio.ui.inspector_panel import InspectorPanel
@@ -94,6 +99,9 @@ from webweaver.studio.ui.app_settings_dialog.general_settings_page \
     import GeneralSettingsPage as AppSettingsGeneralPage
 from webweaver.studio.ui.about_dialog import AboutDialog
 from webweaver.studio.ui.toolbox_panel import ToolboxPanel
+from webweaver.studio.recording_step_editor_registry import \
+    register_step_editors
+
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -217,6 +225,9 @@ class StudioMainFrame(wx.Frame):
         # Menu Bar
         create_main_menu(self)
 
+        # Register step editors for a recording
+        register_step_editors()
+
         self.Bind(wx.EVT_CLOSE, self._on_close_app)
 
     @property
@@ -287,7 +298,6 @@ class StudioMainFrame(wx.Frame):
         # --------------------------------------------------------------
         self._status_bar = MainStatusBar(self)
         self._update_toolbar_state()
-        self._update_playback_toolbar_state()
 
         self._create_inspector_panel()
 
@@ -303,6 +313,19 @@ class StudioMainFrame(wx.Frame):
 
         # Rename recording event.
         self.Bind(RenameRecordingEvent, self._rename_recording_event)
+
+        # --------------------------------------------------------------
+        # Test Suite events
+        # --------------------------------------------------------------
+
+        # Create new test suite event.
+        self.Bind(NewTestSuiteEvent, self._create_new_test_suite_event)
+
+        # Delete test suite event.
+        self.Bind(DeleteTestSuiteEvent, self._delete_test_suite_event)
+
+        # Rename test suite event.
+        self.Bind(RenameTestSuiteEvent, self._rename_test_suite_event)
 
         self.Bind(EVT_WORKSPACE_ACTIVE_CHANGED,
                   self._on_workspace_active_changed)
@@ -479,7 +502,6 @@ class StudioMainFrame(wx.Frame):
         """
         self._current_state = new_state
         self._update_toolbar_state()
-        self._update_playback_toolbar_state()
 
     def on_new_solution_event(self, _event: wx.CommandEvent):
         """
@@ -647,6 +669,9 @@ class StudioMainFrame(wx.Frame):
         self._workspace_panel.clear()
 
         self._status_bar.set_status_bar_current_solution(None)
+
+        if self._web_browser and self._web_browser.is_alive():
+            self._web_browser.quit()
 
     def on_record_start_stop_event(self, _event: wx.CommandEvent):
         """
@@ -848,54 +873,6 @@ class StudioMainFrame(wx.Frame):
                 self._state_controller.on_inspector_toggle(True)
                 self._show_inspector_panel(True)
 
-    ## DEPRECIATED ##
-    def on_playback_mode_event(self, _event: wx.CommandEvent):
-        """
-        Handle the user toggling playback mode from the main toolbar.
-
-        This method acts as a mode switch between normal editing mode and
-        playback mode:
-
-        - If the studio is not currently in any playback state, playback mode
-          is entered by transitioning to RECORDING_PLAYBACK_IDLE.
-        - If the studio is already in a playback state, playback mode is exited
-          and the studio returns to the SOLUTION_LOADED state.
-
-        The visibility of the playback toolbar is also updated to match the new
-        mode.
-        """
-        in_playback = self._current_state in {
-            StudioState.RECORDING_PLAYBACK_IDLE,
-            StudioState.RECORDING_PLAYBACK_RUNNING,
-            StudioState.RECORDING_PLAYBACK_PAUSED}
-
-        if not in_playback:
-            self._state_controller.on_recording_playback_idle()
-        else:
-            self._state_controller.on_solution_loaded()
-
-        self._show_playback_toolbar(not in_playback)
-
-    def _show_playback_toolbar(self, show: bool) -> None:
-        """
-        Show or hide the playback toolbar pane.
-
-        This method controls the visibility of the secondary playback toolbar
-        managed by the AUI layout system. Callers should not manipulate the
-        AUI pane directly.
-
-        :param show: True to show the playback toolbar, False to hide it.
-        """
-        pane = self._aui_mgr.GetPane("PlaybackToolbar")
-
-        if not pane.IsOk():
-            self._logger.info("PlaybackToolbar pane not found in AUI manager")
-            return
-
-        pane.Show(show)
-
-        self._aui_mgr.Update()
-
     def on_web_browser_event(self, _event: wx.CommandEvent):
         """
         Handle the Start/Stop Browser action.
@@ -913,9 +890,19 @@ class StudioMainFrame(wx.Frame):
         reflect the new state.
         """
         if not self._web_browser:
-            self._web_browser = create_driver_from_solution(
-                self._current_solution, self._logger)
-            self._web_browser.open_page(self._current_solution.base_url)
+            try:
+                self._web_browser = create_driver_from_solution(
+                    self._current_solution, self._logger)
+                self._web_browser.open_page(self._current_solution.base_url)
+            except WebDriverException as ex:
+                wx.MessageBox(
+                    "Browser open/close failed : " + str(ex.msg),
+                    "Browser Error",
+                    wx.ICON_ERROR)
+                if self._web_browser and self._web_browser.is_alive():
+                    self._web_browser.quit()
+
+                return
 
         else:
             if self._web_browser.is_alive():
@@ -1049,7 +1036,7 @@ class StudioMainFrame(wx.Frame):
         self._workspace_panel.open_recording(ctx)
 
         # 3. Update UI
-        self._update_playback_toolbar_state()
+        self._update_toolbar_state()
 
     def _rename_recording_event(self, _evt: wx.CommandEvent) -> None:
         if self._state_controller.state in (StudioState.RECORDING_RUNNING,
@@ -1061,7 +1048,7 @@ class StudioMainFrame(wx.Frame):
                 self)
             return
 
-        recording = self._solution_explorer_panel.get_selected_recording()
+        recording = self._solution_explorer_panel.get_selected_metadata()
 
         dlg: wx.TextEntryDialog = wx.TextEntryDialog(
             self,
@@ -1127,13 +1114,132 @@ class StudioMainFrame(wx.Frame):
                 self)
             return
 
-        selected = self._solution_explorer_panel.get_selected_recording()
+        selected = self._solution_explorer_panel.get_selected_metadata()
         selected_id = selected.id if selected else ""
 
         if selected_id:
             self._workspace_panel.on_recording_deleted_by_id(selected_id)
 
         self._solution_explorer_panel.refresh_recordings(self._current_solution)
+
+    def _create_new_test_suite_event(self, _evt: wx.CommandEvent) -> None:
+        dlg: wx.TextEntryDialog = wx.TextEntryDialog(
+            self,
+            "Enter a name for the new test suite:",
+            "New Test Suite",
+            "")
+
+        if dlg.ShowModal() != wx.ID_OK:
+            return
+
+        new_name: str = dlg.GetValue()
+
+        if not new_name:
+            return
+
+        data = {
+            "id": "TO_BE_DONE",
+            "name": new_name
+        }
+
+        suites_path: Path = self._current_solution.get_test_suites_directory()
+        new_filename = TestSuitePersistence.generate_next_filename()
+        suite_filename = suites_path / new_filename
+        doc: TestSuiteDocument = TestSuiteDocument(suite_filename, data)
+
+        try:
+            TestSuitePersistence.save_to_disk(doc)
+
+        except TestSuiteSaveError:
+            wx.MessageBox(
+                "Failed to save test suite file",
+                "Create Test Suite",
+                wx.ICON_ERROR,
+                self)
+            return
+
+        self._solution_explorer_panel.refresh_test_suites(self._current_solution)
+
+    def _delete_test_suite_event(self, evt: wx.CommandEvent) -> None:
+        if self._state_controller.state in (StudioState.RECORDING_RUNNING,
+                                            StudioState.RECORDING_PAUSED):
+            wx.MessageBox(
+                "You cannot delete test suite while a recording session is "
+                "active.\n\nStop the recording first.",
+                "Delete Test Suite",
+                wx.ICON_WARNING,
+                self)
+            return
+
+        path = Path(evt.GetClientData())
+        if not path or not self._current_solution:
+            return
+
+        filename = Path(path).name
+
+        return_code: int = wx.MessageBox(f"Delete test suite?\n\n{filename}",
+                                         "Delete Test Suite",
+                                         wx.YES_NO | wx.ICON_WARNING,
+                                         self)
+        if return_code is not wx.YES:
+            return
+
+        try:
+            Path(path).unlink()
+
+        except OSError as e:
+            wx.MessageBox(f"Failed to delete test suite:\n{e}",
+                          "Delete Test Suite Failure",
+                          wx.ICON_ERROR,
+                          self)
+            return
+
+        self._solution_explorer_panel.refresh_test_suites(
+            self._current_solution)
+
+    def _rename_test_suite_event(self, _evt: wx.CommandEvent) -> None:
+        if self._state_controller.state in (StudioState.RECORDING_RUNNING,
+                                            StudioState.RECORDING_PAUSED):
+            wx.MessageBox(
+                "Stop recording before renaming a test suite",
+                "Rename Test Suite",
+                wx.ICON_WARNING,
+                self)
+            return
+
+        metadata = self._solution_explorer_panel.get_selected_metadata()
+
+        old_name = metadata.data.get("name")
+        dlg: wx.TextEntryDialog = wx.TextEntryDialog(
+            self,
+            "Enter a new name for the test suite:",
+            "Rename Test Suite",
+            old_name)
+
+        if dlg.ShowModal() != wx.ID_OK:
+            return
+
+        new_name: str = dlg.GetValue()
+
+        if not new_name:
+            return
+
+        # Make a copy of the metadata to update.
+        updated_metadata: TestSuiteDocument = metadata
+        updated_metadata.data["name"] = new_name
+
+        try:
+            TestSuitePersistence.save_to_disk(updated_metadata)
+
+        except TestSuiteSaveError:
+            wx.MessageBox(
+                "Failed to update test suite file",
+                "Update Test Suite",
+                wx.ICON_ERROR,
+                self)
+            return
+
+        self._solution_explorer_panel.refresh_test_suites(self._current_solution)
 
     def rebuild_recent_solutions_menu(self) -> None:
         """
@@ -1177,37 +1283,6 @@ class StudioMainFrame(wx.Frame):
         self._recording_session = RecordingSession(
             self._current_solution)
 
-    def _update_playback_toolbar_state(self):
-        MainToolbar.set_all_playback_disabled(self._toolbar)
-
-        toolbar_state = PlaybackToolbarState()
-        current_state = self._current_state
-
-        if current_state == StudioState.SOLUTION_LOADED and \
-           self._workspace_panel.has_active_recording():
-            toolbar_state = PlaybackToolbarState(can_start_playback=True,
-                                                 can_step_playback=False,
-                                                 can_stop_playback=False)
-
-        elif current_state == StudioState.RECORDING_PLAYBACK_IDLE:
-            toolbar_state = PlaybackToolbarState(can_start_playback=True,
-                                                 can_step_playback=False,
-                                                 can_stop_playback=False)
-
-        elif current_state == StudioState.RECORDING_PLAYBACK_RUNNING:
-            toolbar_state = PlaybackToolbarState(can_pause_playback=True,
-                                                 can_stop_playback=True,
-                                                 is_playback_running=True)
-
-        elif current_state == StudioState.RECORDING_PLAYBACK_PAUSED:
-            toolbar_state = PlaybackToolbarState(can_start_playback=True,
-                                                 can_step_playback=True,
-                                                 can_stop_playback=True,
-                                                 is_playback_paused=True)
-
-        MainToolbar.apply_playback_state(self._toolbar, toolbar_state)
-        self._aui_mgr.Update()
-
     def _update_toolbar_state(self) -> None:
         """
         Recompute and apply the toolbar UI state based on the current studio state.
@@ -1225,8 +1300,6 @@ class StudioMainFrame(wx.Frame):
 
         state = ToolbarState()
 
-        has_recording = self._workspace_panel.has_active_recording()
-
         # Only New/Open make sense
         if self._current_state == StudioState.NO_SOLUTION:
             pass
@@ -1234,34 +1307,49 @@ class StudioMainFrame(wx.Frame):
         elif self._current_state == StudioState.SOLUTION_LOADED:
             browser_is_alive = self._web_browser is not None and \
                 self._web_browser.is_alive()
+            can_start_playback = self._workspace_panel.has_active_recording() \
+                        and browser_is_alive
 
-            state = ToolbarState(can_save=True, can_close=True,
+            state = ToolbarState(can_close=True,
                                  can_inspect=browser_is_alive,
                                  can_record=browser_is_alive,
                                  can_browse=True,
-                                 can_playback_recording=has_recording)
+                                 can_start_playback=can_start_playback,
+                                 can_step_playback=False,
+                                 can_stop_playback=False)
 
         elif self._current_state == StudioState.RECORDING_RUNNING:
-            state = ToolbarState(can_record=True, can_pause=True,
-                                 is_recording=True)
+            state = ToolbarState(can_record=True,
+                                 can_pause=True,
+                                 is_recording=True,
+                                 can_pause_playback=True,
+                                 can_stop_playback=True,
+                                 is_playback_running=True)
 
         elif self._current_state == StudioState.RECORDING_PAUSED:
-            state = ToolbarState(can_record=True, can_pause=True,
-                                 is_recording=True, is_recording_paused=True)
+            state = ToolbarState(can_record=True,
+                                 can_pause=True,
+                                 is_recording=True,
+                                 is_recording_paused=True,
+                                 can_start_playback=True,
+                                 can_step_playback=True,
+                                 can_stop_playback=True,
+                                 is_playback_paused=True)
 
         elif self._current_state == StudioState.INSPECTING:
-            state = ToolbarState(can_save=True, can_close=True,
-                                 can_record=True, can_inspect=True)
-
-        elif self._current_state == StudioState.RECORDING_PLAYBACK_IDLE:
-            state = ToolbarState(can_save=True, can_close=True,
-                                 can_playback_recording=True)
+            state = ToolbarState(can_close=True,
+                                 can_record=False, can_inspect=True)
 
         elif self._current_state == StudioState.RECORDING_PLAYBACK_RUNNING:
-            pass
+            state = ToolbarState(can_close=False,
+                                 can_record=False,
+                                 can_inspect=False,
+                                 can_step_playback=True,
+                                 can_stop_playback=True)
 
         elif self._current_state == StudioState.RECORDING_PLAYBACK_PAUSED:
-            state = ToolbarState(can_playback_recording=has_recording)
+            state = ToolbarState(can_pause=True,
+                                 is_playback_paused=True)
 
         MainToolbar.apply_core_state(self._toolbar, state)
         self._manage_browser_state()
@@ -1475,14 +1563,12 @@ class StudioMainFrame(wx.Frame):
         if pane.IsOk():
             pane.Show(show)
             self._aui_mgr.Update()
-            MainToolbar.set_all_playback_disabled(self._toolbar)
 
     def _on_workspace_active_changed(self, _evt):
 
         pane = self._aui_mgr.GetPane("StepsToolbar")
 
         if not self._workspace_panel.has_active_recording():
-            self._show_playback_toolbar(False)
             self._state_controller.on_solution_loaded()
             # self._toolbox_panel.show_no_recording()
 
@@ -1500,7 +1586,6 @@ class StudioMainFrame(wx.Frame):
             self._request_recording_toolbar_update()
 
         self._update_toolbar_state()
-        self._update_playback_toolbar_state()
         self.rebuild_code_generation_menu()
 
     def on_start_recording_playback(self, _evt):
@@ -1541,7 +1626,7 @@ class StudioMainFrame(wx.Frame):
         """
         Handle the recording playback 'stop' button being pressed.
         """
-        self._state_controller.on_recording_playback_idle()
+        self._state_controller.on_solution_loaded()
         # self._stop_playback()
 
     def _on_playback_timer(self, _evt):
@@ -1551,7 +1636,7 @@ class StudioMainFrame(wx.Frame):
         still_running = self._playback_session.step()
         if not still_running:
             self._playback_timer.Stop()
-            self._state_controller.on_recording_playback_idle()
+            self._state_controller.on_solution_loaded()
 
     def _on_playback_step_started(self, index: int):
         viewer = self._workspace_panel.get_active_viewer()
@@ -1567,7 +1652,7 @@ class StudioMainFrame(wx.Frame):
         # Stop playback immediately
         self._playback_timer.Stop()
         self._playback_session = None
-        self._state_controller.on_recording_playback_idle()
+        self._state_controller.on_solution_loaded()
 
         viewer = self._workspace_panel.get_active_viewer()
         if viewer:
