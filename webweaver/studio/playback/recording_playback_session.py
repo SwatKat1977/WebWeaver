@@ -24,6 +24,7 @@ from logging import Logger
 import threading
 import typing
 import wx
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 from webweaver.studio.api_client import ApiClient
@@ -250,7 +251,7 @@ class RecordingPlaybackSession:
 
                 try:
                     self._browser.open_page(url)
-                except selenium.common.exceptions.WebDriverException:
+                except WebDriverException:
                     return PlaybackStepResult.fail(f"Unable to navigate to '{url}'")
 
                 return PlaybackStepResult.success()
