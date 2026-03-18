@@ -236,17 +236,6 @@ class SendkeysStepEditor(FancyDialogBase):
         step_label = self._field_step_label.GetValue()
         raw_mode = self._field_raw_mode.GetValue()
 
-        if target:
-            for item in self._sequence:
-                if item.get("type") == "key":
-                    wx.MessageBox(
-                        "Key shortcuts cannot be used when a target element is"
-                        "specified.\n"
-                        "Please remove the key entries.",
-                        "Invalid Send Keys Step",
-                        wx.OK | wx.ICON_ERROR)
-                    return
-
         payload: SendkeysPayload = SendkeysPayload(label=step_label,
                                                    target=target,
                                                    keys=self._sequence,
@@ -332,15 +321,3 @@ class SendkeysStepEditor(FancyDialogBase):
         self._add_text_btn.Enable(button_enabled)
         self._up_btn.Enable(button_enabled)
         self._down_btn.Enable(button_enabled)
-
-        # Optional: warn if the sequence already contains key entries
-        if has_target:
-            for item in self._sequence:
-                if item.get("type") == "key":
-                    wx.MessageBox(
-                        "Key shortcuts cannot be used when a target element "
-                        "is specified. Please remove the key entries.",
-                        "Invalid Send Keys Configuration",
-                        wx.OK | wx.ICON_WARNING
-                    )
-                    break
