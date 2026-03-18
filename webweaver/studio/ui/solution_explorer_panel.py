@@ -28,7 +28,8 @@ from webweaver.studio.recording.recording_events import (
     EVT_DELETE_RECORDING,
     EVT_NEW_TEST_SUITE,
     EVT_DELETE_TEST_SUITE,
-    EVT_RENAME_TEST_SUITE)
+    EVT_RENAME_TEST_SUITE,
+    EVT_ADD_RECORDING_TO_TEST_SUITE)
 from webweaver.studio.recording_metadata import RecordingMetadata
 from webweaver.studio.studio_solution import StudioSolution
 from webweaver.studio.solution_explorer_node_data import (
@@ -292,6 +293,10 @@ class SolutionExplorerPanel(wx.Panel):
                   self._on_rename_test_suite,
                   id=ID_CONTEXT_MENU_TEST_SUITE_RENAME)
 
+        # Drag and drop
+        self._tree.Bind(wx.EVT_TREE_BEGIN_DRAG, self._on_begin_drag)
+        self._tree.Bind(wx.EVT_TREE_END_DRAG, self._on_end_drag)
+
         # Image list for solution explorer tree
         self._image_list = wx.ImageList(16, 16, True)
 
@@ -308,6 +313,61 @@ class SolutionExplorerPanel(wx.Panel):
         sizer.Add(self._tree, 1, wx.EXPAND)
 
         self.SetSizer(sizer)
+
+    def _on_begin_drag(self, event):
+        print("Dragging start started")
+
+        item = event.GetItem()
+        data = self._tree.GetItemData(item)
+
+        if not data:
+            print("No data....")
+            return
+
+        # Only allow dragging recordings
+        if data.node_type != ExplorerNodeType.RECORDING_ITEM:
+            print("Not recording item")
+            return
+
+        self._drag_item = item
+        event.Allow()
+
+        print("Dragging start ended")
+
+    def _on_end_drag(self, event):
+        target_item = event.GetItem()
+
+        if not target_item or not target_item.IsOk():
+            return
+
+        target_data = self._tree.GetItemData(target_item)
+
+        if not target_data:
+            return
+
+        # Only allow dropping onto a test suite
+        if target_data.node_type != ExplorerNodeType.TEST_SUITES_FILTER:
+            return
+
+        source_data = self._tree.GetItemData(self._drag_item)
+
+        if not source_data:
+            return
+
+        recording = source_data.metadata
+        suite = target_data.metadata
+
+        print("Dragging should be good")
+        #self._add_recording_to_suite(suite, recording)
+
+    def _add_recording_to_suite(self, suite, recording):
+
+        evt = wx.CommandEvent(EVT_ADD_RECORDING_TO_TEST_SUITE)
+
+        # Pass both objects
+        evt.SetClientData({"suite": suite, "recording": recording})
+
+        wx.PostEvent(self.GetParent(), evt)
 
     def _populate_empty_solution(self, solution: StudioSolution) -> None:
         """

@@ -23,10 +23,12 @@ import wx
 EVT_OPEN_RECORDING = wx.NewEventType()
 EVT_DELETE_RECORDING = wx.NewEventType()
 EVT_RENAME_RECORDING = wx.NewEventType()
+EVT_ADD_RECORDING_TO_TEST_SUITE = wx.NewEventType()
 
 OpenRecordingEvent = wx.PyEventBinder(EVT_OPEN_RECORDING, 1)
 DeleteRecordingEvent = wx.PyEventBinder(EVT_DELETE_RECORDING, 1)
 RenameRecordingEvent = wx.PyEventBinder(EVT_RENAME_RECORDING, 1)
+AddRecordingToTestSuiteEvent = wx.PyEventBinder(EVT_ADD_RECORDING_TO_TEST_SUITE, 1)
 
 # Test suite context menu events
 EVT_NEW_TEST_SUITE = wx.NewEventType()

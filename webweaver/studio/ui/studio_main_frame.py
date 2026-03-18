@@ -51,7 +51,8 @@ from webweaver.studio.recording.recording_events import (
     DeleteRecordingEvent,
     DeleteTestSuiteEvent,
     NewTestSuiteEvent,
-    RenameTestSuiteEvent)
+    RenameTestSuiteEvent,
+    AddRecordingToTestSuiteEvent)
 from webweaver.studio.recording.recording_session import RecordingSession
 from webweaver.studio.recording.recording_event_type import RecordingEventType
 from webweaver.studio.recording.recording_loader import \
@@ -313,6 +314,9 @@ class StudioMainFrame(wx.Frame):
 
         # Rename recording event.
         self.Bind(RenameRecordingEvent, self._rename_recording_event)
+
+        # Rename recording event.
+        self.Bind(AddRecordingToTestSuiteEvent, self._on_add_recording_to_suite)
 
         # --------------------------------------------------------------
         # Test Suite events
@@ -1774,3 +1778,27 @@ class StudioMainFrame(wx.Frame):
         if idx is None:
             return
         page.move_step(idx, idx + 1)
+
+    def _on_add_recording_to_suite(self, event):
+
+        data = event.GetClientData()
+        suite = data["suite"]
+        recording = data["recording"]
+
+        suite_data = suite.data
+        recordings = suite_data.setdefault("recordings", [])
+
+        if recording.file_path in recordings:
+            wx.MessageBox(
+                f"Recording '{recording.name}' already in suite '{suite_data.get('name')}'",
+                "Already Added",
+                wx.ICON_INFORMATION
+            )
+            return
+
+        recordings.append(recording.file_path)
+
+        TestSuitePersistence.save_to_disk(suite)
+
+        # Refresh UI via panel
+        self._solution_explorer_panel.refresh_test_suites(self._current_solution)
