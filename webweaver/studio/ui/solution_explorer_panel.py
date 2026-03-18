@@ -315,24 +315,18 @@ class SolutionExplorerPanel(wx.Panel):
         self.SetSizer(sizer)
 
     def _on_begin_drag(self, event):
-        print("Dragging start started")
-
         item = event.GetItem()
         data = self._tree.GetItemData(item)
 
         if not data:
-            print("No data....")
             return
 
         # Only allow dragging recordings
         if data.node_type != ExplorerNodeType.RECORDING_ITEM:
-            print("Not recording item")
             return
 
         self._drag_item = item
         event.Allow()
-
-        print("Dragging start ended")
 
     def _on_end_drag(self, event):
         target_item = event.GetItem()
@@ -357,8 +351,7 @@ class SolutionExplorerPanel(wx.Panel):
         recording = source_data.metadata
         suite = target_data.metadata
 
-        print("Dragging should be good")
-        #self._add_recording_to_suite(suite, recording)
+        self._add_recording_to_suite(suite, recording)
 
     def _add_recording_to_suite(self, suite, recording):
 
