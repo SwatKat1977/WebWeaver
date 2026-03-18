@@ -1788,7 +1788,7 @@ class StudioMainFrame(wx.Frame):
         suite_data = suite.data
         recordings = suite_data.setdefault("recordings", [])
 
-        if recording.file_path in recordings:
+        if recording.id in recordings:
             wx.MessageBox(
                 f"Recording '{recording.name}' already in suite '{suite_data.get('name')}'",
                 "Already Added",
@@ -1796,7 +1796,7 @@ class StudioMainFrame(wx.Frame):
             )
             return
 
-        recordings.append(recording.file_path)
+        recordings.append(recording.id)
 
         TestSuitePersistence.save_to_disk(suite)
 
