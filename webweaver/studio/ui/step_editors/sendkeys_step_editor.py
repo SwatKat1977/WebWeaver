@@ -82,6 +82,11 @@ class SendkeysStepEditor(FancyDialogBase):
                                                     wx.TextCtrl)
         self._field_target_element.SetValue(payload.label)
 
+        # Raw Mode (e.g. use keyboard library)
+        self._field_raw_mode = self.add_field("Raw Mode:",
+                                              wx.CheckBox)
+        self._field_raw_mode.SetValue(payload.raw_mode)
+
         # Keystroke Sequence
         # pylint: disable=unnecessary-lambda
         self._field_sequence = self.add_full_width_field(
@@ -229,6 +234,7 @@ class SendkeysStepEditor(FancyDialogBase):
     def _ok_event(self):
         target = self._field_target_element.GetValue()
         step_label = self._field_step_label.GetValue()
+        raw_mode = self._field_raw_mode.GetValue()
 
         if target:
             for item in self._sequence:
@@ -243,7 +249,8 @@ class SendkeysStepEditor(FancyDialogBase):
 
         payload: SendkeysPayload = SendkeysPayload(label=step_label,
                                                    target=target,
-                                                   keys=self._sequence)
+                                                   keys=self._sequence,
+                                                   raw_mode=raw_mode)
         self._event["payload"] = dataclasses.asdict(payload)
         self.changed = True
         self.EndModal(wx.ID_OK)
