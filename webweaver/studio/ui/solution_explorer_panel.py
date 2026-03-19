@@ -149,7 +149,8 @@ class SolutionExplorerPanel(wx.Panel):
         """
         self._tree.DeleteChildren(recordings_node)
 
-        recordings = solution.discover_recording_files()
+        solution.discover_recording_files()
+        recordings = solution.get_all_recordings()
 
         if not recordings:
             self._tree.AppendItem(recordings_node, "(empty)")
@@ -175,14 +176,41 @@ class SolutionExplorerPanel(wx.Panel):
 
         for suite in test_suites:
             data = suite.data
+            suite_name = data.get("name", "Unnamed Suite")
 
-            self._tree.AppendItem(
+            suite_item = self._tree.AppendItem(
                 node,
-                data.get("name"),
+                suite_name,
                 self._icon_test_suite,
                 self._icon_test_suite,
                 SolutionExplorerNodeData(ExplorerNodeType.TEST_SUITES_FILTER,
                                          suite))
+
+            # Add recordings inside suite
+            recording_ids = data.get("recordings", [])
+
+            if not recording_ids:
+                self._tree.AppendItem(suite_item, "(empty)")
+                continue
+
+            for rec_id in recording_ids:
+                rec = solution.get_recording_by_id(rec_id)
+
+                if not rec:
+                    # Recording missing (deleted or moved)
+                    self._tree.AppendItem(
+                        suite_item,
+                        f"(missing: {rec_id})")
+                    continue
+
+                self._tree.AppendItem(
+                    suite_item,
+                    rec.name,
+                    self._icon_recordings,
+                    self._icon_recordings,
+                    SolutionExplorerNodeData(
+                        ExplorerNodeType.TEST_SUITES_ITEM,
+                        rec))
 
     def refresh_recordings(self, solution: StudioSolution):
         """
