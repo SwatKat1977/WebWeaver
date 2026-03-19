@@ -301,7 +301,7 @@ class StudioSolution:
         Returns:
             A recording name of the form 'Recording N'.
         """
-        recordings = self.discover_recording_files()
+        recordings = self.get_all_recordings()
 
         max_index: int = 0
         prefix: str = "Recording "
