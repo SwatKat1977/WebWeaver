@@ -29,7 +29,8 @@ from webweaver.studio.recording.recording_events import (
     EVT_NEW_TEST_SUITE,
     EVT_DELETE_TEST_SUITE,
     EVT_RENAME_TEST_SUITE,
-    EVT_ADD_RECORDING_TO_TEST_SUITE)
+    EVT_ADD_RECORDING_TO_TEST_SUITE,
+    EVT_REMOVE_RECORDING_FROM_TEST_SUITE)
 from webweaver.studio.recording_metadata import RecordingMetadata
 from webweaver.studio.studio_solution import StudioSolution
 from webweaver.studio.solution_explorer_node_data import (
@@ -50,6 +51,7 @@ ID_CONTEXT_MENU_REC_DELETE = wx.ID_HIGHEST + 3002
 ID_CONTEXT_MENU_TEST_SUITE_NEW = wx.ID_HIGHEST + 3003
 ID_CONTEXT_MENU_TEST_SUITE_DELETE = wx.ID_HIGHEST + 3004
 ID_CONTEXT_MENU_TEST_SUITE_RENAME = wx.ID_HIGHEST + 3005
+ID_CONTEXT_MENU_TEST_SUITE_REMOVE_RECORDING = wx.ID_HIGHEST + 3006
 
 HIDE_DEV_WORK: bool = True
 
@@ -82,6 +84,7 @@ class SolutionExplorerPanel(wx.Panel):
         self._placeholder: Optional[wx.StaticText] = None
         self._image_list: Optional[wx.ImageList] = None
         self._context_item = None
+        self._drag_item = None
 
         self._icon_solution: int = -1
         self._icon_pages: int = -1
@@ -302,12 +305,12 @@ class SolutionExplorerPanel(wx.Panel):
                         expanded.add(key)
 
                 if self._tree.ItemHasChildren(item):
-                    child, cookie = self._tree.GetFirstChild(item)
+                    child, _ = self._tree.GetFirstChild(item)
                     walk(child)
 
                 item = self._tree.GetNextSibling(item)
 
-        child, cookie = self._tree.GetFirstChild(suites_root)
+        child, _ = self._tree.GetFirstChild(suites_root)
         walk(child)
         return expanded
 
@@ -341,12 +344,12 @@ class SolutionExplorerPanel(wx.Panel):
                     self._tree.Expand(item)
 
                 if self._tree.ItemHasChildren(item):
-                    child, cookie = self._tree.GetFirstChild(item)
+                    child, _ = self._tree.GetFirstChild(item)
                     walk(child)
 
                 item = self._tree.GetNextSibling(item)
 
-        child, cookie = self._tree.GetFirstChild(suites_root)
+        child, _ = self._tree.GetFirstChild(suites_root)
         walk(child)
 
     def _create_controls(self):
@@ -388,6 +391,9 @@ class SolutionExplorerPanel(wx.Panel):
         self.Bind(wx.EVT_MENU,
                   self._on_rename_test_suite,
                   id=ID_CONTEXT_MENU_TEST_SUITE_RENAME)
+        self.Bind(wx.EVT_MENU,
+                  self._on_remove_recording_from_test_suite,
+                  id=ID_CONTEXT_MENU_TEST_SUITE_REMOVE_RECORDING)
 
         # Drag and drop
         self._tree.Bind(wx.EVT_TREE_BEGIN_DRAG, self._on_begin_drag)
@@ -558,7 +564,8 @@ class SolutionExplorerPanel(wx.Panel):
             menu.Append(ID_CONTEXT_MENU_TEST_SUITE_RENAME, "Rename suite")
 
         elif data.node_type == ExplorerNodeType.TEST_SUITES_ITEM:
-            menu.Append(ID_CONTEXT_MENU_TEST_SUITE_DELETE, "Delete from suite...")
+            menu.Append(ID_CONTEXT_MENU_TEST_SUITE_REMOVE_RECORDING,
+                        "Delete from suite...")
 
         else:
             # No menu
@@ -674,4 +681,12 @@ class SolutionExplorerPanel(wx.Panel):
             return
 
         evt: wx.CommandEvent = wx.CommandEvent(EVT_RENAME_TEST_SUITE)
+        wx.PostEvent(self.GetParent(), evt)
+
+    def _on_remove_recording_from_test_suite(self,
+                                             _event: wx.CommandEvent) -> None:
+        if not self._context_item.IsOk():
+            return
+
+        evt: wx.CommandEvent = wx.CommandEvent(EVT_REMOVE_RECORDING_FROM_TEST_SUITE)
         wx.PostEvent(self.GetParent(), evt)

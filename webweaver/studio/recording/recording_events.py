@@ -28,13 +28,17 @@ EVT_ADD_RECORDING_TO_TEST_SUITE = wx.NewEventType()
 OpenRecordingEvent = wx.PyEventBinder(EVT_OPEN_RECORDING, 1)
 DeleteRecordingEvent = wx.PyEventBinder(EVT_DELETE_RECORDING, 1)
 RenameRecordingEvent = wx.PyEventBinder(EVT_RENAME_RECORDING, 1)
-AddRecordingToTestSuiteEvent = wx.PyEventBinder(EVT_ADD_RECORDING_TO_TEST_SUITE, 1)
+AddRecordingToTestSuiteEvent = wx.PyEventBinder(
+    EVT_ADD_RECORDING_TO_TEST_SUITE, 1)
 
 # Test suite context menu events
 EVT_NEW_TEST_SUITE = wx.NewEventType()
 EVT_DELETE_TEST_SUITE = wx.NewEventType()
 EVT_RENAME_TEST_SUITE = wx.NewEventType()
+EVT_REMOVE_RECORDING_FROM_TEST_SUITE = wx.NewEventType()
 
 NewTestSuiteEvent = wx.PyEventBinder(EVT_NEW_TEST_SUITE, 1)
 DeleteTestSuiteEvent = wx.PyEventBinder(EVT_DELETE_TEST_SUITE, 1)
 RenameTestSuiteEvent = wx.PyEventBinder(EVT_RENAME_TEST_SUITE, 1)
+RemoveRecordingFromTestSuiteEvent = wx.PyEventBinder(
+    EVT_REMOVE_RECORDING_FROM_TEST_SUITE, 1)

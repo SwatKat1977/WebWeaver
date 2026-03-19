@@ -81,6 +81,8 @@ class StudioSolution:
     A solution defines a workspace on disk along with browser configuration
     and recording metadata.
     """
+    # pylint: disable=too-many-instance-attributes
+
     solution_name: str
     solution_directory: str
     create_directory_for_solution: bool
@@ -341,9 +343,22 @@ class StudioSolution:
         return ctx
 
     def get_recording_by_id(self, recording_id):
+        """Retrieve a recording by its unique identifier.
+
+        Args:
+            recording_id (str): The unique identifier of the recording.
+
+        Returns:
+            Recording | None: The matching recording object if found, otherwise None.
+        """
         return self.recordings_cache.get(recording_id)
 
     def get_all_recordings(self):
+        """Retrieve all cached recordings.
+
+        Returns:
+            list[Recording]: A list of all recording objects stored in the cache.
+        """
         return list(self.recordings_cache.values())
 
 
