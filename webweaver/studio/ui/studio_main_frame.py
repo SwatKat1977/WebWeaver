@@ -1140,6 +1140,7 @@ class StudioMainFrame(wx.Frame):
         self._workspace_panel.on_recording_renamed_by_id(recording.id,
                                                          new_name)
         self._solution_explorer_panel.refresh_recordings(self._current_solution)
+        self._solution_explorer_panel.refresh_test_suites(self._current_solution)
 
     def _delete_recording_event(self, evt: wx.CommandEvent) -> None:
         if self._state_controller.state in (StudioState.RECORDING_RUNNING,
