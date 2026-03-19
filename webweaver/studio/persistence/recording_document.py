@@ -303,6 +303,7 @@ class SendkeysPayload(BasePayload):
 
     target: str
     keys: List[SendkeysKeyDefinition]
+    raw_mode: bool
 
 
 @dataclass
