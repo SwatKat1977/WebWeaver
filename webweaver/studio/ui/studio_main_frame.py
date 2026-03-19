@@ -51,7 +51,9 @@ from webweaver.studio.recording.recording_events import (
     DeleteRecordingEvent,
     DeleteTestSuiteEvent,
     NewTestSuiteEvent,
-    RenameTestSuiteEvent)
+    RenameTestSuiteEvent,
+    AddRecordingToTestSuiteEvent,
+    RemoveRecordingFromTestSuiteEvent)
 from webweaver.studio.recording.recording_session import RecordingSession
 from webweaver.studio.recording.recording_event_type import RecordingEventType
 from webweaver.studio.recording.recording_loader import \
@@ -314,6 +316,9 @@ class StudioMainFrame(wx.Frame):
         # Rename recording event.
         self.Bind(RenameRecordingEvent, self._rename_recording_event)
 
+        # Rename recording event.
+        self.Bind(AddRecordingToTestSuiteEvent, self._on_add_recording_to_suite)
+
         # --------------------------------------------------------------
         # Test Suite events
         # --------------------------------------------------------------
@@ -326,6 +331,10 @@ class StudioMainFrame(wx.Frame):
 
         # Rename test suite event.
         self.Bind(RenameTestSuiteEvent, self._rename_test_suite_event)
+
+        # Remove recording from test suite event.
+        self.Bind(RemoveRecordingFromTestSuiteEvent,
+                  self._on_remove_recording_from_suite)
 
         self.Bind(EVT_WORKSPACE_ACTIVE_CHANGED,
                   self._on_workspace_active_changed)
@@ -1136,6 +1145,7 @@ class StudioMainFrame(wx.Frame):
         self._workspace_panel.on_recording_renamed_by_id(recording.id,
                                                          new_name)
         self._solution_explorer_panel.refresh_recordings(self._current_solution)
+        self._solution_explorer_panel.refresh_test_suites(self._current_solution)
 
     def _delete_recording_event(self, evt: wx.CommandEvent) -> None:
         if self._state_controller.state in (StudioState.RECORDING_RUNNING,
@@ -1296,6 +1306,38 @@ class StudioMainFrame(wx.Frame):
                 self)
             return
 
+        self._solution_explorer_panel.refresh_test_suites(self._current_solution)
+
+    def _on_remove_recording_from_suite(self, event: wx.CommandEvent) -> None:
+        if self._state_controller.state in (StudioState.RECORDING_RUNNING,
+                                            StudioState.RECORDING_PAUSED):
+            wx.MessageBox(
+                "Stop recording before removing a recording from a test suite",
+                "Remove Recording From Test Suite",
+                wx.ICON_WARNING,
+                self)
+            return
+
+        data = event.GetClientData()
+        suite = data["suite"]
+        recording = data["recording"]
+
+        suite_data = suite.data
+        recordings = suite_data.setdefault("recordings", [])
+
+        if recording.id not in recordings:
+            wx.MessageBox(
+                f"Recording '{recording.name}' not in suite '{suite_data.get('name')}'",
+                "Invalid Recording",
+                wx.ICON_INFORMATION
+            )
+            return
+
+        recordings.remove(recording.id)
+
+        TestSuitePersistence.save_to_disk(suite)
+
+        # Refresh UI via panel
         self._solution_explorer_panel.refresh_test_suites(self._current_solution)
 
     def rebuild_recent_solutions_menu(self) -> None:
@@ -1774,3 +1816,27 @@ class StudioMainFrame(wx.Frame):
         if idx is None:
             return
         page.move_step(idx, idx + 1)
+
+    def _on_add_recording_to_suite(self, event):
+
+        data = event.GetClientData()
+        suite = data["suite"]
+        recording = data["recording"]
+
+        suite_data = suite.data
+        recordings = suite_data.setdefault("recordings", [])
+
+        if recording.id in recordings:
+            wx.MessageBox(
+                f"Recording '{recording.name}' already in suite '{suite_data.get('name')}'",
+                "Already Added",
+                wx.ICON_INFORMATION
+            )
+            return
+
+        recordings.append(recording.id)
+
+        TestSuitePersistence.save_to_disk(suite)
+
+        # Refresh UI via panel
+        self._solution_explorer_panel.refresh_test_suites(self._current_solution)
