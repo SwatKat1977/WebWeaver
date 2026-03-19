@@ -557,6 +557,9 @@ class SolutionExplorerPanel(wx.Panel):
             menu.Append(ID_CONTEXT_MENU_TEST_SUITE_DELETE, "Delete suite")
             menu.Append(ID_CONTEXT_MENU_TEST_SUITE_RENAME, "Rename suite")
 
+        elif data.node_type == ExplorerNodeType.TEST_SUITES_ITEM:
+            menu.Append(ID_CONTEXT_MENU_TEST_SUITE_DELETE, "Delete from suite...")
+
         else:
             # No menu
             return
