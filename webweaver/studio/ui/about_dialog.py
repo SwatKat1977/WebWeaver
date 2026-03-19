@@ -88,7 +88,7 @@ class AboutDialog(wx.Dialog):
         desc = wx.StaticText(
             panel,
             label="Web interaction recording and playback tool.\n\n"
-                  "Milestone release v0.1.0")
+                  "Milestone v0.2.0 release")
 
         # --- OK button ---
         ok_btn = wx.Button(panel, wx.ID_OK)

@@ -31,7 +31,7 @@ class StudioSplashScreen(wx.Frame):
     After a short delay, the splash screen automatically closes and
     transfers control to the main application window.
     """
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods, too-many-locals
 
     def __init__(self, core_version: str, studio_version: str):
         """
@@ -76,8 +76,6 @@ class StudioSplashScreen(wx.Frame):
                                                      width=500,
                                                      height=500)
 
-        logo = wx.StaticBitmap(panel, bitmap=logo_bitmap)
-
         core = wx.StaticText(panel, label=f"Core: {core_version}")
         studio = wx.StaticText(panel, label=f"Studio: {studio_version}")
 
@@ -85,7 +83,27 @@ class StudioSplashScreen(wx.Frame):
         studio.SetForegroundColour("#000000")
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(logo, 0, wx.ALIGN_CENTER | wx.ALL, 10)
+
+        logo_container = wx.Panel(panel)
+        logo_container.SetBackgroundColour(panel.GetBackgroundColour())
+
+        logo = wx.StaticBitmap(logo_container, bitmap=logo_bitmap)
+
+        early_label = wx.StaticText(logo_container, label="EARLY ACCESS")
+        early_label.SetForegroundColour(wx.Colour(200, 50, 50))  # soft red
+        early_label.SetFont(wx.Font(28, wx.FONTFAMILY_DEFAULT,
+                                    wx.FONTSTYLE_NORMAL,
+                                    wx.FONTWEIGHT_BOLD))
+
+        logo_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        logo_sizer.Add(logo, 0, wx.ALIGN_CENTER)
+        logo_sizer.Add(early_label, 0, wx.ALIGN_CENTER | wx.TOP, -60)
+
+        logo_container.SetSizer(logo_sizer)
+
+        sizer.Add(logo_container, 0, wx.ALIGN_CENTER | wx.ALL, 10)
+
         sizer.AddStretchSpacer()
 
         bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
