@@ -88,6 +88,8 @@ class StudioSolution:
     selected_browser: str
     launch_browser_automatically: bool
     browser_launch_options: BrowserLaunchOptions
+    recordings_cache: typing.Dict[str, RecordingMetadata] = \
+        dataclasses.field(default_factory=dict)
 
     def to_json(self):
         """
@@ -153,7 +155,7 @@ class StudioSolution:
         # Mirrors your C++ logic: you *looked for* browserLaunchOptions under `solution`,
         # even though ToJson writes it at the root. I'm keeping that behavior faithful.
         launch_options = BrowserLaunchOptions()
-        raw_launch_options =raw.get("browserLaunchOptions")
+        raw_launch_options = raw.get("browserLaunchOptions")
         if isinstance(raw_launch_options, dict):
             launch_options = BrowserLaunchOptions.from_json(raw_launch_options)
 
@@ -259,7 +261,7 @@ class StudioSolution:
 
         return SolutionDirectoryCreateStatus.NONE_
 
-    def discover_recording_files(self) -> typing.List["RecordingMetadata"]:
+    def discover_recording_files(self) -> None:
         """
         Scan the Recordings directory for valid recording metadata files.
 
@@ -270,7 +272,7 @@ class StudioSolution:
         rec_dir = self.get_recordings_directory()
 
         if not rec_dir.exists():
-            return recordings
+            return
 
         for entry in rec_dir.iterdir():
             if not entry.is_file():
@@ -289,7 +291,8 @@ class StudioSolution:
 
             recordings.append(result.recording)
 
-        return recordings
+        # Build recordings cache
+        self.recordings_cache = {rec.id: rec for rec in recordings}
 
     def generate_next_recording_name(self) -> str:
         """
@@ -336,6 +339,12 @@ class StudioSolution:
         recording_file = Path(metadata.file_path).resolve()
         ctx = RecordingViewContext(metadata, recording_file)
         return ctx
+
+    def get_recording_by_id(self, recording_id):
+        return self.recordings_cache.get(recording_id)
+
+    def get_all_recordings(self):
+        return list(self.recordings_cache.values())
 
 
 def solution_load_error_to_str(error_enum: SolutionLoadError) -> str:
