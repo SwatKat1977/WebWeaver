@@ -19,7 +19,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 from enum import Enum
 import wx
-from webweaver.studio.persistence.recording_document import RestApiPayload
+from webweaver.studio.persistence.recording_document import (RestApiPayload,
+                                                             RestApiBodyType)
 from webweaver.studio.ui.fancy_dialog_base import FancyDialogBase
 
 
@@ -40,6 +41,12 @@ REST_API_EVENT_TYPE_LABELS: list[tuple[str, RestApiCallType]] = [
     ("GET", RestApiCallType.GET),
     ("DELETE", RestApiCallType.DELETE),
     ("POST", RestApiCallType.POST)
+]
+
+REST_API_BODY_TYPE_LABELS: list[tuple[str, RestApiBodyType]] = [
+    ("Text", RestApiBodyType.TEXT),
+    ("JSON", RestApiBodyType.JSON),
+    ("XML", RestApiBodyType.XML)
 ]
 
 
@@ -116,10 +123,21 @@ class RestApiStepEditor(FancyDialogBase):
         self._field_rest_call = self.add_field("REST Call:", wx.TextCtrl)
         self._field_rest_call.SetValue(payload.rest_call)
 
-        # -- Output variable
-        self._field_output_variable = self.add_field("Output Variable (optional):",
-                                                     wx.TextCtrl)
-        self._field_output_variable.SetValue(payload.output_variable)
+        # -- Body Type
+        self._field_body_type: wx.Choice = self.add_field(
+            "Body Type:",
+            lambda parent: wx.Choice(parent,
+                                     choices=[label for label, _ in
+                                              REST_API_BODY_TYPE_LABELS]))
+
+        # Set current body type selection
+        current_body_type = payload.body_type
+        for i, (label, _) in enumerate(REST_API_BODY_TYPE_LABELS):
+            if label == current_body_type:
+                self._field_body_type.SetSelection(i)
+                break
+        else:
+            self._field_body_type.SetSelection(0)
 
         # -- Call body
         self._field_call_body = self.add_full_width_field(
@@ -128,6 +146,11 @@ class RestApiStepEditor(FancyDialogBase):
                                        value=payload.body or "",
                                        style=wx.TE_MULTILINE))
         self._field_call_body.SetMinSize((450, 150))
+
+        # -- Output variable
+        self._field_output_variable = self.add_field("Output Variable (optional):",
+                                                     wx.TextCtrl)
+        self._field_output_variable.SetValue(payload.output_variable)
 
         self.finalise()
 
@@ -170,18 +193,22 @@ class RestApiStepEditor(FancyDialogBase):
             self._field_rest_call.SetFocus()
             return False
 
-        _, enum_val = REST_API_EVENT_TYPE_LABELS[
+        _, call_method_enum = REST_API_EVENT_TYPE_LABELS[
             self._field_call_method.GetSelection()]
+
+        _, body_type_enum = REST_API_BODY_TYPE_LABELS[
+            self._field_body_type.GetSelection()]
 
         body_text = self._field_call_body.GetValue().strip()
 
         self._event["payload"] = {
             "label": step_label,
             "base_url": base_url,
-            "call_type": enum_val.value,
+            "call_type": call_method_enum.value,
             "rest_call": rest_call,
             "output_variable": output_variable,
-            "body": body_text or None
+            "body": body_text or None,
+            "body_type": body_type_enum.value
         }
 
         self.changed = True
@@ -203,6 +230,7 @@ class RestApiStepEditor(FancyDialogBase):
         _, method = REST_API_EVENT_TYPE_LABELS[selected_index]
 
         self._field_call_body.Enable(method == RestApiCallType.POST)
+        self._field_body_type.Enable(method == RestApiCallType.POST)
 
     def _on_method_changed(self, _evt):
         """

@@ -21,13 +21,17 @@ import asyncio
 from dataclasses import dataclass
 import json
 from logging import Logger
-import time
+import threading
 import typing
+import keyboard
+import wx
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 from webweaver.studio.api_client import ApiClient
 from webweaver.studio.browsing.studio_browser import (PlaybackStepResult,
                                                       StudioBrowser)
+from webweaver.studio.persistence.recording_document import RestApiBodyType
 from webweaver.studio.playback.playback_context import PlaybackContext, PlaybackVariableError
 from webweaver.studio.recording.recording import Recording
 from webweaver.common.assertion import Assertions, AssertionFailure
@@ -108,6 +112,8 @@ class RecordingPlaybackSession:
                                                    logger=self._logger)
         self._soft_assert: Assertions = Assertions(soft=True,
                                                    logger=self._logger)
+        self._thread = None
+        self._stop_event = threading.Event()
 
     def start(self):
         """
@@ -121,6 +127,14 @@ class RecordingPlaybackSession:
         self._index = 0
         self._context.clear()
 
+        self._stop_event.clear()
+
+        self._thread = threading.Thread(
+            target=self._playback_loop,
+            daemon=True
+        )
+        self._thread.start()
+
     def stop(self):
         """
         Stop playback.
@@ -129,6 +143,14 @@ class RecordingPlaybackSession:
         executed until start() is called again.
         """
         self._running = False
+        self._stop_event.set()
+
+        if self._thread and self._thread.is_alive() \
+                and threading.current_thread() != self._thread:
+            self._thread.join(timeout=2)
+
+            if self._thread.is_alive():
+                self._logger.warning("Playback thread did not stop in time")
 
     def step(self) -> bool:
         """
@@ -150,33 +172,44 @@ class RecordingPlaybackSession:
         if self._index >= len(self._recording.events):
             self.stop()
             if self.callback_events.on_playback_finished:
-                self.callback_events.on_playback_finished()
+                wx.CallAfter(self.callback_events.on_playback_finished)
 
             return False
 
         current_index = self._index
 
         if self.callback_events.on_step_started:
-            self.callback_events.on_step_started(current_index)
+            wx.CallAfter(self.callback_events.on_step_started, current_index)
 
         event = self._recording.events[current_index]
         result = self._execute_event(event)
 
         if not result.ok:
             if self.callback_events.on_step_failed:
-                self.callback_events.on_step_failed(current_index,
-                                                     result.error)
+                wx.CallAfter(self.callback_events.on_step_failed,
+                             current_index,
+                             result.error)
 
             self.stop()
             return False
 
         # success
         if self.callback_events.on_step_passed:
-            self.callback_events.on_step_passed(current_index)
+            wx.CallAfter(self.callback_events.on_step_passed, current_index)
 
         self._index += 1
 
         return True
+
+    def _playback_loop(self):
+        while self._running and not self._stop_event.is_set():
+            if self._stop_event.is_set():
+                break
+
+            still_running = self.step()
+
+            if not still_running:
+                break
 
     def _execute_event(self, event: dict):
         """
@@ -213,6 +246,17 @@ class RecordingPlaybackSession:
             if event_type == "dom.type":
                 return self._perform_dom_type(payload)
 
+            if event_type == "nav.goto":
+                url: str = payload.get("url")
+                self._logger.debug("[PLAYBACK EVENT] Navigate to '%s'", url)
+
+                try:
+                    self._browser.open_page(url)
+                except WebDriverException:
+                    return PlaybackStepResult.fail(f"Unable to navigate to '{url}'")
+
+                return PlaybackStepResult.success()
+
             if event_type == "rest_api":
                 self._logger.debug("[PLAYBACK EVENT] REST API: %s ", payload)
                 return self._perform_rest_api(event)
@@ -233,9 +277,7 @@ class RecordingPlaybackSession:
 
             if event_type == "wait":
                 self._logger.debug("[PLAYBACK EVENT] Wait: %s ms", payload)
-                self._perform_wait(event)
-                return PlaybackStepResult.success()
-
+                return self._perform_wait(event)
 
             self._logger.debug("[PLAYBACK EVENT] Unknown event: %s", event_type)
             return PlaybackStepResult.success()
@@ -294,13 +336,20 @@ class RecordingPlaybackSession:
     def _perform_wait(self, event):
         payload = event.get("payload", {})
         duration = payload.get("duration_ms")
-        time.sleep(duration / 1000)
+
+        interrupted = self._stop_event.wait(duration / 1000)
+        if interrupted:
+            return PlaybackStepResult.fail("Playback stopped")
+
+        return PlaybackStepResult.success()
 
     def _perform_rest_api(self, event):
+        # pylint: disable=too-many-return-statements
         payload = event.get("payload", {})
         call_type = payload.get("call_type")
         base_url = payload.get("base_url")
         rest_call = payload.get("rest_call")
+        body_type = payload.get("body_type", RestApiBodyType.TEXT.value)
         call_body = payload.get("body")
         output_name = payload.get("output_variable")
 
@@ -311,25 +360,38 @@ class RecordingPlaybackSession:
                 f"REST API base url variable '{base_url}' is not defined")
 
         try:
-            call_body = self._context.resolve_template(call_body)
+            rest_call = self._context.resolve_template(rest_call)
         except PlaybackVariableError:
             return PlaybackStepResult.fail(
-                f"REST API body variable '{call_body}' is not defined")
+                f"REST API call variable '{rest_call}' is not defined")
+
+        if call_body:
+            try:
+                call_body = self._context.resolve_template(call_body)
+            except PlaybackVariableError:
+                return PlaybackStepResult.fail(
+                    f"REST API body variable '{call_body}' is not defined")
 
         api_client = ApiClient()
+
+        body_type = RestApiBodyType[body_type.upper()]
+        call_url = f"{base_url}{rest_call}"
 
         try:
             # -----------------------------
             # Perform HTTP call
             # -----------------------------
             if call_type == "get":
-                response = asyncio.run(api_client.call_api_get(
-                                       url=f"{base_url}{rest_call}",
-                                       json_data=call_body))
+                response = asyncio.run(api_client.call_api_get(url=call_url))
 
             elif call_type == "post":
                 response = asyncio.run(api_client.call_api_post(
-                                       url=f"{base_url}{rest_call}"))
+                    url=call_url, body=call_body, body_type=body_type))
+
+                print(f"Response: Status = {response.status_code} | Body: {response.body}")
+
+            elif call_type == "delete":
+                response = asyncio.run(api_client.call_api_delete(url=call_url))
 
             else:
                 return PlaybackStepResult.fail(
@@ -550,49 +612,83 @@ class RecordingPlaybackSession:
         payload = event.get("payload", {})
         keys = payload.get("keys", [])
         target = payload.get("target", None)
+        raw_mode = payload.get("raw_mode", False)
 
         if target:
-            # Nothing to do
-            if not keys:
-                print("NOT KEYS")
-                return PlaybackStepResult.success()
-
-            if keys[0].get("type") != "text":
-                print("key combo not allowed with targetted")
-                return PlaybackStepResult.fail("Special key combo not allowed")
-
-            self._browser.playback_sendkeys(payload)
-            return PlaybackStepResult.success()
+            return self._perform_sendkeys_target(event)
 
         action_chains = ActionChains(self._browser.raw)
 
         for send_entry in keys:
             entry_type = send_entry.get("type")
-            entry_value = send_entry.get("value")
 
             if entry_type == "text":
-                action_chains.send_keys(entry_value)
+                self._perform_sendkeys_text(send_entry, action_chains, raw_mode)
 
             elif entry_type == "key":
-                raw_modifiers = send_entry.get("modifiers")
+                if raw_mode:
+                    self._perform_sendkeys_key_raw(send_entry)
+                else:
+                    self._perform_sendkeys_key_normal(send_entry, action_chains)
 
-                if raw_modifiers:
-                    modifiers = raw_modifiers.split("+")
-
-                    for modifier in modifiers:
-                        action_chains.key_down(getattr(Keys, modifier))
-
-                action_chains.send_keys(self._resolve_key(entry_value))
-
-                if raw_modifiers:
-                    modifiers = raw_modifiers.split("+")
-
-                    for m in reversed(modifiers):
-                        action_chains.key_up(getattr(Keys, m))
-
-        action_chains.perform()
+        if not raw_mode:
+            action_chains.perform()
 
         return PlaybackStepResult.success()
+
+    def _perform_sendkeys_target(self, event):
+        payload = event.get("payload", {})
+        keys = payload.get("keys", [])
+
+        # Nothing to do
+        if not keys:
+            print("NOT KEYS")
+            return PlaybackStepResult.success()
+
+        if keys[0].get("type") != "text":
+            print("key combo not allowed with targeted")
+            return PlaybackStepResult.fail("Special key combo not allowed")
+
+        self._browser.playback_sendkeys(payload)
+        return PlaybackStepResult.success()
+
+    def _perform_sendkeys_text(self, key_entry, chain, raw_mode: bool):
+        value = key_entry.get("value")
+
+        if raw_mode:
+            keyboard.write(value)
+
+        else:
+            chain.send_keys(value)
+
+    def _perform_sendkeys_key_normal(self, key_entry, chain):
+        raw_modifiers = key_entry.get("modifiers")
+        entry_value = key_entry.get("value")
+
+        if raw_modifiers:
+            modifiers = raw_modifiers.split("+")
+
+            for modifier in modifiers:
+                chain.key_down(getattr(Keys, modifier))
+
+        chain.send_keys(self._resolve_key(entry_value))
+
+        if raw_modifiers:
+            modifiers = raw_modifiers.split("+")
+
+            for m in reversed(modifiers):
+                chain.key_up(getattr(Keys, m))
+
+    def _perform_sendkeys_key_raw(self, key_entry):
+        raw_modifiers = key_entry.get("modifiers")
+        entry_value = key_entry.get("value")
+
+        if raw_modifiers:
+            modifiers = raw_modifiers.lower().split("+")
+            combo = "+".join(modifiers + [entry_value.lower()])
+            keyboard.send(combo)
+        else:
+            keyboard.send(entry_value.lower())
 
     def _resolve_key(self, key: str):
         """Convert a recorded key name to a Selenium key."""

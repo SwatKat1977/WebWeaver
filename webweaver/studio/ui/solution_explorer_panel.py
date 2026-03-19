@@ -28,7 +28,9 @@ from webweaver.studio.recording.recording_events import (
     EVT_DELETE_RECORDING,
     EVT_NEW_TEST_SUITE,
     EVT_DELETE_TEST_SUITE,
-    EVT_RENAME_TEST_SUITE)
+    EVT_RENAME_TEST_SUITE,
+    EVT_ADD_RECORDING_TO_TEST_SUITE,
+    EVT_REMOVE_RECORDING_FROM_TEST_SUITE)
 from webweaver.studio.recording_metadata import RecordingMetadata
 from webweaver.studio.studio_solution import StudioSolution
 from webweaver.studio.solution_explorer_node_data import (
@@ -49,6 +51,7 @@ ID_CONTEXT_MENU_REC_DELETE = wx.ID_HIGHEST + 3002
 ID_CONTEXT_MENU_TEST_SUITE_NEW = wx.ID_HIGHEST + 3003
 ID_CONTEXT_MENU_TEST_SUITE_DELETE = wx.ID_HIGHEST + 3004
 ID_CONTEXT_MENU_TEST_SUITE_RENAME = wx.ID_HIGHEST + 3005
+ID_CONTEXT_MENU_TEST_SUITE_REMOVE_RECORDING = wx.ID_HIGHEST + 3006
 
 HIDE_DEV_WORK: bool = True
 
@@ -81,6 +84,7 @@ class SolutionExplorerPanel(wx.Panel):
         self._placeholder: Optional[wx.StaticText] = None
         self._image_list: Optional[wx.ImageList] = None
         self._context_item = None
+        self._drag_item = None
 
         self._icon_solution: int = -1
         self._icon_pages: int = -1
@@ -148,7 +152,8 @@ class SolutionExplorerPanel(wx.Panel):
         """
         self._tree.DeleteChildren(recordings_node)
 
-        recordings = solution.discover_recording_files()
+        solution.discover_recording_files()
+        recordings = solution.get_all_recordings()
 
         if not recordings:
             self._tree.AppendItem(recordings_node, "(empty)")
@@ -174,14 +179,41 @@ class SolutionExplorerPanel(wx.Panel):
 
         for suite in test_suites:
             data = suite.data
+            suite_name = data.get("name", "Unnamed Suite")
 
-            self._tree.AppendItem(
+            suite_item = self._tree.AppendItem(
                 node,
-                data.get("name"),
+                suite_name,
                 self._icon_test_suite,
                 self._icon_test_suite,
                 SolutionExplorerNodeData(ExplorerNodeType.TEST_SUITES_FILTER,
                                          suite))
+
+            # Add recordings inside suite
+            recording_ids = data.get("recordings", [])
+
+            if not recording_ids:
+                self._tree.AppendItem(suite_item, "(empty)")
+                continue
+
+            for rec_id in recording_ids:
+                rec = solution.get_recording_by_id(rec_id)
+
+                if not rec:
+                    # Recording missing (deleted or moved)
+                    self._tree.AppendItem(
+                        suite_item,
+                        f"(missing: {rec_id})")
+                    continue
+
+                self._tree.AppendItem(
+                    suite_item,
+                    rec.name,
+                    self._icon_recordings,
+                    self._icon_recordings,
+                    SolutionExplorerNodeData(
+                        ExplorerNodeType.TEST_SUITES_ITEM,
+                        rec))
 
     def refresh_recordings(self, solution: StudioSolution):
         """
@@ -226,9 +258,19 @@ class SolutionExplorerPanel(wx.Panel):
 
         while child.IsOk():
             if self._tree.GetItemText(child) == "Test Suites":
-                self._tree.DeleteChildren(child)
-                self._populate_test_suites(solution, child)
-                self._tree.Expand(child)
+                expanded_keys = self._get_expanded_test_suite_keys(child)
+                self._tree.Freeze()
+
+                try:
+                    self._tree.DeleteChildren(child)
+                    self._populate_test_suites(solution, child)
+                    self._tree.Expand(child)
+
+                    self._restore_expanded_test_suite_keys(child, expanded_keys)
+
+                finally:
+                    self._tree.Thaw()
+
                 return
 
             child, cookie = self._tree.GetNextChild(root, cookie)
@@ -251,6 +293,64 @@ class SolutionExplorerPanel(wx.Panel):
             return None
 
         return data.metadata
+
+    def _get_expanded_test_suite_keys(self, suites_root: wx.TreeItemId) -> set[str]:
+        expanded = set()
+
+        def walk(item: wx.TreeItemId):
+            while item.IsOk():
+                if self._tree.IsExpanded(item):
+                    key = self._get_tree_item_key(item)
+                    if key is not None:
+                        expanded.add(key)
+
+                if self._tree.ItemHasChildren(item):
+                    child, _ = self._tree.GetFirstChild(item)
+                    walk(child)
+
+                item = self._tree.GetNextSibling(item)
+
+        child, _ = self._tree.GetFirstChild(suites_root)
+        walk(child)
+        return expanded
+
+    def _get_tree_item_key(self, item: wx.TreeItemId) -> Optional[str]:
+        data = self._tree.GetItemData(item)
+
+        if data is None:
+            text = self._tree.GetItemText(item)
+            return f"text:{text}"
+
+        if isinstance(data, str):
+            return data
+
+        if hasattr(data, "id"):
+            return f"id:{data.id}"
+
+        if hasattr(data, "file_path"):
+            return f"path:{data.file_path}"
+
+        return self._tree.GetItemText(item)
+
+    def _restore_expanded_test_suite_keys(
+            self,
+            suites_root: wx.TreeItemId,
+            expanded_keys: set[str]) -> None:
+
+        def walk(item: wx.TreeItemId):
+            while item.IsOk():
+                key = self._get_tree_item_key(item)
+                if key in expanded_keys:
+                    self._tree.Expand(item)
+
+                if self._tree.ItemHasChildren(item):
+                    child, _ = self._tree.GetFirstChild(item)
+                    walk(child)
+
+                item = self._tree.GetNextSibling(item)
+
+        child, _ = self._tree.GetFirstChild(suites_root)
+        walk(child)
 
     def _create_controls(self):
         """
@@ -291,6 +391,13 @@ class SolutionExplorerPanel(wx.Panel):
         self.Bind(wx.EVT_MENU,
                   self._on_rename_test_suite,
                   id=ID_CONTEXT_MENU_TEST_SUITE_RENAME)
+        self.Bind(wx.EVT_MENU,
+                  self._on_remove_recording_from_test_suite,
+                  id=ID_CONTEXT_MENU_TEST_SUITE_REMOVE_RECORDING)
+
+        # Drag and drop
+        self._tree.Bind(wx.EVT_TREE_BEGIN_DRAG, self._on_begin_drag)
+        self._tree.Bind(wx.EVT_TREE_END_DRAG, self._on_end_drag)
 
         # Image list for solution explorer tree
         self._image_list = wx.ImageList(16, 16, True)
@@ -308,6 +415,54 @@ class SolutionExplorerPanel(wx.Panel):
         sizer.Add(self._tree, 1, wx.EXPAND)
 
         self.SetSizer(sizer)
+
+    def _on_begin_drag(self, event):
+        item = event.GetItem()
+        data = self._tree.GetItemData(item)
+
+        if not data:
+            return
+
+        # Only allow dragging recordings
+        if data.node_type != ExplorerNodeType.RECORDING_ITEM:
+            return
+
+        self._drag_item = item
+        event.Allow()
+
+    def _on_end_drag(self, event):
+        target_item = event.GetItem()
+
+        if not target_item or not target_item.IsOk():
+            return
+
+        target_data = self._tree.GetItemData(target_item)
+
+        if not target_data:
+            return
+
+        # Only allow dropping onto a test suite
+        if target_data.node_type != ExplorerNodeType.TEST_SUITES_FILTER:
+            return
+
+        source_data = self._tree.GetItemData(self._drag_item)
+
+        if not source_data:
+            return
+
+        recording = source_data.metadata
+        suite = target_data.metadata
+
+        self._add_recording_to_suite(suite, recording)
+
+    def _add_recording_to_suite(self, suite, recording):
+
+        evt = wx.CommandEvent(EVT_ADD_RECORDING_TO_TEST_SUITE)
+
+        # Pass both objects
+        evt.SetClientData({"suite": suite, "recording": recording})
+
+        wx.PostEvent(self.GetParent(), evt)
 
     def _populate_empty_solution(self, solution: StudioSolution) -> None:
         """
@@ -407,6 +562,10 @@ class SolutionExplorerPanel(wx.Panel):
         elif data.node_type == ExplorerNodeType.TEST_SUITES_FILTER:
             menu.Append(ID_CONTEXT_MENU_TEST_SUITE_DELETE, "Delete suite")
             menu.Append(ID_CONTEXT_MENU_TEST_SUITE_RENAME, "Rename suite")
+
+        elif data.node_type == ExplorerNodeType.TEST_SUITES_ITEM:
+            menu.Append(ID_CONTEXT_MENU_TEST_SUITE_REMOVE_RECORDING,
+                        "Delete from suite...")
 
         else:
             # No menu
@@ -522,4 +681,34 @@ class SolutionExplorerPanel(wx.Panel):
             return
 
         evt: wx.CommandEvent = wx.CommandEvent(EVT_RENAME_TEST_SUITE)
+        wx.PostEvent(self.GetParent(), evt)
+
+    def _on_remove_recording_from_test_suite(self,
+                                             _event: wx.CommandEvent) -> None:
+        if not self._context_item.IsOk():
+            return
+
+        item = self._context_item
+        data = self._tree.GetItemData(item)
+
+        if not data:
+            return
+
+        if data.node_type != ExplorerNodeType.TEST_SUITES_ITEM:
+            return
+
+        recording = data.metadata
+
+        parent_item = self._tree.GetItemParent(item)
+        parent_data = self._tree.GetItemData(parent_item)
+
+        if not parent_data:
+            return
+
+        suite = parent_data.metadata
+
+        evt: wx.CommandEvent = wx.CommandEvent(
+            EVT_REMOVE_RECORDING_FROM_TEST_SUITE)
+        evt.SetClientData({"suite": suite,
+                          "recording": recording})
         wx.PostEvent(self.GetParent(), evt)

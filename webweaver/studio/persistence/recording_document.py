@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from dataclasses import asdict, dataclass
+from enum import Enum
 from pathlib import Path
 from typing import List, Optional
 from webweaver.studio.recording.recording_event_type import RecordingEventType
@@ -79,6 +80,7 @@ class AssertPayload(BasePayload):
     left_value: str = ""
     right_value: None | str = None
     soft_assert: bool = False
+
 
 @dataclass
 class DomCheckPayload(DomPayload):
@@ -172,6 +174,24 @@ class WaitPayload(BasePayload):
     duration_ms: int
 
 
+class RestApiBodyType(Enum):
+    """Enumeration of supported REST API request body formats.
+
+    This enum defines the possible content types that can be used when
+    sending a request body in a REST API call. It is typically used to
+    determine how the request payload should be interpreted or serialized
+    before being sent.
+
+    Attributes:
+        TEXT: Plain text request body.
+        JSON: JSON-formatted request body.
+        XML: XML-formatted request body.
+    """
+    TEXT = 'Text'
+    JSON = 'JSON'
+    XML = 'XML'
+
+
 @dataclass
 class RestApiPayload(BasePayload):
     """
@@ -202,12 +222,16 @@ class RestApiPayload(BasePayload):
         body (str | None):
             Optional request body payload, usually JSON-encoded text.
             ``None`` indicates that no body is sent.
+
+        body_type (str | None):
+            Optional request body payload.
     """
     base_url: str
     call_type: str
     rest_call: str
     output_variable: str | None = None
     body: str | None = None
+    body_type: str | None = None
 
 
 @dataclass
@@ -279,6 +303,7 @@ class SendkeysPayload(BasePayload):
 
     target: str
     keys: List[SendkeysKeyDefinition]
+    raw_mode: bool
 
 
 @dataclass
