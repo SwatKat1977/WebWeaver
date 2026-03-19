@@ -23,6 +23,7 @@ import json
 from logging import Logger
 import threading
 import typing
+import keyboard
 import wx
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.action_chains import ActionChains
@@ -611,49 +612,83 @@ class RecordingPlaybackSession:
         payload = event.get("payload", {})
         keys = payload.get("keys", [])
         target = payload.get("target", None)
+        raw_mode = payload.get("raw_mode", False)
 
         if target:
-            # Nothing to do
-            if not keys:
-                print("NOT KEYS")
-                return PlaybackStepResult.success()
-
-            if keys[0].get("type") != "text":
-                print("key combo not allowed with targetted")
-                return PlaybackStepResult.fail("Special key combo not allowed")
-
-            self._browser.playback_sendkeys(payload)
-            return PlaybackStepResult.success()
+            return self._perform_sendkeys_target(event)
 
         action_chains = ActionChains(self._browser.raw)
 
         for send_entry in keys:
             entry_type = send_entry.get("type")
-            entry_value = send_entry.get("value")
 
             if entry_type == "text":
-                action_chains.send_keys(entry_value)
+                self._perform_sendkeys_text(send_entry, action_chains, raw_mode)
 
             elif entry_type == "key":
-                raw_modifiers = send_entry.get("modifiers")
+                if raw_mode:
+                    self._perform_sendkeys_key_raw(send_entry)
+                else:
+                    self._perform_sendkeys_key_normal(send_entry, action_chains)
 
-                if raw_modifiers:
-                    modifiers = raw_modifiers.split("+")
-
-                    for modifier in modifiers:
-                        action_chains.key_down(getattr(Keys, modifier))
-
-                action_chains.send_keys(self._resolve_key(entry_value))
-
-                if raw_modifiers:
-                    modifiers = raw_modifiers.split("+")
-
-                    for m in reversed(modifiers):
-                        action_chains.key_up(getattr(Keys, m))
-
-        action_chains.perform()
+        if not raw_mode:
+            action_chains.perform()
 
         return PlaybackStepResult.success()
+
+    def _perform_sendkeys_target(self, event):
+        payload = event.get("payload", {})
+        keys = payload.get("keys", [])
+
+        # Nothing to do
+        if not keys:
+            print("NOT KEYS")
+            return PlaybackStepResult.success()
+
+        if keys[0].get("type") != "text":
+            print("key combo not allowed with targeted")
+            return PlaybackStepResult.fail("Special key combo not allowed")
+
+        self._browser.playback_sendkeys(payload)
+        return PlaybackStepResult.success()
+
+    def _perform_sendkeys_text(self, key_entry, chain, raw_mode: bool):
+        value = key_entry.get("value")
+
+        if raw_mode:
+            keyboard.write(value)
+
+        else:
+            chain.send_keys(value)
+
+    def _perform_sendkeys_key_normal(self, key_entry, chain):
+        raw_modifiers = key_entry.get("modifiers")
+        entry_value = key_entry.get("value")
+
+        if raw_modifiers:
+            modifiers = raw_modifiers.split("+")
+
+            for modifier in modifiers:
+                chain.key_down(getattr(Keys, modifier))
+
+        chain.send_keys(self._resolve_key(entry_value))
+
+        if raw_modifiers:
+            modifiers = raw_modifiers.split("+")
+
+            for m in reversed(modifiers):
+                chain.key_up(getattr(Keys, m))
+
+    def _perform_sendkeys_key_raw(self, key_entry):
+        raw_modifiers = key_entry.get("modifiers")
+        entry_value = key_entry.get("value")
+
+        if raw_modifiers:
+            modifiers = raw_modifiers.lower().split("+")
+            combo = "+".join(modifiers + [entry_value.lower()])
+            keyboard.send(combo)
+        else:
+            keyboard.send(entry_value.lower())
 
     def _resolve_key(self, key: str):
         """Convert a recorded key name to a Selenium key."""

@@ -82,6 +82,11 @@ class SendkeysStepEditor(FancyDialogBase):
                                                     wx.TextCtrl)
         self._field_target_element.SetValue(payload.label)
 
+        # Raw Mode (e.g. use keyboard library)
+        self._field_raw_mode = self.add_field("Raw Mode:",
+                                              wx.CheckBox)
+        self._field_raw_mode.SetValue(payload.raw_mode)
+
         # Keystroke Sequence
         # pylint: disable=unnecessary-lambda
         self._field_sequence = self.add_full_width_field(
@@ -229,21 +234,12 @@ class SendkeysStepEditor(FancyDialogBase):
     def _ok_event(self):
         target = self._field_target_element.GetValue()
         step_label = self._field_step_label.GetValue()
-
-        if target:
-            for item in self._sequence:
-                if item.get("type") == "key":
-                    wx.MessageBox(
-                        "Key shortcuts cannot be used when a target element is"
-                        "specified.\n"
-                        "Please remove the key entries.",
-                        "Invalid Send Keys Step",
-                        wx.OK | wx.ICON_ERROR)
-                    return
+        raw_mode = self._field_raw_mode.GetValue()
 
         payload: SendkeysPayload = SendkeysPayload(label=step_label,
                                                    target=target,
-                                                   keys=self._sequence)
+                                                   keys=self._sequence,
+                                                   raw_mode=raw_mode)
         self._event["payload"] = dataclasses.asdict(payload)
         self.changed = True
         self.EndModal(wx.ID_OK)
@@ -325,15 +321,3 @@ class SendkeysStepEditor(FancyDialogBase):
         self._add_text_btn.Enable(button_enabled)
         self._up_btn.Enable(button_enabled)
         self._down_btn.Enable(button_enabled)
-
-        # Optional: warn if the sequence already contains key entries
-        if has_target:
-            for item in self._sequence:
-                if item.get("type") == "key":
-                    wx.MessageBox(
-                        "Key shortcuts cannot be used when a target element "
-                        "is specified. Please remove the key entries.",
-                        "Invalid Send Keys Configuration",
-                        wx.OK | wx.ICON_WARNING
-                    )
-                    break
