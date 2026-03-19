@@ -31,7 +31,7 @@ class StudioSplashScreen(wx.Frame):
     After a short delay, the splash screen automatically closes and
     transfers control to the main application window.
     """
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods, too-many-locals
 
     def __init__(self, core_version: str, studio_version: str):
         """
