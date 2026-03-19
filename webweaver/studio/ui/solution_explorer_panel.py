@@ -255,9 +255,19 @@ class SolutionExplorerPanel(wx.Panel):
 
         while child.IsOk():
             if self._tree.GetItemText(child) == "Test Suites":
-                self._tree.DeleteChildren(child)
-                self._populate_test_suites(solution, child)
-                self._tree.Expand(child)
+                expanded_keys = self._get_expanded_test_suite_keys(child)
+                self._tree.Freeze()
+
+                try:
+                    self._tree.DeleteChildren(child)
+                    self._populate_test_suites(solution, child)
+                    self._tree.Expand(child)
+
+                    self._restore_expanded_test_suite_keys(child, expanded_keys)
+
+                finally:
+                    self._tree.Thaw()
+
                 return
 
             child, cookie = self._tree.GetNextChild(root, cookie)
@@ -280,6 +290,64 @@ class SolutionExplorerPanel(wx.Panel):
             return None
 
         return data.metadata
+
+    def _get_expanded_test_suite_keys(self, suites_root: wx.TreeItemId) -> set[str]:
+        expanded = set()
+
+        def walk(item: wx.TreeItemId):
+            while item.IsOk():
+                if self._tree.IsExpanded(item):
+                    key = self._get_tree_item_key(item)
+                    if key is not None:
+                        expanded.add(key)
+
+                if self._tree.ItemHasChildren(item):
+                    child, cookie = self._tree.GetFirstChild(item)
+                    walk(child)
+
+                item = self._tree.GetNextSibling(item)
+
+        child, cookie = self._tree.GetFirstChild(suites_root)
+        walk(child)
+        return expanded
+
+    def _get_tree_item_key(self, item: wx.TreeItemId) -> Optional[str]:
+        data = self._tree.GetItemData(item)
+
+        if data is None:
+            text = self._tree.GetItemText(item)
+            return f"text:{text}"
+
+        if isinstance(data, str):
+            return data
+
+        if hasattr(data, "id"):
+            return f"id:{data.id}"
+
+        if hasattr(data, "file_path"):
+            return f"path:{data.file_path}"
+
+        return self._tree.GetItemText(item)
+
+    def _restore_expanded_test_suite_keys(
+            self,
+            suites_root: wx.TreeItemId,
+            expanded_keys: set[str]) -> None:
+
+        def walk(item: wx.TreeItemId):
+            while item.IsOk():
+                key = self._get_tree_item_key(item)
+                if key in expanded_keys:
+                    self._tree.Expand(item)
+
+                if self._tree.ItemHasChildren(item):
+                    child, cookie = self._tree.GetFirstChild(item)
+                    walk(child)
+
+                item = self._tree.GetNextSibling(item)
+
+        child, cookie = self._tree.GetFirstChild(suites_root)
+        walk(child)
 
     def _create_controls(self):
         """
