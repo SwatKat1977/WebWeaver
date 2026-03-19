@@ -688,5 +688,27 @@ class SolutionExplorerPanel(wx.Panel):
         if not self._context_item.IsOk():
             return
 
-        evt: wx.CommandEvent = wx.CommandEvent(EVT_REMOVE_RECORDING_FROM_TEST_SUITE)
+        item = self._context_item
+        data = self._tree.GetItemData(item)
+
+        if not data:
+            return
+
+        if data.node_type != ExplorerNodeType.TEST_SUITES_ITEM:
+            return
+
+        recording = data.metadata
+
+        parent_item = self._tree.GetItemParent(item)
+        parent_data = self._tree.GetItemData(parent_item)
+
+        if not parent_data:
+            return
+
+        suite = parent_data.metadata
+
+        evt: wx.CommandEvent = wx.CommandEvent(
+            EVT_REMOVE_RECORDING_FROM_TEST_SUITE)
+        evt.SetClientData({"suite": suite,
+                          "recording": recording})
         wx.PostEvent(self.GetParent(), evt)
