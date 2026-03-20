@@ -20,11 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # Semantic version components
 MAJOR = 0
-MINOR = 2
-PATCH = 1
+MINOR = 3
+PATCH = 0
 
 # e.g. "alpha", "beta", "rc1", or None
-PRE_RELEASE = None
+PRE_RELEASE = "Dev-1"
 
 # Version tuple for comparisons
 VERSION = (MAJOR, MINOR, PATCH, PRE_RELEASE)
