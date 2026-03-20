@@ -19,7 +19,17 @@ along with this program.If not, see < https://www.gnu.org/licenses/>.
 """
 import asyncio
 from dataclasses import dataclass
+import json
+from typing import Any
 import aiohttp
+from webweaver.studio.persistence.recording_document import RestApiBodyType
+
+
+REST_API_CONTENT_TYPE: dict[RestApiBodyType, str] = {
+    RestApiBodyType.TEXT: "text/plain",
+    RestApiBodyType.JSON: "application/json",
+    RestApiBodyType.XML: "application/xml"
+}
 
 
 @dataclass()
@@ -58,8 +68,8 @@ class ApiResponse:
     def __init__(self,
                  status_code: int = 0,
                  body: dict | str = None,
-                 content_type : str = None,
-                 exception_msg : str = None):
+                 content_type: str = None,
+                 exception_msg: str = None):
         """
         Initialise an ApiResponse instance.
 
@@ -98,74 +108,71 @@ class ApiClient:
     # Convenience wrappers for specific HTTP methods
     async def call_api_post(self,
                             url: str,
-                            json_data: dict = None,
+                            body: Any = None,
+                            body_type: RestApiBodyType = RestApiBodyType.TEXT,
                             timeout: int = 2):
         """
         Perform an asynchronous HTTP POST request.
 
         Args:
             url: Target endpoint URL.
-            json_data: Optional JSON payload sent in the request body.
+            body: Optional payload sent in the request body.
+            body_type: If using a body, specify the format of the message
             timeout: Total request timeout in seconds.
 
         Returns:
             ApiResponse containing the result or error information.
         """
-        return await self._call_api("post", url, json_data, timeout)
+        return await self._call_api("post", url, body, body_type, timeout)
 
-    async def call_api_get(self,
-                           url: str,
-                           json_data: dict = None,
-                           timeout: int = 2):
+    async def call_api_get(self, url: str, timeout: int = 2):
         """
         Perform an asynchronous HTTP GET request.
 
         Args:
             url: Target endpoint URL.
-            json_data: Optional JSON payload (rare for GET but supported).
             timeout: Total request timeout in seconds.
 
         Returns:
             ApiResponse containing the result or error information.
         """
-        return await self._call_api("get", url, json_data, timeout)
+        return await self._call_api("get", url, timeout=timeout)
 
-    async def call_api_delete(self,
-                              url: str,
-                              json_data: dict = None,
-                              timeout: int = 2):
+    async def call_api_delete(self, url: str, timeout: int = 2):
         """
         Perform an asynchronous HTTP DELETE request.
 
         Args:
             url: Target endpoint URL.
-            json_data: Optional JSON payload.
             timeout: Total request timeout in seconds.
 
         Returns:
             ApiResponse containing the result or error information.
         """
-        return await self._call_api("delete", url, json_data, timeout)
+        return await self._call_api("delete", url, timeout=timeout)
 
     async def call_api_patch(self,
                              url: str,
-                             json_data: dict = None,
+                             body: Any,
+                             body_type: RestApiBodyType,
                              timeout: int = 2):
         """
         Perform an asynchronous HTTP PATCH request.
 
         Args:
             url: Target endpoint URL.
-            json_data: Optional JSON payload.
+            body: Patch payload.
+            body_type: If using a body, specify the format of the message
             timeout: Total request timeout in seconds.
 
         Returns:
             ApiResponse containing the result or error information.
         """
-        return await self._call_api("patch", url, json_data, timeout)
+        return await self._call_api("patch", url, body, body_type, timeout)
 
     async def _call_api(self, method: str, url: str,
-                        json_data: dict = None,
+                        body: dict = None,
+                        body_type: RestApiBodyType = RestApiBodyType.TEXT,
                         timeout: int = 2) -> "ApiResponse":
         """
         Internal generic API caller used by all HTTP verb wrappers.
@@ -184,8 +191,10 @@ class ApiClient:
                 HTTP method name (e.g. ``"get"``, ``"post"``, ``"delete"``).
             url:
                 Target endpoint URL.
-            json_data:
-                Optional JSON request payload.
+            body
+                Optional request payload.
+            body_type
+                Optional request payload type (defaults to Text)
             timeout:
                 Total request timeout in seconds.
 
@@ -193,13 +202,29 @@ class ApiClient:
             ApiResponse representing either a successful response
             or an error condition.
         """
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
+
         try:
-            async with aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=timeout)
-            ) as session:
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(
+                    total=timeout)) as session:
                 # Dynamically get the aiohttp method (get, post, delete, etc.)
                 http_method = getattr(session, method.lower())
-                async with http_method(url, json=json_data) as resp:
+
+                request_kwargs = {}
+                headers = {}
+
+                if body is not None:
+                    if body_type == RestApiBodyType.JSON:
+                        if isinstance(body, str):
+                            body = json.loads(body)
+
+                        request_kwargs = {"json": body}
+                    else:
+                        headers = {"Content-Type": REST_API_CONTENT_TYPE[body_type]}
+
+                        request_kwargs = {"data": body}
+
+                async with http_method(url, headers=headers, **request_kwargs) as resp:
                     if resp.content_type == self.CONTENT_TYPE_JSON:
                         body = await resp.json()
                     else:
@@ -208,8 +233,7 @@ class ApiClient:
                     return ApiResponse(
                         status_code=resp.status,
                         body=body,
-                        content_type=resp.content_type
-                    )
+                        content_type=resp.content_type)
 
         except (aiohttp.ClientConnectionError,
                 aiohttp.ClientError,
