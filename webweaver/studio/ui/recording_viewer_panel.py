@@ -23,7 +23,6 @@ import secrets
 import string
 import typing
 import wx
-import wx.dataview as dataview
 from webweaver.studio.recording_step_editor_registry import RecordingStepEditorRegistry
 from webweaver.studio.recording_view_context import RecordingViewContext
 from webweaver.studio.recording.recording_loader import \
@@ -32,6 +31,7 @@ from webweaver.studio.recording.recording_event_type import RecordingEventType
 from webweaver.studio.ui.add_step_dialog import (AddStepDialog,
                                                  default_payload_for)
 from webweaver.studio.ui.events import WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE
+from webweaver.studio.ui.recording_step_tree import RecordingStepTree
 from webweaver.studio.persistence.recording_persistence import (
                                                  RecordingPersistence,
                                                  RecordingLoadError)
@@ -333,20 +333,7 @@ class RecordingViewerPanel(wx.Panel):
 
         # --- Steps list tree ---
 
-        # Steps list tree : Create
-        self._steps_tree = dataview.TreeListCtrl(
-            self,
-            style=wx.BORDER_NONE | dataview.TL_MULTIPLE)
-
-        # Steps list tree : Setup columns
-        self._steps_tree.AppendColumn("Action", width=180)
-        self._steps_tree.AppendColumn("Value", width=150)
-        self._steps_tree.AppendColumn("Description", width=400)
-
-        for i in range(3):
-            self._steps_tree.GetDataView().GetColumn(i).SetResizeable(True)
-
-        self._tree_root = self._steps_tree.GetRootItem()
+        self._steps_tree = RecordingStepTree(self)
 
         '''
         login = self._steps_tree.AppendItem(self._tree_root, "Login")
