@@ -21,7 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # Semantic version components
 MAJOR = 0
 MINOR = 2
-PATCH = 0
+PATCH = 1
 
 # e.g. "alpha", "beta", "rc1", or None
 PRE_RELEASE = None
