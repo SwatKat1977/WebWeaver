@@ -49,7 +49,8 @@ class RecordingStepTree(wx.TreeCtrl):
 
         self._create_images()
 
-        self.root = self.AddRoot("Recording")
+        self.root = self.AddRoot("Steps")
+        self.Expand(self.root)
 
         self.Bind(wx.EVT_TREE_BEGIN_DRAG, self._on_begin_drag)
         self.Bind(wx.EVT_TREE_END_DRAG, self._on_end_drag)
@@ -58,12 +59,20 @@ class RecordingStepTree(wx.TreeCtrl):
         self.Bind(wx.EVT_TIMER, self._on_hover_timer, self.hover_timer)
         self.Bind(wx.EVT_PAINT, self._on_paint)
 
+        self.Bind(wx.EVT_TREE_ITEM_COLLAPSED, self._on_item_collapsed)
+
         self.ExpandAll()
 
-    def add_entry(self,
-                  parent: wx.TreeItemId,
-                  label: str, data: dict) -> None:
-        self.add_step(parent, label, self._icon_not_run, data)
+    @property
+    def tree_root(self) -> wx.TreeItemId:
+        return self.root
+
+    def add_step(self,
+                  label: str, data: dict,
+                  parent: wx.TreeItemId = None) -> None:
+        parent_node = self.root if parent is None else parent
+        self._add_step_entry(parent_node, label, self._icon_not_run, data)
+        self.Expand(self.root)
 
     def add_group(self,
                   parent: wx.TreeItemId,
@@ -72,36 +81,7 @@ class RecordingStepTree(wx.TreeCtrl):
         self.SetItemBold(group_item_id)
         return group_item_id
 
-    def _create_images(self):
-
-        self.images = wx.ImageList(16, 16)
-
-        self._icon_not_run = self.images.Add(
-            wx.ArtProvider.GetBitmap(wx.ART_QUESTION, wx.ART_OTHER, (16, 16)))
-
-        self._icon_running = self.images.Add(
-            wx.ArtProvider.GetBitmap(wx.ART_GO_FORWARD, wx.ART_OTHER, (16, 16)))
-
-        self._icon_pass = self.images.Add(
-            wx.ArtProvider.GetBitmap(wx.ART_TICK_MARK, wx.ART_OTHER, (16, 16)))
-
-        self._icon_fail = self.images.Add(
-            wx.ArtProvider.GetBitmap(wx.ART_CROSS_MARK, wx.ART_OTHER, (16, 16)))
-
-        self._icon_warning = self.images.Add(
-            wx.ArtProvider.GetBitmap(wx.ART_WARNING, wx.ART_OTHER, (16, 16)))
-
-        self.AssignImageList(self.images)
-
-        self._status_icons = {
-            StepStatus.NOT_RUN: self._icon_not_run,
-            StepStatus.RUNNING: self._icon_running,
-            StepStatus.PASSED: self._icon_pass,
-            StepStatus.FAILED: self._icon_fail,
-            StepStatus.WARNING: self._icon_warning
-        }
-
-    def add_step(self, parent, text, icon, step_data):
+    def _add_step_entry(self, parent, text, icon, step_data):
 
         item = self.AppendItem(parent, text)
         self.SetItemImage(item, icon)
@@ -138,6 +118,40 @@ class RecordingStepTree(wx.TreeCtrl):
                 child, cookie = self.GetNextChild(parent, cookie)
 
         walk(self.root)
+
+    def clear(self):
+        self.DeleteAllItems()
+
+        self.root = self.AddRoot("Steps")
+
+    def _create_images(self):
+
+        self.images = wx.ImageList(16, 16)
+
+        self._icon_not_run = self.images.Add(
+            wx.ArtProvider.GetBitmap(wx.ART_QUESTION, wx.ART_OTHER, (16, 16)))
+
+        self._icon_running = self.images.Add(
+            wx.ArtProvider.GetBitmap(wx.ART_GO_FORWARD, wx.ART_OTHER, (16, 16)))
+
+        self._icon_pass = self.images.Add(
+            wx.ArtProvider.GetBitmap(wx.ART_TICK_MARK, wx.ART_OTHER, (16, 16)))
+
+        self._icon_fail = self.images.Add(
+            wx.ArtProvider.GetBitmap(wx.ART_CROSS_MARK, wx.ART_OTHER, (16, 16)))
+
+        self._icon_warning = self.images.Add(
+            wx.ArtProvider.GetBitmap(wx.ART_WARNING, wx.ART_OTHER, (16, 16)))
+
+        self.AssignImageList(self.images)
+
+        self._status_icons = {
+            StepStatus.NOT_RUN: self._icon_not_run,
+            StepStatus.RUNNING: self._icon_running,
+            StepStatus.PASSED: self._icon_pass,
+            StepStatus.FAILED: self._icon_fail,
+            StepStatus.WARNING: self._icon_warning
+        }
 
     def _on_begin_drag(self, evt):
 
@@ -360,3 +374,11 @@ class RecordingStepTree(wx.TreeCtrl):
         if self.drop_indicator_y is not None:
             self.drop_indicator_y = None
             self.Refresh()
+
+    def _on_item_collapsed(self, event):
+        item = event.GetItem()
+
+        if item == self.GetRootItem():
+            wx.CallAfter(self.Expand, item)  # re-expand after event finishes
+
+        event.Skip()

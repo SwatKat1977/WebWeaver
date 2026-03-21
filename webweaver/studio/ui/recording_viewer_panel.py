@@ -85,6 +85,7 @@ class RecordingViewerPanel(wx.Panel):
         super().__init__(parent)
         self._context: RecordingViewContext = ctx
         self._step_list: wx.ListCtrl = None
+        self._steps_tree: typing.Optional[RecordingStepTree] = None
 
         self._current_index: int | None = None
         self._failed_index: int | None = None
@@ -307,8 +308,21 @@ class RecordingViewerPanel(wx.Panel):
         """
         self._step_list.DeleteAllItems()
 
+        self._steps_tree.clear()
+
         recording = load_recording_from_context(self.context)
 
+        for _, event in enumerate(recording.events):
+            print(f"[EVENT] {event}")
+
+            payload = event.get("payload", {})
+            payload_label = payload.get("label", "")
+            step_type = event.get("type", "")
+
+            label = payload_label if payload_label else step_type
+            self._steps_tree.add_step(label, event)
+
+        # === OLD WAY
         for i, event in enumerate(recording.events):
             idx = self._step_list.InsertItem(i, str(i))
 
