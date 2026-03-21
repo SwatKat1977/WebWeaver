@@ -32,7 +32,7 @@ from webweaver.studio.ui.step_editors.navgoto_step_editor import \
 from webweaver.studio.ui.step_editors.rest_api_step_editor import \
     RestApiStepEditor
 from webweaver.studio.ui.step_editors.scroll_step_editor import \
-    ScrollType
+    ScrollStepEditor
 from webweaver.studio.ui.step_editors.select_step_editor import \
     SelectStepEditor
 from webweaver.studio.ui.step_editors.sendkeys_step_editor import \
@@ -130,7 +130,7 @@ def register_step_editors():
     RecordingStepEditorRegistry.register(RecordingEventType.REST_API,
                                          RestApiStepEditor)
     RecordingStepEditorRegistry.register(RecordingEventType.SCROLL,
-                                         ScrollType)
+                                         ScrollStepEditor)
     RecordingStepEditorRegistry.register(RecordingEventType.SENDKEYS,
                                          SendkeysStepEditor)
     RecordingStepEditorRegistry.register(RecordingEventType.USER_VARIABLE,
