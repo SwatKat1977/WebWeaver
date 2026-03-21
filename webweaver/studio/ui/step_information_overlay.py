@@ -81,25 +81,75 @@ class StepInformationOverlay(wx.PopupTransientWindow):
             KeyError: If required keys for a given step type are missing.
         """
 
-        if step["type"] == "click":
-            self.title.SetLabel("Click")
-            self.body.SetLabel(
-                f"XPath:\n{step['xpath']}\n\n"
-                f"Value:\n{step.get('value','-')}")
 
-        elif step["type"] == "type":
-            self.title.SetLabel("Type")
-            self.body.SetLabel(
-                f"XPath:\n{step['xpath']}\n\n"
-                f"Value:\n{step['value']}")
+        '''
+        [EVENT] {'index': 0, 'timestamp': 0, 'type': 'sendkeys', 'payload': {'label': 'Select my avatar', 'target': "//input[@id='avatar']", 'keys': [{'type': 'text', 'value': 'c:\\dist\\image.jpg'}]}}
+[EVENT] {'index': 1, 'timestamp': 1000, 'type': 'dom.click', 'payload': {'label': 'Day 1', 'xpath': '/html[1]/body[1]/ol[1]/li[4]/a[1]', 'control_type': 'click'}}
+[EVENT] {'index': 2, 'timestamp': 2000, 'type': 'dom.get', 'payload': {'xpath': '/html[1]/body[1]/ol[1]/li[4]/a[1]', 'property_type': 'text', 'output_variable': 'my_stored_value', 'label': ''}}
+[EVENT] {'index': 3, 'timestamp': 3000, 'type': 'dom.get', 'payload': {'xpath': '/html[1]/body[1]/ol[1]/li[4]/a[1]', 'property_type': 'checked', 'output_variable': 'step_0_bobble', 'label': ''}}
+[EVENT] {'index': 4, 'timestamp': 4000, 'type': 'dom.check', 'payload': {'label': 'check checker is checked', 'xpath': '//checker', 'value': True, 'control_type': 'checkbox'}}
+[EVENT] {'index': 5, 'timestamp': 5000, 'type': 'assert', 'payload': {'label': 'Test Assert', 'operator': 'equals', 'left_value': 'l', 'soft_assert': False, 'right_value': 'l'}}
+[EVENT] {'index': 6, 'timestamp': 6000, 'type': 'dom.get', 'payload': {'label': 'trial', 'xpath': '//xpath', 'property_type': 'value', 'output_variable': 'Hello'}}
+[EVENT] {'index': 7, 'timestamp': 7000, 'type': 'nav.goto', 'payload': {'label': '', 'url': 'https://www.google.com'}}
+[EVENT] {'index': 8, 'timestamp': 8000, 'type': 'rest_api', 'payload': {'label': 'Perform REST API', 'base_url': 'url', 'call_type': 'get', 'rest_call': 'some_call', 'output_variable': '', 'body': None}
+        '''
 
-        elif step["type"] == "assert":
-            self.title.SetLabel("Assert")
+        step_type = step.get("type", "")
+        payload = step.get("payload", {})
+
+        if step["type"] == "assert":
+            self.title.SetLabel(f"Type: {step_type}")
             self.body.SetLabel(
-                f"XPath:\n{step['xpath']}\n\n"
-                f"Type: {step['assert_type']}\n"
-                f"Expected: {step['expected']}\n"
-                f"Soft: {step['soft']}")
+                f"Operator Type :\n{payload['operator']}\n\n"
+                f"Left Value: {payload['left_value']}\n"
+                f"Right Value: {payload['right_value']}\n"
+                f"Soft Assertion: {payload['soft_assert']}")
+
+        elif step["type"] == "dom.click":
+            self.title.SetLabel(f"Type: {step_type}")
+            self.body.SetLabel(
+                f"XPath:\n{payload['xpath']}")
+
+        elif step["type"] == "dom.get":
+            output_var = payload.get("output_variable", "")
+
+            body = (f"XPath: {payload['xpath']}\n"
+                    f"Type: {payload['property_type']}\n")
+            body += "" if not output_var else f"Output Variable: {output_var}"
+
+            self.title.SetLabel(f"Type: {step_type}")
+            self.body.SetLabel(body)
+
+        elif step["type"] == "dom.select":
+            self.title.SetLabel(f"Type: {step_type}")
+            self.body.SetLabel(
+                f"XPath: {payload['xpath']}\n"
+                f"Value: {payload['value']}\n")
+
+        elif step["type"] == "dom.type":
+            self.title.SetLabel(f"Type: {step_type}")
+            self.body.SetLabel(
+                f"XPath:\n{payload['xpath']}\n\n"
+                f"Value:\n{payload['value']}")
+
+        elif step["type"] == "sendkeys":
+            self.title.SetLabel(f"Type: {step_type}")
+
+            body_text: str = ""
+
+            if payload.get("target", ""):
+                body_text += f"Target:\n{payload['xpath']}\n\n"
+
+            keys_entry: str = "Entries:\n"
+            keys = payload.get("keys", [])
+            for entry in keys:
+                keys_entry += (f"Type: {entry['type']}\n"
+                               f"value {entry['value']}\n")
+
+                keys_entry += "\n" if not entry["modifiers"] else \
+                    f"Modifiers: {entry['modifiers']}"
+
+            self.body.SetLabel(keys_entry)
 
         self.Layout()
         self.Fit()
