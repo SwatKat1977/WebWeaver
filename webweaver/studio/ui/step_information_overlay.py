@@ -81,13 +81,6 @@ class StepInformationOverlay(wx.PopupTransientWindow):
             KeyError: If required keys for a given step type are missing.
         """
 
-
-        '''
-[EVENT] {'index': 4, 'timestamp': 4000, 'type': 'dom.check', 'payload': {'label': 'check checker is checked', 'xpath': '//checker', 'value': True, 'control_type': 'checkbox'}}
-[EVENT] {'index': 7, 'timestamp': 7000, 'type': 'nav.goto', 'payload': {'label': '', 'url': 'https://www.google.com'}}
-[EVENT] {'index': 8, 'timestamp': 8000, 'type': 'rest_api', 'payload': {'label': 'Perform REST API', 'base_url': 'url', 'call_type': 'get', 'rest_call': 'some_call', 'output_variable': '', 'body': None}
-        '''
-
         step_type = step.get("type", "")
         payload = step.get("payload", {})
 
@@ -149,6 +142,19 @@ class StepInformationOverlay(wx.PopupTransientWindow):
                 f"Output Variable: {payload.get('output_variable')}"
             self.body.SetLabel(body)
 
+        elif step["type"] == "scroll":
+            body = (f"Scroll Type: {payload.get('scroll_type')}\n"
+                    f"x: {payload.get('x_scroll', '-')} | "
+                    f"y: {payload.get('y_scroll', '-')}")
+            self.title.SetLabel(f"Type: {step_type}")
+            self.body.SetLabel(body)
+
+            '''
+            [EVENT] {'index': 7, 'timestamp': 7000, 'type': 'user_variable', 'payload': {'label': '', 'name': 'pop', 'value': 'loool'}}
+
+            [EVENT] {'index': 8, 'timestamp': 8000, 'type': 'wait', 'payload': {'label': '', 'duration_ms': 1000}}
+            '''
+
         elif step["type"] == "sendkeys":
             self.title.SetLabel(f"Type: {step_type}")
 
@@ -167,6 +173,17 @@ class StepInformationOverlay(wx.PopupTransientWindow):
                     f"Modifiers: {entry['modifiers']}"
 
             self.body.SetLabel(keys_entry)
+
+        elif step["type"] == "user_variable":
+            body = (f"Variable Name: {payload.get('name', '')}\n"
+                    f"Value: {payload.get('value', '')}")
+            self.title.SetLabel(f"Type: {step_type}")
+            self.body.SetLabel(body)
+
+        elif step["type"] == "wait":
+            body = f"Duration: {payload.get('duration_ms', '')} ms\n"
+            self.title.SetLabel(f"Type: {step_type}")
+            self.body.SetLabel(body)
 
         self.Layout()
         self.Fit()
