@@ -83,13 +83,7 @@ class StepInformationOverlay(wx.PopupTransientWindow):
 
 
         '''
-        [EVENT] {'index': 0, 'timestamp': 0, 'type': 'sendkeys', 'payload': {'label': 'Select my avatar', 'target': "//input[@id='avatar']", 'keys': [{'type': 'text', 'value': 'c:\\dist\\image.jpg'}]}}
-[EVENT] {'index': 1, 'timestamp': 1000, 'type': 'dom.click', 'payload': {'label': 'Day 1', 'xpath': '/html[1]/body[1]/ol[1]/li[4]/a[1]', 'control_type': 'click'}}
-[EVENT] {'index': 2, 'timestamp': 2000, 'type': 'dom.get', 'payload': {'xpath': '/html[1]/body[1]/ol[1]/li[4]/a[1]', 'property_type': 'text', 'output_variable': 'my_stored_value', 'label': ''}}
-[EVENT] {'index': 3, 'timestamp': 3000, 'type': 'dom.get', 'payload': {'xpath': '/html[1]/body[1]/ol[1]/li[4]/a[1]', 'property_type': 'checked', 'output_variable': 'step_0_bobble', 'label': ''}}
 [EVENT] {'index': 4, 'timestamp': 4000, 'type': 'dom.check', 'payload': {'label': 'check checker is checked', 'xpath': '//checker', 'value': True, 'control_type': 'checkbox'}}
-[EVENT] {'index': 5, 'timestamp': 5000, 'type': 'assert', 'payload': {'label': 'Test Assert', 'operator': 'equals', 'left_value': 'l', 'soft_assert': False, 'right_value': 'l'}}
-[EVENT] {'index': 6, 'timestamp': 6000, 'type': 'dom.get', 'payload': {'label': 'trial', 'xpath': '//xpath', 'property_type': 'value', 'output_variable': 'Hello'}}
 [EVENT] {'index': 7, 'timestamp': 7000, 'type': 'nav.goto', 'payload': {'label': '', 'url': 'https://www.google.com'}}
 [EVENT] {'index': 8, 'timestamp': 8000, 'type': 'rest_api', 'payload': {'label': 'Perform REST API', 'base_url': 'url', 'call_type': 'get', 'rest_call': 'some_call', 'output_variable': '', 'body': None}
         '''
@@ -104,6 +98,12 @@ class StepInformationOverlay(wx.PopupTransientWindow):
                 f"Left Value: {payload['left_value']}\n"
                 f"Right Value: {payload['right_value']}\n"
                 f"Soft Assertion: {payload['soft_assert']}")
+
+        elif step["type"] == "dom.check":
+            self.title.SetLabel(f"Type: {step_type}")
+            self.body.SetLabel(
+                f"XPath: {payload.get('xpath')}\n"
+                f"Checked: {payload.get('value')}")
 
         elif step["type"] == "dom.click":
             self.title.SetLabel(f"Type: {step_type}")
@@ -131,6 +131,23 @@ class StepInformationOverlay(wx.PopupTransientWindow):
             self.body.SetLabel(
                 f"XPath:\n{payload['xpath']}\n\n"
                 f"Value:\n{payload['value']}")
+
+        elif step["type"] == "nav.goto":
+            self.title.SetLabel(f"Type: {step_type}")
+            self.body.SetLabel(
+                f"URL: {payload['url']}")
+
+        elif step["type"] == "rest_api":
+            self.title.SetLabel(f"Type: {step_type}")
+
+            body = (f"Base Url: {payload.get('base_url', '')}\n"
+                    f"Call Type: {payload.get('call_type', '')}\n"
+                    f"Rest Call: {payload.get('rest_call', '')}\n")
+            body += "" if not payload.get("body", "") else \
+                f"Body:\n{payload.get('body')}"
+            body += "" if not payload.get("output_variable", "") else \
+                f"Output Variable: {payload.get('output_variable')}"
+            self.body.SetLabel(body)
 
         elif step["type"] == "sendkeys":
             self.title.SetLabel(f"Type: {step_type}")
