@@ -143,13 +143,14 @@ class RecordingStepTree(wx.TreeCtrl):
 
         return item
 
-    def set_step_status(self, item, status: StepStatus):
+    def set_step_status(self, index: int, status: StepStatus):
         """Updates the icon of a step based on its status.
 
         Args:
-            item: Tree item representing the step.
+            index: Tree item index.
             status: New step status.
         """
+        item = self._find_item_by_index(index)
         if not item or not item.IsOk():
             return
 
@@ -159,6 +160,8 @@ class RecordingStepTree(wx.TreeCtrl):
             self.SetItemImage(item, -1)
         else:
             self.SetItemImage(item, icon)
+
+        self.EnsureVisible(item)
 
     def reset_statuses(self):
         """Resets all step nodes to NOT_RUN status."""
@@ -206,6 +209,12 @@ class RecordingStepTree(wx.TreeCtrl):
                 child, cookie = self.GetNextChild(parent, cookie)
 
         yield from walk(self.root)
+
+    def _find_item_by_index(self, index):
+        for item, data in self.iter_steps():
+            if data.get("index") == index:
+                return item
+        return None
 
     def _create_images(self):
         """Initialises and assigns status icons to the tree."""

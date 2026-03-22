@@ -31,7 +31,7 @@ from webweaver.studio.recording.recording_event_type import RecordingEventType
 from webweaver.studio.ui.add_step_dialog import (AddStepDialog,
                                                  default_payload_for)
 from webweaver.studio.ui.events import WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE
-from webweaver.studio.ui.recording_step_tree import RecordingStepTree
+from webweaver.studio.ui.recording_step_tree import RecordingStepTree, StepStatus
 from webweaver.studio.persistence.recording_persistence import (
                                                  RecordingPersistence,
                                                  RecordingLoadError)
@@ -187,7 +187,7 @@ class RecordingViewerPanel(wx.Panel):
             index (int): Index of the step that is currently active.
         """
         self._current_index = index
-        self._refresh_timeline_styles()
+        self._steps_tree.set_step_status(index, StepStatus.RUNNING)
 
     def timeline_mark_passed(self, index: int):
         """
@@ -200,7 +200,7 @@ class RecordingViewerPanel(wx.Panel):
             index (int): Index of the step that completed successfully.
         """
         self._passed_indices.add(index)
-        self._refresh_timeline_styles()
+        self._steps_tree.set_step_status(index, StepStatus.PASSED)
 
     def timeline_mark_failed(self, index: int):
         """
@@ -213,7 +213,7 @@ class RecordingViewerPanel(wx.Panel):
             index (int): Index of the step that failed.
         """
         self._failed_index = index
-        self._refresh_timeline_styles()
+        self._steps_tree.set_step_status(index, StepStatus.FAILED)
 
     def timeline_reset_playback_state(self):
         """
@@ -514,40 +514,6 @@ class RecordingViewerPanel(wx.Panel):
             return
 
         self.edit_step(item)
-
-    def _refresh_timeline_styles(self):
-        """
-        Refresh the visual styling of timeline items based on playback state.
-
-        This method updates row styles to reflect:
-        - Current step
-        - Passed steps
-        - Failed step
-
-        It is called whenever playback state changes.
-        """
-        count = self._step_list.GetItemCount()
-
-        for i in range(count):
-            if self._failed_index is not None and i == self._failed_index:
-                # Failed step -> red
-                self._step_list.SetItemBackgroundColour(i, wx.Colour(255, 200, 200))
-
-            elif self._current_index is not None and i == self._current_index:
-                # Currently executing -> blue
-                self._step_list.SetItemBackgroundColour(i, wx.Colour(200, 220, 255))
-
-            elif i in self._passed_indices:
-                # Already passed -> green
-                self._step_list.SetItemBackgroundColour(i, wx.Colour(200, 255, 200))
-
-            else:
-                # Not touched yet
-                self._step_list.SetItemBackgroundColour(i, wx.NullColour)
-
-        # Auto-scroll to current step
-        if self._current_index is not None:
-            self._step_list.EnsureVisible(self._current_index)
 
     def _on_step_selected(self, _evt):
         evt = wx.CommandEvent(WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE)
