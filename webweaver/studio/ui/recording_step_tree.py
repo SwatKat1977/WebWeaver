@@ -184,6 +184,29 @@ class RecordingStepTree(wx.TreeCtrl):
 
         self.root = self.AddRoot("Steps")
 
+    def iter_steps(self):
+        """
+        Iterate over all step nodes in tree order.
+
+        Yields:
+            tuple(wx.TreeItemId, dict): (item, step_data)
+        """
+
+        def walk(parent):
+            child, cookie = self.GetFirstChild(parent)
+
+            while child.IsOk():
+                data = self.GetItemData(child)
+
+                if data:
+                    yield child, data
+
+                yield from walk(child)
+
+                child, cookie = self.GetNextChild(parent, cookie)
+
+        yield from walk(self.root)
+
     def _create_images(self):
         """Initialises and assigns status icons to the tree."""
 
