@@ -31,6 +31,7 @@ class StepInformationOverlay(wx.PopupTransientWindow):
         title (wx.StaticText): Label displaying the step type.
         body (wx.StaticText): Label displaying detailed step information.
     """
+    # pylint: disable=too-few-public-methods
 
     def __init__(self, parent):
         """Initializes the StepInformationOverlay.
