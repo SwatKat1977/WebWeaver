@@ -25,6 +25,15 @@ from webweaver.studio.ui.step_information_overlay import StepInformationOverlay
 
 
 class StepStatus(Enum):
+    """Enumeration representing the execution status of a recording step.
+
+    Attributes:
+        NOT_RUN: Step has not been executed yet.
+        RUNNING: Step is currently executing.
+        PASSED: Step completed successfully.
+        FAILED: Step execution failed.
+        WARNING: Step completed with warnings.
+    """
     NOT_RUN = 0
     RUNNING = 1
     PASSED = 2
@@ -33,8 +42,19 @@ class StepStatus(Enum):
 
 
 class RecordingStepTree(wx.TreeCtrl):
+    """Tree control for displaying and managing recording steps.
+
+    Supports hierarchical step grouping, drag-and-drop reordering,
+    status icon updates, and hover-based information overlays.
+    """
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(self, parent):
+        """Initializes the step tree control.
+
+        Args:
+            parent: Parent wx widget.
+        """
         super().__init__(
             parent,
             style=wx.TR_DEFAULT_STYLE |
@@ -67,11 +87,23 @@ class RecordingStepTree(wx.TreeCtrl):
 
     @property
     def tree_root(self) -> wx.TreeItemId:
+        """Returns the root tree item.
+
+        Returns:
+            wx.TreeItemId: Root node of the tree.
+        """
         return self.root
 
     def add_step(self,
                  label: str, data: dict,
                  parent: wx.TreeItemId = None) -> None:
+        """Adds a step node to the tree.
+
+        Args:
+            label: Display label for the step.
+            data: Associated step metadata.
+            parent: Optional parent node. Defaults to root.
+        """
         parent_node = self.root if parent is None else parent
         self._add_step_entry(parent_node, label, self._icon_not_run, data)
         self.Expand(self.root)
@@ -79,12 +111,31 @@ class RecordingStepTree(wx.TreeCtrl):
     def add_group(self,
                   parent: wx.TreeItemId,
                   label: str) -> wx.TreeItemId:
+        """Adds a group node (non-step container).
+
+        Args:
+            parent: Parent tree item.
+            label: Group label.
+
+        Returns:
+            wx.TreeItemId: Created group node.
+        """
         group_item_id = self.AppendItem(parent, label)
         self.SetItemBold(group_item_id)
         return group_item_id
 
     def _add_step_entry(self, parent, text, icon, step_data):
+        """Creates a step entry node.
 
+        Args:
+            parent: Parent tree item.
+            text: Display text.
+            icon: Icon index.
+            step_data: Associated step metadata.
+
+        Returns:
+            wx.TreeItemId: Created tree item.
+        """
         item = self.AppendItem(parent, text)
         self.SetItemImage(item, icon)
 
@@ -93,7 +144,12 @@ class RecordingStepTree(wx.TreeCtrl):
         return item
 
     def set_step_status(self, item, status: StepStatus):
+        """Updates the icon of a step based on its status.
 
+        Args:
+            item: Tree item representing the step.
+            status: New step status.
+        """
         if not item or not item.IsOk():
             return
 
@@ -105,6 +161,7 @@ class RecordingStepTree(wx.TreeCtrl):
             self.SetItemImage(item, icon)
 
     def reset_statuses(self):
+        """Resets all step nodes to NOT_RUN status."""
 
         def walk(parent):
 
@@ -122,11 +179,13 @@ class RecordingStepTree(wx.TreeCtrl):
         walk(self.root)
 
     def clear(self):
+        """Clears all tree items and re-initialises the root."""
         self.DeleteAllItems()
 
         self.root = self.AddRoot("Steps")
 
     def _create_images(self):
+        """Initialises and assigns status icons to the tree."""
 
         self.images = wx.ImageList(16, 16)
 
@@ -156,7 +215,7 @@ class RecordingStepTree(wx.TreeCtrl):
         }
 
     def _on_begin_drag(self, evt):
-
+        """Handles drag start for tree items."""
         item = evt.GetItem()
 
         if item == self.root:
@@ -166,14 +225,14 @@ class RecordingStepTree(wx.TreeCtrl):
         evt.Allow()
 
     def _on_end_drag(self, _evt):
-
+        """Handles drag-and-drop reordering of tree items."""
         self._clear_drop_indicator()
 
         if not self.drag_item:
             return
 
         pos = self.ScreenToClient(wx.GetMousePosition())
-        target, flags = self.HitTest(pos)
+        target, _ = self.HitTest(pos)
 
         if not target.IsOk():
             self.drag_item = None
@@ -267,8 +326,10 @@ class RecordingStepTree(wx.TreeCtrl):
         RecordingPersistence.save_to_disk(self.GetParent().recording_document)
 
     def _get_step_order(self) -> list:
-        """
-        Return list of step data in current tree order.
+        """Returns step data in current tree order.
+
+        Returns:
+            list: Ordered list of step metadata dictionaries.
         """
         order = []
 
@@ -288,7 +349,15 @@ class RecordingStepTree(wx.TreeCtrl):
         return order
 
     def _is_descendant(self, parent, child):
+        """Checks if a node is a descendant of another.
 
+        Args:
+            parent: Potential ancestor node.
+            child: Node to test.
+
+        Returns:
+            bool: True if child is within parent's subtree.
+        """
         item = child
 
         while item.IsOk():
@@ -301,10 +370,11 @@ class RecordingStepTree(wx.TreeCtrl):
         return False
 
     def _on_mouse_move(self, evt):
+        """Handles mouse movement for drag visuals and hover detection."""
 
         if self.drag_item:
             pos = evt.GetPosition()
-            item, flags = self.HitTest(pos)
+            item, _ = self.HitTest(pos)
 
             if item.IsOk():
                 rect = self.GetBoundingRect(item)
@@ -346,6 +416,7 @@ class RecordingStepTree(wx.TreeCtrl):
         evt.Skip()
 
     def _on_mouse_leave(self, evt):
+        """Handles mouse leaving the control."""
         self.hover_timer.Stop()
         self.pending_hover_item = None
         self._info_overlay.Hide()
@@ -355,6 +426,7 @@ class RecordingStepTree(wx.TreeCtrl):
         evt.Skip()
 
     def _on_hover_timer(self, _evt):
+        """Displays step information overlay after hover delay."""
         item = self.pending_hover_item
 
         if not item or not item.IsOk():
@@ -377,7 +449,7 @@ class RecordingStepTree(wx.TreeCtrl):
         self._info_overlay.Popup()
 
     def _on_paint(self, evt):
-
+        """Handles custom drawing (drop indicator)."""
         evt.Skip()
 
         if self.drop_indicator_y is None:
@@ -386,6 +458,7 @@ class RecordingStepTree(wx.TreeCtrl):
         wx.CallAfter(self._draw_drop_indicator)
 
     def _draw_drop_indicator(self):
+        """Draws the drag-and-drop insertion line."""
 
         if self.drop_indicator_y is None:
             return
@@ -399,11 +472,13 @@ class RecordingStepTree(wx.TreeCtrl):
         dc.DrawLine(0, self.drop_indicator_y, width, self.drop_indicator_y)
 
     def _clear_drop_indicator(self):
+        """Clears the drop indicator line."""
         if self.drop_indicator_y is not None:
             self.drop_indicator_y = None
             self.Refresh()
 
     def _on_item_collapsed(self, event):
+        """Prevents collapsing the root node."""
         item = event.GetItem()
 
         if item == self.GetRootItem():
