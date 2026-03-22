@@ -149,12 +149,6 @@ class StepInformationOverlay(wx.PopupTransientWindow):
             self.title.SetLabel(f"Type: {step_type}")
             self.body.SetLabel(body)
 
-            '''
-            [EVENT] {'index': 7, 'timestamp': 7000, 'type': 'user_variable', 'payload': {'label': '', 'name': 'pop', 'value': 'loool'}}
-
-            [EVENT] {'index': 8, 'timestamp': 8000, 'type': 'wait', 'payload': {'label': '', 'duration_ms': 1000}}
-            '''
-
         elif step["type"] == "sendkeys":
             self.title.SetLabel(f"Type: {step_type}")
 
