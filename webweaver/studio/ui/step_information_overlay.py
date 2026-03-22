@@ -84,100 +84,102 @@ class StepInformationOverlay(wx.PopupTransientWindow):
         step_type = step.get("type", "")
         payload = step.get("payload", {})
 
-        if step["type"] == "assert":
-            self.title.SetLabel(f"Type: {step_type}")
-            self.body.SetLabel(
-                f"Operator Type :\n{payload['operator']}\n\n"
+        self.title.SetLabel(f"Type: {step_type}")
+
+        handlers = {
+            "assert": self._render_assert,
+            "dom.check": self._render_dom_check,
+            "dom.click": self._render_dom_click,
+            "dom.get": self._render_dom_get,
+            "dom.select": self._render_dom_select,
+            "dom.type": self._render_dom_type,
+            "nav.goto": self._render_nav_goto,
+            "rest_api": self._render_rest_api,
+            "scroll": self._render_scroll,
+            "sendkeys": self._render_sendkeys,
+            "user_variable": self._render_user_variable,
+            "wait": self._render_wait,
+        }
+
+        handler = handlers.get(step_type)
+
+        if handler:
+            body = handler(payload)
+        else:
+            body = "Unknown step type"
+
+        self.body.SetLabel(body)
+
+        self.Layout()
+        self.Fit()
+
+    def _render_assert(self, payload: dict):
+        return (f"Operator Type :\n{payload['operator']}\n\n"
                 f"Left Value: {payload['left_value']}\n"
                 f"Right Value: {payload['right_value']}\n"
                 f"Soft Assertion: {payload['soft_assert']}")
 
-        elif step["type"] == "dom.check":
-            self.title.SetLabel(f"Type: {step_type}")
-            self.body.SetLabel(
-                f"XPath: {payload.get('xpath')}\n"
+    def _render_dom_check(self, payload: dict):
+        return (f"XPath: {payload.get('xpath')}\n"
                 f"Checked: {payload.get('value')}")
 
-        elif step["type"] == "dom.click":
-            self.title.SetLabel(f"Type: {step_type}")
-            self.body.SetLabel(
-                f"XPath:\n{payload['xpath']}")
+    def _render_dom_click(self, payload: dict):
+        return f"XPath:\n{payload['xpath']}"
 
-        elif step["type"] == "dom.get":
-            output_var = payload.get("output_variable", "")
+    def _render_dom_get(self, payload: dict):
+        output_var = payload.get("output_variable", "")
+        body = (f"XPath: {payload['xpath']}\n"
+                f"Type: {payload['property_type']}\n")
+        body += "" if not output_var else f"Output Variable: {output_var}"
+        return body
 
-            body = (f"XPath: {payload['xpath']}\n"
-                    f"Type: {payload['property_type']}\n")
-            body += "" if not output_var else f"Output Variable: {output_var}"
-
-            self.title.SetLabel(f"Type: {step_type}")
-            self.body.SetLabel(body)
-
-        elif step["type"] == "dom.select":
-            self.title.SetLabel(f"Type: {step_type}")
-            self.body.SetLabel(
-                f"XPath: {payload['xpath']}\n"
+    def _render_dom_select(self, payload: dict):
+        return (f"XPath: {payload['xpath']}\n"
                 f"Value: {payload['value']}\n")
 
-        elif step["type"] == "dom.type":
-            self.title.SetLabel(f"Type: {step_type}")
-            self.body.SetLabel(
-                f"XPath:\n{payload['xpath']}\n\n"
+    def _render_dom_type(self, payload: dict):
+        return (f"XPath:\n{payload['xpath']}\n\n"
                 f"Value:\n{payload['value']}")
 
-        elif step["type"] == "nav.goto":
-            self.title.SetLabel(f"Type: {step_type}")
-            self.body.SetLabel(
-                f"URL: {payload['url']}")
+    def _render_nav_goto(self, payload: dict):
+        return f"URL: {payload['url']}"
 
-        elif step["type"] == "rest_api":
-            self.title.SetLabel(f"Type: {step_type}")
+    def _render_rest_api(self, payload: dict):
+        body = (f"Base Url: {payload.get('base_url', '')}\n"
+                f"Call Type: {payload.get('call_type', '')}\n"
+                f"Rest Call: {payload.get('rest_call', '')}\n")
+        body += "" if not payload.get("body", "") else \
+            f"Body:\n{payload.get('body')}"
+        body += "" if not payload.get("output_variable", "") else \
+            f"Output Variable: {payload.get('output_variable')}"
+        return body
 
-            body = (f"Base Url: {payload.get('base_url', '')}\n"
-                    f"Call Type: {payload.get('call_type', '')}\n"
-                    f"Rest Call: {payload.get('rest_call', '')}\n")
-            body += "" if not payload.get("body", "") else \
-                f"Body:\n{payload.get('body')}"
-            body += "" if not payload.get("output_variable", "") else \
-                f"Output Variable: {payload.get('output_variable')}"
-            self.body.SetLabel(body)
+    def _render_scroll(self, payload: dict):
+        return (f"Scroll Type: {payload.get('scroll_type')}\n"
+                f"x: {payload.get('x_scroll', '-')} | "
+                f"y: {payload.get('y_scroll', '-')}")
 
-        elif step["type"] == "scroll":
-            body = (f"Scroll Type: {payload.get('scroll_type')}\n"
-                    f"x: {payload.get('x_scroll', '-')} | "
-                    f"y: {payload.get('y_scroll', '-')}")
-            self.title.SetLabel(f"Type: {step_type}")
-            self.body.SetLabel(body)
+    def _render_sendkeys(self, payload: dict):
+        body_text: str = ""
 
-        elif step["type"] == "sendkeys":
-            self.title.SetLabel(f"Type: {step_type}")
+        if payload.get("target", ""):
+            body_text += f"Target:\n{payload['xpath']}\n\n"
 
-            body_text: str = ""
-
-            if payload.get("target", ""):
-                body_text += f"Target:\n{payload['xpath']}\n\n"
-
-            keys_entry: str = "Entries:\n"
-            keys = payload.get("keys", [])
+        keys = payload.get("keys", [])
+        if keys:
+            body_text += "Entries:\n"
             for entry in keys:
-                keys_entry += (f"Type: {entry['type']}\n"
-                               f"value {entry['value']}\n")
+                body_text += (f"Type: {entry['type']}\n"
+                              f"value {entry['value']}\n")
 
-                keys_entry += "\n" if not entry["modifiers"] else \
+                body_text += "\n" if not entry["modifiers"] else \
                     f"Modifiers: {entry['modifiers']}"
 
-            self.body.SetLabel(keys_entry)
+        return body_text
 
-        elif step["type"] == "user_variable":
-            body = (f"Variable Name: {payload.get('name', '')}\n"
-                    f"Value: {payload.get('value', '')}")
-            self.title.SetLabel(f"Type: {step_type}")
-            self.body.SetLabel(body)
+    def _render_user_variable(self, payload: dict):
+        return (f"Variable Name: {payload.get('name', '')}\n"
+                f"Value: {payload.get('value', '')}")
 
-        elif step["type"] == "wait":
-            body = f"Duration: {payload.get('duration_ms', '')} ms\n"
-            self.title.SetLabel(f"Type: {step_type}")
-            self.body.SetLabel(body)
-
-        self.Layout()
-        self.Fit()
+    def _render_wait(self, payload: dict):
+        return f"Duration: {payload.get('duration_ms', '')} ms\n"
