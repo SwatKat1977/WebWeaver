@@ -491,6 +491,24 @@ class RecordingDocument:
 
         return insert_index
 
+    def reorder_steps(self, new_order: list[dict]) -> None:
+        """
+        Reorder steps based on a new ordered list of event dicts.
+
+        Args:
+            new_order: List of event dicts in desired order.
+        """
+        events = self._recording_data["recording"]["events"]
+
+        # Replace with new order
+        events[:] = new_order
+
+        # Reindex
+        for i, ev in enumerate(events):
+            ev["index"] = i
+
+        self._renormalise_timestamps()
+
     def _renormalise_timestamps(self) -> None:
         """
         Renormalise step timestamps to maintain monotonic ordering

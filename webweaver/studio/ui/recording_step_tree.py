@@ -231,76 +231,100 @@ class RecordingStepTree(wx.TreeCtrl):
         if not self.drag_item:
             return
 
+        target = self._get_drop_target()
+
+        if not self._is_valid_drop(target):
+            self.drag_item = None
+            return
+
+        item_data = self._extract_item(self.drag_item)
+
+        new_item = self._reinsert_item(target, item_data)
+
+        self._restore_children(new_item, item_data["children"])
+
+        self._finalise_drop(new_item, item_data)
+
+    def _get_drop_target(self):
         pos = self.ScreenToClient(wx.GetMousePosition())
         target, _ = self.HitTest(pos)
+        return target
 
+    def _is_valid_drop(self, target):
         if not target.IsOk():
-            self.drag_item = None
-            return
+            return False
 
         if target == self.drag_item:
-            self.drag_item = None
-            return
+            return False
 
         if self._is_descendant(self.drag_item, target):
-            self.drag_item = None
-            return
+            return False
 
-        text = self.GetItemText(self.drag_item)
-        icon = self.GetItemImage(self.drag_item)
-        data = self.GetItemData(self.drag_item)
-        bold = self.IsBold(self.drag_item)
-        expanded = self.IsExpanded(self.drag_item)
+        return True
 
-        # save children
-        children = []
-        child, cookie = self.GetFirstChild(self.drag_item)
+    def _extract_item(self, item):
+        data = {
+            "text": self.GetItemText(item),
+            "icon": self.GetItemImage(item),
+            "data": self.GetItemData(item),
+            "bold": self.IsBold(item),
+            "expanded": self.IsExpanded(item),
+            "children": []
+        }
+
+        child, cookie = self.GetFirstChild(item)
 
         while child.IsOk():
-            children.append((
+            data["children"].append((
                 self.GetItemText(child),
                 self.GetItemImage(child),
                 self.GetItemData(child),
                 self.IsBold(child)
             ))
-            child, cookie = self.GetNextChild(self.drag_item, cookie)
+            child, cookie = self.GetNextChild(item, cookie)
 
-        self.Delete(self.drag_item)
+        self.Delete(item)
 
-        # -------------------------
-        # DROP ON GROUP
-        # -------------------------
+        return data
+
+    def _reinsert_item(self, target, item_data):
+        text = item_data["text"]
+
         if not self.GetItemData(target) or target == self.root:
             parent = target
             new_item = self.AppendItem(parent, text)
-
         else:
             parent = self.GetItemParent(target)
-
             rect = self.GetBoundingRect(target)
+
+            pos = self.ScreenToClient(wx.GetMousePosition())
             insert_after = pos.y > rect.y + rect.height / 2
 
             if insert_after:
                 new_item = self.InsertItem(parent, target, text)
             else:
                 prev = self.GetPrevSibling(target)
-
                 if prev.IsOk():
                     new_item = self.InsertItem(parent, prev, text)
                 else:
                     new_item = self.PrependItem(parent, text)
 
-        if icon != -1:
-            self.SetItemImage(new_item, icon)
+        self._apply_item_style(new_item, item_data)
 
-        self.SetItemData(new_item, data)
+        return new_item
 
-        if bold:
-            self.SetItemBold(new_item)
+    def _apply_item_style(self, item, item_data):
+        if item_data["icon"] != -1:
+            self.SetItemImage(item, item_data["icon"])
 
-        # restore children
+        self.SetItemData(item, item_data["data"])
+
+        if item_data["bold"]:
+            self.SetItemBold(item)
+
+    def _restore_children(self, parent, children):
         for t, i, d, b in children:
-            c = self.AppendItem(new_item, t)
+            c = self.AppendItem(parent, t)
 
             if i != -1:
                 self.SetItemImage(c, i)
@@ -310,19 +334,19 @@ class RecordingStepTree(wx.TreeCtrl):
             if b:
                 self.SetItemBold(c)
 
+    def _finalise_drop(self, new_item, item_data):
         self.drag_item = None
+
+        parent = self.GetItemParent(new_item)
         self.Expand(parent)
 
-        # ensure moved groups stay expanded
-        if expanded:
+        if item_data["expanded"]:
             self.Expand(new_item)
 
-        # Sync tree → document
+        # Sync document
         new_order = self._get_step_order()
-
         self.GetParent().recording_document.reorder_steps(new_order)
 
-        # Persist
         RecordingPersistence.save_to_disk(self.GetParent().recording_document)
 
     def _get_step_order(self) -> list:
@@ -383,7 +407,7 @@ class RecordingStepTree(wx.TreeCtrl):
 
         pos = evt.GetPosition()
 
-        item, flags = self.HitTest(pos)
+        item, _ = self.HitTest(pos)
 
         if not item.IsOk():
             self.hover_timer.Stop()
