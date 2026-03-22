@@ -19,6 +19,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from enum import Enum
 import wx
+
+from webweaver.studio.persistence.recording_persistence import RecordingPersistence
 from webweaver.studio.ui.step_information_overlay import StepInformationOverlay
 
 
@@ -68,8 +70,8 @@ class RecordingStepTree(wx.TreeCtrl):
         return self.root
 
     def add_step(self,
-                  label: str, data: dict,
-                  parent: wx.TreeItemId = None) -> None:
+                 label: str, data: dict,
+                 parent: wx.TreeItemId = None) -> None:
         parent_node = self.root if parent is None else parent
         self._add_step_entry(parent_node, label, self._icon_not_run, data)
         self.Expand(self.root)
@@ -256,6 +258,35 @@ class RecordingStepTree(wx.TreeCtrl):
         if expanded:
             self.Expand(new_item)
 
+        # Sync tree → document
+        new_order = self._get_step_order()
+
+        self.GetParent().recording_document.reorder_steps(new_order)
+
+        # Persist
+        RecordingPersistence.save_to_disk(self.GetParent().recording_document)
+
+    def _get_step_order(self) -> list:
+        """
+        Return list of step data in current tree order.
+        """
+        order = []
+
+        def walk(parent):
+            child, cookie = self.GetFirstChild(parent)
+
+            while child.IsOk():
+                data = self.GetItemData(child)
+
+                if data:  # step node
+                    order.append(data)
+
+                walk(child)
+                child, cookie = self.GetNextChild(parent, cookie)
+
+        walk(self.root)
+        return order
+
     def _is_descendant(self, parent, child):
 
         item = child
@@ -289,7 +320,6 @@ class RecordingStepTree(wx.TreeCtrl):
             self.pending_hover_item = None
             self._info_overlay.Hide()
             self.hover_item = None
-            self.UnselectAll()
             evt.Skip()
             return
 
@@ -301,7 +331,6 @@ class RecordingStepTree(wx.TreeCtrl):
             self.pending_hover_item = None
             self._info_overlay.Hide()
             self.hover_item = None
-            self.UnselectAll()
             evt.Skip()
             return
 
@@ -320,8 +349,8 @@ class RecordingStepTree(wx.TreeCtrl):
         self.hover_timer.Stop()
         self.pending_hover_item = None
         self._info_overlay.Hide()
+
         self.hover_item = None
-        self.UnselectAll()
 
         evt.Skip()
 
@@ -337,7 +366,6 @@ class RecordingStepTree(wx.TreeCtrl):
             return
 
         self.hover_item = item
-        self.SelectItem(item)
 
         self._info_overlay.update(data)
 
