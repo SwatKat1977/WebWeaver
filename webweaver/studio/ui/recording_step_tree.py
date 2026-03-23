@@ -167,7 +167,6 @@ class RecordingStepTree(wx.TreeCtrl):
         """Resets all step nodes to NOT_RUN status."""
 
         def walk(parent):
-
             child, cookie = self.GetFirstChild(parent)
 
             while child.IsOk():
@@ -211,13 +210,27 @@ class RecordingStepTree(wx.TreeCtrl):
         yield from walk(self.root)
 
     def find_item_by_index(self, index):
+        """Finds a tree item by its associated index.
+
+        Iterates through all steps and returns the first item whose data
+        contains a matching "index" value.
+
+        Args:
+            index (int): The index to search for.
+
+        Returns:
+            Optional[wx.TreeItemId]: The matching tree item if found, otherwise None.
+        """
         for item, data in self.iter_steps():
             if data.get("index") == index:
                 return item
         return None
 
     def _create_images(self):
-        """Initialises and assigns status icons to the tree."""
+        """Initializes and assigns status icons to the tree.
+
+        Creates an image list and maps step statuses to corresponding icons.
+        """
 
         self.images = wx.ImageList(16, 16)
 
@@ -247,7 +260,13 @@ class RecordingStepTree(wx.TreeCtrl):
         }
 
     def _on_begin_drag(self, evt):
-        """Handles drag start for tree items."""
+        """Handles the start of a drag operation for a tree item.
+
+        Prevents dragging of the root item.
+
+        Args:
+            evt (wx.TreeEvent): The drag event.
+        """
         item = evt.GetItem()
 
         if item == self.root:
@@ -257,7 +276,11 @@ class RecordingStepTree(wx.TreeCtrl):
         evt.Allow()
 
     def _on_end_drag(self, _evt):
-        """Handles drag-and-drop reordering of tree items."""
+        """Handles drag-and-drop reordering of tree items.
+
+        Moves the dragged item to a valid drop target, preserving its data
+        and children. Invalid drops are ignored.
+        """
         self._clear_drop_indicator()
 
         if not self.drag_item:
@@ -278,11 +301,29 @@ class RecordingStepTree(wx.TreeCtrl):
         self._finalise_drop(new_item, item_data)
 
     def _get_drop_target(self):
+        """Determines the tree item under the current mouse position.
+
+        Returns:
+            wx.TreeItemId: The item under the cursor.
+        """
         pos = self.ScreenToClient(wx.GetMousePosition())
         target, _ = self.HitTest(pos)
         return target
 
     def _is_valid_drop(self, target):
+        """Checks whether a drop target is valid.
+
+        A valid target must:
+            - Exist
+            - Not be the dragged item itself
+            - Not be a descendant of the dragged item
+
+        Args:
+            target (wx.TreeItemId): The potential drop target.
+
+        Returns:
+            bool: True if the drop is valid, False otherwise.
+        """
         if not target.IsOk():
             return False
 
@@ -295,6 +336,17 @@ class RecordingStepTree(wx.TreeCtrl):
         return True
 
     def _extract_item(self, item):
+        """Extracts item data and removes it from the tree.
+
+        Captures the item's visual and data properties, along with its
+        immediate children, then deletes the item.
+
+        Args:
+            item (wx.TreeItemId): The item to extract.
+
+        Returns:
+            dict: A dictionary containing item properties and children.
+        """
         data = {
             "text": self.GetItemText(item),
             "icon": self.GetItemImage(item),
@@ -320,6 +372,18 @@ class RecordingStepTree(wx.TreeCtrl):
         return data
 
     def _reinsert_item(self, target, item_data):
+        """Reinserts an item into the tree at a new position.
+
+        Determines whether to insert as a child or sibling based on the
+        drop location, then applies stored styling.
+
+        Args:
+            target (wx.TreeItemId): The drop target item.
+            item_data (dict): The extracted item data.
+
+        Returns:
+            wx.TreeItemId: The newly created tree item.
+        """
         text = item_data["text"]
 
         if not self.GetItemData(target) or target == self.root:
@@ -346,6 +410,12 @@ class RecordingStepTree(wx.TreeCtrl):
         return new_item
 
     def _apply_item_style(self, item, item_data):
+        """Applies stored visual and data properties to a tree item.
+
+        Args:
+            item (wx.TreeItemId): The item to style.
+            item_data (dict): The stored item properties.
+        """
         if item_data["icon"] != -1:
             self.SetItemImage(item, item_data["icon"])
 
