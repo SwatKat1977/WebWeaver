@@ -624,7 +624,7 @@ class RecordingViewerPanel(wx.Panel):
         # Select + open editor
         if target_item and target_item.IsOk():
             self._steps_tree.SelectItem(target_item)
-            self.edit_step(target_item)
+            self._perform_edit_step(target_item)
 
     def _create_getter_step(self,
                             xpath: str,
