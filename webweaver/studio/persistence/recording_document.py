@@ -417,36 +417,6 @@ class RecordingDocument:
         for i, ev in enumerate(events):
             ev["index"] = i
 
-    def move_step(self, from_index: int, to_index: int) -> bool:
-        """Move a recording step to a new position in the event list.
-
-        The step at the specified source index is removed and reinserted
-        at the destination index. All events are reindexed after the move
-        to maintain sequential ordering.
-
-        Args:
-            from_index: The current index of the step to move.
-            to_index: The target index where the step should be placed.
-
-        Returns:
-            True if the step was successfully moved, or False if either
-            index was out of range.
-        """
-        events = self._recording_data["recording"]["events"]
-
-        if from_index < 0 or from_index >= len(events):
-            return False
-        if to_index < 0 or to_index >= len(events):
-            return False
-
-        step = events.pop(from_index)
-        events.insert(to_index, step)
-
-        for i, ev in enumerate(events):
-            ev["index"] = i
-
-        return True
-
     def insert_step_after(
             self,
             index: Optional[int],

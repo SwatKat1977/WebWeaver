@@ -244,6 +244,52 @@ class RecordingViewerPanel(wx.Panel):
         self._passed_indices.clear()
         self._steps_tree.reset_statuses()
 
+    def delete_step(self, index: int):
+        """Delete a step from the recording.
+
+        Prompts the user for confirmation before deleting the specified step.
+        If confirmed, the step is removed from the underlying document, the
+        updated document is persisted to disk, and the UI is refreshed to
+        reflect the change. Any current selection in the steps tree is cleared.
+
+        Args:
+            index (int): The index of the step to delete.
+
+        Returns:
+            None
+        """
+        step = self._document.get_step(index)
+
+        msg = (
+            f"Delete step?\n\n"
+            f"Type: {step.get('type')}"
+        )
+
+        dlg = wx.MessageDialog(
+            self,
+            msg,
+            "Delete Step",
+            wx.YES_NO | wx.NO_DEFAULT | wx.ICON_WARNING
+        )
+
+        if dlg.ShowModal() != wx.ID_YES:
+            dlg.Destroy()
+            return
+
+        dlg.Destroy()
+
+        # 1) Mutate document
+        self._document.delete_step(index)
+
+        # 2) Persist
+        RecordingPersistence.save_to_disk(self._document)
+
+        # 3) Refresh UI
+        self.reload_from_document()
+
+        # 4 Clear selection explicitly
+        self._steps_tree.UnselectAll()
+
     def reload_from_disk(self):
         """
         Reload the recording document from disk and refresh the UI.
@@ -335,34 +381,7 @@ class RecordingViewerPanel(wx.Panel):
         if index is None:
             return
 
-        step = self._document.get_step(index)
-
-        msg = (
-            f"Delete step?\n\n"
-            f"Type: {step.get('type')}"
-        )
-
-        dlg = wx.MessageDialog(
-            self,
-            msg,
-            "Delete Step",
-            wx.YES_NO | wx.NO_DEFAULT | wx.ICON_WARNING
-        )
-
-        if dlg.ShowModal() != wx.ID_YES:
-            dlg.Destroy()
-            return
-
-        dlg.Destroy()
-
-        # 1) Mutate document
-        self._document.delete_step(index)
-
-        # 2) Persist
-        RecordingPersistence.save_to_disk(self._document)
-
-        # 3) Refresh UI
-        self.reload_from_document()
+        self.delete_step(index)
 
     def reload_from_document(self):
         """
@@ -486,32 +505,6 @@ class RecordingViewerPanel(wx.Panel):
         self.reload_from_document()
 
         editor.Destroy()
-
-    def move_step(self, from_index: int, to_index: int):
-        """
-        Move a step within the recording and update the UI.
-
-        Attempts to move a step from one index to another using the
-        underlying document model. If the move is successful, the
-        recording is saved to disk, the UI is reloaded, and the
-        moved step is reselected.
-
-        Args:
-            from_index: The current index of the step to move.
-            to_index: The target index for the step.
-
-        Returns:
-            None. If the move operation is invalid or fails, the
-            method returns without making changes.
-        """
-        if not self._document.move_step(from_index, to_index):
-            return
-
-        RecordingPersistence.save_to_disk(self._document)
-        self.reload_from_document()
-
-        # Reselect moved step
-        self._step_list.Select(to_index)
 
     def _on_step_activated(self, evt):
         """
