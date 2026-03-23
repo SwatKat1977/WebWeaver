@@ -164,16 +164,16 @@ class StepInformationOverlay(wx.PopupTransientWindow):
         body_text: str = ""
 
         if payload.get("target", ""):
-            body_text += f"Target:\n{payload['xpath']}\n\n"
+            body_text += f"Target:\n{payload['target']}\n"
 
         keys = payload.get("keys", [])
         if keys:
             body_text += "Entries:\n"
             for entry in keys:
+                body_text += "\n"
                 body_text += (f"Type: {entry['type']}\n"
                               f"value {entry['value']}\n")
-
-                body_text += "\n" if not entry["modifiers"] else \
+                body_text += "" if not entry.get("modifiers", "") else \
                     f"Modifiers: {entry['modifiers']}"
 
         return body_text
