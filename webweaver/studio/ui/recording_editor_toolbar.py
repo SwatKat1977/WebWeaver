@@ -22,9 +22,7 @@ import wx
 from webweaver.studio.recording_toolbar_icons import (
                                        load_toolbar_add_step_icon,
                                        load_toolbar_edit_step_icon,
-                                       load_toolbar_delete_step_icon,
-                                       load_toolbar_move_step_up_icon,
-                                       load_toolbar_move_step_down_icon)
+                                       load_toolbar_delete_step_icon)
 # pylint: disable=duplicate-code
 
 
@@ -51,12 +49,6 @@ class RecordingToolbarId:
 
     #: Command ID for editing the currently selected step.
     STEP_EDIT = wx.ID_HIGHEST + 6003
-
-    #: Command ID for moving the selected step down in the timeline.
-    MOVE_STEP_DOWN = wx.ID_HIGHEST + 6004
-
-    #: Command ID for moving the selected step up in the timeline.
-    MOVE_STEP_UP = wx.ID_HIGHEST + 6005
 
 
 @dataclass(frozen=True)
@@ -128,8 +120,6 @@ class RecordingEditorToolbar:
             return wx.BitmapBundle.FromBitmap(bmp)
 
         bmp_add = load_toolbar_add_step_icon()
-        bmp_up = load_toolbar_move_step_up_icon()
-        bmp_down = load_toolbar_move_step_down_icon()
         bmp_edit = load_toolbar_edit_step_icon()
         bmp_delete = load_toolbar_delete_step_icon()
 
@@ -142,18 +132,6 @@ class RecordingEditorToolbar:
             "",
             _bundle(bmp_add),
             "Add Step")
-
-        self._toolbar.AddTool(
-            RecordingToolbarId.MOVE_STEP_UP,
-            "",
-            _bundle(bmp_up),
-            "Move Step Up")
-
-        self._toolbar.AddTool(
-            RecordingToolbarId.MOVE_STEP_DOWN,
-            "",
-            _bundle(bmp_down),
-            "Move Step Down")
 
         self._toolbar.AddTool(
             RecordingToolbarId.STEP_EDIT,
@@ -225,8 +203,6 @@ class RecordingEditorToolbar:
         try:
             tb.EnableTool(RecordingToolbarId.STEP_DELETE, state.can_delete)
             tb.EnableTool(RecordingToolbarId.STEP_EDIT, state.can_edit)
-            tb.EnableTool(RecordingToolbarId.MOVE_STEP_DOWN, state.can_move_down)
-            tb.EnableTool(RecordingToolbarId.MOVE_STEP_UP, state.can_move_up)
 
             # Usually not strictly needed, but safe:
             tb.Refresh()

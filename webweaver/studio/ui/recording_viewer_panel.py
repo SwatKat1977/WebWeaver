@@ -105,6 +105,12 @@ class RecordingViewerPanel(wx.Panel):
 
     @property
     def recording_document(self):
+        """
+        Get the current recording document.
+
+        Returns:
+            RecordingDocument: The active recording document instance.
+        """
         return self._document
 
     @property
@@ -134,6 +140,13 @@ class RecordingViewerPanel(wx.Panel):
 
     @property
     def selected_step(self) -> int | None:
+        """
+        Get the index of the currently selected step in the steps tree.
+
+        Returns:
+            int | None: The index of the selected step if a valid selection exists;
+            otherwise, None.
+        """
         item = self._steps_tree.GetSelection()
 
         if item is None or not item.IsOk():
@@ -388,6 +401,20 @@ class RecordingViewerPanel(wx.Panel):
         return editor_class(self, event)
 
     def edit_step(self, item):
+        """
+        Open an editor dialog for the selected step and persist any changes.
+
+        The method resolves the step associated with the given tree item,
+        determines its event type, and launches the appropriate editor dialog.
+        If the user confirms changes, the updated document is saved and the
+        steps view is refreshed.
+
+        Args:
+            item: The tree item representing the step to edit.
+
+        Returns:
+            None
+        """
         tree_event = self._steps_tree.GetItemData(item)
 
         if not tree_event:
