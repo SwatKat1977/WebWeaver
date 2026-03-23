@@ -31,6 +31,7 @@ from webweaver.studio.recording.recording_event_type import RecordingEventType
 from webweaver.studio.ui.add_step_dialog import (AddStepDialog,
                                                  default_payload_for)
 from webweaver.studio.ui.events import WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE
+from webweaver.studio.ui.recording_step_tree import RecordingStepTree, StepStatus
 from webweaver.studio.persistence.recording_persistence import (
                                                  RecordingPersistence,
                                                  RecordingLoadError)
@@ -83,7 +84,7 @@ class RecordingViewerPanel(wx.Panel):
         """
         super().__init__(parent)
         self._context: RecordingViewContext = ctx
-        self._step_list: wx.ListCtrl = None
+        self._steps_tree: typing.Optional[RecordingStepTree] = None
 
         self._current_index: int | None = None
         self._failed_index: int | None = None
@@ -101,6 +102,16 @@ class RecordingViewerPanel(wx.Panel):
             return
 
         self._create_ui()
+
+    @property
+    def recording_document(self):
+        """
+        Get the current recording document.
+
+        Returns:
+            RecordingDocument: The active recording document instance.
+        """
+        return self._document
 
     @property
     def context(self) -> RecordingViewContext:
@@ -123,27 +134,30 @@ class RecordingViewerPanel(wx.Panel):
 
         :return: True if a step is selected, False otherwise.
         """
-        return self._step_list.GetFirstSelected() != -1
+        item = self._steps_tree.GetSelection()
+        return item is not None and item.IsOk() and \
+            self._steps_tree.GetItemData(item) is not None
 
     @property
     def selected_step(self) -> int | None:
         """
-        Return the index of the currently selected step.
+        Get the index of the currently selected step in the steps tree.
 
-        If no step is selected, this property returns None. If multiple steps
-        are selected (which is not normally expected), the index of the first
-        selected step is returned.
-
-        The returned index refers to the position in the current step list /
-        timeline order.
-
-        :return: The zero-based index of the selected step, or None if no step
-                 is selected.
+        Returns:
+            int | None: The index of the selected step if a valid selection exists;
+            otherwise, None.
         """
-        idx = self._step_list.GetFirstSelected()
-        if idx == -1:
+        item = self._steps_tree.GetSelection()
+
+        if item is None or not item.IsOk():
             return None
-        return idx
+
+        step = self._steps_tree.GetItemData(item)
+
+        if not step:
+            return None
+
+        return step["index"]
 
     @property
     def step_count(self) -> int:
@@ -155,7 +169,7 @@ class RecordingViewerPanel(wx.Panel):
 
         :return: The number of steps in the recording timeline.
         """
-        return self._step_list.GetItemCount()
+        return len(self._document.data["recording"]["events"])
 
     def get_recording_id(self) -> str:
         """
@@ -186,7 +200,7 @@ class RecordingViewerPanel(wx.Panel):
             index (int): Index of the step that is currently active.
         """
         self._current_index = index
-        self._refresh_timeline_styles()
+        self._steps_tree.set_step_status(index, StepStatus.RUNNING)
 
     def timeline_mark_passed(self, index: int):
         """
@@ -199,7 +213,7 @@ class RecordingViewerPanel(wx.Panel):
             index (int): Index of the step that completed successfully.
         """
         self._passed_indices.add(index)
-        self._refresh_timeline_styles()
+        self._steps_tree.set_step_status(index, StepStatus.PASSED)
 
     def timeline_mark_failed(self, index: int):
         """
@@ -212,7 +226,7 @@ class RecordingViewerPanel(wx.Panel):
             index (int): Index of the step that failed.
         """
         self._failed_index = index
-        self._refresh_timeline_styles()
+        self._steps_tree.set_step_status(index, StepStatus.FAILED)
 
     def timeline_reset_playback_state(self):
         """
@@ -228,7 +242,53 @@ class RecordingViewerPanel(wx.Panel):
         self._current_index = None
         self._failed_index = None
         self._passed_indices.clear()
-        self._refresh_timeline_styles()
+        self._steps_tree.reset_statuses()
+
+    def delete_step(self, index: int):
+        """Delete a step from the recording.
+
+        Prompts the user for confirmation before deleting the specified step.
+        If confirmed, the step is removed from the underlying document, the
+        updated document is persisted to disk, and the UI is refreshed to
+        reflect the change. Any current selection in the steps tree is cleared.
+
+        Args:
+            index (int): The index of the step to delete.
+
+        Returns:
+            None
+        """
+        step = self._document.get_step(index)
+
+        msg = (
+            f"Delete step?\n\n"
+            f"Type: {step.get('type')}"
+        )
+
+        dlg = wx.MessageDialog(
+            self,
+            msg,
+            "Delete Step",
+            wx.YES_NO | wx.NO_DEFAULT | wx.ICON_WARNING
+        )
+
+        if dlg.ShowModal() != wx.ID_YES:
+            dlg.Destroy()
+            return
+
+        dlg.Destroy()
+
+        # 1) Mutate document
+        self._document.delete_step(index)
+
+        # 2) Persist
+        RecordingPersistence.save_to_disk(self._document)
+
+        # 3) Refresh UI
+        self.reload_from_document()
+
+        # 4 Clear selection explicitly
+        self._steps_tree.UnselectAll()
 
     def reload_from_disk(self):
         """
@@ -240,53 +300,6 @@ class RecordingViewerPanel(wx.Panel):
 
         self.reload_from_document()
 
-    def _extract_step_fields(self, event: dict):
-        """
-        Extract displayable fields from a raw recording event.
-
-        Converts the low-level event dictionary into human-readable values
-        suitable for display in the timeline list control.
-
-        Args:
-            event (dict): Raw event dictionary from the recording file.
-
-        Returns:
-            tuple[str, str, str]: A tuple of (action, value, target).
-        """
-        event_type = RecordingEventType(event.get("type"))
-        action = event_type.name.replace("_", " ").title()
-        payload = event.get("payload", {})
-        step_label = payload.get("label", "")
-
-        if step_label:
-            action = step_label
-
-        value = ""
-        target = ""
-
-        if event_type == RecordingEventType.DOM_CLICK:
-            target = payload.get("xpath", "")
-
-        elif event_type == RecordingEventType.DOM_TYPE:
-            value = payload.get("value", "")
-            target = payload.get("xpath", "")
-
-        elif event_type == RecordingEventType.DOM_SELECT:
-            value = payload.get("value") or payload.get("text", "")
-            target = payload.get("xpath", "")
-
-        elif event_type == RecordingEventType.DOM_CHECK:
-            value = "Checked" if payload.get("value") else "Unchecked"
-            target = payload.get("xpath", "")
-
-        elif event_type == RecordingEventType.NAV_GOTO:
-            target = payload.get("url", "")
-
-        elif event_type == RecordingEventType.WAIT:
-            value = f"{payload.get('duration_ms', 0)} ms"
-
-        return action, value, target
-
     def _populate_steps(self):
         """
         Populate the timeline list control from the loaded recording.
@@ -294,18 +307,17 @@ class RecordingViewerPanel(wx.Panel):
         This clears any existing rows and rebuilds the list from the events
         stored in the recording associated with this panel's context.
         """
-        self._step_list.DeleteAllItems()
+        self._steps_tree.clear()
 
         recording = load_recording_from_context(self.context)
 
-        for i, event in enumerate(recording.events):
-            idx = self._step_list.InsertItem(i, str(i))
+        for event in recording.events:
+            payload = event.get("payload", {})
+            payload_label = payload.get("label", "")
+            step_type = event.get("type", "")
 
-            action, value, target = self._extract_step_fields(event)
-
-            self._step_list.SetItem(idx, 1, action)
-            self._step_list.SetItem(idx, 2, value or "")
-            self._step_list.SetItem(idx, 3, target or "")
+            label = payload_label if payload_label else step_type
+            self._steps_tree.add_step(label, event)
 
     def _create_ui(self):
         """
@@ -316,49 +328,44 @@ class RecordingViewerPanel(wx.Panel):
         """
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self._step_list = wx.ListCtrl(
-            self,
-            style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_THEME
-        )
+        self._steps_tree = RecordingStepTree(self)
 
-        self._step_list.InsertColumn(0, "#", width=50)
-        self._step_list.InsertColumn(1, "Action", width=120)
-        self._step_list.InsertColumn(2, "Value", width=200)
-        self._step_list.InsertColumn(3, "Target", width=600)
-
-        main_sizer.Add(self._step_list, 1, wx.EXPAND | wx.ALL, 5)
+        main_sizer.Add(self._steps_tree, 1, wx.EXPAND)
 
         self.SetSizer(main_sizer)
 
         self._populate_steps()
 
-        self._step_list.Bind(wx.EVT_LIST_ITEM_ACTIVATED,
-                             self._on_step_activated)
+        self._steps_tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED,
+                              self._on_step_activated)
 
-        self._step_list.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK,
-                             self._on_step_right_click)
+        self._steps_tree.Bind(wx.EVT_TREE_ITEM_RIGHT_CLICK,
+                              self._on_step_right_click)
 
-        self._step_list.Bind(wx.EVT_LIST_ITEM_SELECTED,
-                             self._on_step_selected)
-        self._step_list.Bind(wx.EVT_LIST_ITEM_DESELECTED,
-                             self._on_step_deselected)
+        self._steps_tree.Bind(wx.EVT_TREE_SEL_CHANGED,
+                              self._on_tree_selection_changed)
 
-    def _on_step_right_click(self, event: wx.ListEvent):
-        index = event.GetIndex()
-        if index < 0:
+
+    def _on_step_right_click(self, event: wx.TreeEvent):
+        item = event.GetItem()
+
+        if not item.IsOk():
             return
 
-        # Remember which step was right-clicked
-        self._context_step_index = index
-        step = self._document.get_step(index)
+        self._steps_tree.SelectItem(item)
+
+        step = self._steps_tree.GetItemData(item)
+
+        if not step:
+            return
+
+        self._context_step_index = step["index"]
 
         menu = wx.Menu()
 
-        # Always allow step to be deleted
         menu.Append(self.ID_STEP_DELETE, "Delete Step")
         self.Bind(wx.EVT_MENU, self._on_delete_step, id=self.ID_STEP_DELETE)
 
-        # Only allow getter for certain step types
         if self._can_add_getter(step):
             menu.Append(self.ID_ADD_GETTER_STEP, "Add Getter Below")
             self.Bind(wx.EVT_MENU, self._on_add_getter,
@@ -367,7 +374,7 @@ class RecordingViewerPanel(wx.Panel):
         self.PopupMenu(menu)
         menu.Destroy()
 
-    def _on_delete_step(self, _evt):
+    def _on_delete_step(self, _event):
         index = self._context_step_index
         self._context_step_index = None
 
@@ -386,7 +393,6 @@ class RecordingViewerPanel(wx.Panel):
         inserting, or reordering steps) to ensure the UI stays in sync with the
         authoritative document state.
         """
-        self._step_list.DeleteAllItems()
         self._populate_steps()
 
     def _create_step_editor_dialog(
@@ -419,33 +425,21 @@ class RecordingViewerPanel(wx.Panel):
 
     def edit_step(self, index: int):
         """
-        Open an editor dialog for the specified recording step.
+        Open an editor dialog for the selected step and persist any changes.
 
-        The method determines the type of the selected event and opens the
-        corresponding editor dialog. If the user confirms changes, the
-        recording is saved to disk and the UI is refreshed.
+        The method resolves the step associated with the given tree item,
+        determines its event type, and launches the appropriate editor dialog.
+        If the user confirms changes, the updated document is saved and the
+        steps view is refreshed.
 
         Args:
-            index: The index of the step to be edited.
+            index (int): The index of the step tree item to edit.
 
         Returns:
-            None. If no editor exists for the step type, a message box is
-            displayed and the method returns without making changes.
+            None
         """
-        event = self._document.get_step(index)
-        event_type = RecordingEventType(event["type"])
-
-        dlg = self._create_step_editor_dialog(event_type, event)
-
-        if dlg is None:
-            wx.MessageBox("No editor for this step type yet")
-            return
-
-        if dlg.ShowModal() == wx.ID_OK and dlg.changed:
-            RecordingPersistence.save_to_disk(self._document)
-            self._populate_steps()
-
-        dlg.Destroy()
+        item = self._steps_tree.find_item_by_index(index)
+        self._perform_edit_step(item)
 
     def add_step(self, after_index: typing.Optional[int] = None):
         """
@@ -512,134 +506,44 @@ class RecordingViewerPanel(wx.Panel):
 
         editor.Destroy()
 
-    def delete_step(self, index: int):
-        """
-        Delete a step from the recording at the specified index.
-
-        This method performs the full delete workflow:
-
-            1. Ask the user for confirmation.
-            2. Mutate the underlying RecordingDocument.
-            3. Persist the updated document to disk.
-            4. Refresh the step timeline UI from the document.
-            5. Clear any existing selection.
-            6. Notify the main frame so dependent UI (e.g. toolbars) can
-               recompute their enabled/disabled state.
-
-        If the user cancels the confirmation dialog, no changes are made.
-
-        :param index: Zero-based index of the step to delete.
-        """
-        step = self._document.get_step(index)
-
-        msg = (
-            f"Delete step {index + 1}?\n\n"
-            f"Type: {step.get('type')}"
-        )
-
-        dlg = wx.MessageDialog(
-            self,
-            msg,
-            "Delete Step",
-            wx.YES_NO | wx.NO_DEFAULT | wx.ICON_WARNING
-        )
-
-        if dlg.ShowModal() != wx.ID_YES:
-            dlg.Destroy()
-            return
-
-        dlg.Destroy()
-
-        # 1) Mutate document
-        self._document.delete_step(index)
-
-        # 2) Persist
-        RecordingPersistence.save_to_disk(self._document)
-
-        # 3) Refresh UI
-        self.reload_from_document()
-
-        # 4) Clear selection explicitly
-        self._step_list.Select(-1)
-
-        # 5) Notify main frame to recompute toolbar state
-        evt = wx.CommandEvent(WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE)
-        wx.PostEvent(self.GetTopLevelParent(), evt)
-
-    def move_step(self, from_index: int, to_index: int):
-        """
-        Move a step within the recording and update the UI.
-
-        Attempts to move a step from one index to another using the
-        underlying document model. If the move is successful, the
-        recording is saved to disk, the UI is reloaded, and the
-        moved step is reselected.
-
-        Args:
-            from_index: The current index of the step to move.
-            to_index: The target index for the step.
-
-        Returns:
-            None. If the move operation is invalid or fails, the
-            method returns without making changes.
-        """
-        if not self._document.move_step(from_index, to_index):
-            return
-
-        RecordingPersistence.save_to_disk(self._document)
-        self.reload_from_document()
-
-        # Reselect moved step
-        self._step_list.Select(to_index)
-
     def _on_step_activated(self, evt):
         """
         Handle activation (double-click or Enter) of a step in the timeline.
 
         This opens the step editor dialog for the selected step.
         """
-        index = evt.GetIndex()
-        self.edit_step(index)
+        item = evt.GetItem()
 
-    def _refresh_timeline_styles(self):
-        """
-        Refresh the visual styling of timeline items based on playback state.
+        if not item.IsOk():
+            return
 
-        This method updates row styles to reflect:
-        - Current step
-        - Passed steps
-        - Failed step
+        self._perform_edit_step(item)
 
-        It is called whenever playback state changes.
-        """
-        count = self._step_list.GetItemCount()
+    def _perform_edit_step(self, item):
+        tree_event = self._steps_tree.GetItemData(item)
 
-        for i in range(count):
-            if self._failed_index is not None and i == self._failed_index:
-                # Failed step -> red
-                self._step_list.SetItemBackgroundColour(i, wx.Colour(255, 200, 200))
+        if not tree_event:
+            return
 
-            elif self._current_index is not None and i == self._current_index:
-                # Currently executing -> blue
-                self._step_list.SetItemBackgroundColour(i, wx.Colour(200, 220, 255))
+        # Re-resolve from document
+        index = tree_event["index"]
+        event = self._document.get_step(index)
 
-            elif i in self._passed_indices:
-                # Already passed -> green
-                self._step_list.SetItemBackgroundColour(i, wx.Colour(200, 255, 200))
+        event_type = RecordingEventType(event.get("type"))
 
-            else:
-                # Not touched yet
-                self._step_list.SetItemBackgroundColour(i, wx.NullColour)
+        dlg = self._create_step_editor_dialog(event_type, event)
 
-        # Auto-scroll to current step
-        if self._current_index is not None:
-            self._step_list.EnsureVisible(self._current_index)
+        if dlg is None:
+            wx.MessageBox("No editor for this step type yet")
+            return
 
-    def _on_step_selected(self, _evt):
-        evt = wx.CommandEvent(WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE)
-        wx.PostEvent(self.GetTopLevelParent(), evt)
+        if dlg.ShowModal() == wx.ID_OK and dlg.changed:
+            RecordingPersistence.save_to_disk(self._document)
+            self._populate_steps()
 
-    def _on_step_deselected(self, _evt):
+        dlg.Destroy()
+
+    def _on_tree_selection_changed(self, _evt):
         evt = wx.CommandEvent(WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE)
         wx.PostEvent(self.GetTopLevelParent(), evt)
 
@@ -693,16 +597,34 @@ class RecordingViewerPanel(wx.Panel):
         # Refresh UI
         self.reload_from_document()
 
-        # Select and scroll to new step
-        self._step_list.Select(insert_index)
-        self._step_list.EnsureVisible(insert_index)
+        # Find the newly inserted step in the tree
+        target_item = None
 
-        # Immediately open editor
-        self.edit_step(insert_index)
+        def find_item(parent):
+            nonlocal target_item
 
-        # Notify main frame to update toolbars
-        evt = wx.CommandEvent(WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE)
-        wx.PostEvent(self.GetTopLevelParent(), evt)
+            child, cookie = self._steps_tree.GetFirstChild(parent)
+
+            while child.IsOk():
+                data = self._steps_tree.GetItemData(child)
+
+                if data and data["index"] == insert_index:
+                    target_item = child
+                    return
+
+                find_item(child)
+
+                if target_item:
+                    return
+
+                child, cookie = self._steps_tree.GetNextChild(parent, cookie)
+
+        find_item(self._steps_tree.tree_root)
+
+        # Select + open editor
+        if target_item and target_item.IsOk():
+            self._steps_tree.SelectItem(target_item)
+            self._perform_edit_step(target_item)
 
     def _create_getter_step(self,
                             xpath: str,
