@@ -1784,7 +1784,7 @@ class StudioMainFrame(wx.Frame):
         if index is None:
             return
 
-        page.edit_step(index)   # we’ll add this method
+        page.edit_step(index)
 
     def _on_recording_step_delete(self, _evt):
         page = self._workspace_panel.get_active_viewer()

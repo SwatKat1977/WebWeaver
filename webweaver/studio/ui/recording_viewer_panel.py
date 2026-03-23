@@ -296,6 +296,10 @@ class RecordingViewerPanel(wx.Panel):
         self._steps_tree.Bind(wx.EVT_TREE_ITEM_RIGHT_CLICK,
                               self._on_step_right_click)
 
+        self._steps_tree.Bind(wx.EVT_TREE_SEL_CHANGED,
+                              self._on_tree_selection_changed)
+
+
     def _on_step_right_click(self, event: wx.TreeEvent):
         item = event.GetItem()
 
@@ -400,7 +404,7 @@ class RecordingViewerPanel(wx.Panel):
 
         return editor_class(self, event)
 
-    def edit_step(self, item):
+    def edit_step(self, index: int):
         """
         Open an editor dialog for the selected step and persist any changes.
 
@@ -410,33 +414,13 @@ class RecordingViewerPanel(wx.Panel):
         steps view is refreshed.
 
         Args:
-            item: The tree item representing the step to edit.
+            index (int): The index of the step tree item to edit.
 
         Returns:
             None
         """
-        tree_event = self._steps_tree.GetItemData(item)
-
-        if not tree_event:
-            return
-
-        # Re-resolve from document
-        index = tree_event["index"]
-        event = self._document.get_step(index)
-
-        event_type = RecordingEventType(event.get("type"))
-
-        dlg = self._create_step_editor_dialog(event_type, event)
-
-        if dlg is None:
-            wx.MessageBox("No editor for this step type yet")
-            return
-
-        if dlg.ShowModal() == wx.ID_OK and dlg.changed:
-            RecordingPersistence.save_to_disk(self._document)
-            self._populate_steps()
-
-        dlg.Destroy()
+        item = self._steps_tree.find_item_by_index(index)
+        self._perform_edit_step(item)
 
     def add_step(self, after_index: typing.Optional[int] = None):
         """
@@ -540,13 +524,33 @@ class RecordingViewerPanel(wx.Panel):
         if not item.IsOk():
             return
 
-        self.edit_step(item)
+        self._perform_edit_step(item)
 
-    def _on_step_selected(self, _evt):
-        evt = wx.CommandEvent(WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE)
-        wx.PostEvent(self.GetTopLevelParent(), evt)
+    def _perform_edit_step(self, item):
+        tree_event = self._steps_tree.GetItemData(item)
 
-    def _on_step_deselected(self, _evt):
+        if not tree_event:
+            return
+
+        # Re-resolve from document
+        index = tree_event["index"]
+        event = self._document.get_step(index)
+
+        event_type = RecordingEventType(event.get("type"))
+
+        dlg = self._create_step_editor_dialog(event_type, event)
+
+        if dlg is None:
+            wx.MessageBox("No editor for this step type yet")
+            return
+
+        if dlg.ShowModal() == wx.ID_OK and dlg.changed:
+            RecordingPersistence.save_to_disk(self._document)
+            self._populate_steps()
+
+        dlg.Destroy()
+
+    def _on_tree_selection_changed(self, _evt):
         evt = wx.CommandEvent(WORKSPACE_ACTIVE_CHANGED_EVENT_TYPE)
         wx.PostEvent(self.GetTopLevelParent(), evt)
 

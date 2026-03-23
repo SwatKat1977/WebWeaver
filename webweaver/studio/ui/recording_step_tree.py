@@ -150,7 +150,7 @@ class RecordingStepTree(wx.TreeCtrl):
             index: Tree item index.
             status: New step status.
         """
-        item = self._find_item_by_index(index)
+        item = self.find_item_by_index(index)
         if not item or not item.IsOk():
             return
 
@@ -210,7 +210,7 @@ class RecordingStepTree(wx.TreeCtrl):
 
         yield from walk(self.root)
 
-    def _find_item_by_index(self, index):
+    def find_item_by_index(self, index):
         for item, data in self.iter_steps():
             if data.get("index") == index:
                 return item
