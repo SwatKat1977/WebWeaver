@@ -213,10 +213,10 @@ class RecordingStepTree(wx.TreeCtrl):
     def _edit_new_step(self, item):
         """Opens edit dialog for a newly created step."""
 
-        if not self.controller:
+        if not self._controller:
             return
 
-        success = self.controller.edit_step_item(item)
+        success = self._controller.edit_step_item(item)
 
         if not success:
             self.Delete(item)

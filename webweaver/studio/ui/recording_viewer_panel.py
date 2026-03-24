@@ -328,7 +328,7 @@ class RecordingViewerPanel(wx.Panel):
         """
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self._steps_tree = RecordingStepTree(self)
+        self._steps_tree = RecordingStepTree(self, controller=self)
 
         main_sizer.Add(self._steps_tree, 1, wx.EXPAND)
 
