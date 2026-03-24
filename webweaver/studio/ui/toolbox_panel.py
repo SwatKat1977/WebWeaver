@@ -126,7 +126,7 @@ class ToolboxPanel(wx.Panel):
         browser = self._toolbox_tree.AppendItem(root, "Browser")
         self._toolbox_tree.AppendItem(browser, "Navigate")
         self._toolbox_tree.AppendItem(browser, "Scroll")
-        self._toolbox_tree.AppendItem(dom, "Wait")
+        self._toolbox_tree.AppendItem(browser, "Wait")
         # self.tree.AppendItem(browser, "Refresh")
 
         logic = self._toolbox_tree.AppendItem(root, "Logic")
@@ -188,12 +188,17 @@ class ToolboxPanel(wx.Panel):
         if self._toolbox_tree.ItemHasChildren(item):
             return
 
-        text = self._toolbox_tree.GetItemText(item)
+        label = self._toolbox_tree.GetItemText(item)
 
-        if not text:
+        if not label:
             return
 
-        data = wx.TextDataObject(text)
+        event_type = TOOLBOX_ACTION_MAP.get(label)
+
+        if not event_type:
+            return
+
+        data = wx.TextDataObject(event_type.value)
 
         source = wx.DropSource(self._toolbox_tree)
         source.SetData(data)
