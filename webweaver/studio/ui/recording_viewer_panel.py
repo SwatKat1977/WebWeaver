@@ -439,7 +439,7 @@ class RecordingViewerPanel(wx.Panel):
             None
         """
         item = self._steps_tree.find_item_by_index(index)
-        self._perform_edit_step(item)
+        self.edit_step_item(item)
 
     def add_step(self, after_index: typing.Optional[int] = None):
         """
@@ -517,9 +517,29 @@ class RecordingViewerPanel(wx.Panel):
         if not item.IsOk():
             return
 
-        self._perform_edit_step(item)
+        self.edit_step_item(item)
 
-    def _perform_edit_step(self, item):
+    def edit_step_item(self, item):
+        """Open an editor dialog for a selected step and persist changes.
+
+        Retrieves the step metadata associated with the given tree item,
+        resolves the corresponding step from the document, and opens an
+        appropriate editor dialog based on the step type. If the user makes
+        changes and confirms them, the updated document is saved to disk and
+        the UI is refreshed.
+
+        Args:
+            item (wx.TreeItemId): The tree item representing the step to edit.
+
+        Returns:
+            None
+
+        Side Effects:
+            - May display a modal dialog for editing the step.
+            - Shows a message box if no editor is available for the step type.
+            - Persists changes to disk via RecordingPersistence.
+            - Refreshes the steps tree UI.
+        """
         tree_event = self._steps_tree.GetItemData(item)
 
         if not tree_event:
@@ -624,7 +644,7 @@ class RecordingViewerPanel(wx.Panel):
         # Select + open editor
         if target_item and target_item.IsOk():
             self._steps_tree.SelectItem(target_item)
-            self._perform_edit_step(target_item)
+            self.edit_step_item(target_item)
 
     def _create_getter_step(self,
                             xpath: str,

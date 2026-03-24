@@ -17,9 +17,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from dataclasses import asdict
 from enum import Enum
 import wx
 from webweaver.studio.persistence.recording_persistence import RecordingPersistence
+from webweaver.studio.recording.recording_event_type import RecordingEventType
+from webweaver.studio.ui.add_step_dialog import default_payload_for
 from webweaver.studio.ui.step_information_overlay import StepInformationOverlay
 
 
@@ -42,6 +45,7 @@ class StepStatus(Enum):
 
 class ToolboxStepDropTarget(wx.TextDropTarget):
     """Drop target for adding toolbox steps into the recording tree."""
+    # pylint: disable=too-few-public-methods
 
     def __init__(self, tree):
         """Initializes the drop target.
@@ -63,6 +67,7 @@ class ToolboxStepDropTarget(wx.TextDropTarget):
         Returns:
             bool: True if the drop was handled successfully, otherwise False.
         """
+        # pylint: disable=invalid-name
         return self.tree.handle_toolbox_drop(x, y, text)
 
 
@@ -74,7 +79,7 @@ class RecordingStepTree(wx.TreeCtrl):
     """
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, parent):
+    def __init__(self, parent, controller=None):
         """Initializes the step tree control.
 
         Args:
@@ -93,6 +98,7 @@ class RecordingStepTree(wx.TreeCtrl):
         self.hover_timer = wx.Timer(self)
         self.pending_hover_item = None
         self.drop_indicator_y = None
+        self._controller = controller
 
         self._create_images()
 
@@ -167,12 +173,18 @@ class RecordingStepTree(wx.TreeCtrl):
         if not target.IsOk():
             target = self.root
 
+        # Convert incoming text (e.g. "wait") to enum
+        event_enum = RecordingEventType(text)
+
+        # Create default payload
+        payload = default_payload_for(event_enum)
+
         item_data = {
             "text": text,
             "icon": self._icon_not_run,
             "data": {
-                "label": text,
-                "type": text
+                "type": event_enum.value,
+                "payload": asdict(payload)
             },
             "bold": False,
             "expanded": False,
@@ -194,7 +206,20 @@ class RecordingStepTree(wx.TreeCtrl):
         self.GetParent().recording_document.reorder_steps(new_order)
         RecordingPersistence.save_to_disk(self.GetParent().recording_document)
 
+        wx.CallAfter(self._edit_new_step, new_item)
+
         return True
+
+    def _edit_new_step(self, item):
+        """Opens edit dialog for a newly created step."""
+
+        if not self.controller:
+            return
+
+        success = self.controller.edit_step_item(item)
+
+        if not success:
+            self.Delete(item)
 
     def _add_step_entry(self, parent, text, icon, step_data):
         """Creates a step entry node.
