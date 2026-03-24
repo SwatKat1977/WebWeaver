@@ -202,4 +202,3 @@ def load_toolbar_edit_step_icon() -> wx.Bitmap:
         The toolbar icon.
     """
     return _load_toolbar_icon(EDIT_STEP_ICON)
-

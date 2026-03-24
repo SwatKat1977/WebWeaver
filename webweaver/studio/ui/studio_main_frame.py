@@ -1701,9 +1701,16 @@ class StudioMainFrame(wx.Frame):
         # self._pause_playback(ctx)
 
     def on_recording_step_add(self, _evt):
+        """Handles adding a new step to the active recording.
+
+        Retrieves the currently active viewer page and inserts a new step
+        after the currently selected step, if one exists.
+
+        Args:
+            _evt (wx.Event): The event that triggered the action.
+        """
         page = self._workspace_panel.get_active_viewer()
         if not page:
-            print("_on_recording_step_add() - No active page")
             return
 
         insert_after = page.selected_step
@@ -1711,6 +1718,14 @@ class StudioMainFrame(wx.Frame):
         page.add_step(after_index=insert_after)
 
     def on_recording_step_edit(self, _evt):
+        """Handles editing the currently selected recording step.
+
+        Retrieves the active viewer page and invokes the edit operation
+        for the selected step index.
+
+        Args:
+            _evt (wx.Event): The event that triggered the action.
+        """
         page = self._workspace_panel.get_active_viewer()
         if not page:
             return
@@ -1722,6 +1737,14 @@ class StudioMainFrame(wx.Frame):
         page.edit_step(index)
 
     def on_recording_step_delete(self, _evt):
+        """Handles deleting the currently selected recording step.
+
+        Retrieves the active viewer page and removes the step corresponding
+        to the selected index.
+
+        Args:
+            _evt (wx.Event): The event that triggered the action.
+        """
         page = self._workspace_panel.get_active_viewer()
         if not page:
             return
