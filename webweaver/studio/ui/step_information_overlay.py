@@ -135,8 +135,8 @@ class StepInformationOverlay(wx.PopupTransientWindow):
         return body
 
     def _render_dom_select(self, payload: dict):
-        return (f"XPath: {payload['xpath']}\n"
-                f"Value: {payload['value']}\n")
+        return (f"XPath: {payload.get('xpath', '')}\n"
+                f"Value: {payload.get('value', '')}\n")
 
     def _render_dom_type(self, payload: dict):
         return (f"XPath:\n{payload['xpath']}\n\n"
