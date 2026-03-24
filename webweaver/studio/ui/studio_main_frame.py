@@ -1700,6 +1700,38 @@ class StudioMainFrame(wx.Frame):
         self._state_controller.on_recording_playback_pause()
         # self._pause_playback(ctx)
 
+    def on_recording_step_add(self, _evt):
+        page = self._workspace_panel.get_active_viewer()
+        if not page:
+            print("_on_recording_step_add() - No active page")
+            return
+
+        insert_after = page.selected_step
+
+        page.add_step(after_index=insert_after)
+
+    def on_recording_step_edit(self, _evt):
+        page = self._workspace_panel.get_active_viewer()
+        if not page:
+            return
+
+        index = page.selected_step
+        if index is None:
+            return
+
+        page.edit_step(index)
+
+    def on_recording_step_delete(self, _evt):
+        page = self._workspace_panel.get_active_viewer()
+        if not page:
+            return
+
+        index = page.selected_step
+        if index is None:
+            return
+
+        page.delete_step(index)
+
     def _on_playback_step_started(self, index: int):
         viewer = self._workspace_panel.get_active_viewer()
         if viewer:
@@ -1723,38 +1755,6 @@ class StudioMainFrame(wx.Frame):
     def _on_playback_finished(self):
         self._playback_session = None
         self._state_controller.on_solution_loaded()
-
-    def _on_recording_step_add(self, _evt):
-        page = self._workspace_panel.get_active_viewer()
-        if not page:
-            print("_on_recording_step_add() - No active page")
-            return
-
-        insert_after = page.selected_step
-
-        page.add_step(after_index=insert_after)
-
-    def _on_recording_step_edit(self, _evt):
-        page = self._workspace_panel.get_active_viewer()
-        if not page:
-            return
-
-        index = page.selected_step
-        if index is None:
-            return
-
-        page.edit_step(index)
-
-    def _on_recording_step_delete(self, _evt):
-        page = self._workspace_panel.get_active_viewer()
-        if not page:
-            return
-
-        index = page.selected_step
-        if index is None:
-            return
-
-        page.delete_step(index)   # we’ll add this method
 
     def _on_add_recording_to_suite(self, event):
 
