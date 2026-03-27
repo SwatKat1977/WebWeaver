@@ -27,6 +27,7 @@ import keyboard
 import wx
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from webweaver.studio.api_client import ApiClient
 from webweaver.studio.browsing.studio_browser import (PlaybackStepResult,
@@ -434,18 +435,41 @@ class RecordingPlaybackSession:
         scroll_type = payload.get("scroll_type")
         scroll_x = payload.get("x_scroll")
         scroll_y = payload.get("y_scroll")
+        selector = payload.get("selector", "")
+
+        element = None
+        if selector:
+            try:
+                element = self._browser.raw.find_element(By.CSS_SELECTOR,
+                                                         selector)
+
+            except Exception as e:
+                element = None
 
         # Scroll to the bottom of the page.
         if scroll_type == "bottom":
-            self._browser.scroll_to_bottom()
+            if element:
+                self._browser.scroll_element(element,
+                                             0,
+                                             9999999)
+            else:
+                self._browser.scroll_to_bottom()
 
         # Scroll to the top of the page.
         elif scroll_type == "top":
-            self._browser.scroll_to_top()
+            if element:
+                self._browser.scroll_element(element, 0, 0)
+            else:
+                self._browser.scroll_to_top()
 
         # Scroll a specific distance (in pixels).
         elif scroll_type == "custom":
-            self._browser.scroll_to(int(scroll_x), int(scroll_y))
+            if element:
+                self._browser.scroll_element(element,
+                                             int(scroll_x),
+                                             int(scroll_y))
+            else:
+                self._browser.scroll_to(int(scroll_x), int(scroll_y))
 
     def _perform_assert_playback(self, payload):
         operator = payload.get("operator")

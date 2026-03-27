@@ -242,6 +242,33 @@ class StudioBrowser:
         """
         self._driver.execute_script(f"window.scrollTo({x}, {y});")
 
+    def scroll_element(self, element, x=0, y=0):
+        self._driver.execute_script("""
+            const el = arguments[0];
+            const x = arguments[1];
+            const y = arguments[2];
+
+            function isScrollable(node) {
+                const style = window.getComputedStyle(node);
+                const overflowY = style.overflowY;
+                return (overflowY === 'auto' || overflowY === 'scroll') &&
+                       node.scrollHeight > node.clientHeight;
+            }
+
+            let current = el;
+
+            while (current) {
+                if (isScrollable(current)) {
+                    current.scrollTo(x, y);
+                    return;
+                }
+                current = current.parentElement;
+            }
+
+            // fallback
+            window.scrollTo(x, y);
+        """, element, x, y)
+
     # --------------------------------------------------------------
     # Inspection functionality
     # --------------------------------------------------------------
