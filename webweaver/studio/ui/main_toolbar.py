@@ -29,7 +29,10 @@ from webweaver.studio.toolbar_icons import (
     load_toolbar_close_solution_icon,
     load_toolbar_web_browser_icon,
     load_toolbar_start_record_icon,
-    load_toolbar_stop_record_icon)
+    load_toolbar_stop_record_icon,
+    load_toolbar_add_step_icon,
+    load_toolbar_edit_step_icon,
+    load_toolbar_delete_step_icon)
 from .playback_toolbar_icons import (
     load_playback_toolbar_pause_icon,
     load_playback_toolbar_play_icon,
@@ -67,6 +70,15 @@ TOOLBAR_ID_PLAYBACK_PAUSE: int = wx.ID_HIGHEST + 9
 TOOLBAR_ID_PLAYBACK_STEP: int = wx.ID_HIGHEST + 10
 """Toolbar command ID for stepping playback."""
 
+TOOLBAR_ID_RECORDING_ADD_STEP: int = wx.ID_HIGHEST + 11
+"""Toolbar command ID for adding a recording step."""
+
+TOOLBAR_ID_RECORDING_DELETE_STEP: int = wx.ID_HIGHEST + 12
+"""Toolbar command ID for deleting a recording step."""
+
+TOOLBAR_ID_RECORDING_EDIT_STEP: int = wx.ID_HIGHEST + 13
+"""Toolbar command ID for editing a recording step."""
+
 
 @dataclass(frozen=True)
 class ToolbarState:
@@ -100,6 +112,11 @@ class ToolbarState:
     can_step_playback: bool = False
     is_playback_running: bool = False
     is_playback_paused: bool = False
+
+    # Recording functionality
+    can_add_recording_step: bool = False
+    can_edit_recording_step: bool = False
+    can_delete_recording_step: bool = False
 
 
 class MainToolbar:
@@ -199,6 +216,27 @@ class MainToolbar:
             "Pause Playback",
             wx.ITEM_CHECK)
 
+        # --- Recordings Group ---
+        toolbar.AddSeparator()
+
+        toolbar.AddTool(
+            TOOLBAR_ID_RECORDING_ADD_STEP,
+            "",
+            load_toolbar_add_step_icon(),
+            "Add Step")
+
+        toolbar.AddTool(
+            TOOLBAR_ID_RECORDING_EDIT_STEP,
+            "",
+            load_toolbar_edit_step_icon(),
+            "Edit Step")
+
+        toolbar.AddTool(
+            TOOLBAR_ID_RECORDING_DELETE_STEP,
+            "",
+            load_toolbar_delete_step_icon(),
+            "Delete Step")
+
         toolbar.Realize()
 
         # --- Bind core toolbar events ---
@@ -237,6 +275,17 @@ class MainToolbar:
         toolbar.Bind(wx.EVT_TOOL,
                      frame.on_pause_recording_playback,
                      id=TOOLBAR_ID_PLAYBACK_PAUSE)
+
+        # --- Bind recording playback editing events ---
+        toolbar.Bind(wx.EVT_TOOL,
+                     frame.on_recording_step_add,
+                     id=TOOLBAR_ID_RECORDING_ADD_STEP)
+        toolbar.Bind(wx.EVT_TOOL,
+                     frame.on_recording_step_delete,
+                     id=TOOLBAR_ID_RECORDING_DELETE_STEP)
+        toolbar.Bind(wx.EVT_TOOL,
+                     frame.on_recording_step_edit,
+                     id=TOOLBAR_ID_RECORDING_EDIT_STEP)
 
         frame.aui_manager.AddPane(
             toolbar,
@@ -315,6 +364,14 @@ class MainToolbar:
         # Inspector toggle
         toolbar.ToggleTool(TOOLBAR_ID_INSPECTOR_MODE,
                            toolbar_state.is_inspecting)
+
+        # Recording enable/disable
+        toolbar.EnableTool(TOOLBAR_ID_RECORDING_ADD_STEP,
+                           toolbar_state.can_add_recording_step)
+        toolbar.EnableTool(TOOLBAR_ID_RECORDING_EDIT_STEP,
+                           toolbar_state.can_edit_recording_step)
+        toolbar.EnableTool(TOOLBAR_ID_RECORDING_DELETE_STEP,
+                           toolbar_state.can_delete_recording_step)
 
         toolbar.Realize()
         toolbar.Refresh()

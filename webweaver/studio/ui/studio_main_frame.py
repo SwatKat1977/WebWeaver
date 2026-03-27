@@ -84,10 +84,6 @@ from webweaver.studio.ui.main_toolbar import MainToolbar, ToolbarState
 from webweaver.studio.ui.main_menu import create_main_menu
 from webweaver.studio.ui.main_status_bar import MainStatusBar
 from webweaver.studio.ui.inspector_panel import InspectorPanel
-from webweaver.studio.ui.recording_editor_toolbar import (
-                                       RecordingEditorToolbar,
-                                       RecordingEditorToolbarState,
-                                       RecordingToolbarId)
 from webweaver.studio.ui.events import EVT_WORKSPACE_ACTIVE_CHANGED
 from webweaver.studio.playback.recording_playback_session import \
     RecordingPlaybackSession
@@ -159,7 +155,6 @@ class StudioMainFrame(wx.Frame):
         handler = logging.StreamHandler()
         handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
         self._logger.addHandler(handler)
-        self._pending_recording_toolbar_update = False
         self._closing_solution = False
 
         self._toolbar = None
@@ -216,7 +211,6 @@ class StudioMainFrame(wx.Frame):
         self._recording_session: Optional[RecordingSession] = None
         self._current_solution: Optional[StudioSolution] = None
         self._state_controller: Optional[StudioStateController] = None
-        self._recording_toolbar: Optional[RecordingEditorToolbar] = None
 
         self._recent_solutions: RecentSolutionsManager = RecentSolutionsManager()
 
@@ -261,17 +255,6 @@ class StudioMainFrame(wx.Frame):
         # TOOLBAR (top, dockable)
         # --------------------------------------------------------------
         self._toolbar = MainToolbar.create(self)
-        self._recording_toolbar = RecordingEditorToolbar(self, self._aui_mgr)
-
-        self.Bind(wx.EVT_TOOL,
-                  self._on_recording_step_add,
-                  id=RecordingToolbarId.STEP_ADD)
-        self.Bind(wx.EVT_TOOL,
-                  self._on_recording_step_edit,
-                  id=RecordingToolbarId.STEP_EDIT)
-        self.Bind(wx.EVT_TOOL,
-                  self._on_recording_step_delete,
-                  id=RecordingToolbarId.STEP_DELETE)
 
         self._state_controller.ui_ready = True
 
@@ -285,7 +268,7 @@ class StudioMainFrame(wx.Frame):
         # --------------------------------------------------------------
         # Create toolbox panel
         # --------------------------------------------------------------
-        # self._create_toolbox_panel()
+        self._create_toolbox_panel()
 
         self._aui_mgr.Update()
 
@@ -1390,6 +1373,8 @@ class StudioMainFrame(wx.Frame):
         """
         state = ToolbarState()
 
+        has_active_recording = self._workspace_panel.has_active_recording()
+
         # Only New/Open make sense
         if self._current_state == StudioState.NO_SOLUTION:
             pass
@@ -1397,16 +1382,29 @@ class StudioMainFrame(wx.Frame):
         elif self._current_state == StudioState.SOLUTION_LOADED:
             browser_is_alive = self._web_browser is not None and \
                 self._web_browser.is_alive()
-            can_start_playback = self._workspace_panel.has_active_recording() \
-                                 and browser_is_alive
+
+            page = self._workspace_panel.get_active_viewer()
+            if not page:
+                can_edit_step = False
+                can_add_step = False
+                can_delete_step = False
+            else:
+                step_selected = page.selected_step is not None
+                can_edit_step = step_selected
+                can_add_step = True
+                can_delete_step = step_selected
 
             state = ToolbarState(can_close=True,
                                  can_inspect=browser_is_alive,
                                  can_record=browser_is_alive,
                                  can_browse=True,
-                                 can_start_playback=can_start_playback,
+                                 can_start_playback=has_active_recording and
+                                                    browser_is_alive,
                                  can_step_playback=False,
-                                 can_stop_playback=False)
+                                 can_stop_playback=False,
+                                 can_add_recording_step=can_add_step,
+                                 can_edit_recording_step=can_edit_step,
+                                 can_delete_recording_step=can_delete_step)
 
         elif self._current_state == StudioState.RECORDING_RUNNING:
             state = ToolbarState(can_record=True,
@@ -1445,32 +1443,6 @@ class StudioMainFrame(wx.Frame):
 
         MainToolbar.apply_state(self._toolbar, state)
         self._manage_browser_state()
-
-    def _update_recording_toolbar_state(self) -> None:
-        if not self._workspace_panel.has_active_recording():
-            self._recording_toolbar.apply_state(RecordingEditorToolbarState())
-            return
-
-        page = self._workspace_panel.get_active_viewer()
-        if not page:
-            self._recording_toolbar.apply_state(RecordingEditorToolbarState())
-            return
-
-        step_index = page.selected_step
-        step_count = page.step_count
-        has_selection = step_index is not None
-
-        state: RecordingEditorToolbarState = RecordingEditorToolbarState()
-
-        if has_selection:
-            move_up = step_index > 0
-            move_down = step_index < step_count - 1
-            state = RecordingEditorToolbarState(can_edit=True,
-                                                can_delete=True,
-                                                can_move_up=move_up,
-                                                can_move_down=move_down)
-
-        self._recording_toolbar.apply_state(state)
 
     def _on_browser_heartbeat_tick(self, _event):
         """
@@ -1665,20 +1637,18 @@ class StudioMainFrame(wx.Frame):
 
         if not self._workspace_panel.has_active_recording():
             self._state_controller.on_solution_loaded()
-            # self._toolbox_panel.show_no_recording()
+            self._toolbox_panel.show_no_recording()
 
             if pane.IsOk() and pane.IsShown():
                 pane.Hide()
                 self._aui_mgr.Update()
 
         else:
-            # self._toolbox_panel.show_toolbox_items()
+            self._toolbox_panel.show_toolbox_items()
 
             if pane.IsOk() and not pane.IsShown():
                 pane.Show()
                 self._aui_mgr.Update()
-
-            self._request_recording_toolbar_update()
 
         self._update_toolbar_state()
         self.rebuild_code_generation_menu()
@@ -1730,6 +1700,61 @@ class StudioMainFrame(wx.Frame):
         self._state_controller.on_recording_playback_pause()
         # self._pause_playback(ctx)
 
+    def on_recording_step_add(self, _evt):
+        """Handles adding a new step to the active recording.
+
+        Retrieves the currently active viewer page and inserts a new step
+        after the currently selected step, if one exists.
+
+        Args:
+            _evt (wx.Event): The event that triggered the action.
+        """
+        page = self._workspace_panel.get_active_viewer()
+        if not page:
+            return
+
+        insert_after = page.selected_step
+
+        page.add_step(after_index=insert_after)
+
+    def on_recording_step_edit(self, _evt):
+        """Handles editing the currently selected recording step.
+
+        Retrieves the active viewer page and invokes the edit operation
+        for the selected step index.
+
+        Args:
+            _evt (wx.Event): The event that triggered the action.
+        """
+        page = self._workspace_panel.get_active_viewer()
+        if not page:
+            return
+
+        index = page.selected_step
+        if index is None:
+            return
+
+        page.edit_step(index)
+
+    def on_recording_step_delete(self, _evt):
+        """Handles deleting the currently selected recording step.
+
+        Retrieves the active viewer page and removes the step corresponding
+        to the selected index.
+
+        Args:
+            _evt (wx.Event): The event that triggered the action.
+        """
+        page = self._workspace_panel.get_active_viewer()
+        if not page:
+            return
+
+        index = page.selected_step
+        if index is None:
+            return
+
+        page.delete_step(index)
+
     def _on_playback_step_started(self, index: int):
         viewer = self._workspace_panel.get_active_viewer()
         if viewer:
@@ -1753,49 +1778,6 @@ class StudioMainFrame(wx.Frame):
     def _on_playback_finished(self):
         self._playback_session = None
         self._state_controller.on_solution_loaded()
-
-    def _request_recording_toolbar_update(self):
-        if self._pending_recording_toolbar_update:
-            return
-
-        self._pending_recording_toolbar_update = True
-        wx.CallLater(16, self._do_recording_toolbar_update)
-
-    def _do_recording_toolbar_update(self):
-        self._pending_recording_toolbar_update = False
-        self._update_recording_toolbar_state()
-
-    def _on_recording_step_add(self, _evt):
-        page = self._workspace_panel.get_active_viewer()
-        if not page:
-            print("_on_recording_step_add() - No active page")
-            return
-
-        insert_after = page.selected_step
-
-        page.add_step(after_index=insert_after)
-
-    def _on_recording_step_edit(self, _evt):
-        page = self._workspace_panel.get_active_viewer()
-        if not page:
-            return
-
-        index = page.selected_step
-        if index is None:
-            return
-
-        page.edit_step(index)
-
-    def _on_recording_step_delete(self, _evt):
-        page = self._workspace_panel.get_active_viewer()
-        if not page:
-            return
-
-        index = page.selected_step
-        if index is None:
-            return
-
-        page.delete_step(index)   # we’ll add this method
 
     def _on_add_recording_to_suite(self, event):
 

@@ -19,6 +19,33 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import typing
 import wx
+from webweaver.studio.recording.recording_event_type import RecordingEventType
+
+
+TOOLBOX_ACTION_MAP = {
+
+    # DOM Actions
+    "Check": RecordingEventType.DOM_CHECK,
+    "Click": RecordingEventType.DOM_CLICK,
+    "Get DOM Value": RecordingEventType.DOM_GET,
+    "Select": RecordingEventType.DOM_SELECT,
+    "Type": RecordingEventType.DOM_TYPE,
+
+    # Browser
+    "Navigate": RecordingEventType.NAV_GOTO,
+    # self.tree.AppendItem(browser, "Refresh")
+    "Scroll": RecordingEventType.SCROLL,
+    "Wait": RecordingEventType.WAIT,
+
+    # Logic
+    "Rest API": RecordingEventType.REST_API,
+    "Send Keys": RecordingEventType.SENDKEYS,
+    "User Variable": RecordingEventType.USER_VARIABLE,
+    # "Loop": RecordingEventType.LOOP,
+
+    # General
+    # "Group": RecordingEventType.REST_API,
+}
 
 
 class ToolboxPanel(wx.Panel):
@@ -93,23 +120,27 @@ class ToolboxPanel(wx.Panel):
         self._toolbox_tree.AppendItem(dom, "Check")
         self._toolbox_tree.AppendItem(dom, "Click")
         self._toolbox_tree.AppendItem(dom, "Get DOM Value")
-        self._toolbox_tree.AppendItem(dom, "Type")
         self._toolbox_tree.AppendItem(dom, "Select")
-        self._toolbox_tree.AppendItem(dom, "Wait")
+        self._toolbox_tree.AppendItem(dom, "Type")
 
         browser = self._toolbox_tree.AppendItem(root, "Browser")
         self._toolbox_tree.AppendItem(browser, "Navigate")
         self._toolbox_tree.AppendItem(browser, "Scroll")
+        self._toolbox_tree.AppendItem(browser, "Wait")
         # self.tree.AppendItem(browser, "Refresh")
 
         logic = self._toolbox_tree.AppendItem(root, "Logic")
-        self._toolbox_tree.AppendItem(logic, "Group")
         self._toolbox_tree.AppendItem(logic, "Rest API")
+        self._toolbox_tree.AppendItem(logic, "Send Keys")
+        self._toolbox_tree.AppendItem(logic, "User Variable")
         # self.tree.AppendItem(logic, "Loop")
 
-        assertion = self._toolbox_tree.AppendItem(root, "Assertion")
+        assertion = self._toolbox_tree.AppendItem(root, "Validation")
         self._toolbox_tree.AppendItem(assertion, "Assert")
         # self.tree.AppendItem(logic, "Loop")
+
+        # general = self._toolbox_tree.AppendItem(root, "General")
+        # self._toolbox_tree.AppendItem(general, "Group")
 
         self._toolbox_tree.ExpandAll()
 
@@ -120,6 +151,8 @@ class ToolboxPanel(wx.Panel):
         sizer.Add(self._toolbox_tree, 1, wx.EXPAND | wx.ALL, 5)
 
         self.SetSizer(sizer)
+
+        self._toolbox_tree.Bind(wx.EVT_TREE_BEGIN_DRAG, self._on_begin_drag)
 
     def _on_item_activated(self, event):
         """
@@ -142,3 +175,32 @@ class ToolboxPanel(wx.Panel):
 
         print(f"Toolbox action selected: {action_name}")
         # Later this should insert a step into the recording.
+
+    def _on_begin_drag(self, event):
+        """Starts a drag operation from the toolbox tree."""
+
+        item = event.GetItem()
+
+        if not item.IsOk():
+            return
+
+        # Prevent dragging category/group nodes
+        if self._toolbox_tree.ItemHasChildren(item):
+            return
+
+        label = self._toolbox_tree.GetItemText(item)
+
+        if not label:
+            return
+
+        event_type = TOOLBOX_ACTION_MAP.get(label)
+
+        if not event_type:
+            return
+
+        data = wx.TextDataObject(event_type.value)
+
+        source = wx.DropSource(self._toolbox_tree)
+        source.SetData(data)
+
+        source.DoDragDrop(wx.Drag_CopyOnly)

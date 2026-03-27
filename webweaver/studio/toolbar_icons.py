@@ -29,6 +29,9 @@ from .resources.toolbar.toolbar_start_record import START_RECORD_ICON
 from .resources.toolbar.toolbar_stop_record import STOP_RECORD_ICON
 from .resources.toolbar.toolbar_resume_record import RESUME_RECORD_ICON
 from .resources.toolbar.toolbar_browser_button import BROWSER_BUTTON_ICON
+from .resources.toolbar.add_step import ADD_STEP_ICON
+from .resources.toolbar.delete_step import DELETE_STEP_ICON
+from .resources.toolbar.edit_step import EDIT_STEP_ICON
 
 
 def _load_toolbar_icon(png_bytes: bytes) -> wx.Bitmap:
@@ -163,3 +166,39 @@ def load_toolbar_web_browser_icon() -> wx.Bitmap:
         The 'web browser' toolbar icon.
     """
     return _load_toolbar_icon(BROWSER_BUTTON_ICON)
+
+
+def load_toolbar_add_step_icon() -> wx.Bitmap:
+    """
+    Load the toolbar icon used for adding a step.
+
+    Returns
+    -------
+    wx.Bitmap
+        The toolbar icon.
+    """
+    return _load_toolbar_icon(ADD_STEP_ICON)
+
+
+def load_toolbar_delete_step_icon() -> wx.Bitmap:
+    """
+    Load the toolbar icon used for deleting a step.
+
+    Returns
+    -------
+    wx.Bitmap
+        The toolbar icon.
+    """
+    return _load_toolbar_icon(DELETE_STEP_ICON)
+
+
+def load_toolbar_edit_step_icon() -> wx.Bitmap:
+    """
+    Load the toolbar icon used for editing a step.
+
+    Returns
+    -------
+    wx.Bitmap
+        The toolbar icon.
+    """
+    return _load_toolbar_icon(EDIT_STEP_ICON)

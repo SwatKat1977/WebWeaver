@@ -17,10 +17,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from dataclasses import asdict
 from enum import Enum
 import wx
-
 from webweaver.studio.persistence.recording_persistence import RecordingPersistence
+from webweaver.studio.recording.recording_event_type import RecordingEventType
+from webweaver.studio.ui.add_step_dialog import default_payload_for
 from webweaver.studio.ui.step_information_overlay import StepInformationOverlay
 
 
@@ -41,6 +43,34 @@ class StepStatus(Enum):
     WARNING = 4
 
 
+class ToolboxStepDropTarget(wx.TextDropTarget):
+    """Drop target for adding toolbox steps into the recording tree."""
+    # pylint: disable=too-few-public-methods
+
+    def __init__(self, tree):
+        """Initializes the drop target.
+
+        Args:
+            tree (RecordingStepTree): Target tree control.
+        """
+        super().__init__()
+        self.tree = tree
+
+    def OnDropText(self, x, y, text):
+        """Handles text dropped from the toolbox.
+
+        Args:
+            x (int): Drop x position in tree client coordinates.
+            y (int): Drop y position in tree client coordinates.
+            text (str): Dropped toolbox text.
+
+        Returns:
+            bool: True if the drop was handled successfully, otherwise False.
+        """
+        # pylint: disable=invalid-name
+        return self.tree.handle_toolbox_drop(x, y, text)
+
+
 class RecordingStepTree(wx.TreeCtrl):
     """Tree control for displaying and managing recording steps.
 
@@ -49,7 +79,7 @@ class RecordingStepTree(wx.TreeCtrl):
     """
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, parent):
+    def __init__(self, parent, controller=None):
         """Initializes the step tree control.
 
         Args:
@@ -68,6 +98,7 @@ class RecordingStepTree(wx.TreeCtrl):
         self.hover_timer = wx.Timer(self)
         self.pending_hover_item = None
         self.drop_indicator_y = None
+        self._controller = controller
 
         self._create_images()
 
@@ -82,6 +113,8 @@ class RecordingStepTree(wx.TreeCtrl):
         self.Bind(wx.EVT_PAINT, self._on_paint)
 
         self.Bind(wx.EVT_TREE_ITEM_COLLAPSED, self._on_item_collapsed)
+
+        self.SetDropTarget(ToolboxStepDropTarget(self))
 
         self.ExpandAll()
 
@@ -123,6 +156,70 @@ class RecordingStepTree(wx.TreeCtrl):
         group_item_id = self.AppendItem(parent, label)
         self.SetItemBold(group_item_id)
         return group_item_id
+
+    def handle_toolbox_drop(self, x: int, y: int, text: str) -> bool:
+        """Handles a toolbox step being dropped onto the tree.
+
+        Args:
+            x (int): Drop x position in client coordinates.
+            y (int): Drop y position in client coordinates.
+            text (str): Toolbox item text representing the step type.
+
+        Returns:
+            bool: True if the step was inserted, otherwise False.
+        """
+        target, _ = self.HitTest(wx.Point(x, y))
+
+        if not target.IsOk():
+            target = self.root
+
+        # Convert incoming text (e.g. "wait") to enum
+        event_enum = RecordingEventType(text)
+
+        # Create default payload
+        payload = default_payload_for(event_enum)
+
+        item_data = {
+            "text": text,
+            "icon": self._icon_not_run,
+            "data": {
+                "type": event_enum.value,
+                "payload": asdict(payload)
+            },
+            "bold": False,
+            "expanded": False,
+            "children": []
+        }
+
+        new_item = self._reinsert_item(target,
+                                       item_data,
+                                       drop_point=wx.Point(x, y))
+
+        parent = self.GetItemParent(new_item)
+        if parent.IsOk():
+            self.Expand(parent)
+
+        self.SelectItem(new_item)
+        self.EnsureVisible(new_item)
+
+        new_order = self._get_step_order()
+        self.GetParent().recording_document.reorder_steps(new_order)
+        RecordingPersistence.save_to_disk(self.GetParent().recording_document)
+
+        wx.CallAfter(self._edit_new_step, new_item)
+
+        return True
+
+    def _edit_new_step(self, item):
+        """Opens edit dialog for a newly created step."""
+
+        if not self._controller:
+            return
+
+        success = self._controller.edit_step_item(item)
+
+        if not success:
+            self.Delete(item)
 
     def _add_step_entry(self, parent, text, icon, step_data):
         """Creates a step entry node.
@@ -294,7 +391,8 @@ class RecordingStepTree(wx.TreeCtrl):
 
         item_data = self._extract_item(self.drag_item)
 
-        new_item = self._reinsert_item(target, item_data)
+        drop_point = self.ScreenToClient(wx.GetMousePosition())
+        new_item = self._reinsert_item(target, item_data, drop_point=drop_point)
 
         self._restore_children(new_item, item_data["children"])
 
@@ -371,7 +469,7 @@ class RecordingStepTree(wx.TreeCtrl):
 
         return data
 
-    def _reinsert_item(self, target, item_data):
+    def _reinsert_item(self, target, item_data, drop_point=None):
         """Reinserts an item into the tree at a new position.
 
         Determines whether to insert as a child or sibling based on the
@@ -380,11 +478,17 @@ class RecordingStepTree(wx.TreeCtrl):
         Args:
             target (wx.TreeItemId): The drop target item.
             item_data (dict): The extracted item data.
+            drop_point (Optional[wx.Point]): Drop location in client
+                coordinates. If not provided, the current mouse position is
+                used.
 
         Returns:
             wx.TreeItemId: The newly created tree item.
         """
         text = item_data["text"]
+
+        if drop_point is None:
+            drop_point = self.ScreenToClient(wx.GetMousePosition())
 
         if not self.GetItemData(target) or target == self.root:
             parent = target
@@ -392,9 +496,7 @@ class RecordingStepTree(wx.TreeCtrl):
         else:
             parent = self.GetItemParent(target)
             rect = self.GetBoundingRect(target)
-
-            pos = self.ScreenToClient(wx.GetMousePosition())
-            insert_after = pos.y > rect.y + rect.height / 2
+            insert_after = drop_point.y > rect.y + rect.height / 2
 
             if insert_after:
                 new_item = self.InsertItem(parent, target, text)
