@@ -25,13 +25,10 @@ class ConfigurationConstants:
     # pylint: disable=too-few-public-methods
 
     SECTION_LOGGING: str = 'logging'
-    SECTION_BACKEND: str = 'backend'
 
     ITEM_LOGGING_LOG_LEVEL: str = 'log_level'
     LOG_LEVEL_DEBUG: str = 'DEBUG'
     LOG_LEVEL_INFO: str = 'INFO'
-
-    ITEM_BACKEND_DB_FILENAME: str = 'db_filename'
 
 
 CONFIGURATION_LAYOUT = configuration_setup.ConfigurationSetup(
@@ -42,7 +39,7 @@ CONFIGURATION_LAYOUT = configuration_setup.ConfigurationSetup(
                 configuration_setup.ConfigItemDataType.STRING,
                 valid_values=[ConfigurationConstants.LOG_LEVEL_DEBUG,
                               ConfigurationConstants.LOG_LEVEL_INFO],
-                              default_value=ConfigurationConstants.LOG_LEVEL_INFO)
+                default_value=ConfigurationConstants.LOG_LEVEL_INFO)
         ]
     }
 )
