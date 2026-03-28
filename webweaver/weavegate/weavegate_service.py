@@ -1,15 +1,9 @@
-"""
-Copyright (C) 2025  Integrated Test Management Suite Development Team
-SPDX-License-Identifier: AGPL-3.0-or-later
-
-This file is part of Integrated Test Management Suite. See the LICENSE
-file in the project root for full license details.
-"""
 import asyncio
 import logging
 import os
 import typing
 from quart import Quart
+from webweaver.weavegate.version import __version__ as gate_version
 
 LOGGING_DATETIME_FORMAT_STRING = "%Y-%m-%d %H:%M:%S"
 LOGGING_DEFAULT_LOG_LEVEL = logging.DEBUG
@@ -144,6 +138,18 @@ class WeaveGateService:
         Returns:
             Boolean: True => Successful, False => Unsuccessful.
         """
+
+        '''
+SERVICE_COPYRIGHT_TEXT = 'Copyright 2025-2026 Webweaver Development Team'
+LICENSE_TEXT = 'Licensed under the GNU General Public License, Version 2.0'
+        '''
+
+        self._logger.info("WeaveGate Service %s", gate_version)
+        self._logger.info(("Part of Webweaver "
+                           "(https://github.com/SwatKat1977/WebWeaver)"))
+        self._logger.info("Copyright 2025-2026 Webweaver Development Team")
+        self._logger.info(("Licensed under the GNU General Public License, "
+                           "Version 2.0"))
         return True
 
     async def _main_loop(self) -> None:
