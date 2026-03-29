@@ -33,12 +33,12 @@ SCHEMA_START_SESSION_REQUEST: dict = {
 
     "properties":
         {
-            "token":
+            "session_token":
                 {
                     "type": "string"
                 }
         },
-    "required": ["token"]
+    "required": ["session_token"]
 }
 
 SCHEMA_SESSION_HEARTBEAT_REQUEST: dict = {
@@ -66,7 +66,8 @@ class ApiSessionsView(BaseApiView):
     @validate_json(SCHEMA_START_SESSION_REQUEST)
     async def start_session(self,
                             request_msg: ApiResponse) -> quart.Response:
-        logging.info("(start_session) Token: %s", request_msg.body.token)
+        logging.info("(start_session) Token: %s",
+                     request_msg.body.session_token)
 
         response_body: dict = {
             "session_id": "PLACEHOLDER"
@@ -81,10 +82,11 @@ class ApiSessionsView(BaseApiView):
                                 request_msg: ApiResponse) -> quart.Response:
         logging.info("(session_heartbeat) Session ID: %s",
                      request_msg.body.session_id)
-        response_body: dict = {
+
+        heartbeat_response: dict = {
             "status": True
         }
 
-        return quart.Response(json.dumps(response_body),
+        return quart.Response(json.dumps(heartbeat_response),
                               status=http.HTTPStatus.OK,
                               content_type="application/json")
