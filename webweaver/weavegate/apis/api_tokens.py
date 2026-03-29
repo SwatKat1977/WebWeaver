@@ -23,6 +23,23 @@ from webweaver.weavegate.apis.api_tokens_view import ApiTokensView
 
 
 def create_blueprint(logger: logging.Logger) -> Blueprint:
+    """Create and configure the tokens API Blueprint.
+
+    This function initializes a Quart Blueprint for token-related API
+    endpoints, sets up route handlers, and binds them to the corresponding
+    view logic.
+
+    Args:
+        logger (logging.Logger): Logger instance used for logging route
+            registration and request handling.
+
+    Returns:
+        Blueprint: Configured Blueprint containing token-related API routes.
+
+    Notes:
+        Currently registers the following routes:
+            - POST /register: Register an access token to a Studio install.
+    """
     view = ApiTokensView(logger)
 
     blueprint = Blueprint('tokens_api', __name__)
@@ -34,6 +51,7 @@ def create_blueprint(logger: logging.Logger) -> Blueprint:
 
     @blueprint.route("/register", methods=['POST'])
     async def register_token():
+        # pylint: disable=no-value-for-parameter
         return await view.register_token()
 
     return blueprint
