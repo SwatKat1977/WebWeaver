@@ -58,7 +58,8 @@ def validate_json(schema):
     This decorator:
     - Extracts and validates the JSON request body using the provided schema.
     - If validation fails, returns an HTTP 500 response with an error message.
-    - If validation succeeds, passes the validated data (`request_msg`) to the wrapped function.
+    - If validation succeeds, passes the validated data (`request_msg`) to the
+      wrapped function.
 
     Args:
         schema (dict): The JSON schema to validate the request body against.
@@ -69,7 +70,8 @@ def validate_json(schema):
 
     Example:
         @validate_json(handshake_api.SCHEMA_BASIC_AUTHENTICATE_REQUEST)
-        async def basic_authenticate(self, request_msg: ApiResponse) -> Response:
+        async def basic_authenticate(self,
+                                     request_msg: ApiResponse) -> Response:
             return Response(json.dumps({"status": 1, "message": "Success"}),
                             status=HTTPStatus.OK,
                             content_type="application/json")
