@@ -22,6 +22,8 @@ import logging
 import os
 import typing
 from quart import Quart
+
+from webweaver.weavegate.apis import create_api_routes
 from webweaver.weavegate.configuration_layout import CONFIGURATION_LAYOUT
 from webweaver.weavegate.service_configuration import ServiceConfiguration
 from webweaver.weavegate.version import __version__ as gate_version
@@ -175,6 +177,9 @@ class WeaveGateService:
         self._logger.info('Setting logging level to %s',
                           ServiceConfiguration().logging_log_level)
         self._logger.setLevel(ServiceConfiguration().logging_log_level)
+
+        self._quart_instance.register_blueprint(
+            create_api_routes(self._logger), url_prefix="")
 
         return True
 

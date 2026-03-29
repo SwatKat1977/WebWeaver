@@ -129,7 +129,7 @@ def validate_json(schema):
     return decorator
 
 
-class BaseView:
+class BaseApiView:
     """ Base view class """
     # pylint: disable=too-few-public-methods
 
