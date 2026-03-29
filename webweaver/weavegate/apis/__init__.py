@@ -19,7 +19,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import logging
 import quart
-from .api_tokens import create_blueprint as tokens_create
+from webweaver.weavegate.apis.api_sessions import create_blueprint \
+    as sessions_create
+from webweaver.weavegate.apis.api_tokens import create_blueprint \
+    as tokens_create
 
 
 def create_api_routes(logger: logging.Logger) -> quart.Blueprint:
@@ -37,6 +40,9 @@ def create_api_routes(logger: logging.Logger) -> quart.Blueprint:
         quart.Blueprint: Configured Quart blueprint containing all API routes.
     """
     apis_bp = quart.Blueprint("apis", __name__)
+
+    # Sessions API routes
+    apis_bp.register_blueprint(sessions_create(logger), url_prefix="/sessions")
 
     # Tokens API routes
     apis_bp.register_blueprint(tokens_create(logger), url_prefix="/tokens")

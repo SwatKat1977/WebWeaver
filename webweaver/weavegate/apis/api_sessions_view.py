@@ -17,8 +17,74 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
-from webweaver.weavegate.apis.base_api_view import BaseApiView
+import http
+import json
+import logging
+import quart
+from webweaver.weavegate.apis.base_api_view import (ApiResponse,
+                                                    BaseApiView,
+                                                    validate_json)
+
+SCHEMA_START_SESSION_REQUEST: dict = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+
+    "type": "object",
+    "additionalProperties": False,
+
+    "properties":
+        {
+            "token":
+                {
+                    "type": "string"
+                }
+        },
+    "required": ["token"]
+}
+
+SCHEMA_SESSION_HEARTBEAT_REQUEST: dict = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+
+    "type": "object",
+    "additionalProperties": False,
+
+    "properties":
+        {
+            "session_id":
+                {
+                    "type": "string"
+                }
+        },
+    "required": ["session_id"]
+}
 
 
 class ApiSessionsView(BaseApiView):
-    pass
+
+    def __init__(self, logger: logging.Logger) -> None:
+        self._logger = logger.getChild(__name__)
+
+    @validate_json(SCHEMA_START_SESSION_REQUEST)
+    async def start_session(self,
+                            request_msg: ApiResponse) -> quart.Response:
+        logging.info("(start_session) Token: %s", request_msg.body.token)
+
+        response_body: dict = {
+            "session_id": "PLACEHOLDER"
+        }
+
+        return quart.Response(json.dumps(response_body),
+                              status=http.HTTPStatus.OK,
+                              content_type="application/json")
+
+    @validate_json(SCHEMA_SESSION_HEARTBEAT_REQUEST)
+    async def session_heartbeat(self,
+                                request_msg: ApiResponse) -> quart.Response:
+        logging.info("(session_heartbeat) Session ID: %s",
+                     request_msg.body.session_id)
+        response_body: dict = {
+            "status": True
+        }
+
+        return quart.Response(json.dumps(response_body),
+                              status=http.HTTPStatus.OK,
+                              content_type="application/json")
