@@ -22,6 +22,8 @@ import logging
 import os
 import typing
 from quart import Quart
+from webweaver.weavegate.configuration_layout import CONFIGURATION_LAYOUT
+from webweaver.weavegate.service_configuration import ServiceConfiguration
 from webweaver.weavegate.version import __version__ as gate_version
 
 LOGGING_DATETIME_FORMAT_STRING = "%Y-%m-%d %H:%M:%S"
@@ -33,6 +35,9 @@ class WeaveGateService:
     """ WeaveGate service class. """
     __slots__ = ["_is_initialised", "_logger", "_quart_instance",
                  "_shutdown_complete", "_shutdown_event"]
+
+    CONFIG_FILE_ENV: str = "WEBWEAVER_WEAVEGATE_CONFIG_FILE"
+    CONFIG_REQUIRED_ENV: str = "WEBWEAVER_WEAVEGATE_CONFIG_FILE_REQUIRED"
 
     BOOL_TRUE_VALUES: set = {"1", "true", "yes", "on"}
     BOOL_FALSE_VALUES: set = {"0", "false", "no", "off"}
@@ -164,6 +169,13 @@ class WeaveGateService:
         self._logger.info(("Licensed under the GNU General Public License, "
                            "Version 2.0"))
 
+        if not self._manage_configuration():
+            return False
+
+        self._logger.info('Setting logging level to %s',
+                          ServiceConfiguration().logging_log_level)
+        self._logger.setLevel(ServiceConfiguration().logging_log_level)
+
         return True
 
     async def _main_loop(self) -> None:
@@ -246,3 +258,36 @@ class WeaveGateService:
             error_status = "Configuration file is not defined"
 
         return error_status, config_file_required, config_file
+
+    def _manage_configuration(self) -> bool:
+        """
+        Manage the service configuration.
+        """
+        error_status, required, config_file = self._check_for_configuration(
+            self.CONFIG_FILE_ENV,self.CONFIG_REQUIRED_ENV)
+        if error_status:
+            self._logger.critical(error_status)
+            return False
+
+        ServiceConfiguration().configure(CONFIGURATION_LAYOUT,
+                                         config_file, required)
+
+        try:
+            ServiceConfiguration().process_config()
+
+        except ValueError as ex:
+            self._logger.critical("Configuration error : %s", str(ex))
+            return False
+
+        self._logger.info("Configuration")
+        self._logger.info("=============")
+
+        self._logger.info("Configuration file required: %s",
+                          "True" if required else "False")
+        self._logger.info("Configuration file : %s",
+                          "None"if not required else config_file)
+        self._logger.info("[logging]")
+        self._logger.info("=> Logging log level : %s",
+                          ServiceConfiguration().logging_log_level)
+
+        return True
