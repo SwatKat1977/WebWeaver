@@ -26,6 +26,21 @@ from webweaver.weavegate.apis.base_api_view import (ApiResponse,
                                                     validate_json)
 
 SCHEMA_START_SESSION_REQUEST: dict = {
+    """JSON schema for validating a start session request.
+    
+    This schema enforces the structure of the request body required to
+    initiate a new session with the service.
+    
+    Schema requirements:
+        - Must be a JSON object.
+        - Must contain a `session_token` field (string).
+        - Must not include additional properties.
+    
+    Expected payload:
+        {
+            "session_token": "<string>"
+        }
+    """
     "$schema": "http://json-schema.org/draft-07/schema#",
 
     "type": "object",
@@ -42,6 +57,21 @@ SCHEMA_START_SESSION_REQUEST: dict = {
 }
 
 SCHEMA_SESSION_HEARTBEAT_REQUEST: dict = {
+    """JSON schema for validating a session heartbeat request.
+    
+    This schema defines the structure required to send a heartbeat for an
+    existing session.
+    
+    Schema requirements:
+        - Must be a JSON object.
+        - Must contain a `session_id` field (string).
+        - Must not include additional properties.
+    
+    Expected payload:
+        {
+            "session_id": "<string>"
+        }
+    """
     "$schema": "http://json-schema.org/draft-07/schema#",
 
     "type": "object",
@@ -59,13 +89,50 @@ SCHEMA_SESSION_HEARTBEAT_REQUEST: dict = {
 
 
 class ApiSessionsView(BaseApiView):
+    """API view handling session-related operations.
+
+    This class provides endpoints for creating and maintaining sessions,
+    including session startup and heartbeat handling. Each endpoint validates
+    incoming requests against a predefined JSON schema before processing.
+
+    Attributes:
+        _logger (logging.Logger): Scoped logger instance for this view.
+    """
 
     def __init__(self, logger: logging.Logger) -> None:
+        """Initialize the ApiSessionsView.
+
+        Args:
+            logger (logging.Logger): Base logger used to create a scoped logger
+                for this view.
+        """
         self._logger = logger.getChild(__name__)
 
     @validate_json(SCHEMA_START_SESSION_REQUEST)
     async def start_session(self,
                             request_msg: ApiResponse) -> quart.Response:
+        """Handle a request to start a new session.
+
+        Validates the incoming request against `SCHEMA_START_SESSION_REQUEST`
+        and logs the provided session token. Returns a newly created session ID.
+
+        Args:
+            request_msg (ApiResponse): Parsed and validated request message
+                containing the request body.
+
+        Returns:
+            quart.Response: JSON response containing the generated session ID.
+
+        Response format:
+            {
+                "session_id": "<string>"
+            }
+
+        Notes:
+            - The session ID is currently a placeholder and should be replaced
+              with a real session creation implementation.
+            - Request validation is handled by the `validate_json` decorator.
+        """
         logging.info("(start_session) Token: %s",
                      request_msg.body.session_token)
 
@@ -80,6 +147,28 @@ class ApiSessionsView(BaseApiView):
     @validate_json(SCHEMA_SESSION_HEARTBEAT_REQUEST)
     async def session_heartbeat(self,
                                 request_msg: ApiResponse) -> quart.Response:
+        """Handle a session heartbeat request.
+
+        Validates the incoming request against
+        `SCHEMA_SESSION_HEARTBEAT_REQUEST` and logs the session ID. This
+        endpoint is used to keep an existing session alive.
+
+        Args:
+            request_msg (ApiResponse): Parsed and validated request message
+                containing the request body.
+
+        Returns:
+            quart.Response: JSON response indicating heartbeat success.
+
+        Response format:
+            {
+                "status": true
+            }
+
+        Notes:
+            - No actual session validation or expiry logic is currently applied.
+            - Request validation is handled by the `validate_json` decorator.
+        """
         logging.info("(session_heartbeat) Session ID: %s",
                      request_msg.body.session_id)
 

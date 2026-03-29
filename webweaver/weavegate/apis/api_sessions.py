@@ -23,6 +23,30 @@ from webweaver.weavegate.apis.api_sessions_view import ApiSessionsView
 
 
 def create_blueprint(logger: logging.Logger) -> Blueprint:
+    """Create and configure the sessions API blueprint.
+
+    This function sets up the Flask/Quart blueprint responsible for handling
+    session-related endpoints. It initializes the `ApiSessionsView` with the
+    provided logger and registers all relevant routes for session management.
+
+    Registered routes:
+        - POST /sessions/start:
+            Starts a new session with Weavegate.
+        - POST /sessions/heartbeat:
+            Sends a heartbeat to maintain an active session.
+
+    Args:
+        logger (logging.Logger): Logger instance used for route registration
+            logging and passed to the underlying view.
+
+    Returns:
+        Blueprint: Configured blueprint containing all session-related routes.
+
+    Notes:
+        The route handlers delegate directly to methods on `ApiSessionsView`.
+        These methods are expected to be asynchronous.
+    """
+
     view = ApiSessionsView(logger)
 
     blueprint = Blueprint('sessions_api', __name__)
