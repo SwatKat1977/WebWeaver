@@ -77,7 +77,7 @@ class ApiTokensView(BaseApiView):
         self._logger.info("(register_token) Token: %s", token)
 
         response_body: dict = {
-            "status": True
+            "success": True
         }
 
         return quart.Response(json.dumps(response_body),

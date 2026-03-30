@@ -22,10 +22,10 @@ import logging
 import os
 import typing
 from quart import Quart
-
 from webweaver.weavegate.apis import create_api_routes
 from webweaver.weavegate.configuration_layout import CONFIGURATION_LAYOUT
 from webweaver.weavegate.service_configuration import ServiceConfiguration
+from webweaver.weavegate.service_state import ServiceState
 from webweaver.weavegate.version import __version__ as gate_version
 
 LOGGING_DATETIME_FORMAT_STRING = "%Y-%m-%d %H:%M:%S"
@@ -36,7 +36,7 @@ LOGGING_LOG_FORMAT_STRING = "%(asctime)s [%(levelname)s] %(message)s"
 class WeaveGateService:
     """ WeaveGate service class. """
     __slots__ = ["_is_initialised", "_logger", "_quart_instance",
-                 "_shutdown_complete", "_shutdown_event"]
+                 "_service_state", "_shutdown_complete", "_shutdown_event"]
 
     CONFIG_FILE_ENV: str = "WEBWEAVER_WEAVEGATE_CONFIG_FILE"
     CONFIG_REQUIRED_ENV: str = "WEBWEAVER_WEAVEGATE_CONFIG_FILE_REQUIRED"
@@ -59,6 +59,9 @@ class WeaveGateService:
         console_stream.setFormatter(log_format)
         self._logger.setLevel(LOGGING_DEFAULT_LOG_LEVEL)
         self._logger.addHandler(console_stream)
+
+        self._service_state: ServiceState = ServiceState(version=gate_version)
+        self._service_state.database_enabled = True
 
     @property
     def logger(self) -> logging.Logger:
