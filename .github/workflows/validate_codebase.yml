@@ -29,6 +29,7 @@ jobs:
       studio_changed: ${{ steps.detect.outputs.studio_changed }}
       executor_changed: ${{ steps.detect.outputs.executor_changed }}
       webweaver_changed: ${{ steps.detect.outputs.webweaver_changed }}
+      weavegate_changed: ${{ steps.detect.outputs.weavegate_changed }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -53,6 +54,14 @@ jobs:
             echo "studio_changed=false" >> $GITHUB_OUTPUT
           fi
 
+          echo "Checking for changes in Weavegate"
+          if echo "$changed_files" | grep -qE '^(webweaver)/weavegate/'; then
+            echo "weavegate_changed=true" >> $GITHUB_OUTPUT
+            echo "[INFO] Weavegate or unit tests have changed"
+          else
+            echo "weavegate_changed=false" >> $GITHUB_OUTPUT
+          fi
+
   verify_studio:
     runs-on: ubuntu-24.04
     needs: [setup, detect-changes]  # Wait for both setup and detect-changes
@@ -72,3 +81,23 @@ jobs:
           PYTHONPATH: webweaver/studio
         run: |
           python -m pylint --fail-under=10.0 webweaver/studio
+
+  verify_weavegate:
+    runs-on: ubuntu-24.04
+    needs: [setup, detect-changes]  # Wait for both setup and detect-changes
+    if: needs.detect-changes.outputs.weavegate_changed == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      #: Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install coverage pylint aiohttp quart
+
+      - name: Run Pylint
+        env:
+          PYTHONPATH: webweaver/weavegate
+        run: |
+          python -m pylint --fail-under=10.0 webweaver/weavegate
