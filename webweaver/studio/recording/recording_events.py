@@ -19,6 +19,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import wx
 
+# Solution context menu events
+EVT_SOLUTION_SETTINGS = wx.NewEventType()
+
+SolutionSettingsEvent = wx.PyEventBinder(EVT_SOLUTION_SETTINGS, 1)
+
 # Recording context menu events
 EVT_OPEN_RECORDING = wx.NewEventType()
 EVT_DELETE_RECORDING = wx.NewEventType()
