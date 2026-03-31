@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # pylint: disable=too-many-lines
+from dataclasses import dataclass
 import json
 import logging
 import threading
@@ -101,6 +102,10 @@ from webweaver.studio.ui.toolbox_panel import ToolboxPanel
 from webweaver.studio.recording_step_editor_registry import \
     register_step_editors
 
+@dataclass
+class StudioMainFrameMenuItems:
+    view_solution_explorer_visible: wx.MenuItem = None
+    view_recording_toolbox_visible: wx.MenuItem = None
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -156,6 +161,7 @@ class StudioMainFrame(wx.Frame):
         handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
         self._logger.addHandler(handler)
         self._closing_solution = False
+        self.menu_items: StudioMainFrameMenuItems = StudioMainFrameMenuItems()
 
         self._toolbar = None
         """The main application toolbar (AUI-managed)."""
@@ -221,8 +227,16 @@ class StudioMainFrame(wx.Frame):
         # Menu Bar
         create_main_menu(self)
 
+        self._pane_menu_map = {
+            "solution_explorer": self.menu_items.view_solution_explorer_visible,
+            "toolbox": self.menu_items.view_recording_toolbox_visible
+        }
+        self._update_view_menu_state()
+
         # Register step editors for a recording
         register_step_editors()
+
+        self.Bind(wx.aui.EVT_AUI_PANE_CLOSE, self.on_pane_close)
 
         self.Bind(wx.EVT_CLOSE, self._on_close_app)
 
@@ -960,6 +974,7 @@ class StudioMainFrame(wx.Frame):
 
         self._aui_mgr.AddPane(self._solution_explorer_panel,
                         wx.aui.AuiPaneInfo()
+                        .Name("solution_explorer")
                         .Left()
                         .Row(1)
                         .PaneBorder(False)
@@ -998,7 +1013,7 @@ class StudioMainFrame(wx.Frame):
         self.aui_manager.AddPane(
             self._toolbox_panel,
             wx.aui.AuiPaneInfo()
-            .Name("Toolbox")
+            .Name("toolbox")
             .Caption("Toolbox")
             .Right()
             .Layer(1)
@@ -1802,3 +1817,32 @@ class StudioMainFrame(wx.Frame):
 
         # Refresh UI via panel
         self._solution_explorer_panel.refresh_test_suites(self._current_solution)
+
+    def menu_show_solution_explorer(self, event):
+        pane = self._aui_mgr.GetPane(self._solution_explorer_panel)
+        pane.Show(not pane.IsShown())
+        self._aui_mgr.Update()
+
+    def menu_show_recording_toolbox(self, event):
+        pane = self._aui_mgr.GetPane(self._toolbox_panel)
+        pane.Show(not pane.IsShown())
+        self._aui_mgr.Update()
+
+    def _update_view_menu_state(self):
+        pane = self._aui_mgr.GetPane(self._solution_explorer_panel)
+        self.menu_items.view_solution_explorer_visible.Check(pane.IsShown())
+
+        pane = self._aui_mgr.GetPane(self._toolbox_panel)
+        self.menu_items.view_recording_toolbox_visible.Check(pane.IsShown())
+
+    def on_pane_close(self, event):
+        pane_name = event.GetPane().name
+
+        def sync():
+            pane = self._aui_mgr.GetPane(pane_name)
+
+            if pane_name in self._pane_menu_map:
+                self._pane_menu_map[pane_name].Check(pane.IsShown())
+
+        wx.CallAfter(sync)
+        event.Skip()
