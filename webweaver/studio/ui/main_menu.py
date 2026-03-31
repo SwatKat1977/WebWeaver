@@ -47,7 +47,7 @@ def create_main_menu(frame: "StudioMainFrame") -> None:
 
     menubar.Append(file_menu, "File")
 
-    # Code Generation menu
+    # -- Code Generation menu --
     code_generation_menu = wx.Menu()
     frame.code_generation_menu = wx.Menu()
     code_generation_menu.AppendSubMenu(
@@ -60,6 +60,20 @@ def create_main_menu(frame: "StudioMainFrame") -> None:
 
     frame.Bind(wx.EVT_MENU, frame.on_refresh_codegen_generators,
                code_generation_refresh_id)
+
+    # -- View menu --
+    view_menu = wx.Menu()
+    menubar.Append(view_menu, "&View")
+    frame.menu_items.view_solution_explorer_visible = view_menu.Append(
+        wx.ID_ANY, "Show Solution Explorer", kind=wx.ITEM_CHECK)
+    frame.menu_items.view_recording_toolbox_visible = view_menu.Append(
+        wx.ID_ANY, "Show Recording Toolbox", kind=wx.ITEM_CHECK)
+    frame.Bind(wx.EVT_MENU,
+               frame.menu_show_solution_explorer,
+               frame.menu_items.view_solution_explorer_visible)
+    frame.Bind(wx.EVT_MENU,
+               frame.menu_show_recording_toolbox,
+               frame.menu_items.view_recording_toolbox_visible)
 
     # -- Help Menu --
     help_menu = wx.Menu()
