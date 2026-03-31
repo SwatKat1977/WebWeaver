@@ -102,10 +102,24 @@ from webweaver.studio.ui.toolbox_panel import ToolboxPanel
 from webweaver.studio.recording_step_editor_registry import \
     register_step_editors
 
+
 @dataclass
 class StudioMainFrameMenuItems:
+    """Container for main frame menu item references.
+
+    This dataclass groups together menu items related to toggling
+    visibility of UI components in the main application window.
+
+    Attributes:
+        view_solution_explorer_visible (wx.MenuItem | None):
+            Menu item controlling the visibility of the Solution Explorer panel.
+
+        view_recording_toolbox_visible (wx.MenuItem | None):
+            Menu item controlling the visibility of the Recording Toolbox panel.
+    """
     view_solution_explorer_visible: wx.MenuItem = None
     view_recording_toolbox_visible: wx.MenuItem = None
+
 
 # macOS menu bar offset
 INITIAL_POSITION = wx.Point(0, 30) if sys.platform == "darwin" \
@@ -1818,17 +1832,38 @@ class StudioMainFrame(wx.Frame):
         # Refresh UI via panel
         self._solution_explorer_panel.refresh_test_suites(self._current_solution)
 
-    def menu_show_solution_explorer(self, event):
+    def menu_show_solution_explorer(self, _event):
+        """Toggle visibility of the Solution Explorer pane.
+
+        Retrieves the Solution Explorer pane from the AUI manager and
+        toggles its visibility state. The layout is then updated.
+
+        Args:
+            _event (wx.Event): The menu event triggering this action.
+        """
         pane = self._aui_mgr.GetPane(self._solution_explorer_panel)
         pane.Show(not pane.IsShown())
         self._aui_mgr.Update()
 
-    def menu_show_recording_toolbox(self, event):
+    def menu_show_recording_toolbox(self, _event):
+        """Toggle visibility of the Recording Toolbox pane.
+
+        Retrieves the Recording Toolbox pane from the AUI manager and
+        toggles its visibility state. The layout is then updated.
+
+        Args:
+            _event (wx.Event): The menu event triggering this action.
+        """
         pane = self._aui_mgr.GetPane(self._toolbox_panel)
         pane.Show(not pane.IsShown())
         self._aui_mgr.Update()
 
     def _update_view_menu_state(self):
+        """Synchronise view menu check states with pane visibility.
+
+        Updates the checked state of menu items to reflect whether
+        their corresponding panes are currently visible.
+        """
         pane = self._aui_mgr.GetPane(self._solution_explorer_panel)
         self.menu_items.view_solution_explorer_visible.Check(pane.IsShown())
 
@@ -1836,6 +1871,16 @@ class StudioMainFrame(wx.Frame):
         self.menu_items.view_recording_toolbox_visible.Check(pane.IsShown())
 
     def on_pane_close(self, event):
+        """Handle pane close events and update corresponding menu state.
+
+        Ensures that when a pane is closed via the UI, the associated
+        menu item's checked state is updated accordingly. The update
+        is deferred using ``wx.CallAfter`` to allow the AUI manager to
+        complete its internal state changes first.
+
+        Args:
+            event (wx.AuiManagerEvent): The pane close event.
+        """
         pane_name = event.GetPane().name
 
         def sync():
