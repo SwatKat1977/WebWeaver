@@ -442,7 +442,7 @@ class RecordingPlaybackSession:
             try:
                 element = self._browser.raw.find_element(By.XPATH, selector)
 
-            except Exception as e:
+            except WebDriverException:
                 element = None
 
         # If we have a target element → ALWAYS scroll it directly
