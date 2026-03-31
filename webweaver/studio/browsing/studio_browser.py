@@ -252,8 +252,7 @@ class StudioBrowser:
                 const style = window.getComputedStyle(node);
                 return (
                     (style.overflowY === 'auto' || style.overflowY === 'scroll') &&
-                    node.scrollHeight > node.clientHeight
-                );
+                    node.scrollHeight > node.clientHeight);
             }
 
             let current = el;
