@@ -295,7 +295,14 @@ class WeaveGateService:
         self._logger.info("Configuration file : %s",
                           "None"if not required else config_file)
         self._logger.info("[logging]")
-        self._logger.info("=> Logging log level : %s",
+        self._logger.info("=> Log level : %s",
                           ServiceConfiguration().logging_log_level)
+        self._logger.info("[database]")
+        self._logger.info("=> Filename : %s",
+                          ServiceConfiguration().database_filename)
+        self._logger.info("=> Journal mode : %s",
+                          ServiceConfiguration().database_journal_mode)
+        self._logger.info("=> Busy timeout : %d",
+                          ServiceConfiguration().database_busy_timeout)
 
         return True

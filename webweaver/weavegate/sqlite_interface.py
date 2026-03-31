@@ -10,7 +10,7 @@ class SqliteInterfaceException(Exception):
     """Exception for SQLite interaction errors."""
 
 
-class BaseSqliteInterface:
+class SqliteInterface:
     """
     Thread-safe SQLite interface with consistent connection configuration and
     predictable behaviour.

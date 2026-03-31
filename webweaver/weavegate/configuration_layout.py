@@ -25,21 +25,39 @@ class ConfigurationConstants:
     # pylint: disable=too-few-public-methods
 
     SECTION_LOGGING: str = 'logging'
+    SECTION_DATABASE: str = 'database'
 
-    ITEM_LOGGING_LOG_LEVEL: str = 'log_level'
+    LOGGING_LOG_LEVEL: str = 'log_level'
     LOG_LEVEL_DEBUG: str = 'DEBUG'
     LOG_LEVEL_INFO: str = 'INFO'
+
+    DATABASE_FILENAME: str = "filename"
+    DATABASE_JOURNAL_MODE: str = "journal_mode"
+    DATABASE_BUSY_TIMEOUT: str = "busy_timeout"
 
 
 CONFIGURATION_LAYOUT = configuration_setup.ConfigurationSetup(
     {
         ConfigurationConstants.SECTION_LOGGING: [
             configuration_setup.ConfigurationSetupItem(
-                ConfigurationConstants.ITEM_LOGGING_LOG_LEVEL,
+                ConfigurationConstants.LOGGING_LOG_LEVEL,
                 configuration_setup.ConfigItemDataType.STRING,
                 valid_values=[ConfigurationConstants.LOG_LEVEL_DEBUG,
                               ConfigurationConstants.LOG_LEVEL_INFO],
                 default_value=ConfigurationConstants.LOG_LEVEL_INFO)
-        ]
+        ],
+        ConfigurationConstants.SECTION_DATABASE: [
+            configuration_setup.ConfigurationSetupItem(
+                ConfigurationConstants.DATABASE_FILENAME,
+                configuration_setup.ConfigItemDataType.STRING),
+            configuration_setup.ConfigurationSetupItem(
+                ConfigurationConstants.DATABASE_JOURNAL_MODE,
+                configuration_setup.ConfigItemDataType.STRING,
+                default_value="wal"),
+            configuration_setup.ConfigurationSetupItem(
+                ConfigurationConstants.DATABASE_BUSY_TIMEOUT,
+                configuration_setup.ConfigItemDataType.INTEGER,
+                default_value=5000),
+        ],
     }
 )

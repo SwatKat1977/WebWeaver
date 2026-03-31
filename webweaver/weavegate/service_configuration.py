@@ -30,4 +30,22 @@ class ServiceConfiguration(ConfigurationManager,
     def logging_log_level(self) -> str:
         """ Configuration property : Logging | log level """
         return str(ServiceConfiguration().get_entry(
-            constants.SECTION_LOGGING, constants.ITEM_LOGGING_LOG_LEVEL))
+            constants.SECTION_LOGGING, constants.LOGGING_LOG_LEVEL))
+
+    @property
+    def database_filename(self) -> str:
+        """ Configuration property : Database | filename """
+        return str(ServiceConfiguration().get_entry(
+            constants.SECTION_DATABASE, constants.DATABASE_FILENAME))
+
+    @property
+    def database_journal_mode(self) -> str:
+        """ Configuration property : Database | journal mode """
+        return str(ServiceConfiguration().get_entry(
+            constants.SECTION_DATABASE, constants.DATABASE_JOURNAL_MODE))
+
+    @property
+    def database_busy_timeout(self) -> int:
+        """ Configuration property : Database | busy timeout """
+        return int(ServiceConfiguration().get_entry(
+            constants.SECTION_DATABASE, constants.DATABASE_BUSY_TIMEOUT))
