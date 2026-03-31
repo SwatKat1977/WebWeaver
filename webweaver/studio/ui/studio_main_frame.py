@@ -54,7 +54,8 @@ from webweaver.studio.recording.recording_events import (
     NewTestSuiteEvent,
     RenameTestSuiteEvent,
     AddRecordingToTestSuiteEvent,
-    RemoveRecordingFromTestSuiteEvent)
+    RemoveRecordingFromTestSuiteEvent,
+    SolutionSettingsEvent)
 from webweaver.studio.recording.recording_session import RecordingSession
 from webweaver.studio.recording.recording_event_type import RecordingEventType
 from webweaver.studio.recording.recording_loader import \
@@ -340,6 +341,10 @@ class StudioMainFrame(wx.Frame):
         # Remove recording from test suite event.
         self.Bind(RemoveRecordingFromTestSuiteEvent,
                   self._on_remove_recording_from_suite)
+
+        # Solution settings event.
+        self.Bind(SolutionSettingsEvent,
+                  self._on_solution_settings)
 
         self.Bind(EVT_WORKSPACE_ACTIVE_CHANGED,
                   self._on_workspace_active_changed)
@@ -1345,6 +1350,9 @@ class StudioMainFrame(wx.Frame):
 
         # Refresh UI via panel
         self._solution_explorer_panel.refresh_test_suites(self._current_solution)
+
+    def _on_solution_settings(self, _event: wx.CommandEvent) -> None:
+        print("[DEBUG] Open solution settings...")
 
     def rebuild_recent_solutions_menu(self) -> None:
         """
