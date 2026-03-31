@@ -250,23 +250,30 @@ class StudioBrowser:
 
             function isScrollable(node) {
                 const style = window.getComputedStyle(node);
-                const overflowY = style.overflowY;
-                return (overflowY === 'auto' || overflowY === 'scroll') &&
-                       node.scrollHeight > node.clientHeight;
+                return (
+                    (style.overflowY === 'auto' || style.overflowY === 'scroll') &&
+                    node.scrollHeight > node.clientHeight
+                );
             }
 
             let current = el;
 
             while (current) {
                 if (isScrollable(current)) {
-                    current.scrollTo(x, y);
+                    // Handle "bottom" properly
+                    if (y >= 999999) {
+                        current.scrollTop = current.scrollHeight;
+                    } else {
+                        current.scrollTop += y;
+                        current.scrollLeft += x;
+                    }
                     return;
                 }
                 current = current.parentElement;
             }
 
-            // fallback
-            window.scrollTo(x, y);
+            // fallback ONLY if nothing scrollable found
+            window.scrollBy(x, y);
         """, element, x, y)
 
     # --------------------------------------------------------------
