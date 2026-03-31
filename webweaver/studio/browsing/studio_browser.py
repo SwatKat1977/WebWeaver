@@ -17,6 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+# pylint: disable=too-many-lines
 from dataclasses import dataclass
 import logging
 import time
@@ -241,6 +242,63 @@ class StudioBrowser:
             The vertical scroll offset.
         """
         self._driver.execute_script(f"window.scrollTo({x}, {y});")
+
+    def scroll_element(self, element, x=0, y=0):
+        """Scrolls the nearest scrollable ancestor of an element.
+
+        Attempts to locate the closest scrollable parent of the given element
+        and applies a scroll offset to it. If no scrollable ancestor is found,
+        falls back to scrolling the window.
+
+        Args:
+            element: The target element whose scrollable container should be scrolled.
+            x (int, optional): Horizontal scroll offset in pixels. Defaults to 0.
+            y (int, optional): Vertical scroll offset in pixels. Defaults to 0.
+                If set to a very large value (e.g., >= 999999), the container
+                will be scrolled to its bottom.
+
+        Behavior:
+            - Traverses up the DOM tree to find the nearest scrollable ancestor.
+            - A node is considered scrollable if:
+                - Its computed `overflow-y` is 'auto' or 'scroll', and
+                - Its scroll height exceeds its client height.
+            - Applies the scroll offsets to the first matching ancestor.
+            - Falls back to `window.scrollBy(x, y)` if no scrollable container is found.
+
+        Returns:
+            None
+        """
+        self._driver.execute_script("""
+            const el = arguments[0];
+            const x = arguments[1];
+            const y = arguments[2];
+
+            function isScrollable(node) {
+                const style = window.getComputedStyle(node);
+                return (
+                    (style.overflowY === 'auto' || style.overflowY === 'scroll') &&
+                    node.scrollHeight > node.clientHeight);
+            }
+
+            let current = el;
+
+            while (current) {
+                if (isScrollable(current)) {
+                    // Handle "bottom" properly
+                    if (y >= 999999) {
+                        current.scrollTop = current.scrollHeight;
+                    } else {
+                        current.scrollTop += y;
+                        current.scrollLeft += x;
+                    }
+                    return;
+                }
+                current = current.parentElement;
+            }
+
+            // fallback ONLY if nothing scrollable found
+            window.scrollBy(x, y);
+        """, element, x, y)
 
     # --------------------------------------------------------------
     # Inspection functionality

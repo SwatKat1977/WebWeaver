@@ -261,6 +261,7 @@ class ScrollPayload(BasePayload):
     scroll_type: str
     x_scroll: int | None = None
     y_scroll: int | None = None
+    selector: str | None = None
 
 
 @dataclass

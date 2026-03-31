@@ -27,6 +27,7 @@ import keyboard
 import wx
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from webweaver.studio.api_client import ApiClient
 from webweaver.studio.browsing.studio_browser import (PlaybackStepResult,
@@ -432,18 +433,44 @@ class RecordingPlaybackSession:
     def _perform_page_scroll(self, event):
         payload = event.get("payload", {})
         scroll_type = payload.get("scroll_type")
-        scroll_x = payload.get("x_scroll")
-        scroll_y = payload.get("y_scroll")
+        scroll_x = payload.get("x_scroll", 0)
+        scroll_y = payload.get("y_scroll", 0)
+        selector = payload.get("selector", "")
 
-        # Scroll to the bottom of the page.
+        element = None
+        if selector:
+            try:
+                element = self._browser.raw.find_element(By.XPATH, selector)
+
+            except WebDriverException:
+                element = None
+
+        # If we have a target element → ALWAYS scroll it directly
+        if element:
+            if scroll_type == "bottom":
+                self._browser.raw.execute_script("""
+                    arguments[0].scrollTop = arguments[0].scrollHeight;
+                """, element)
+
+            elif scroll_type == "top":
+                self._browser.raw.execute_script("""
+                    arguments[0].scrollTop = 0;
+                """, element)
+
+            elif scroll_type == "custom":
+                self._browser.raw.execute_script("""
+                    arguments[0].scrollTop += arguments[1];
+                """, element, int(scroll_y))
+
+            return  # IMPORTANT: stop here so we don’t fall back to page scroll
+
+        # Only fallback if NO element found
         if scroll_type == "bottom":
             self._browser.scroll_to_bottom()
 
-        # Scroll to the top of the page.
         elif scroll_type == "top":
             self._browser.scroll_to_top()
 
-        # Scroll a specific distance (in pixels).
         elif scroll_type == "custom":
             self._browser.scroll_to(int(scroll_x), int(scroll_y))
 
@@ -642,11 +669,9 @@ class RecordingPlaybackSession:
 
         # Nothing to do
         if not keys:
-            print("NOT KEYS")
             return PlaybackStepResult.success()
 
         if keys[0].get("type") != "text":
-            print("key combo not allowed with targeted")
             return PlaybackStepResult.fail("Special key combo not allowed")
 
         self._browser.playback_sendkeys(payload)
