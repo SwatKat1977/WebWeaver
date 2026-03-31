@@ -93,6 +93,11 @@ class ScrollStepEditor(FancyDialogBase):
         self._field_step_label = self.add_field("Step Label:", wx.TextCtrl)
         self._field_step_label.SetValue(payload.label)
 
+        # -- Selector
+        self._field_selector = self.add_field("Selector:", wx.TextCtrl)
+        self._field_selector.SetValue("" if not payload.selector else \
+                                          payload.selector)
+
         # -- Scroll Method
         self._field_scroll_method = self.add_field(
             "Scroll Method:",
@@ -166,6 +171,7 @@ class ScrollStepEditor(FancyDialogBase):
 
         self._event["payload"] = {
             "label": self._field_step_label.GetValue().strip(),
+            "selector": self._field_selector.GetValue().strip(),
             "scroll_type": enum_val.value,
             "x_scroll": x_val,
             "y_scroll": y_val }
