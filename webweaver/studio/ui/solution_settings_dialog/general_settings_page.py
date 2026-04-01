@@ -52,7 +52,24 @@ class GeneralSettingsPage(SettingsPage):
         content.Add(label, 0, wx.BOTTOM, 6)
 
         self._solution_name = wx.TextCtrl(self)
-        content.Add(self._solution_name, 0, wx.EXPAND)
+        content.Add(self._solution_name, 0, wx.EXPAND | wx.BOTTOM, 12)
+
+        # --- Base URL ---
+        label = wx.StaticText(self,
+                              label="Base URL")
+        font = label.GetFont()
+        font = font.Bold()
+        label.SetFont(font)
+        content.Add(label, 0, wx.BOTTOM, 6)
+
+        self._base_url = wx.TextCtrl(self)
+        content.Add(self._base_url, 0, wx.EXPAND | wx.BOTTOM, 12)
+
+        # ---- Launch browser automatically section ----
+        self._browser_automatic_checkbox = wx.CheckBox(
+            self,
+            label="Launch Browser Automatically")
+        content.Add(self._browser_automatic_checkbox, 0, wx.BOTTOM, 10)
 
         # Add content with clean outer padding
         outer.Add(content, 0, wx.ALL | wx.EXPAND, 20)

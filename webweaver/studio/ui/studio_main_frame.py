@@ -102,6 +102,10 @@ from webweaver.studio.ui.about_dialog import AboutDialog
 from webweaver.studio.ui.toolbox_panel import ToolboxPanel
 from webweaver.studio.recording_step_editor_registry import \
     register_step_editors
+from webweaver.studio.ui.solution_settings_dialog.general_settings_page \
+    import GeneralSettingsPage as SolutionSettingsGeneralPage
+from webweaver.studio.ui.solution_settings_dialog.browser_settings_page \
+    import BrowserSettingsPage as SolutionSettingsBrowserSettingsPage
 
 
 @dataclass
@@ -1352,7 +1356,28 @@ class StudioMainFrame(wx.Frame):
         self._solution_explorer_panel.refresh_test_suites(self._current_solution)
 
     def _on_solution_settings(self, _event: wx.CommandEvent) -> None:
-        print("[DEBUG] Open solution settings...")
+        page_definitions = [
+            PageDefinition("General", SolutionSettingsGeneralPage),
+            PageDefinition("Browser Settings", SolutionSettingsBrowserSettingsPage)
+        ]
+
+        dialog = SettingsDialog(
+            self,
+            title="Solution Settings",
+            context=self._app_settings,
+            page_definitions=page_definitions)
+
+        # old_code_gen_path = self._app_settings.code_generators_path
+        if dialog.ShowModal() == wx.ID_OK:
+            pass
+            '''
+            self._settings_manager.save(self._app_settings)
+            if self._app_settings.code_generators_path != old_code_gen_path:
+                self._code_gen_registry.plugin_dir = \
+                    self._app_settings.code_generators_path
+            '''
+
+        dialog.Destroy()
 
     def rebuild_recent_solutions_menu(self) -> None:
         """
