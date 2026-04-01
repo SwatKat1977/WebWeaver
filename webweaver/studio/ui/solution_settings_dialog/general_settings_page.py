@@ -18,14 +18,28 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import wx
+from webweaver.studio.studio_solution import StudioSolution
 from webweaver.studio.ui.framework.settings_page import SettingsPage, ValidationResult
 
 
 class GeneralSettingsPage(SettingsPage):
+    """Settings page for configuring general solution options.
 
-    def __init__(self, parent, context):
+    This page allows viewing and editing of core solution settings,
+    including the solution name (read-only), base URL, and browser
+    launch behavior.
+    """
+
+    def __init__(self, parent, context: StudioSolution):
+        """Initialise the GeneralSettingsPage UI.
+
+        Args:
+            parent: The parent wx window.
+            context (StudioSolution): The solution context providing
+                current values and receiving updates.
+        """
         super().__init__(parent)
-        self._context = context
+        self._context: StudioSolution = context
 
         outer = wx.BoxSizer(wx.VERTICAL)
 
@@ -43,7 +57,7 @@ class GeneralSettingsPage(SettingsPage):
         label.SetFont(font)
         content.Add(label, 0, wx.BOTTOM, 6)
 
-        self._solution_name = wx.TextCtrl(self)
+        self._solution_name = wx.TextCtrl(self, style=wx.TE_READONLY)
         content.Add(self._solution_name, 0, wx.EXPAND | wx.BOTTOM, 12)
 
         # --- Base URL ---
@@ -72,10 +86,30 @@ class GeneralSettingsPage(SettingsPage):
         self.SetSizer(outer)
 
     def load(self):
-        pass
+        """Load values from the solution context into the UI controls."""
+        self._solution_name.SetValue(self._context.solution_name)
+        self._base_url.SetValue(self._context.base_url)
+        self._browser_automatic_checkbox.SetValue(
+            self._context.launch_browser_automatically)
 
     def validate(self) -> ValidationResult:
-        pass
+        """Validate user input on the page.
+
+        Returns:
+            ValidationResult: Result indicating whether validation passed.
+                If validation fails, includes an error message and the
+                control to focus.
+        """
+        if not self._base_url.GetValue().strip():
+            return ValidationResult(
+                ok=False,
+                message="Base URL is a required field",
+                focus=self._base_url)
+
+        return ValidationResult(True)
 
     def apply(self):
-        pass
+        """Apply the current UI values to the solution context."""
+        self._context.base_url = self._base_url.GetValue().strip()
+        self._context.launch_browser_automatically = \
+            self._browser_automatic_checkbox.GetValue()
