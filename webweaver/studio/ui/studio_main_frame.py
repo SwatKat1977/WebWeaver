@@ -1364,7 +1364,7 @@ class StudioMainFrame(wx.Frame):
         dialog = SettingsDialog(
             self,
             title="Solution Settings",
-            context=self._app_settings,
+            context=self._current_solution,
             page_definitions=page_definitions)
 
         # old_code_gen_path = self._app_settings.code_generators_path
