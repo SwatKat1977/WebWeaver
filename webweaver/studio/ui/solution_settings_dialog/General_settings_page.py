@@ -23,8 +23,9 @@ from webweaver.studio.ui.framework.settings_page import SettingsPage, Validation
 
 class GeneralSettingsPage(SettingsPage):
 
-    def __init__(self, parent):
+    def __init__(self, parent, context):
         super().__init__(parent)
+        self._context = context
 
         outer = wx.BoxSizer(wx.VERTICAL)
 
