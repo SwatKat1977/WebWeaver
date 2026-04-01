@@ -103,3 +103,18 @@ class SettingsPage(wx.Panel):
         This method should write updated values to the configuration,
         context, or other persistent storage as appropriate.
         """
+
+    def add_section_title(self,
+                          parent: wx.Window,
+                          text: str, sizer) -> wx.StaticText:
+        section_title = wx.StaticText(parent, label=text)
+
+        font = section_title.GetFont()
+        font = font.Bold()
+        font.SetPointSize(font.GetPointSize() + 1)
+        section_title.SetFont(font)
+
+        sizer.Add(section_title, 0, wx.BOTTOM, 10)
+        sizer.Add(wx.StaticLine(parent), 0, wx.EXPAND | wx.BOTTOM, 20)
+
+        return section_title

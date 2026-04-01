@@ -19,13 +19,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import wx
 import wx.lib.scrolledpanel as scrolledpanel
+from webweaver.studio.studio_solution import StudioSolution
 from webweaver.studio.ui.framework.settings_page import (SettingsPage,
                                                          ValidationResult)
 
 
 class BrowserSettingsPage(SettingsPage):
 
-    def __init__(self, parent, context):
+    def __init__(self, parent, context: StudioSolution):
         super().__init__(parent)
         self._context = context
 
@@ -37,16 +38,9 @@ class BrowserSettingsPage(SettingsPage):
         # ---- Content container ----
         content = wx.BoxSizer(wx.VERTICAL)
 
-        # ===== Basic behaviour section title =====
-        title = wx.StaticText(scrolled, label="Basic behaviour")
-        font = title.GetFont()
-        font = font.Bold()
-        font.SetPointSize(font.GetPointSize() + 1)
-        title.SetFont(font)
-        content.Add(title, 0, wx.BOTTOM, 10)
-        content.Add(wx.StaticLine(scrolled), 0, wx.EXPAND | wx.BOTTOM, 20)
-
         # ---- Basic behaviour section ----
+        self.add_section_title(scrolled, "Basic behaviour", content)
+
         self._private_mode = wx.CheckBox(
             scrolled, wx.ID_ANY, "Private / Incognito mode (recommended)")
         content.Add(self._private_mode, 0, wx.BOTTOM, 10)
@@ -68,13 +62,7 @@ class BrowserSettingsPage(SettingsPage):
         content.Add(self._disable_automation_controlled_feature, 0, wx.BOTTOM, 10)
 
         # ===== Browser size section title =====
-        title = wx.StaticText(scrolled, label="Browser size")
-        font = title.GetFont()
-        font = font.Bold()
-        font.SetPointSize(font.GetPointSize() + 1)
-        title.SetFont(font)
-        content.Add(title, 0, wx.BOTTOM, 10)
-        content.Add(wx.StaticLine(scrolled), 0, wx.EXPAND | wx.BOTTOM, 20)
+        self.add_section_title(scrolled, "Browser size", content)
 
         # ---- Window size section ----
         window_label = wx.StaticText(scrolled, label="Browser window size")
@@ -105,13 +93,7 @@ class BrowserSettingsPage(SettingsPage):
         content.Add(size_sizer, 0, wx.LEFT | wx.BOTTOM, 10)
 
         # ===== Advanced browser section title =====
-        title = wx.StaticText(scrolled, label="Advanced browser options")
-        font = title.GetFont()
-        font = font.Bold()
-        font.SetPointSize(font.GetPointSize() + 1)
-        title.SetFont(font)
-        content.Add(title, 0, wx.BOTTOM, 10)
-        content.Add(wx.StaticLine(scrolled), 0, wx.EXPAND | wx.BOTTOM, 20)
+        self.add_section_title(scrolled, "Advanced browser options", content)
 
         # ---- Advanced browser section ----
         agent_override_label = wx.StaticText(scrolled, label="User agent override")

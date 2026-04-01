@@ -32,16 +32,8 @@ class GeneralSettingsPage(SettingsPage):
         # ---- Content container with consistent margins ----
         content = wx.BoxSizer(wx.VERTICAL)
 
-        # ===== Section Title =====
-        title = wx.StaticText(self, label="General")
-        font = title.GetFont()
-        font = font.Bold()
-        font.SetPointSize(font.GetPointSize() + 1)
-        title.SetFont(font)
-        content.Add(title, 0, wx.BOTTOM, 10)
-
-        # ===== Divider line =====
-        content.Add(wx.StaticLine(self), 0, wx.EXPAND | wx.BOTTOM, 20)
+        # ===== General section =====
+        self.add_section_title(self, "General", content)
 
         # --- Solution Name ---
         label = wx.StaticText(self,
