@@ -107,6 +107,27 @@ class SettingsPage(wx.Panel):
     def add_section_title(self,
                           parent: wx.Window,
                           text: str, sizer) -> wx.StaticText:
+        """
+        Create and add a styled section title to a sizer.
+
+        This helper applies consistent formatting to section headers,
+        including bold text, a slightly increased font size, and a
+        divider line beneath the title.
+
+        Args:
+            parent (wx.Window):
+                The parent window for the created controls.
+
+            text (str):
+                The title text to display.
+
+            sizer:
+                The sizer to which the title and divider will be added.
+
+        Returns:
+            wx.StaticText:
+                The created section title control.
+        """
         section_title = wx.StaticText(parent, label=text)
 
         font = section_title.GetFont()
