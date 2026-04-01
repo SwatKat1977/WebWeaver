@@ -28,7 +28,7 @@ class BrowserSettingsPage(SettingsPage):
 
     def __init__(self, parent, context: StudioSolution):
         super().__init__(parent)
-        self._context = context
+        self._context: StudioSolution = context
 
         scrolled = scrolledpanel.ScrolledPanel(self)
 
