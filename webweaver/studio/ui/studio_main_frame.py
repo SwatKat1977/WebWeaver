@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # pylint: disable=too-many-lines
+import copy
 from dataclasses import dataclass
 import json
 import logging
@@ -54,7 +55,8 @@ from webweaver.studio.recording.recording_events import (
     NewTestSuiteEvent,
     RenameTestSuiteEvent,
     AddRecordingToTestSuiteEvent,
-    RemoveRecordingFromTestSuiteEvent)
+    RemoveRecordingFromTestSuiteEvent,
+    SolutionSettingsEvent)
 from webweaver.studio.recording.recording_session import RecordingSession
 from webweaver.studio.recording.recording_event_type import RecordingEventType
 from webweaver.studio.recording.recording_loader import \
@@ -101,6 +103,10 @@ from webweaver.studio.ui.about_dialog import AboutDialog
 from webweaver.studio.ui.toolbox_panel import ToolboxPanel
 from webweaver.studio.recording_step_editor_registry import \
     register_step_editors
+from webweaver.studio.ui.solution_settings_dialog.general_settings_page \
+    import GeneralSettingsPage as SolutionSettingsGeneralPage
+from webweaver.studio.ui.solution_settings_dialog.browser_settings_page \
+    import BrowserSettingsPage as SolutionSettingsBrowserSettingsPage
 
 
 @dataclass
@@ -340,6 +346,10 @@ class StudioMainFrame(wx.Frame):
         # Remove recording from test suite event.
         self.Bind(RemoveRecordingFromTestSuiteEvent,
                   self._on_remove_recording_from_suite)
+
+        # Solution settings event.
+        self.Bind(SolutionSettingsEvent,
+                  self._on_solution_settings)
 
         self.Bind(EVT_WORKSPACE_ACTIVE_CHANGED,
                   self._on_workspace_active_changed)
@@ -1345,6 +1355,41 @@ class StudioMainFrame(wx.Frame):
 
         # Refresh UI via panel
         self._solution_explorer_panel.refresh_test_suites(self._current_solution)
+
+    def _on_solution_settings(self, _event: wx.CommandEvent) -> None:
+        page_definitions = [
+            PageDefinition("General", SolutionSettingsGeneralPage),
+            PageDefinition("Browser Settings", SolutionSettingsBrowserSettingsPage)
+        ]
+
+        dialog = SettingsDialog(
+            self,
+            title="Solution Settings",
+            context=self._current_solution,
+            page_definitions=page_definitions)
+
+        old_solution = copy.deepcopy(self._current_solution)
+
+        dialog_status = dialog.ShowModal()
+        dialog.Destroy()
+
+        if dialog_status == wx.ID_OK:
+            if self._current_solution != old_solution:
+                result = SolutionPersistence.save_to_disk(self._current_solution)
+                if result is not SolutionSaveStatus.OK:
+                    wx.MessageBox(result.value,
+                                  "Failed to save solution",
+                                  wx.ICON_ERROR,
+                                  self)
+                    return
+
+                if old_solution.browser_launch_options != \
+                        self._current_solution.browser_launch_options or \
+                        old_solution.base_url != self._current_solution.base_url:
+                    if self._web_browser and self._web_browser.is_alive():
+                        self._web_browser.quit()
+                        self._web_browser = None
+                        self.on_web_browser_event(None)
 
     def rebuild_recent_solutions_menu(self) -> None:
         """

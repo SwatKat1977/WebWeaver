@@ -30,7 +30,8 @@ from webweaver.studio.recording.recording_events import (
     EVT_DELETE_TEST_SUITE,
     EVT_RENAME_TEST_SUITE,
     EVT_ADD_RECORDING_TO_TEST_SUITE,
-    EVT_REMOVE_RECORDING_FROM_TEST_SUITE)
+    EVT_REMOVE_RECORDING_FROM_TEST_SUITE,
+    EVT_SOLUTION_SETTINGS)
 from webweaver.studio.recording_metadata import RecordingMetadata
 from webweaver.studio.studio_solution import StudioSolution
 from webweaver.studio.solution_explorer_node_data import (
@@ -52,6 +53,8 @@ ID_CONTEXT_MENU_TEST_SUITE_NEW = wx.ID_HIGHEST + 3003
 ID_CONTEXT_MENU_TEST_SUITE_DELETE = wx.ID_HIGHEST + 3004
 ID_CONTEXT_MENU_TEST_SUITE_RENAME = wx.ID_HIGHEST + 3005
 ID_CONTEXT_MENU_TEST_SUITE_REMOVE_RECORDING = wx.ID_HIGHEST + 3006
+ID_CONTEXT_MENU_SOLUTION_SETTINGS = wx.ID_HIGHEST + 3007
+
 
 HIDE_DEV_WORK: bool = True
 
@@ -395,6 +398,10 @@ class SolutionExplorerPanel(wx.Panel):
                   self._on_remove_recording_from_test_suite,
                   id=ID_CONTEXT_MENU_TEST_SUITE_REMOVE_RECORDING)
 
+        self.Bind(wx.EVT_MENU,
+                  self._on_solution_settings,
+                  id=ID_CONTEXT_MENU_SOLUTION_SETTINGS)
+
         # Drag and drop
         self._tree.Bind(wx.EVT_TREE_BEGIN_DRAG, self._on_begin_drag)
         self._tree.Bind(wx.EVT_TREE_END_DRAG, self._on_end_drag)
@@ -550,7 +557,10 @@ class SolutionExplorerPanel(wx.Panel):
 
         menu = wx.Menu()
 
-        if data.node_type == ExplorerNodeType.RECORDING_ITEM:
+        if data.node_type == ExplorerNodeType.SOLUTION_ROOT:
+            menu.Append(ID_CONTEXT_MENU_SOLUTION_SETTINGS, "Solution Settings...")
+
+        elif data.node_type == ExplorerNodeType.RECORDING_ITEM:
             menu.Append(ID_CONTEXT_MENU_REC_OPEN, "Open")
             menu.Append(ID_CONTEXT_MENU_REC_RENAME, "Rename")
             menu.AppendSeparator()
@@ -711,4 +721,8 @@ class SolutionExplorerPanel(wx.Panel):
             EVT_REMOVE_RECORDING_FROM_TEST_SUITE)
         evt.SetClientData({"suite": suite,
                           "recording": recording})
+        wx.PostEvent(self.GetParent(), evt)
+
+    def _on_solution_settings(self, _event: wx.CommandEvent) -> None:
+        evt = wx.CommandEvent(EVT_SOLUTION_SETTINGS)
         wx.PostEvent(self.GetParent(), evt)
