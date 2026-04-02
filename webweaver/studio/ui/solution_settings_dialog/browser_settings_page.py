@@ -18,15 +18,31 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import wx
-import wx.lib.scrolledpanel as scrolledpanel
+from wx.lib import scrolledpanel
+from webweaver.studio.browser_launch_options import BrowserLaunchOptions
 from webweaver.studio.studio_solution import StudioSolution
 from webweaver.studio.ui.framework.settings_page import (SettingsPage,
                                                          ValidationResult)
 
 
 class BrowserSettingsPage(SettingsPage):
+    """Settings page for configuring browser behaviour and launch options.
+
+    This page provides controls for common browser runtime settings such as
+    privacy mode, extension handling, notification suppression, and advanced
+    automation-related flags. It also allows configuration of the browser
+    window size and optional user agent override.
+    """
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(self, parent, context: StudioSolution):
+        """Initialise the BrowserSettingsPage UI.
+
+        Args:
+            parent: The parent wx window.
+            context (StudioSolution): The solution context providing
+                current browser configuration and receiving updates.
+        """
         super().__init__(parent)
         self._context: StudioSolution = context
 
@@ -69,21 +85,21 @@ class BrowserSettingsPage(SettingsPage):
         window_label.SetFont(window_label.GetFont().Bold())
         content.Add(window_label, 0, wx.EXPAND | wx.BOTTOM, 5)
 
-        self._window_size_default = wx.RadioButton(
+        self._window_size_default: wx.RadioButton = wx.RadioButton(
             scrolled, wx.ID_ANY, "Default size", style=wx.RB_GROUP)
         content.Add(self._window_size_default, 0, wx.ALL, 5)
 
-        self._window_size_maximised = wx.RadioButton(
+        self._window_size_maximised: wx.RadioButton = wx.RadioButton(
             scrolled, wx.ID_ANY, "Maximised (Recommended)")
         content.Add(self._window_size_maximised, 0, wx.ALL, 5)
 
-        self._window_size_custom = wx.RadioButton(
+        self._window_size_custom: wx.RadioButton = wx.RadioButton(
             scrolled, wx.ID_ANY, "Custom size")
         content.Add(self._window_size_custom, 0, wx.ALL, 5)
 
-        self._window_size_width = wx.TextCtrl(
+        self._window_size_width: wx.TextCtrl = wx.TextCtrl(
             scrolled, wx.ID_ANY, "1280", size=(60, -1))
-        self._window_size_height = wx.TextCtrl(
+        self._window_size_height: wx.TextCtrl = wx.TextCtrl(
             scrolled, wx.ID_ANY, "800", size=(60, -1))
         size_sizer: wx.BoxSizer = wx.BoxSizer(wx.HORIZONTAL)
         size_sizer.Add(self._window_size_width, 0, wx.RIGHT, 5)
@@ -99,39 +115,20 @@ class BrowserSettingsPage(SettingsPage):
         agent_override_label = wx.StaticText(scrolled, label="User agent override")
         agent_override_label.SetFont(agent_override_label.GetFont().Bold())
         content.Add(agent_override_label, 0, wx.EXPAND | wx.BOTTOM, 5)
-        self._advanced_user_agent = wx.TextCtrl(scrolled)
+        self._advanced_user_agent: wx.TextCtrl = wx.TextCtrl(scrolled)
         content.Add(self._advanced_user_agent, 0, wx.EXPAND | wx.BOTTOM | wx.RIGHT, 12)
 
-        '''
+        self._window_size_default.Bind(
+            wx.EVT_RADIOBUTTON,
+            lambda evt: self._sync_window_size_state())
+        self._window_size_maximised.Bind(
+            wx.EVT_RADIOBUTTON,
+            lambda evt: self._sync_window_size_state())
+        self._window_size_custom.Bind(
+            wx.EVT_RADIOBUTTON,
+            lambda evt: self._sync_window_size_state())
 
-
-        self._behaviour_controls.window_size_maximised.SetValue(True)
         self._sync_window_size_state()
-
-        self._behaviour_controls.window_size_maximised.Bind(
-            wx.EVT_RADIOBUTTON, lambda evt: self._sync_window_size_state()
-        )
-        self._behaviour_controls.window_size_custom.Bind(
-            wx.EVT_RADIOBUTTON, lambda evt: self._sync_window_size_state()
-        )
-
-        # Advanced section
-        advanced_pane = wx.CollapsiblePane(self,  wx.ID_ANY, "Advanced")
-        pane: wx.Window = advanced_pane.GetPane()
-
-        adv_sizer: wx.BoxSizer = wx.BoxSizer(wx.VERTICAL)
-        adv_sizer.Add(wx.StaticText(pane,
-                                    wx.ID_ANY,
-                                    "User agent override"),
-                      0, wx.BOTTOM, 5)
-        self._behaviour_controls.user_agent = wx.TextCtrl(pane,  wx.ID_ANY)
-        adv_sizer.Add(self._behaviour_controls.user_agent, 0, wx.EXPAND)
-
-        pane.SetSizer(adv_sizer)
-        behaviour_box.Add(advanced_pane, 0, wx.EXPAND | wx.ALL, 5)
-
-
-        '''
 
         # ---- Final wiring ----
 
@@ -141,11 +138,58 @@ class BrowserSettingsPage(SettingsPage):
         self.SetSizer(outer)
 
     def load(self):
-        # self._start_max_checkbox.SetValue(self._settings.start_maximised)
-        pass
+        """Load browser settings from the solution context into the UI.
+
+        This method reads the current ``BrowserLaunchOptions`` from the
+        associated ``StudioSolution`` context and updates all UI controls
+        to reflect the stored configuration, including:
+
+            - Basic behaviour flags (privacy, extensions, notifications, etc.)
+            - User agent override
+            - Browser window size mode and dimensions
+
+        The window size controls are synchronised after loading to ensure
+        the correct fields are enabled or disabled.
+        """
+        browser_opts: BrowserLaunchOptions = self._context.browser_launch_options
+        self._private_mode.SetValue(browser_opts.private_mode)
+        self._disable_extensions.SetValue(browser_opts.disable_extensions)
+        self._disable_notifications.SetValue(browser_opts.disable_notifications)
+        self._ignore_cert_errors.SetValue(
+            browser_opts.ignore_certificate_errors)
+        self._disable_automation_controlled_feature.SetValue(
+            browser_opts.disable_automation_controlled_feature)
+
+        user_agent = browser_opts.user_agent if browser_opts.user_agent else ""
+        self._advanced_user_agent.SetValue(user_agent)
+
+        if browser_opts.maximised:
+            self._window_size_maximised.SetValue(1)
+
+        elif browser_opts.window_size:
+            self._window_size_custom.SetValue(1)
+            self._window_size_width.SetValue(str(browser_opts.window_size.width))
+            self._window_size_height.SetValue(str(browser_opts.window_size.height))
+
+        else:
+            self._window_size_default.SetValue(1)
+
+        self._sync_window_size_state()
+
+    def _sync_window_size_state(self) -> None:
+        """Synchronise the enabled state of custom window size controls.
+
+        Enables or disables the width and height input fields depending on
+        whether the "Custom size" radio option is selected. When custom size
+        is not selected, these fields are disabled to prevent user input.
+        """
+        custom: bool = self._window_size_custom.GetValue()
+        self._window_size_width.Enable(custom)
+        self._window_size_height.Enable(custom)
 
     def validate(self) -> ValidationResult:
-        pass
+        # No validation needed for checkboxes
+        return ValidationResult(True)
 
     def apply(self):
         pass
