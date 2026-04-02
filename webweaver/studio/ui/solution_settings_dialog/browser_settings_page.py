@@ -19,7 +19,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import wx
 from wx.lib import scrolledpanel
-from webweaver.studio.browser_launch_options import BrowserLaunchOptions
+from webweaver.studio.browser_launch_options import BrowserLaunchOptions, WindowSize
 from webweaver.studio.studio_solution import StudioSolution
 from webweaver.studio.ui.framework.settings_page import (SettingsPage,
                                                          ValidationResult)
@@ -208,19 +208,17 @@ class BrowserSettingsPage(SettingsPage):
         # Browser window size : Maximised
         if self._window_size_maximised.GetValue():
             self._context.browser_launch_options.maximised = True
-            self._context.browser_launch_options.window_size.width = None
-            self._context.browser_launch_options.window_size.height = None
+            self._context.browser_launch_options.window_size = None
 
         # Browser window size : Custom size
         elif self._window_size_custom.GetValue():
             self._context.browser_launch_options.maximised = False
-            self._context.browser_launch_options.window_size.width = \
-                self._window_size_width.GetValue()
-            self._context.browser_launch_options.window_size.height = \
-                self._window_size_height.GetValue()
+
+            self._context.browser_launch_options.window_size = \
+                WindowSize(width=int(self._window_size_width.GetValue()),
+                           height=int(self._window_size_height.GetValue()))
 
         # Browser window : Default size
         else:
             self._context.browser_launch_options.maximised = False
-            self._context.browser_launch_options.window_size.width = None
-            self._context.browser_launch_options.window_size.height = None
+            self._context.browser_launch_options.window_size = None

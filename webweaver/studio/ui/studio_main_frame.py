@@ -1381,6 +1381,15 @@ class StudioMainFrame(wx.Frame):
                                   "Failed to save solution",
                                   wx.ICON_ERROR,
                                   self)
+                    return
+
+                if old_solution.browser_launch_options != \
+                        self._current_solution.browser_launch_options or \
+                        old_solution.base_url != self._current_solution.base_url:
+                    if self._web_browser and self._web_browser.is_alive():
+                        self._web_browser.quit()
+                        self._web_browser = None
+                        self.on_web_browser_event(None)
 
     def rebuild_recent_solutions_menu(self) -> None:
         """
