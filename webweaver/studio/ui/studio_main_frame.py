@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # pylint: disable=too-many-lines
+import copy
 from dataclasses import dataclass
 import json
 import logging
@@ -1367,17 +1368,19 @@ class StudioMainFrame(wx.Frame):
             context=self._current_solution,
             page_definitions=page_definitions)
 
-        # old_code_gen_path = self._app_settings.code_generators_path
-        if dialog.ShowModal() == wx.ID_OK:
-            pass
-            '''
-            self._settings_manager.save(self._app_settings)
-            if self._app_settings.code_generators_path != old_code_gen_path:
-                self._code_gen_registry.plugin_dir = \
-                    self._app_settings.code_generators_path
-            '''
+        old_solution = copy.deepcopy(self._current_solution)
 
+        dialog_status = dialog.ShowModal()
         dialog.Destroy()
+
+        if dialog_status == wx.ID_OK:
+            if self._current_solution != old_solution:
+                result = SolutionPersistence.save_to_disk(self._current_solution)
+                if result is not SolutionSaveStatus.OK:
+                    wx.MessageBox(result.value,
+                                  "Failed to save solution",
+                                  wx.ICON_ERROR,
+                                  self)
 
     def rebuild_recent_solutions_menu(self) -> None:
         """
