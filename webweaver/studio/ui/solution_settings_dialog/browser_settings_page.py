@@ -192,4 +192,35 @@ class BrowserSettingsPage(SettingsPage):
         return ValidationResult(True)
 
     def apply(self):
-        pass
+        self._context.browser_launch_options.private_mode = \
+            self._private_mode.GetValue()
+        self._context.browser_launch_options.disable_extensions = \
+            self._disable_extensions.GetValue()
+        self._context.browser_launch_options.disable_notifications = \
+            self._disable_notifications.GetValue()
+        self._context.browser_launch_options.ignore_certificate_errors = \
+            self._ignore_cert_errors.GetValue()
+        self._context.browser_launch_options.disable_automation_controlled_feature = \
+            self._disable_automation_controlled_feature.GetValue()
+        self._context.browser_launch_options.user_agent = \
+            self._advanced_user_agent.GetValue()
+
+        # Browser window size : Maximised
+        if self._window_size_maximised.GetValue():
+            self._context.browser_launch_options.maximised = True
+            self._context.browser_launch_options.window_size.width = None
+            self._context.browser_launch_options.window_size.height = None
+
+        # Browser window size : Custom size
+        elif self._window_size_custom.GetValue():
+            self._context.browser_launch_options.maximised = False
+            self._context.browser_launch_options.window_size.width = \
+                self._window_size_width.GetValue()
+            self._context.browser_launch_options.window_size.height = \
+                self._window_size_height.GetValue()
+
+        # Browser window : Default size
+        else:
+            self._context.browser_launch_options.maximised = False
+            self._context.browser_launch_options.window_size.width = None
+            self._context.browser_launch_options.window_size.height = None
