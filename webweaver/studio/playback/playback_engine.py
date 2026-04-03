@@ -115,6 +115,10 @@ class PlaybackEngine:
         """
         return self._stop_event
 
+    @property
+    def context(self) -> PlaybackContext:
+        return self._context
+
     def execute_event(self, event: dict):
         """
         Execute a single playback event.
