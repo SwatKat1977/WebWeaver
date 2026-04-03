@@ -18,11 +18,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import asyncio
-from dataclasses import dataclass
 import json
 from logging import Logger
 import threading
-from typing import Any, Callable, Dict
+from typing import Callable, Dict
 import keyboard
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.action_chains import ActionChains
@@ -32,7 +31,8 @@ from webweaver.studio.api_client import ApiClient
 from webweaver.studio.browsing.studio_browser import (PlaybackStepResult,
                                                       StudioBrowser)
 from webweaver.studio.persistence.recording_document import RestApiBodyType
-from webweaver.studio.playback.playback_context import PlaybackContext, PlaybackVariableError
+from webweaver.studio.playback.playback_context import (PlaybackContext,
+                                                        PlaybackVariableError)
 from webweaver.studio.recording.recording import Recording
 from webweaver.common.assertion import Assertions, AssertionFailure
 from webweaver.common.assertion_operator import (AssertionOperator,
@@ -42,57 +42,44 @@ from webweaver.common.assertion_operator import (AssertionOperator,
                                                  ASSERTION_EXISTENCE_OPERATORS)
 
 
-@dataclass
-class PlaybackCallbackEvents:
+class PlaybackEngine:
     """
-    Container for optional playback lifecycle callbacks.
+    Executes recorded playback events using a StudioBrowser.
 
-    This dataclass groups together a set of callback functions that can be
-    provided by the UI or other controlling code to receive notifications
-    about playback progress and results.
+    The PlaybackEngine is responsible for interpreting and executing a sequence
+    of recorded events from a Recording. Each event is dispatched to a specific
+    handler based on its type, allowing modular and extensible execution logic.
 
-    All callbacks are optional. If a callback is None, it is simply not called.
+    The engine supports browser interactions, assertions, REST API calls,
+    variable handling, and timing controls. All event execution is crash-safe:
+    any unhandled exception is caught and converted into a failed
+    PlaybackStepResult.
 
-    Callbacks:
-
-    - on_step_started(index: int) -> None
-        Called when playback begins executing a step.
-
-    - on_step_passed(index: int) -> None
-        Called when a step completes successfully.
-
-    - on_step_failed(index: int, reason: str) -> None
-        Called when a step fails. The reason string contains a human-readable
-        error message describing the failure.
-
-    - on_playback_finished() -> None
-        Called once playback has finished, either because all steps completed
-        or because playback stopped due to a failure.
+    Attributes:
+        _browser (StudioBrowser): Browser abstraction used for executing DOM and navigation actions.
+        _recording (Recording): The recording containing the list of events to execute.
+        _logger (Logger): Logger instance scoped to the playback engine.
+        _context (PlaybackContext): Runtime context for variable resolution and storage.
+        _hard_assert (Assertions): Assertion handler for hard (failing) assertions.
+        _soft_assert (Assertions): Assertion handler for soft (non-failing) assertions.
+        _stop_event (threading.Event): Event used to signal playback interruption.
+        _event_handlers_map (Dict[str, Callable[[dict], PlaybackStepResult]]):
+            Mapping of event types to their corresponding handler functions.
     """
-    on_step_started: Callable[[int], None] = None
-    on_step_passed: Callable[[int], None] = None
-    on_step_failed: Callable[[int], None] = None
-    on_playback_finished: Callable[[int], None] = None
-
-
-class RecordingPlaybackSession:
-    """
-    Executes a recorded WebWeaver recording step-by-step using a StudioBrowser.
-
-    A RecordingPlaybackSession represents a single playback run over a
-    Recording. It maintains an instruction pointer into the recording's event
-    list and exposes a simple control surface for starting, stopping, and
-    stepping through events one at a time.
-
-    This class is intentionally stateful and UI-friendly: it is designed to be
-    driven by toolbar actions such as Play, Step, Pause, and Stop, and to report
-    failures immediately when an event cannot be executed.
-    """
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(self,
                  browser: StudioBrowser,
                  recording: Recording,
                  logger: Logger):
+        """
+        Initialize a new PlaybackEngine instance.
+
+        Args:
+            browser (StudioBrowser): The browser instance used for executing playback actions.
+            recording (Recording): The recording containing events to be executed.
+            logger (Logger): Base logger used for creating a scoped playback logger.
+        """
         self._browser = browser
         self._recording = recording
         self._logger = logger.getChild(__name__)
@@ -121,9 +108,30 @@ class RecordingPlaybackSession:
 
     @property
     def stop_event(self):
+        """
+        threading.Event: Event used to signal that playback should stop.
+
+        This can be set externally to interrupt long-running operations such as waits.
+        """
         return self._stop_event
 
     def execute_event(self, event: dict):
+        """
+        Execute a single playback event.
+
+        The event is dispatched to a handler based on its "type" field. If no handler
+        is found, the event is treated as a no-op and considered successful.
+
+        This method is crash-safe: any exception raised during execution is caught
+        and returned as a failed PlaybackStepResult.
+
+        Args:
+            event (dict): The event to execute. Must contain a "type" key and
+                optionally a "payload" dictionary.
+
+        Returns:
+            PlaybackStepResult: The result of executing the event.
+        """
         try:
             event_type = event.get("type")
             payload = event.get("payload", {})
@@ -144,6 +152,19 @@ class RecordingPlaybackSession:
     #  --- Assertion Event ---
 
     def _handle_assert(self, payload):
+        """
+        Execute an assertion event.
+
+        Resolves any template variables in the payload and performs the assertion
+        using either a hard or soft assertion handler depending on configuration.
+
+        Args:
+            payload (dict): Assertion configuration including operator, values,
+                and assertion type.
+
+        Returns:
+            PlaybackStepResult: Success if the assertion passes, otherwise failure.
+        """
         operator = payload.get("operator")
         soft_assert: bool = bool(payload.get("soft_assert"))
         left_value = payload.get("left_value")
@@ -200,7 +221,18 @@ class RecordingPlaybackSession:
                                    right_value,
                                    operator: AssertionOperator,
                                    asserter):
+        """
+        Perform a numerical comparison assertion.
 
+        Args:
+            left_value (Any): Left-hand operand.
+            right_value (Any): Right-hand operand.
+            operator (AssertionOperator): The comparison operator.
+            asserter (Assertions): Assertion handler instance.
+
+        Raises:
+            AssertionFailure: If values are not numeric or assertion fails.
+        """
         if operator == AssertionOperator.EQUALS:
             asserter.assert_that(left_value).is_equal_to(right_value)
 
@@ -234,7 +266,18 @@ class RecordingPlaybackSession:
                                  right_value,
                                  operator: AssertionOperator,
                                  asserter):
+        """
+        Perform a string-based assertion.
 
+        Args:
+            left_value (str): Left-hand operand.
+            right_value (str): Right-hand operand.
+            operator (AssertionOperator): The string comparison operator.
+            asserter (Assertions): Assertion handler instance.
+
+        Raises:
+            AssertionFailure: If assertion fails or input is invalid.
+        """
         if operator == AssertionOperator.CONTAINS:
             asserter.assert_that(left_value).contains(right_value)
 
@@ -265,6 +308,17 @@ class RecordingPlaybackSession:
                                   left_value,
                                   operator: AssertionOperator,
                                   asserter):
+        """
+        Perform a boolean assertion.
+
+        Args:
+            left_value (Any): Value to evaluate as boolean.
+            operator (AssertionOperator): Boolean operator.
+            asserter (Assertions): Assertion handler instance.
+
+        Raises:
+            AssertionFailure: If value cannot be interpreted as boolean.
+        """
         left_value_boolean = self._parse_boolean(left_value)
 
         if operator == AssertionOperator.IS_TRUE:
@@ -274,6 +328,21 @@ class RecordingPlaybackSession:
             asserter.assert_that(left_value_boolean).is_false()
 
     def _parse_boolean(self, value: str) -> bool:
+        """
+        Convert a value into a boolean.
+
+        Supports common string representations such as "true", "false", "1", "0",
+        "yes", and "no".
+
+        Args:
+            value (str): Value to convert.
+
+        Returns:
+            bool: Parsed boolean value.
+
+        Raises:
+            AssertionFailure: If the value cannot be interpreted as boolean.
+        """
         if isinstance(value, bool):
             return value
 
@@ -292,6 +361,14 @@ class RecordingPlaybackSession:
                                     left_value,
                                     operator: AssertionOperator,
                                     asserter):
+        """
+        Perform an existence check assertion.
+
+        Args:
+            left_value (Any): Value to check.
+            operator (AssertionOperator): Existence operator.
+            asserter (Assertions): Assertion handler instance.
+        """
         if operator == AssertionOperator.IS_NONE:
             asserter.assert_that(left_value).is_none()
 
@@ -300,19 +377,55 @@ class RecordingPlaybackSession:
 
     #  --- DOM element check ---
     def _handle_dom_check(self, payload):
+        """
+        Execute a DOM check event.
+
+        Args:
+            payload (dict): DOM check parameters.
+
+        Returns:
+            PlaybackStepResult: Result of the check operation.
+        """
         return self._browser.playback_check(payload)
 
     #  --- DOM element Click ---
     def _handle_dom_click(self, payload):
+        """
+        Execute a DOM click event.
+
+        Args:
+            payload (dict): Click parameters.
+
+        Returns:
+            PlaybackStepResult: Result of the click action.
+        """
         return self._browser.playback_click(payload)
 
     #  --- DOM element get ---
     def _handle_dom_get(self, payload):
+        """
+        Retrieve a DOM element or value.
+
+        Args:
+            payload (dict): Element query parameters.
+
+        Returns:
+            PlaybackStepResult: Result containing retrieved data.
+        """
         self._logger.debug("[PLAYBACK EVENT] Element Get: %s", payload)
         return self._browser.playback_get(payload, self._context)
 
     #  --- DOM element select ---
     def _handle_dom_select(self, payload):
+        """
+        Execute a DOM select (dropdown) action.
+
+        Args:
+            payload (dict): Selection parameters including xpath and value.
+
+        Returns:
+            PlaybackStepResult: Result of the select action.
+        """
         updated_payload = payload.copy()
         xpath = updated_payload.get("xpath", "")
         value = updated_payload.get("value", "")
@@ -337,6 +450,15 @@ class RecordingPlaybackSession:
 
     #  --- DOM element type ---
     def _handle_dom_type(self, payload):
+        """
+        Execute a DOM typing action.
+
+        Args:
+            payload (dict): Typing parameters including xpath and value.
+
+        Returns:
+            PlaybackStepResult: Result of the typing action.
+        """
         updated_payload = payload.copy()
         xpath = updated_payload.get("xpath", "")
         value = updated_payload.get("value", "")
@@ -361,6 +483,15 @@ class RecordingPlaybackSession:
 
     #  --- DOM element type ---
     def _handle_nav_goto(self, payload):
+        """
+        Navigate the browser to a specified URL.
+
+        Args:
+            payload (dict): Must contain a "url" key.
+
+        Returns:
+            PlaybackStepResult: Success if navigation succeeds, otherwise failure.
+        """
         url: str = payload.get("url")
         self._logger.debug("[PLAYBACK EVENT] Navigate to '%s'", url)
 
@@ -373,6 +504,19 @@ class RecordingPlaybackSession:
 
     #  --- REST API ---
     def _handle_rest_api(self, payload):
+        """
+        Execute a REST API call.
+
+        Supports GET, POST, and DELETE operations. The result can optionally be
+        stored in the playback context as a variable.
+
+        Args:
+            payload (dict): REST call configuration including URL, method,
+                body, and output variable name.
+
+        Returns:
+            PlaybackStepResult: Result of the API call.
+        """
         # pylint: disable=too-many-return-statements
         call_type = payload.get("call_type")
         base_url = payload.get("base_url")
@@ -459,6 +603,18 @@ class RecordingPlaybackSession:
 
     #  --- Page Scroll ---
     def _handle_scroll(self, payload):
+        """
+        Perform a scroll operation.
+
+        Supports scrolling the page or a specific element to top, bottom,
+        or a custom offset.
+
+        Args:
+            payload (dict): Scroll configuration.
+
+        Returns:
+            PlaybackStepResult: Result of the scroll operation.
+        """
         scroll_type = payload.get("scroll_type")
         scroll_x = payload.get("x_scroll", 0)
         scroll_y = payload.get("y_scroll", 0)
@@ -506,6 +662,18 @@ class RecordingPlaybackSession:
     #  --- Sendkeys ---
 
     def _handle_sendkeys(self, payload):
+        """
+        Execute a sendkeys event.
+
+        Supports both raw keyboard input and Selenium-based input,
+        including modifier combinations.
+
+        Args:
+            payload (dict): Key input configuration.
+
+        Returns:
+            PlaybackStepResult: Result of the sendkeys operation.
+        """
         keys = payload.get("keys", [])
         target = payload.get("target", None)
         raw_mode = payload.get("raw_mode", False)
@@ -598,6 +766,15 @@ class RecordingPlaybackSession:
 
     #  --- User Variable ---
     def _handle_user_variable(self, payload):
+        """
+        Store a user-defined variable in the playback context.
+
+        Args:
+            payload (dict): Contains variable name and value.
+
+        Returns:
+            PlaybackStepResult: Always successful.
+        """
         variable_name = payload.get("name")
         variable_value = payload.get("value")
 
@@ -606,6 +783,17 @@ class RecordingPlaybackSession:
 
     #  --- Wait ---
     def _handle_wait(self, payload):
+        """
+        Pause execution for a specified duration.
+
+        The wait can be interrupted if the stop event is set.
+
+        Args:
+            payload (dict): Contains duration in milliseconds.
+
+        Returns:
+            PlaybackStepResult: Success if completed, failure if interrupted.
+        """
         duration = payload.get("duration_ms")
 
         interrupted = self._stop_event.wait(duration / 1000)
