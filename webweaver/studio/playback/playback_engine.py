@@ -75,10 +75,34 @@ class PlaybackEngine:
         """
         Initialize a new PlaybackEngine instance.
 
+        The PlaybackEngine is responsible for executing individual playback events
+        from a recording. It maintains shared execution state such as the playback
+        context, assertion handlers, and stop signalling, and dispatches events to
+        their corresponding handler methods.
+
         Args:
-            browser (StudioBrowser): The browser instance used for executing playback actions.
-            recording (Recording): The recording containing events to be executed.
-            logger (Logger): Base logger used for creating a scoped playback logger.
+            browser (StudioBrowser): Browser abstraction used to perform all
+                playback interactions (DOM, navigation, etc.).
+            recording (Recording): Recording containing the sequence of events
+                to be executed.
+            logger (Logger): Base logger used to create a scoped logger for
+                playback execution.
+
+        Attributes:
+            _browser (StudioBrowser): Underlying browser used for execution.
+            _recording (Recording): Source recording of playback events.
+            _logger (Logger): Scoped logger for playback diagnostics.
+            _context (PlaybackContext): Execution context used for resolving
+                variables and storing intermediate values.
+            _hard_assert (Assertions): Assertion handler that raises failures
+                immediately.
+            _soft_assert (Assertions): Assertion handler that logs failures
+                without interrupting execution.
+            _stop_event (threading.Event): Event used to signal that playback
+                should stop.
+            _event_handlers_map (Dict[str, Callable[[dict], PlaybackStepResult]]):
+                Mapping of event type strings to their corresponding handler
+                methods.
         """
         self._browser = browser
         self._recording = recording
@@ -117,6 +141,17 @@ class PlaybackEngine:
 
     @property
     def context(self) -> PlaybackContext:
+        """
+        PlaybackContext: The execution context for the current playback session.
+
+        The context is used to:
+        - Resolve template variables within event payloads.
+        - Store variables produced during playback (e.g. API responses).
+        - Share state across multiple playback steps.
+
+        Returns:
+            PlaybackContext: The active playback context instance.
+        """
         return self._context
 
     def execute_event(self, event: dict):

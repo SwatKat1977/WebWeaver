@@ -74,7 +74,7 @@ class RecordingPlaybackSession:
     driven by toolbar actions such as Play, Step, Pause, and Stop, and to report
     failures immediately when an event cannot be executed.
     """
-    # py____lint: ____disable____=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(self,
                  browser: StudioBrowser,
@@ -199,4 +199,3 @@ class RecordingPlaybackSession:
 
             if self.callback_events.on_playback_finished:
                 wx.CallAfter(self.callback_events.on_playback_finished)
-
