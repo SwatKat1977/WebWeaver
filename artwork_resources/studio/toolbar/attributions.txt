@@ -25,3 +25,19 @@ Test Suite Play Icon (testsuite_play.png)
 
 Test Suite Stop Icon (testsuite_stop.png)
 <a href="https://www.flaticon.com/free-icons/option" title="option icons">Option icons created by egorpolyakov - Flaticon</a>
+
+Test Suite Stop
+<a href="https://www.flaticon.com/free-icons/cog-wheel" title="cog wheel icons">Cog wheel icons created by Mehwish - Flaticon</a>
+<a href="https://www.flaticon.com/free-icons/stop-sign" title="stop sign icons">Stop sign icons created by Mehwish - Flaticon</a>
+
+Test Suite Pause
+<a href="https://www.flaticon.com/free-icons/cog-wheel" title="cog wheel icons">Cog wheel icons created by Mehwish - Flaticon</a>
+<a href="https://www.flaticon.com/free-icons/pause" title="pause icons">Pause icons created by Mehwish - Flaticon</a>
+
+Test Suite Play
+<a href="https://www.flaticon.com/free-icons/cog-wheel" title="cog wheel icons">Cog wheel icons created by Mehwish - Flaticon</a>
+<a href="https://www.flaticon.com/free-icons/play-button" title="play button icons">Play button icons created by Mehwish - Flaticon</a>
+
+Test Suite Resume
+<a href="https://www.flaticon.com/free-icons/cog-wheel" title="cog wheel icons">Cog wheel icons created by Mehwish - Flaticon</a>
+<a href="https://www.flaticon.com/free-icons/step" title="step icons">Step icons created by Pixelmeetup - Flaticon</a>
