@@ -16,3 +16,12 @@ Resume Icon
 
 Web Browser Icon
 <a href="https://www.flaticon.com/free-icons/www" title="www icons">Www icons created by Freepik - Flaticon</a>
+
+Test Suite Pause Icon (testsuite_pause.png)
+<a href="https://www.flaticon.com/free-icons/option" title="option icons">Option icons created by egorpolyakov - Flaticon</a>
+
+Test Suite Play Icon (testsuite_play.png)
+<a href="https://www.flaticon.com/free-icons/option" title="option icons">Option icons created by egorpolyakov - Flaticon</a>
+
+Test Suite Stop Icon (testsuite_stop.png)
+<a href="https://www.flaticon.com/free-icons/option" title="option icons">Option icons created by egorpolyakov - Flaticon</a>
