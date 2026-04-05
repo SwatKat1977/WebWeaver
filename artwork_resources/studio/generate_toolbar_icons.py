@@ -62,3 +62,15 @@ png_to_header("toolbar/browser-button.png",
 png_to_header("toolbar/play-button.png",
               "toolbar/toolbar_play_button.py",
               "play_button_icon")
+
+png_to_header("toolbar/testsuite-play.png",
+              "toolbar/toolbar_testsuite_play.py",
+              "testsuite_play_icon")
+
+png_to_header("toolbar/testsuite-pause.png",
+              "toolbar/toolbar_testsuite_pause.py",
+              "testsuite_pause_icon")
+
+png_to_header("toolbar/testsuite-stop.png",
+              "toolbar/toolbar_testsuite_stop.py",
+              "testsuite_stop_icon")
