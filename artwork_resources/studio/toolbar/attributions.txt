@@ -40,4 +40,4 @@ Test Suite Play
 
 Test Suite Resume
 <a href="https://www.flaticon.com/free-icons/cog-wheel" title="cog wheel icons">Cog wheel icons created by Mehwish - Flaticon</a>
-<a href="https://www.flaticon.com/free-icons/step" title="step icons">Step icons created by Pixelmeetup - Flaticon</a>
+<a href="https://www.flaticon.com/free-icons/next" title="next icons">Next icons created by Darius Dan - Flaticon</a>

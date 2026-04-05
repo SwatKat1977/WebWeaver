@@ -74,3 +74,7 @@ png_to_header("toolbar/testsuite-pause.png",
 png_to_header("toolbar/testsuite-stop.png",
               "toolbar/toolbar_testsuite_stop.py",
               "testsuite_stop_icon")
+
+png_to_header("toolbar/testsuite-resume.png",
+              "toolbar/toolbar_testsuite_resume.py",
+              "testsuite_resume_icon")
