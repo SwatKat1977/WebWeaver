@@ -24,12 +24,37 @@ from webweaver.studio.test_suites.test_suite import TestSuite
 
 
 class TestSuiteFactory:
+    """Factory class for creating TestSuite instances from persisted documents.
 
+    This class provides utility methods to construct TestSuite objects from
+    serialized or stored representations, such as TestSuiteDocument instances.
+    """
     # pylint: disable=too-few-public-methods
 
     @staticmethod
     def from_document(suite_document: TestSuiteDocument,
                       solution: StudioSolution) -> TestSuite:
+        """Create a TestSuite instance from a TestSuiteDocument.
+
+        This method extracts relevant data from the provided document and
+        constructs a corresponding TestSuite object. It resolves associated
+        recordings using identifiers stored in the document.
+
+        Args:
+            suite_document (TestSuiteDocument): The document containing the
+                serialized test suite data.
+            solution (StudioSolution): The solution context used to locate and
+                load associated recordings.
+
+        Returns:
+            TestSuite: A constructed TestSuite instance populated with the
+                name and associated recordings.
+
+        Notes:
+            Recording loading is currently not implemented. The method iterates
+            through recording identifiers and is expected to resolve them into
+            Recording instances in a future implementation.
+        """
         data = suite_document.data
 
         name = data.get("name", "Untitled Suite")
