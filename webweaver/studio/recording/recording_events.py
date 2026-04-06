@@ -50,4 +50,3 @@ RemoveRecordingFromTestSuiteEvent = wx.PyEventBinder(
     EVT_REMOVE_RECORDING_FROM_TEST_SUITE, 1)
 TestSuiteSelectedInExplorerEvent = wx.PyEventBinder(
     EVT_TEST_SUITE_SELECTED_IN_EXPLORER, 1)
-

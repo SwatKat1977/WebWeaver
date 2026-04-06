@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from webweaver.studio.persistence.test_suite_document import TestSuiteDocument
-from webweaver.studio.recording.recording import Recording
+# from webweaver.studio.recording.recording import Recording
 from webweaver.studio.studio_solution import StudioSolution
 from webweaver.studio.test_suites.test_suite import TestSuite
 
@@ -33,7 +33,7 @@ class TestSuiteFactory:
 
     @staticmethod
     def from_document(suite_document: TestSuiteDocument,
-                      solution: StudioSolution) -> TestSuite:
+                      _solution: StudioSolution) -> TestSuite:
         """Create a TestSuite instance from a TestSuiteDocument.
 
         This method extracts relevant data from the provided document and

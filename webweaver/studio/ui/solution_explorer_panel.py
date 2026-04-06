@@ -61,17 +61,44 @@ HIDE_DEV_WORK: bool = True
 
 
 class TestSuiteSelectedEvent(wx.PyCommandEvent):
+    """Event representing the selection of a test suite in the UI.
+
+    This custom wxPython event is emitted when a test suite is selected
+    in the explorer. It carries both the UI item and the associated
+    data object representing the selected test suite.
+
+    Attributes:
+        item: The UI element associated with the selected test suite.
+        data: The underlying data object representing the selected test suite.
+    """
+
     def __init__(self, item, data):
+        """Initialize the TestSuiteSelectedEvent.
+
+        Args:
+            item: The UI element (e.g., tree/list item) that was selected.
+            data: The data object associated with the selected test suite.
+        """
         super().__init__(EVT_TEST_SUITE_SELECTED_IN_EXPLORER)
         self._item = item
         self._data = data
 
     @property
     def item(self):
+        """Return the UI item associated with the selected test suite.
+
+        Returns:
+            The UI element corresponding to the selected test suite.
+        """
         return self._item
 
     @property
     def data(self):
+        """Return the data object for the selected test suite.
+
+        Returns:
+            The data model object representing the selected test suite.
+        """
         return self._data
 
 

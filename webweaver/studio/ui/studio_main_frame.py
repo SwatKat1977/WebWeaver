@@ -160,6 +160,7 @@ class StudioMainFrame(wx.Frame):
         behaviour. AUI-managed components are initialised separately
         via :meth:`init_aui`.
         """
+        # pylint: disable=too-many-statements
         super().__init__(
             parent,
             title="Webweaver Automation Studio",
@@ -1945,6 +1946,20 @@ class StudioMainFrame(wx.Frame):
         event.Skip()
 
     def on_test_suite_selection_changed(self, event):
+        """Handle changes to the selected test suite.
+
+        This method is triggered when the test suite selection changes in the UI.
+        It updates the internally tracked selected test suite and refreshes the
+        toolbar state accordingly.
+
+        Args:
+            event: The event object containing selection data. Expected to have
+                a `data` attribute representing the selected test suite.
+
+        Side Effects:
+            Updates `self._selected_test_suite` with the newly selected test suite.
+            Calls `_update_toolbar_state()` to reflect the new selection in the UI.
+        """
         # item = event.item
         data = event.data
 
