@@ -56,7 +56,7 @@ from webweaver.studio.recording.recording_events import (
     RenameTestSuiteEvent,
     AddRecordingToTestSuiteEvent,
     RemoveRecordingFromTestSuiteEvent,
-    SolutionSettingsEvent)
+    SolutionSettingsEvent, TestSuiteSelectedInExplorerEvent)
 from webweaver.studio.recording.recording_session import RecordingSession
 from webweaver.studio.recording.recording_event_type import RecordingEventType
 from webweaver.studio.recording.recording_loader import \
@@ -182,6 +182,7 @@ class StudioMainFrame(wx.Frame):
         self._logger.addHandler(handler)
         self._closing_solution = False
         self.menu_items: StudioMainFrameMenuItems = StudioMainFrameMenuItems()
+        self._selected_test_suite = None
 
         self._toolbar = None
         """The main application toolbar (AUI-managed)."""
@@ -252,6 +253,9 @@ class StudioMainFrame(wx.Frame):
             "toolbox": self.menu_items.view_recording_toolbox_visible
         }
         self._update_view_menu_state()
+
+        self.Bind(TestSuiteSelectedInExplorerEvent,
+                  self.on_test_suite_selection_changed)
 
         # Register step editors for a recording
         register_step_editors()
@@ -1468,6 +1472,8 @@ class StudioMainFrame(wx.Frame):
                 can_add_step = True
                 can_delete_step = step_selected
 
+            can_play_test_suite = self._selected_test_suite is not None
+
             state = ToolbarState(can_close=True,
                                  can_inspect=browser_is_alive,
                                  can_record=browser_is_alive,
@@ -1478,7 +1484,8 @@ class StudioMainFrame(wx.Frame):
                                  can_stop_playback=False,
                                  can_add_recording_step=can_add_step,
                                  can_edit_recording_step=can_edit_step,
-                                 can_delete_recording_step=can_delete_step)
+                                 can_delete_recording_step=can_delete_step,
+                                 can_play_test_suite=can_play_test_suite)
 
         elif self._current_state == StudioState.RECORDING_RUNNING:
             state = ToolbarState(can_record=True,
@@ -1936,3 +1943,12 @@ class StudioMainFrame(wx.Frame):
 
         wx.CallAfter(sync)
         event.Skip()
+
+    def on_test_suite_selection_changed(self, event):
+        # item = event.item
+        data = event.data
+
+        self._selected_test_suite = data
+
+        print("Selected:", data, dir(data))
+        self._update_toolbar_state()
