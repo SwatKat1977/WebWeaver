@@ -41,9 +41,12 @@ EVT_NEW_TEST_SUITE = wx.NewEventType()
 EVT_DELETE_TEST_SUITE = wx.NewEventType()
 EVT_RENAME_TEST_SUITE = wx.NewEventType()
 EVT_REMOVE_RECORDING_FROM_TEST_SUITE = wx.NewEventType()
+EVT_TEST_SUITE_SELECTED_IN_EXPLORER = wx.NewEventType()
 
 NewTestSuiteEvent = wx.PyEventBinder(EVT_NEW_TEST_SUITE, 1)
 DeleteTestSuiteEvent = wx.PyEventBinder(EVT_DELETE_TEST_SUITE, 1)
 RenameTestSuiteEvent = wx.PyEventBinder(EVT_RENAME_TEST_SUITE, 1)
 RemoveRecordingFromTestSuiteEvent = wx.PyEventBinder(
     EVT_REMOVE_RECORDING_FROM_TEST_SUITE, 1)
+TestSuiteSelectedInExplorerEvent = wx.PyEventBinder(
+    EVT_TEST_SUITE_SELECTED_IN_EXPLORER, 1)

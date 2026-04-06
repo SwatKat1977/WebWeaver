@@ -17,20 +17,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from webweaver.studio.recording.recording import Recording
 
-# Semantic version components
-MAJOR = 0
-MINOR = 3
-PATCH = 0
 
-# e.g. "alpha", "beta", "rc1", or None
-PRE_RELEASE = "Dev-7"
+class TestSuite:
+    """In-memory representation of a test suite."""
+    # pylint: disable=too-few-public-methods
 
-# Version tuple for comparisons
-VERSION = (MAJOR, MINOR, PATCH, PRE_RELEASE)
-
-# Construct the string representation
-__version__ = f"V{MAJOR}.{MINOR}.{PATCH}"
-
-if PRE_RELEASE:
-    __version__ += f"-{PRE_RELEASE}"
+    def __init__(self, name: str, recordings: list[Recording]):
+        self.name: str = name
+        self.recordings: list[Recording] = recordings

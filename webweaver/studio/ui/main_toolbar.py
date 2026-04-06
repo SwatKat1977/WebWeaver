@@ -32,7 +32,11 @@ from webweaver.studio.toolbar_icons import (
     load_toolbar_stop_record_icon,
     load_toolbar_add_step_icon,
     load_toolbar_edit_step_icon,
-    load_toolbar_delete_step_icon)
+    load_toolbar_delete_step_icon,
+    load_toolbar_testsuite_play_icon,
+    load_toolbar_testsuite_stop_icon,
+    load_toolbar_testsuite_pause_icon,
+    load_toolbar_testsuite_resume_icon)
 from .playback_toolbar_icons import (
     load_playback_toolbar_pause_icon,
     load_playback_toolbar_play_icon,
@@ -79,6 +83,12 @@ TOOLBAR_ID_RECORDING_DELETE_STEP: int = wx.ID_HIGHEST + 12
 TOOLBAR_ID_RECORDING_EDIT_STEP: int = wx.ID_HIGHEST + 13
 """Toolbar command ID for editing a recording step."""
 
+TOOLBAR_ID_TESTSUITE_START_STOP: int = wx.ID_HIGHEST + 14
+"""Toolbar command ID for starting/stopping a test suite playback."""
+
+TOOLBAR_ID_TESTSUITE_PAUSE: int = wx.ID_HIGHEST + 15
+"""Toolbar command ID for pausing a test suite playback."""
+
 
 @dataclass(frozen=True)
 class ToolbarState:
@@ -117,6 +127,12 @@ class ToolbarState:
     can_add_recording_step: bool = False
     can_edit_recording_step: bool = False
     can_delete_recording_step: bool = False
+
+    # Test Suite functionality
+    can_play_test_suite: bool = False
+    can_pause_test_suite: bool = False
+    is_testsuite_running: bool = False
+    is_testsuite_paused: bool = False
 
 
 class MainToolbar:
@@ -236,6 +252,21 @@ class MainToolbar:
             "",
             load_toolbar_delete_step_icon(),
             "Delete Step")
+
+        # --- Test Suites Group ---
+        toolbar.AddSeparator()
+
+        toolbar.AddTool(
+            TOOLBAR_ID_TESTSUITE_START_STOP,
+            "",
+            load_toolbar_testsuite_play_icon(),
+            "Start test suite playback")
+
+        toolbar.AddTool(
+            TOOLBAR_ID_TESTSUITE_PAUSE,
+            "",
+            load_toolbar_testsuite_pause_icon(),
+            "Pause test suite playback")
 
         toolbar.Realize()
 
@@ -372,6 +403,46 @@ class MainToolbar:
                            toolbar_state.can_edit_recording_step)
         toolbar.EnableTool(TOOLBAR_ID_RECORDING_DELETE_STEP,
                            toolbar_state.can_delete_recording_step)
+
+        # Test Suites enable/disable
+
+        is_testsuite_running = False if not toolbar_state.can_play_test_suite \
+            else toolbar_state.is_testsuite_running
+
+        is_testsuite_paused = False if not toolbar_state.can_pause_test_suite \
+            else toolbar_state.is_testsuite_paused
+
+        # Test Suite start/stop toolbar icon
+        if is_testsuite_running:
+            toolbar.SetToolBitmap(TOOLBAR_ID_TESTSUITE_START_STOP,
+                                  load_toolbar_testsuite_stop_icon())
+            toolbar.SetToolShortHelp(TOOLBAR_ID_PAUSE_RECORD,
+                                     "Stop Test Suite playback")
+
+        else:
+            toolbar.SetToolBitmap(TOOLBAR_ID_TESTSUITE_START_STOP,
+                                  load_toolbar_testsuite_play_icon())
+            toolbar.SetToolShortHelp(TOOLBAR_ID_PAUSE_RECORD,
+                                     "Start Test Suite playback")
+
+        toolbar.EnableTool(TOOLBAR_ID_TESTSUITE_START_STOP,
+                           toolbar_state.can_play_test_suite)
+
+        # Test Suite pause/resume toolbar icon
+        if is_testsuite_paused:
+            toolbar.SetToolBitmap(TOOLBAR_ID_TESTSUITE_PAUSE,
+                                  load_toolbar_testsuite_resume_icon())
+            toolbar.SetToolShortHelp(TOOLBAR_ID_TESTSUITE_PAUSE,
+                                     "Resume Test Suite playback")
+
+        else:
+            toolbar.SetToolBitmap(TOOLBAR_ID_TESTSUITE_PAUSE,
+                                  load_toolbar_testsuite_pause_icon())
+            toolbar.SetToolShortHelp(TOOLBAR_ID_PAUSE_RECORD,
+                                     "Pause Test Suite playback")
+
+        toolbar.EnableTool(TOOLBAR_ID_TESTSUITE_PAUSE,
+                           toolbar_state.can_pause_test_suite)
 
         toolbar.Realize()
         toolbar.Refresh()

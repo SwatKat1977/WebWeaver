@@ -32,6 +32,10 @@ from .resources.toolbar.toolbar_browser_button import BROWSER_BUTTON_ICON
 from .resources.toolbar.add_step import ADD_STEP_ICON
 from .resources.toolbar.delete_step import DELETE_STEP_ICON
 from .resources.toolbar.edit_step import EDIT_STEP_ICON
+from .resources.toolbar.toolbar_testsuite_pause import TESTSUITE_PAUSE_ICON
+from .resources.toolbar.toolbar_testsuite_play import TESTSUITE_PLAY_ICON
+from .resources.toolbar.toolbar_testsuite_stop import TESTSUITE_STOP_ICON
+from .resources.toolbar.toolbar_testsuite_resume import TESTSUITE_RESUME_ICON
 
 
 def _load_toolbar_icon(png_bytes: bytes) -> wx.Bitmap:
@@ -202,3 +206,51 @@ def load_toolbar_edit_step_icon() -> wx.Bitmap:
         The toolbar icon.
     """
     return _load_toolbar_icon(EDIT_STEP_ICON)
+
+
+def load_toolbar_testsuite_play_icon() -> wx.Bitmap:
+    """
+    Load the toolbar icon used for starting test suite playback.
+
+    Returns
+    -------
+    wx.Bitmap
+        The toolbar icon.
+    """
+    return _load_toolbar_icon(TESTSUITE_PLAY_ICON)
+
+
+def load_toolbar_testsuite_pause_icon() -> wx.Bitmap:
+    """
+    Load the toolbar icon used for pausing test suite playback.
+
+    Returns
+    -------
+    wx.Bitmap
+        The toolbar icon.
+    """
+    return _load_toolbar_icon(TESTSUITE_PAUSE_ICON)
+
+
+def load_toolbar_testsuite_stop_icon() -> wx.Bitmap:
+    """
+    Load the toolbar icon used for stopping test suite playback.
+
+    Returns
+    -------
+    wx.Bitmap
+        The toolbar icon.
+    """
+    return _load_toolbar_icon(TESTSUITE_STOP_ICON)
+
+
+def load_toolbar_testsuite_resume_icon() -> wx.Bitmap:
+    """
+    Load the toolbar icon used for resume test suite playback.
+
+    Returns
+    -------
+    wx.Bitmap
+        The toolbar icon.
+    """
+    return _load_toolbar_icon(TESTSUITE_RESUME_ICON)
