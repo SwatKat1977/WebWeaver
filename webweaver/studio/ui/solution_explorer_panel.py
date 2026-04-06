@@ -419,6 +419,7 @@ class SolutionExplorerPanel(wx.Panel):
                   id=ID_CONTEXT_MENU_SOLUTION_SETTINGS)
 
         self.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
+        self.Bind(wx.EVT_TREE_SEL_CHANGING, self._on_selection_changing)
 
         # Drag and drop
         self._tree.Bind(wx.EVT_TREE_BEGIN_DRAG, self._on_begin_drag)
@@ -760,6 +761,28 @@ class SolutionExplorerPanel(wx.Panel):
 
         if data.node_type == ExplorerNodeType.TEST_SUITES_FILTER:
             evt = TestSuiteSelectedEvent(item, data)
+            evt.SetEventObject(self)
+
+            wx.PostEvent(self, evt)
+
+        event.Skip()
+
+    def _on_selection_changing(self, event):
+        old_item = event.GetOldItem()
+
+        if not old_item or not old_item.IsOk():
+            event.Skip()
+            return
+
+        data = self._tree.GetItemData(old_item)
+
+        # Ignore group nodes (no data)
+        if not data:
+            event.Skip()
+            return
+
+        if data.node_type == ExplorerNodeType.TEST_SUITES_FILTER:
+            evt = TestSuiteSelectedEvent(None, None)
             evt.SetEventObject(self)
 
             wx.PostEvent(self, evt)
