@@ -31,7 +31,8 @@ from webweaver.studio.recording.recording_events import (
     EVT_RENAME_TEST_SUITE,
     EVT_ADD_RECORDING_TO_TEST_SUITE,
     EVT_REMOVE_RECORDING_FROM_TEST_SUITE,
-    EVT_SOLUTION_SETTINGS)
+    EVT_SOLUTION_SETTINGS,
+    EVT_TEST_SUITE_SELECTED_IN_EXPLORER)
 from webweaver.studio.recording_metadata import RecordingMetadata
 from webweaver.studio.studio_solution import StudioSolution
 from webweaver.studio.solution_explorer_node_data import (
@@ -57,6 +58,21 @@ ID_CONTEXT_MENU_SOLUTION_SETTINGS = wx.ID_HIGHEST + 3007
 
 
 HIDE_DEV_WORK: bool = True
+
+
+class TestSuiteSelectedEvent(wx.PyCommandEvent):
+    def __init__(self, item, data):
+        super().__init__(EVT_TEST_SUITE_SELECTED_IN_EXPLORER)
+        self._item = item
+        self._data = data
+
+    @property
+    def item(self):
+        return self._item
+
+    @property
+    def data(self):
+        return self._data
 
 
 class SolutionExplorerPanel(wx.Panel):
@@ -402,6 +418,8 @@ class SolutionExplorerPanel(wx.Panel):
                   self._on_solution_settings,
                   id=ID_CONTEXT_MENU_SOLUTION_SETTINGS)
 
+        self.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
+
         # Drag and drop
         self._tree.Bind(wx.EVT_TREE_BEGIN_DRAG, self._on_begin_drag)
         self._tree.Bind(wx.EVT_TREE_END_DRAG, self._on_end_drag)
@@ -726,3 +744,24 @@ class SolutionExplorerPanel(wx.Panel):
     def _on_solution_settings(self, _event: wx.CommandEvent) -> None:
         evt = wx.CommandEvent(EVT_SOLUTION_SETTINGS)
         wx.PostEvent(self.GetParent(), evt)
+
+    def _on_selection_changed(self, event):
+        item = event.GetItem()
+
+        if not item or not item.IsOk():
+            return
+
+        data = self._tree.GetItemData(item)
+
+        # Ignore group nodes (no data)
+        if not data:
+            event.Skip()
+            return
+
+        if data.node_type == ExplorerNodeType.TEST_SUITES_FILTER:
+            evt = TestSuiteSelectedEvent(item, data)
+            evt.SetEventObject(self)
+
+            wx.PostEvent(self, evt)
+
+        event.Skip()
