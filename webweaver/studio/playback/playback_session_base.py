@@ -141,6 +141,7 @@ class PlaybackSessionBase:
         naturally after the current step completes.
         """
         self._running = False
+        self._on_stop()
 
     def step(self) -> bool:
         """Executes a single playback step.
@@ -230,3 +231,7 @@ class PlaybackSessionBase:
             NotImplementedError: If not implemented by subclass.
         """
         raise NotImplementedError
+
+    def _on_stop(self):
+        """Optional override for subclasses"""
+        pass
