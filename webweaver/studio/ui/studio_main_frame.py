@@ -1135,6 +1135,16 @@ class StudioMainFrame(wx.Frame):
                 self)
             return
 
+        if self._state_controller.state in \
+                (StudioState.TESTSUITE_PLAYBACK_RUNNING,
+                 StudioState.TESTSUITE_PLAYBACK_PAUSED):
+            wx.MessageBox(
+                "Stop test suite playback before renaming recordings.",
+                "Rename Recording",
+                wx.ICON_WARNING,
+                self)
+            return
+
         recording = self._solution_explorer_panel.get_selected_metadata()
 
         dlg: wx.TextEntryDialog = wx.TextEntryDialog(
@@ -1174,6 +1184,16 @@ class StudioMainFrame(wx.Frame):
             wx.MessageBox(
                 "You cannot delete recordings while a recording session is "
                 "active.\n\nStop the recording first.",
+                "Delete Recording",
+                wx.ICON_WARNING,
+                self)
+            return
+
+        if self._state_controller.state in \
+                (StudioState.TESTSUITE_PLAYBACK_RUNNING,
+                 StudioState.TESTSUITE_PLAYBACK_PAUSED):
+            wx.MessageBox(
+                "Stop test suite playback before deleting a recording.",
                 "Delete Recording",
                 wx.ICON_WARNING,
                 self)
@@ -1259,6 +1279,16 @@ class StudioMainFrame(wx.Frame):
                 self)
             return
 
+        if self._state_controller.state in \
+                (StudioState.TESTSUITE_PLAYBACK_RUNNING,
+                 StudioState.TESTSUITE_PLAYBACK_PAUSED):
+            wx.MessageBox(
+                "Stop test suite playback before deleting a test suite.",
+                "Delete Test Suite",
+                wx.ICON_WARNING,
+                self)
+            return
+
         path = Path(evt.GetClientData())
         if not path or not self._current_solution:
             return
@@ -1290,6 +1320,16 @@ class StudioMainFrame(wx.Frame):
                                             StudioState.RECORDING_PAUSED):
             wx.MessageBox(
                 "Stop recording before renaming a test suite",
+                "Rename Test Suite",
+                wx.ICON_WARNING,
+                self)
+            return
+
+        if self._state_controller.state in \
+                (StudioState.TESTSUITE_PLAYBACK_RUNNING,
+                 StudioState.TESTSUITE_PLAYBACK_PAUSED):
+            wx.MessageBox(
+                "Stop test suite playback before rename a test suite.",
                 "Rename Test Suite",
                 wx.ICON_WARNING,
                 self)
@@ -1334,6 +1374,16 @@ class StudioMainFrame(wx.Frame):
                                             StudioState.RECORDING_PAUSED):
             wx.MessageBox(
                 "Stop recording before removing a recording from a test suite",
+                "Remove Recording From Test Suite",
+                wx.ICON_WARNING,
+                self)
+            return
+
+        if self._state_controller.state in \
+                (StudioState.TESTSUITE_PLAYBACK_RUNNING,
+                 StudioState.TESTSUITE_PLAYBACK_PAUSED):
+            wx.MessageBox(
+                "Stop test suite before removing a recording from a test suite",
                 "Remove Recording From Test Suite",
                 wx.ICON_WARNING,
                 self)

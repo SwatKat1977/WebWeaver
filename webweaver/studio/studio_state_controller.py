@@ -32,6 +32,8 @@ class StudioState(enum.Enum):
     INSPECTING = enum.auto()
     RECORDING_PLAYBACK_RUNNING = enum.auto()
     RECORDING_PLAYBACK_PAUSED = enum.auto()
+    TESTSUITE_PLAYBACK_RUNNING = enum.auto()
+    TESTSUITE_PLAYBACK_PAUSED = enum.auto()
 
 
 StateChangedCallback = Callable[[StudioState], None]
@@ -173,6 +175,25 @@ class StudioStateController:
         indicating that playback execution is suspended but can be resumed.
         """
         self._set_state(StudioState.RECORDING_PLAYBACK_PAUSED)
+
+    def on_testsuite_playback_running(self) -> None:
+        """
+        Notify the controller that test suite playback has started or resumed.
+
+        Transitions the studio into the TESTSUITE_PLAYBACK_RUNNING state,
+        indicating that automated test suite execution is currently in progress.
+        """
+        self._set_state(StudioState.TESTSUITE_PLAYBACK_RUNNING)
+
+    def on_testsuite_playback_paused(self) -> None:
+        """
+        Notify the controller that test suite playback has been paused.
+
+        Transitions the studio into the TESTSUITE_PLAYBACK_PAUSED state,
+        indicating that test suite execution is temporarily suspended but can
+        be resumed.
+        """
+        self._set_state(StudioState.TESTSUITE_PLAYBACK_PAUSED)
 
     def _set_state(self, new_state: StudioState) -> None:
         """
