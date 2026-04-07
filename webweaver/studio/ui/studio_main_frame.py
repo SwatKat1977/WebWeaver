@@ -1887,6 +1887,23 @@ class StudioMainFrame(wx.Frame):
 
         page.delete_step(index)
 
+    def on_testsuite_playback_start_stop(self, _evt):
+        print("[DEBUG] on_testsuite_playback_start_stop")
+        if self._state_controller.state in (
+                StudioState.TESTSUITE_PLAYBACK_RUNNING,
+                StudioState.TESTSUITE_PLAYBACK_PAUSED):
+            print("[DEBUG] Stop Test Suite playback code goes here...")
+
+        elif self._state_controller.state == StudioState.SOLUTION_LOADED:
+            print("[DEBUG] Start Test Suite playback code goes here...")
+
+        else:
+            print("[DEBUG] Incorrect state for Test Suite playback code goes here...")
+
+    def on_testsuite_playback_pause_resume(self, _evt):
+        print("[DEBUG] on_testsuite_playback_pause_resume")
+        pass
+
     def _on_playback_step_started(self, index: int):
         viewer = self._workspace_panel.get_active_viewer()
         if viewer:
