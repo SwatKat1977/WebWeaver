@@ -18,20 +18,28 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from logging import Logger
+from webweaver.studio.browsing.studio_browser import StudioBrowser
+from webweaver.studio.playback.playback_session_base import PlaybackSessionBase
+from webweaver.studio.test_suites.test_suite import TestSuite
 
-class TestSuitePlaybackSession:
+class TestSuitePlaybackSession(PlaybackSessionBase):
 
     def __init__(self,
                  browser: StudioBrowser,
-                 recording: Recording,
+                 suite: TestSuite,
                  logger: Logger):
+        super().__init__(logger)
         self._browser = browser
-        self._recording = recording
-        self._index = 0
-        self._running = False
-        self._logger = logger.getChild(__name__)
-        # self.callback_events = PlaybackCallbackEvents()
-        self._thread = None
-        self._engine: PlaybackEngine = PlaybackEngine(browser,
-                                                      recording,
-                                                      logger)
+        self._suite = suite
+        # self._engine: PlaybackEngine = PlaybackEngine(browser,
+        #                                               recording,
+        #                                               logger)
+
+    def _get_step_count(self):
+        return 0
+        # return len(self._suite. steps)
+
+    def _execute_step(self, index):
+        return
+        # step = self._suite.steps[index]
+        # return self._engine.execute_test(step)
