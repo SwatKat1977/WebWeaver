@@ -42,6 +42,9 @@ EVT_DELETE_TEST_SUITE = wx.NewEventType()
 EVT_RENAME_TEST_SUITE = wx.NewEventType()
 EVT_REMOVE_RECORDING_FROM_TEST_SUITE = wx.NewEventType()
 EVT_TEST_SUITE_SELECTED_IN_EXPLORER = wx.NewEventType()
+EVT_TEST_SUITE_PLAYBACK_STARTED = wx.NewEventType()
+EVT_TEST_SUITE_PLAYBACK_PAUSED = wx.NewEventType()
+EVT_TEST_SUITE_PLAYBACK_STOPPED = wx.NewEventType()
 
 NewTestSuiteEvent = wx.PyEventBinder(EVT_NEW_TEST_SUITE, 1)
 DeleteTestSuiteEvent = wx.PyEventBinder(EVT_DELETE_TEST_SUITE, 1)
@@ -50,3 +53,9 @@ RemoveRecordingFromTestSuiteEvent = wx.PyEventBinder(
     EVT_REMOVE_RECORDING_FROM_TEST_SUITE, 1)
 TestSuiteSelectedInExplorerEvent = wx.PyEventBinder(
     EVT_TEST_SUITE_SELECTED_IN_EXPLORER, 1)
+TestSuitePlaybackStartedEvent = wx.PyEventBinder(
+    EVT_TEST_SUITE_PLAYBACK_STARTED, 1)
+TestSuitePlaybackPausedEvent = wx.PyEventBinder(
+    EVT_TEST_SUITE_PLAYBACK_PAUSED, 1)
+TestSuitePlaybackStoppedEvent = wx.PyEventBinder(
+    EVT_TEST_SUITE_PLAYBACK_STOPPED, 1)
