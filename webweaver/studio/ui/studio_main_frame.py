@@ -1902,7 +1902,6 @@ class StudioMainFrame(wx.Frame):
 
     def on_testsuite_playback_pause_resume(self, _evt):
         print("[DEBUG] on_testsuite_playback_pause_resume")
-        pass
 
     def _on_playback_step_started(self, index: int):
         viewer = self._workspace_panel.get_active_viewer()
