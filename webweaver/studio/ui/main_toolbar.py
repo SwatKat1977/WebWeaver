@@ -318,6 +318,14 @@ class MainToolbar:
                      frame.on_recording_step_edit,
                      id=TOOLBAR_ID_RECORDING_EDIT_STEP)
 
+        # --- Bind test suite playback events ---
+        toolbar.Bind(wx.EVT_TOOL,
+                     frame.on_testsuite_playback_start_stop,
+                     id=TOOLBAR_ID_TESTSUITE_START_STOP)
+        toolbar.Bind(wx.EVT_TOOL,
+                     frame.on_testsuite_playback_pause_resume,
+                     id=TOOLBAR_ID_TESTSUITE_PAUSE)
+
         frame.aui_manager.AddPane(
             toolbar,
             wx.aui.AuiPaneInfo()

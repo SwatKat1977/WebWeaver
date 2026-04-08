@@ -1887,6 +1887,41 @@ class StudioMainFrame(wx.Frame):
 
         page.delete_step(index)
 
+    def on_testsuite_playback_start_stop(self, _evt):
+        """Handles start/stop actions for test suite playback.
+
+        This method acts as a toggle based on the current application state:
+
+        - If playback is running or paused, it initiates a stop action.
+        - If a solution is loaded, it initiates playback start.
+        - For all other states, the action is considered invalid.
+
+        Args:
+            _evt (wx.Event): The UI event that triggered the handler. Unused.
+        """
+        print("[DEBUG] on_testsuite_playback_start_stop")
+        if self._state_controller.state in (
+                StudioState.TESTSUITE_PLAYBACK_RUNNING,
+                StudioState.TESTSUITE_PLAYBACK_PAUSED):
+            print("[DEBUG] Stop Test Suite playback code goes here...")
+
+        elif self._state_controller.state == StudioState.SOLUTION_LOADED:
+            print("[DEBUG] Start Test Suite playback code goes here...")
+
+        else:
+            print("[DEBUG] Incorrect state for Test Suite playback code goes here...")
+
+    def on_testsuite_playback_pause_resume(self, _evt):
+        """Handles pause/resume actions for test suite playback.
+
+        This method is intended to toggle playback between paused and running
+        states depending on the current playback status.
+
+        Args:
+            _evt (wx.Event): The UI event that triggered the handler. Unused.
+        """
+        print("[DEBUG] on_testsuite_playback_pause_resume")
+
     def _on_playback_step_started(self, index: int):
         viewer = self._workspace_panel.get_active_viewer()
         if viewer:
