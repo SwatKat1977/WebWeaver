@@ -17,6 +17,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+from pathlib import Path
+
 import wx
 from webweaver.studio.studio_solution import StudioSolution
 from webweaver.studio.ui.framework.settings_page import SettingsPage, ValidationResult
@@ -99,6 +101,18 @@ class GeneralSettingsPage(SettingsPage):
             self._screenshot_policy.Append(label, clientData=policy)
         content.Add(self._screenshot_policy, 0, wx.EXPAND | wx.BOTTOM, 12)
 
+        # --- Screenshots Directory Section ---
+        label = wx.StaticText(self,
+                              label="Screenshots Directory")
+        font = label.GetFont()
+        font = font.Bold()
+        label.SetFont(font)
+        content.Add(label, 0, wx.BOTTOM, 6)
+
+        self._screenshots_dir = wx.DirPickerCtrl(
+            self, message="Select code generator directory")
+        content.Add(self._screenshots_dir, 0, wx.EXPAND)
+
         # Add content with clean outer padding
         outer.Add(content, 0, wx.ALL | wx.EXPAND, 20)
 
@@ -120,6 +134,9 @@ class GeneralSettingsPage(SettingsPage):
         index = choices.index(label)
         self._screenshot_policy.SetSelection(index)
 
+        screenshots_dir = Path(self._context.screenshots_directory).absolute()
+        self._screenshots_dir.SetPath(str(screenshots_dir))
+
     def validate(self) -> ValidationResult:
         """Validate user input on the page.
 
@@ -134,6 +151,14 @@ class GeneralSettingsPage(SettingsPage):
                 message="Base URL is a required field",
                 focus=self._base_url)
 
+        screenshots_dir = Path(self._screenshots_dir.GetPath()).absolute()
+
+        if not screenshots_dir.is_dir():
+            return ValidationResult(
+                ok=False,
+                message="Screenshots directory isn't a valid directory",
+                focus=self._screenshots_dir)
+
         return ValidationResult(True)
 
     def apply(self):
@@ -145,3 +170,5 @@ class GeneralSettingsPage(SettingsPage):
         selection_index = self._screenshot_policy.GetSelection()
         policy = self._screenshot_policy.GetClientData(selection_index)
         self._context.default_screenshots_policy = policy
+
+        self._context.screenshots_directory = str(self._screenshots_dir.GetPath())
