@@ -119,6 +119,7 @@ class StudioSolution:
     recordings_cache: typing.Dict[str, RecordingMetadata] = \
         dataclasses.field(default_factory=dict)
     default_screenshots_policy: str = 'off'
+    screenshots_directory: str = '.'
 
     def to_json(self):
         """
@@ -137,7 +138,8 @@ class StudioSolution:
                 "launchBrowserAutomatically": self.launch_browser_automatically
             },
             "browserLaunchOptions": self.browser_launch_options.to_json(),
-            "default_screenshots_policy": self.default_screenshots_policy
+            "default_screenshots_policy": self.default_screenshots_policy,
+            "screenshots_directory": self.screenshots_directory
         }
 
     @staticmethod
@@ -176,6 +178,20 @@ class StudioSolution:
 
         default_screenshots_policy = raw.get("default_screenshots_policy")
 
+        if "screenshots_directory" not in raw:
+            raw["screenshots_directory"] = "."
+
+        screenshots_directory: Path = Path(raw.get("screenshots_directory"))
+
+        if not screenshots_directory.is_dir():
+            wx.MessageBox(
+                "The screenshots directory is not valid.\n"
+                "Defaulting the location, please check it.",
+                "Solution validation error",
+                wx.ICON_WARNING)
+            raw["screenshots_directory"] = "."
+            screenshots_directory = Path(raw.get("screenshots_directory"))
+
         required = [
             "solutionName",
             "solutionDirectoryCreated",
@@ -202,7 +218,8 @@ class StudioSolution:
             selected_browser=str(raw_solution["browser"]),
             launch_browser_automatically=bool(raw_solution["launchBrowserAutomatically"]),
             browser_launch_options=launch_options,
-            default_screenshots_policy=default_screenshots_policy
+            default_screenshots_policy=default_screenshots_policy,
+            screenshots_directory=str(screenshots_directory)
         )
 
         return SolutionLoadResult(solution, SolutionLoadError.NONE_)
