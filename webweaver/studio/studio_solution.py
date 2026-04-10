@@ -58,6 +58,12 @@ class SolutionLoadError(enum.Enum):
     MISSING_REQUIRED_FIELD = enum.auto()
 
 
+class ScreenshotPolicy(enum.Enum):
+    OFF = "off"
+    ON_FAILURE = "on_failure"
+    ALL_STEPS = "all_steps"
+
+
 @dataclasses.dataclass
 class SolutionLoadResult:
     """
@@ -92,6 +98,7 @@ class StudioSolution:
     browser_launch_options: BrowserLaunchOptions
     recordings_cache: typing.Dict[str, RecordingMetadata] = \
         dataclasses.field(default_factory=dict)
+    default_screenshots_policy: str = 'off'
 
     def to_json(self):
         """
@@ -110,6 +117,7 @@ class StudioSolution:
                 "launchBrowserAutomatically": self.launch_browser_automatically
             },
             "browserLaunchOptions": self.browser_launch_options.to_json(),
+            "default_screenshots_policy": self.default_screenshots_policy
         }
 
     @staticmethod
@@ -143,6 +151,11 @@ class StudioSolution:
         if not isinstance(raw_solution, dict):
             return SolutionLoadResult(None, SolutionLoadError.MISSING_SOLUTION_OBJECT)
 
+        if "default_screenshots_policy" not in raw:
+            raw["default_screenshots_policy"] = "off"
+
+        default_screenshots_policy = raw.get("default_screenshots_policy")
+
         required = [
             "solutionName",
             "solutionDirectoryCreated",
@@ -169,6 +182,7 @@ class StudioSolution:
             selected_browser=str(raw_solution["browser"]),
             launch_browser_automatically=bool(raw_solution["launchBrowserAutomatically"]),
             browser_launch_options=launch_options,
+            default_screenshots_policy=default_screenshots_policy
         )
 
         return SolutionLoadResult(solution, SolutionLoadError.NONE_)

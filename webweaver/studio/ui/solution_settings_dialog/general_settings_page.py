@@ -18,8 +18,17 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import wx
-from webweaver.studio.studio_solution import StudioSolution
+from webweaver.studio.studio_solution import StudioSolution, ScreenshotPolicy
 from webweaver.studio.ui.framework.settings_page import SettingsPage, ValidationResult
+
+
+SCREENSHOT_POLICY_LABELS = {
+    "off": "Off",
+    "on_failure": "On Failure",
+    "all_steps": "All Steps"
+}
+
+LABEL_TO_SCREENSHOT_POLICY = {v: k for k, v in SCREENSHOT_POLICY_LABELS.items()}
 
 
 class GeneralSettingsPage(SettingsPage):
@@ -77,6 +86,19 @@ class GeneralSettingsPage(SettingsPage):
             label="Launch Browser Automatically")
         content.Add(self._browser_automatic_checkbox, 0, wx.BOTTOM, 10)
 
+        # ---- Screenshot policy section ----
+        screeshot_label = wx.StaticText(self,
+                                        label="Default screenshot policy")
+        font = label.GetFont()
+        font = font.Bold()
+        screeshot_label.SetFont(font)
+        content.Add(screeshot_label, 0, wx.BOTTOM, 6)
+
+        self._screenshot_policy = wx.Choice(self)
+        for policy, label in SCREENSHOT_POLICY_LABELS.items():
+            self._screenshot_policy.Append(label, clientData=policy)
+        content.Add(self._screenshot_policy, 0, wx.EXPAND | wx.BOTTOM, 12)
+
         # Add content with clean outer padding
         outer.Add(content, 0, wx.ALL | wx.EXPAND, 20)
 
@@ -91,6 +113,12 @@ class GeneralSettingsPage(SettingsPage):
         self._base_url.SetValue(self._context.base_url)
         self._browser_automatic_checkbox.SetValue(
             self._context.launch_browser_automatically)
+
+        choices = list(SCREENSHOT_POLICY_LABELS.values())
+        current_policy = self._context.default_screenshots_policy
+        label = SCREENSHOT_POLICY_LABELS[current_policy]
+        index = choices.index(label)
+        self._screenshot_policy.SetSelection(index)
 
     def validate(self) -> ValidationResult:
         """Validate user input on the page.
@@ -113,3 +141,7 @@ class GeneralSettingsPage(SettingsPage):
         self._context.base_url = self._base_url.GetValue().strip()
         self._context.launch_browser_automatically = \
             self._browser_automatic_checkbox.GetValue()
+
+        selection_index = self._screenshot_policy.GetSelection()
+        policy = self._screenshot_policy.GetClientData(selection_index)
+        self._context.default_screenshots_policy = policy
