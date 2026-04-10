@@ -35,6 +35,7 @@ from webweaver.studio.code_generation.code_generator_entry import \
 from webweaver.studio.persistence.test_suite_document import TestSuiteDocument
 from webweaver.studio.persistence.test_suite_persistence import (
     TestSuitePersistence, TestSuiteSaveError)
+from webweaver.studio.playback.test_suite_playback_session import TestSuitePlaybackSession
 from webweaver.studio.recent_solutions_manager import RecentSolutionsManager
 from webweaver.studio.recording_metadata import RecordingMetadata
 from webweaver.studio.persistence.solution_persistence import (
@@ -1899,6 +1900,25 @@ class StudioMainFrame(wx.Frame):
         Args:
             _evt (wx.Event): The UI event that triggered the handler. Unused.
         """
+
+
+        ##     def __init__(self, browser, suite, logger):
+        ## sess = TestSuitePlaybackSession(self._web_browser, some_suite, self._logger)
+
+        '''
+            self._playback_session = RecordingPlaybackSession(self._web_browser,
+                                                              recording,
+                                                              self._logger)
+            self._playback_session.callback_events.on_step_started = \
+                self._on_playback_step_started
+            self._playback_session.callback_events.on_step_passed = \
+                self._on_playback_step_passed
+            self._playback_session.callback_events.on_step_failed = \
+                self._on_playback_step_failed
+            self._playback_session.callback_events.on_playback_finished = \
+                self._on_playback_finished
+        '''
+
         print("[DEBUG] on_testsuite_playback_start_stop")
         if self._state_controller.state in (
                 StudioState.TESTSUITE_PLAYBACK_RUNNING,
