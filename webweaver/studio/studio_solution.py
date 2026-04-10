@@ -59,6 +59,26 @@ class SolutionLoadError(enum.Enum):
 
 
 class ScreenshotPolicy(enum.Enum):
+    """
+    Defines when screenshots should be captured during recording or playback.
+
+    This policy controls the level of visual logging performed for each step
+    in a recording. It is typically used by the playback engine to determine
+    whether to capture screenshots for debugging, auditing, or reporting
+    purposes.
+
+    Attributes:
+        OFF: No screenshots are captured at any point.
+        ON_FAILURE: Screenshots are captured only when a step fails.
+        ALL_STEPS: Screenshots are captured for every step, regardless of
+                   outcome.
+
+    Notes:
+        - Capturing screenshots for all steps can significantly increase
+          storage usage and impact performance.
+        - ON_FAILURE is typically a good balance between visibility and
+          efficiency.
+    """
     OFF = "off"
     ON_FAILURE = "on_failure"
     ALL_STEPS = "all_steps"

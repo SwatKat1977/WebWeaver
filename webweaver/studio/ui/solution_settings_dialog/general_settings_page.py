@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import wx
-from webweaver.studio.studio_solution import StudioSolution, ScreenshotPolicy
+from webweaver.studio.studio_solution import StudioSolution
 from webweaver.studio.ui.framework.settings_page import SettingsPage, ValidationResult
 
 
