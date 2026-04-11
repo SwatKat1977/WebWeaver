@@ -17,11 +17,15 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import logging
 import wx
+from webweaver.studio.browsing.studio_browser import StudioBrowser
 from webweaver.studio.playback.playback_session_base import \
     PlaybackCallbackEvents
 from webweaver.studio.playback.recording_playback_session import \
     RecordingPlaybackSession
+from webweaver.studio.studio_solution import StudioSolution
+from webweaver.studio.test_suites.test_suite import TestSuite
 
 
 class TestSuitePlaybackSession:
@@ -53,7 +57,11 @@ class TestSuitePlaybackSession:
         - A step index of ``-1`` is used to signal the start of a recording.
     """
 
-    def __init__(self, browser, suite, logger):
+    def __init__(self,
+                 browser: StudioBrowser,
+                 suite: TestSuite,
+                 solution: StudioSolution,
+                 logger: logging.Logger):
         """Initialise the TestSuitePlaybackSession.
 
         Args:
@@ -61,12 +69,13 @@ class TestSuitePlaybackSession:
             suite: The test suite containing recordings.
             logger: A logger instance.
         """
-        self._browser = browser
-        self._suite = suite
-        self._logger = logger.getChild(self.__class__.__name__)
+        self._browser: StudioBrowser = browser
+        self._suite: TestSuite = suite
+        self._logger: logging.Logger = logger.getChild(self.__class__.__name__)
+        self._solution = solution
 
-        self._index = 0  # current recording index
-        self._running = False
+        self._index: int = 0  # current recording index
+        self._running: bool = False
         self._current_session: RecordingPlaybackSession | None = None
 
         # Public callback interface
@@ -117,13 +126,10 @@ class TestSuitePlaybackSession:
             wx.CallAfter(self.callback_events.on_step_started,
                          self._index, -1)  # -1 = recording start marker
 
-        # Solution: Temporarily set to None - THIS WILL NEED FIXING!
-        tmp_solution = None
-
         self._current_session = RecordingPlaybackSession(self._browser,
                                                          recording,
                                                          self._logger,
-                                                         tmp_solution)
+                                                         self._solution)
 
         self._bind_recording_callbacks(self._current_session)
 
