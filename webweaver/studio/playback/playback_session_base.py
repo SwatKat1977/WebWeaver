@@ -17,11 +17,18 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import datetime
 import logging
+import os
 import threading
 import time
 import typing
+from pathlib import Path
+import re
 import wx
+from webweaver.studio.browsing.studio_browser import StudioBrowser
+from webweaver.studio.recording.recording import Recording
+from webweaver.studio.studio_solution import StudioSolution, ScreenshotPolicy
 
 
 class PlaybackCallbackEvents:
@@ -116,8 +123,13 @@ class PlaybackSessionBase:
                 - ok (bool): Whether the step succeeded.
                 - error (Exception | Any): Error information if failed.
     """
+    # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, logger: logging.Logger):
+    def __init__(self,
+                 logger: logging.Logger,
+                 solution: StudioSolution,
+                 recording: Recording,
+                 web_browser: StudioBrowser):
         """Initializes the playback session.
 
         Args:
@@ -128,7 +140,16 @@ class PlaybackSessionBase:
         self._running = False
         self._thread = None
         self._logger = logger.getChild(self.__class__.__name__)
+        self._solution: StudioSolution = solution
+        self._recording: Recording = recording
         self.callback_events = PlaybackCallbackEvents()
+        self._run_start_time: int = 0
+        self._screenshots_dir: Path | None = None
+        self._web_browser: StudioBrowser = web_browser
+
+        # As recording-level screenshot policy fidelity isn't implemented, the
+        # solution-level default policy will always be applied.
+        self._screenshot_policy = self._solution.default_screenshots_policy
 
     def start(self):
         """Starts playback from the beginning.
@@ -147,6 +168,39 @@ class PlaybackSessionBase:
 
         self._running = True
         self._index = 0
+        self._run_start_time = int(time.time())
+
+        if self._screenshot_policy != ScreenshotPolicy.OFF:
+            base_dir: str = self._solution.screenshots_directory
+            timestamp = datetime.datetime.fromtimestamp(
+                self._run_start_time).strftime("%d-%m-%Y_%H-%M-%S")
+            dir_name = f"run_{timestamp}"
+            self._screenshots_dir = Path(base_dir) / dir_name
+
+            if self._screenshots_dir.exists() and \
+                    not self._screenshots_dir.is_dir():
+                wx.MessageBox(
+                    f"Screenshots directory '{self._screenshots_dir}' already "
+                    "exists and is not a directory",
+                    wx.ICON_INFORMATION)
+                return
+
+            try:
+                self._screenshots_dir.mkdir(parents=True, exist_ok=True)
+
+            except PermissionError:
+                wx.MessageBox(
+                    f"No write permissions for Screenshots "
+                    f"directory '{self._screenshots_dir}'",
+                    wx.ICON_INFORMATION)
+                return
+
+            except OSError as e:
+                wx.MessageBox(
+                    "Failed to create Screenshots directory "
+                    f"'{self._screenshots_dir}. Reason: {str(e)}'",
+                    wx.ICON_INFORMATION)
+                return
 
         self._thread = threading.Thread(
             target=self._playback_loop,
@@ -192,8 +246,15 @@ class PlaybackSessionBase:
                              current_index,
                              result.error)
 
+                if self._screenshot_policy in [ScreenshotPolicy.ALL_STEPS.value,
+                                               ScreenshotPolicy.ON_FAILURE.value]:
+                    self._perform_screenshot(current_index+1)
+
             self.stop()
             return False
+
+        if self._screenshot_policy in [ScreenshotPolicy.ALL_STEPS.value]:
+            self._perform_screenshot(current_index + 1)
 
         if self.callback_events.on_step_passed:
             wx.CallAfter(self.callback_events.on_step_passed, current_index)
@@ -254,3 +315,51 @@ class PlaybackSessionBase:
 
     def _on_stop(self):
         """Optional override for subclasses"""
+
+    def _perform_screenshot(self, step_index: int) -> None:
+        """Capture a screenshot for the current step.
+
+        Args:
+            step_index (int): The index of the step being executed.
+        """
+        # pylint: disable=broad-exception-caught
+
+        try:
+            filename = (f"{self._recording.metadata.name}_"
+                        f"step_{step_index:03d}.png")
+            filename = self._sanitised_filename(filename)
+            filepath = os.path.join(self._screenshots_dir, filename)
+
+            self._web_browser.raw.save_screenshot(filepath)
+
+        except Exception as ex:
+            # Never break playback because of screenshots
+            self._logger.error(
+                "Failed to create screenshot for '%s', step %d. Reason: %s",
+                self._recording.metadata.name, step_index, str(ex))
+
+    def _sanitised_filename(self, name: str) -> str:
+        # Replace invalid characters with underscore
+        sanitised = re.sub(r'[<>:"/\\|?*\x00-\x1F]+', '_', name)
+
+        # Strip leading/trailing whitespace
+        sanitised = sanitised.strip()
+
+        # Remove trailing dots/spaces (Windows)
+        sanitised = sanitised.rstrip('. ')
+
+        # Avoid empty names
+        if not sanitised:
+            sanitised = "untitled"
+
+        # Avoid Windows reserved names
+        reserved = {
+            "CON", "PRN", "AUX", "NUL",
+            *(f"COM{i}" for i in range(1, 10)),
+            *(f"LPT{i}" for i in range(1, 10)),
+        }
+
+        if sanitised.upper() in reserved:
+            sanitised = f"_{name}"
+
+        return sanitised
