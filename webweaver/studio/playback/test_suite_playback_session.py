@@ -96,6 +96,7 @@ class TestSuitePlaybackSession:
 
         if self._current_session:
             self._current_session.stop()
+            self._current_session = None
 
     def _start_next_recording(self):
         """Start playback of the next recording in the suite.
