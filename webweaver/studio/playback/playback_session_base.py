@@ -22,6 +22,8 @@ import threading
 import time
 import typing
 import wx
+from webweaver.studio.recording.recording import Recording
+from webweaver.studio.studio_solution import StudioSolution, ScreenshotPolicy
 
 
 class PlaybackCallbackEvents:
@@ -117,7 +119,10 @@ class PlaybackSessionBase:
                 - error (Exception | Any): Error information if failed.
     """
 
-    def __init__(self, logger: logging.Logger):
+    def __init__(self,
+                 logger: logging.Logger,
+                 solution: StudioSolution,
+                 recording: Recording):
         """Initializes the playback session.
 
         Args:
@@ -128,7 +133,13 @@ class PlaybackSessionBase:
         self._running = False
         self._thread = None
         self._logger = logger.getChild(self.__class__.__name__)
+        self._solution: StudioSolution = solution
+        self._recording: Recording = recording
         self.callback_events = PlaybackCallbackEvents()
+
+        # As recording-level screenshot policy fidelity isn't implemented, the
+        # solution-level default policy will always be applied.
+        self._screenshot_policy = self._solution.default_screenshots_policy
 
     def start(self):
         """Starts playback from the beginning.
@@ -192,8 +203,16 @@ class PlaybackSessionBase:
                              current_index,
                              result.error)
 
+                if self._screenshot_policy in [ScreenshotPolicy.ALL_STEPS.value,
+                                               ScreenshotPolicy.ON_FAILURE.value]:
+                    print("Screenshot on fail goes here...")
+                    pass
+
             self.stop()
             return False
+
+        if self._screenshot_policy in [ScreenshotPolicy.ALL_STEPS.value]:
+            print("Screenshot on step goes here...")
 
         if self.callback_events.on_step_passed:
             wx.CallAfter(self.callback_events.on_step_passed, current_index)

@@ -22,6 +22,7 @@ from webweaver.studio.browsing.studio_browser import StudioBrowser
 from webweaver.studio.playback.playback_engine import PlaybackEngine
 from webweaver.studio.playback.playback_session_base import PlaybackSessionBase
 from webweaver.studio.recording.recording import Recording
+from webweaver.studio.studio_solution import StudioSolution
 
 
 class RecordingPlaybackSession(PlaybackSessionBase):
@@ -41,10 +42,10 @@ class RecordingPlaybackSession(PlaybackSessionBase):
     def __init__(self,
                  browser: StudioBrowser,
                  recording: Recording,
-                 logger: Logger):
-        super().__init__(logger)
+                 logger: Logger,
+                 solution: StudioSolution):
+        super().__init__(logger, solution, recording)
         self._browser = browser
-        self._recording = recording
         self._engine: PlaybackEngine = PlaybackEngine(browser,
                                                       recording,
                                                       logger)
