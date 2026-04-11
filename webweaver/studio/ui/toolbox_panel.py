@@ -43,8 +43,10 @@ TOOLBOX_ACTION_MAP = {
     "User Variable": RecordingEventType.USER_VARIABLE,
     # "Loop": RecordingEventType.LOOP,
 
-    # General
-    # "Group": RecordingEventType.REST_API,
+
+    # Validation
+    "Assert": RecordingEventType.ASSERT
+    # self.tree.AppendItem(logic, "Loop")
 }
 
 
@@ -174,7 +176,6 @@ class ToolboxPanel(wx.Panel):
         action_name = self._toolbox_tree.GetItemText(item)
 
         print(f"Toolbox action selected: {action_name}")
-        # Later this should insert a step into the recording.
 
     def _on_begin_drag(self, event):
         """Starts a drag operation from the toolbox tree."""

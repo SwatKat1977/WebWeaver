@@ -145,8 +145,14 @@ class PlaybackContext:
                 value = self._builtins[name](arg)
                 return str(value)
 
-            # User variable
-            value = self.get_variable(name)
+            # Split root + path
+            root, *rest = name.split(".")
+
+            value = self.get_variable(root)
+
+            if rest:
+                value = self._resolve_variable_path(value, ".".join(rest))
+
             return str(value)
 
         return self._template_pattern.sub(replace, text)
@@ -169,3 +175,19 @@ class PlaybackContext:
 
         params = parse_qs(urlparse(self._driver.current_url).query)
         return params.get(arg, [""])[0]
+
+    def _resolve_variable_path(self, value, path: str):
+        """Resolve dotted path on dict/object."""
+        parts = path.split(".")
+
+        for part in parts:
+            if isinstance(value, dict):
+                value = value.get(part)
+            else:
+                value = getattr(value, part, None)
+
+            if value is None:
+                raise PlaybackVariableError(
+                    f"Unable to resolve '{path}'")
+
+        return value
