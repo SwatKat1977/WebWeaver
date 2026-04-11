@@ -116,9 +116,13 @@ class TestSuitePlaybackSession:
             wx.CallAfter(self.callback_events.on_step_started,
                          self._index, -1)  # -1 = recording start marker
 
+        # Solution: Temporarily set to None - THIS WILL NEED FIXING!
+        tmp_solution = None
+
         self._current_session = RecordingPlaybackSession(self._browser,
                                                          recording,
-                                                         self._logger)
+                                                         self._logger,
+                                                         tmp_solution)
 
         self._bind_recording_callbacks(self._current_session)
 
