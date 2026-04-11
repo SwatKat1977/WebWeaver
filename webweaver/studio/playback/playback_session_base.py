@@ -17,10 +17,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import datetime
 import logging
 import threading
 import time
 import typing
+from pathlib import Path
 import wx
 from webweaver.studio.recording.recording import Recording
 from webweaver.studio.studio_solution import StudioSolution, ScreenshotPolicy
@@ -136,6 +138,8 @@ class PlaybackSessionBase:
         self._solution: StudioSolution = solution
         self._recording: Recording = recording
         self.callback_events = PlaybackCallbackEvents()
+        self._run_start_time: int = 0
+        self._screenshots_dir: Path | None = None
 
         # As recording-level screenshot policy fidelity isn't implemented, the
         # solution-level default policy will always be applied.
@@ -158,6 +162,39 @@ class PlaybackSessionBase:
 
         self._running = True
         self._index = 0
+        self._run_start_time = int(time.time())
+
+        if self._screenshot_policy != ScreenshotPolicy.OFF:
+            base_dir: str = self._solution.screenshots_directory
+            timestamp = datetime.datetime.fromtimestamp(
+                self._run_start_time).strftime("%d-%m-%Y_%H-%M-%S")
+            dir_name = f"run_{timestamp}"
+            self._screenshots_dir = Path(base_dir) / dir_name
+
+            if self._screenshots_dir.exists() and \
+                    not self._screenshots_dir.is_dir():
+                wx.MessageBox(
+                    f"Screenshots directory '{self._screenshots_dir}' already "
+                    "exists and is not a directory",
+                    wx.ICON_INFORMATION)
+                return
+
+            try:
+                self._screenshots_dir.mkdir(parents=True, exist_ok=True)
+
+            except PermissionError:
+                wx.MessageBox(
+                    f"No write permissions for Screenshots "
+                    f"directory '{self._screenshots_dir}'",
+                    wx.ICON_INFORMATION)
+                return
+
+            except OSError as e:
+                wx.MessageBox(
+                    "Failed to create Screenshots directory "
+                    f"'{self._screenshots_dir}'",
+                    wx.ICON_INFORMATION)
+                return
 
         self._thread = threading.Thread(
             target=self._playback_loop,
@@ -212,7 +249,7 @@ class PlaybackSessionBase:
             return False
 
         if self._screenshot_policy in [ScreenshotPolicy.ALL_STEPS.value]:
-            print("Screenshot on step goes here...")
+            print(f"Screenshot on step {current_index+1} goes here...")
 
         if self.callback_events.on_step_passed:
             wx.CallAfter(self.callback_events.on_step_passed, current_index)
@@ -273,3 +310,36 @@ class PlaybackSessionBase:
 
     def _on_stop(self):
         """Optional override for subclasses"""
+
+    def _perform_screenshot(self, step_index: int) -> None:
+        """Capture a screenshot for the current step.
+
+        Args:
+            step_index (int): The index of the step being executed.
+        """
+
+        try:
+            import os
+            from datetime import datetime
+
+            # Build directory: recordings/<recording_id>/run_<timestamp>/
+            timestamp = self._run_timestamp  # assume you set this when playback starts
+            base_dir = os.path.join(
+                self._recording_path,
+                f"run_{timestamp}"
+            )
+
+            os.makedirs(base_dir, exist_ok=True)
+
+            # File name: step_001.png etc.
+            filename = f"step_{step_index:03d}.png"
+            filepath = os.path.join(base_dir, filename)
+
+            self._driver.save_screenshot(filepath)
+
+            # Optional: store path in result later if you want
+            # self._last_screenshot_path = filepath
+
+        except Exception as e:
+            # Never break playback because of screenshots
+            print(f"[Screenshot Error] {e}")
