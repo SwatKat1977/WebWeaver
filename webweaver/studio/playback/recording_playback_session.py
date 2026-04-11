@@ -44,7 +44,7 @@ class RecordingPlaybackSession(PlaybackSessionBase):
                  recording: Recording,
                  logger: Logger,
                  solution: StudioSolution):
-        super().__init__(logger, solution, recording)
+        super().__init__(logger, solution, recording, browser)
         self._browser = browser
         self._engine: PlaybackEngine = PlaybackEngine(browser,
                                                       recording,

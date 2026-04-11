@@ -24,6 +24,7 @@ import time
 import typing
 from pathlib import Path
 import wx
+from webweaver.studio.browsing.studio_browser import StudioBrowser
 from webweaver.studio.recording.recording import Recording
 from webweaver.studio.studio_solution import StudioSolution, ScreenshotPolicy
 
@@ -124,7 +125,8 @@ class PlaybackSessionBase:
     def __init__(self,
                  logger: logging.Logger,
                  solution: StudioSolution,
-                 recording: Recording):
+                 recording: Recording,
+                 web_browser: StudioBrowser):
         """Initializes the playback session.
 
         Args:
@@ -140,6 +142,7 @@ class PlaybackSessionBase:
         self.callback_events = PlaybackCallbackEvents()
         self._run_start_time: int = 0
         self._screenshots_dir: Path | None = None
+        self._web_browser: StudioBrowser = web_browser
 
         # As recording-level screenshot policy fidelity isn't implemented, the
         # solution-level default policy will always be applied.
@@ -242,14 +245,13 @@ class PlaybackSessionBase:
 
                 if self._screenshot_policy in [ScreenshotPolicy.ALL_STEPS.value,
                                                ScreenshotPolicy.ON_FAILURE.value]:
-                    print("Screenshot on fail goes here...")
-                    pass
+                    self._perform_screenshot(current_index+1)
 
             self.stop()
             return False
 
         if self._screenshot_policy in [ScreenshotPolicy.ALL_STEPS.value]:
-            print(f"Screenshot on step {current_index+1} goes here...")
+            self._perform_screenshot(current_index + 1)
 
         if self.callback_events.on_step_passed:
             wx.CallAfter(self.callback_events.on_step_passed, current_index)
@@ -322,23 +324,12 @@ class PlaybackSessionBase:
             import os
             from datetime import datetime
 
-            # Build directory: recordings/<recording_id>/run_<timestamp>/
-            timestamp = self._run_timestamp  # assume you set this when playback starts
-            base_dir = os.path.join(
-                self._recording_path,
-                f"run_{timestamp}"
-            )
-
-            os.makedirs(base_dir, exist_ok=True)
-
             # File name: step_001.png etc.
-            filename = f"step_{step_index:03d}.png"
-            filepath = os.path.join(base_dir, filename)
+            filename = (f"{self._recording.metadata.name}_"
+                        f"step_{step_index:03d}.png")
+            filepath = os.path.join(self._screenshots_dir, filename)
 
-            self._driver.save_screenshot(filepath)
-
-            # Optional: store path in result later if you want
-            # self._last_screenshot_path = filepath
+            self._web_browser.raw.save_screenshot(filepath)
 
         except Exception as e:
             # Never break playback because of screenshots
