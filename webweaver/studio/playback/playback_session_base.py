@@ -19,10 +19,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import datetime
 import logging
+import os
 import threading
 import time
 import typing
 from pathlib import Path
+import re
 import wx
 from webweaver.studio.browsing.studio_browser import StudioBrowser
 from webweaver.studio.recording.recording import Recording
@@ -121,6 +123,7 @@ class PlaybackSessionBase:
                 - ok (bool): Whether the step succeeded.
                 - error (Exception | Any): Error information if failed.
     """
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(self,
                  logger: logging.Logger,
@@ -195,7 +198,7 @@ class PlaybackSessionBase:
             except OSError as e:
                 wx.MessageBox(
                     "Failed to create Screenshots directory "
-                    f"'{self._screenshots_dir}'",
+                    f"'{self._screenshots_dir}. Reason: {str(e)}'",
                     wx.ICON_INFORMATION)
                 return
 
@@ -319,18 +322,44 @@ class PlaybackSessionBase:
         Args:
             step_index (int): The index of the step being executed.
         """
+        # pylint: disable=broad-exception-caught
 
         try:
-            import os
-            from datetime import datetime
-
-            # File name: step_001.png etc.
             filename = (f"{self._recording.metadata.name}_"
                         f"step_{step_index:03d}.png")
+            filename = self._sanitised_filename(filename)
             filepath = os.path.join(self._screenshots_dir, filename)
 
             self._web_browser.raw.save_screenshot(filepath)
 
-        except Exception as e:
+        except Exception as ex:
             # Never break playback because of screenshots
-            print(f"[Screenshot Error] {e}")
+            self._logger.error(
+                "Failed to create screenshot for '%s', step %d. Reason: %s",
+                self._recording.metadata.name, step_index, str(ex))
+
+    def _sanitised_filename(self, name: str) -> str:
+        # Replace invalid characters with underscore
+        sanitised = re.sub(r'[<>:"/\\|?*\x00-\x1F]+', '_', name)
+
+        # Strip leading/trailing whitespace
+        sanitised = sanitised.strip()
+
+        # Remove trailing dots/spaces (Windows)
+        sanitised = sanitised.rstrip('. ')
+
+        # Avoid empty names
+        if not sanitised:
+            sanitised = "untitled"
+
+        # Avoid Windows reserved names
+        reserved = {
+            "CON", "PRN", "AUX", "NUL",
+            *(f"COM{i}" for i in range(1, 10)),
+            *(f"LPT{i}" for i in range(1, 10)),
+        }
+
+        if sanitised.upper() in reserved:
+            sanitised = f"_{name}"
+
+        return sanitised
