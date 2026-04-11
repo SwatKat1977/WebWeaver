@@ -1811,9 +1811,11 @@ class StudioMainFrame(wx.Frame):
 
             recording = load_recording_from_context(ctx)
 
-            self._playback_session = RecordingPlaybackSession(self._web_browser,
-                                                              recording,
-                                                              self._logger)
+            self._playback_session = RecordingPlaybackSession(
+                self._web_browser,
+                recording,
+                self._logger,
+                self._current_solution)
             self._playback_session.callback_events.on_step_started = \
                 self._on_playback_step_started
             self._playback_session.callback_events.on_step_passed = \

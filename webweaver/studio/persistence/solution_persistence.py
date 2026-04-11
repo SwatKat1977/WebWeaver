@@ -52,6 +52,7 @@ class SolutionDirectoryCreateStatus(enum.Enum):
     CANNOT_CREATE_RECORDINGS = enum.auto()
     CANNOT_CREATE_TEST_SUITES = enum.auto()
 
+
 class SolutionPersistence:
     """
     Handles loading and saving StudioSolution instances to and from disk.

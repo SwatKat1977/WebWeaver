@@ -58,6 +58,32 @@ class SolutionLoadError(enum.Enum):
     MISSING_REQUIRED_FIELD = enum.auto()
 
 
+class ScreenshotPolicy(enum.Enum):
+    """
+    Defines when screenshots should be captured during recording or playback.
+
+    This policy controls the level of visual logging performed for each step
+    in a recording. It is typically used by the playback engine to determine
+    whether to capture screenshots for debugging, auditing, or reporting
+    purposes.
+
+    Attributes:
+        OFF: No screenshots are captured at any point.
+        ON_FAILURE: Screenshots are captured only when a step fails.
+        ALL_STEPS: Screenshots are captured for every step, regardless of
+                   outcome.
+
+    Notes:
+        - Capturing screenshots for all steps can significantly increase
+          storage usage and impact performance.
+        - ON_FAILURE is typically a good balance between visibility and
+          efficiency.
+    """
+    OFF = "off"
+    ON_FAILURE = "on_failure"
+    ALL_STEPS = "all_steps"
+
+
 @dataclasses.dataclass
 class SolutionLoadResult:
     """
@@ -92,6 +118,8 @@ class StudioSolution:
     browser_launch_options: BrowserLaunchOptions
     recordings_cache: typing.Dict[str, RecordingMetadata] = \
         dataclasses.field(default_factory=dict)
+    default_screenshots_policy: str = 'off'
+    screenshots_directory: str = '.'
 
     def to_json(self):
         """
@@ -110,6 +138,8 @@ class StudioSolution:
                 "launchBrowserAutomatically": self.launch_browser_automatically
             },
             "browserLaunchOptions": self.browser_launch_options.to_json(),
+            "default_screenshots_policy": self.default_screenshots_policy,
+            "screenshots_directory": self.screenshots_directory
         }
 
     @staticmethod
@@ -143,6 +173,25 @@ class StudioSolution:
         if not isinstance(raw_solution, dict):
             return SolutionLoadResult(None, SolutionLoadError.MISSING_SOLUTION_OBJECT)
 
+        if "default_screenshots_policy" not in raw:
+            raw["default_screenshots_policy"] = "off"
+
+        default_screenshots_policy = raw.get("default_screenshots_policy")
+
+        if "screenshots_directory" not in raw:
+            raw["screenshots_directory"] = "."
+
+        screenshots_directory: Path = Path(raw.get("screenshots_directory"))
+
+        if not screenshots_directory.is_dir():
+            wx.MessageBox(
+                "The screenshots directory is not valid.\n"
+                "Defaulting the location, please check it.",
+                "Solution validation error",
+                wx.ICON_WARNING)
+            raw["screenshots_directory"] = "."
+            screenshots_directory = Path(raw.get("screenshots_directory"))
+
         required = [
             "solutionName",
             "solutionDirectoryCreated",
@@ -169,6 +218,8 @@ class StudioSolution:
             selected_browser=str(raw_solution["browser"]),
             launch_browser_automatically=bool(raw_solution["launchBrowserAutomatically"]),
             browser_launch_options=launch_options,
+            default_screenshots_policy=default_screenshots_policy,
+            screenshots_directory=str(screenshots_directory)
         )
 
         return SolutionLoadResult(solution, SolutionLoadError.NONE_)
