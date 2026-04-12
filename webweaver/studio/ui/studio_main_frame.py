@@ -61,13 +61,14 @@ from webweaver.studio.recording.recording_events import (
 from webweaver.studio.recording.recording_session import RecordingSession
 from webweaver.studio.recording.recording_event_type import RecordingEventType
 from webweaver.studio.recording.recording_loader import \
-    load_recording_from_context
+    load_recording_from_context, load_recording
 from webweaver.studio.studio_state_controller import (StudioState,
                                                       StudioStateController)
 from webweaver.studio.studio_solution import (
     StudioSolution,
     solution_load_error_to_str,
     SolutionDirectoryCreateStatus)
+from webweaver.studio.test_suites.test_suite import TestSuite
 from webweaver.studio.ui.solution_create_wizard.wizard_basic_info_page import \
     WizardBasicInfoPage
 from webweaver.studio.ui.solution_create_wizard.solution_create_wizard_data \
@@ -240,6 +241,11 @@ class StudioMainFrame(wx.Frame):
         self._recording_session: Optional[RecordingSession] = None
         self._current_solution: Optional[StudioSolution] = None
         self._state_controller: Optional[StudioStateController] = None
+
+        # --------------------------------------------------------------
+        # Test Suite Playback Parameters
+        # --------------------------------------------------------------
+        self._suite_playback_session: TestSuitePlaybackSession | None = None
 
         self._recent_solutions: RecentSolutionsManager = RecentSolutionsManager()
 
@@ -1902,24 +1908,35 @@ class StudioMainFrame(wx.Frame):
         Args:
             _evt (wx.Event): The UI event that triggered the handler. Unused.
         """
+        data = self._selected_test_suite.metadata.data
 
+        suite_name = data.get("name")
+        recording_ids = data.get("recordings")
+        recordings: list = []
 
-        ##     def __init__(self, browser, suite, logger):
-        ## sess = TestSuitePlaybackSession(self._web_browser, some_suite, self._logger)
+        print(f"Suite Name: {suite_name}")
 
-        '''
-            self._playback_session = RecordingPlaybackSession(self._web_browser,
-                                                              recording,
-                                                              self._logger)
-            self._playback_session.callback_events.on_step_started = \
-                self._on_playback_step_started
-            self._playback_session.callback_events.on_step_passed = \
-                self._on_playback_step_passed
-            self._playback_session.callback_events.on_step_failed = \
-                self._on_playback_step_failed
-            self._playback_session.callback_events.on_playback_finished = \
-                self._on_playback_finished
-        '''
+        for rec_id in recording_ids:
+            metadata = self._current_solution.get_recording_by_id(rec_id)
+            recording = load_recording(metadata)
+            recordings.append(recording)
+
+        test_suite: TestSuite = TestSuite(suite_name, recordings)
+
+        self._suite_playback_session = TestSuitePlaybackSession(
+            self._web_browser,
+            test_suite,
+            self._current_solution,
+            self._logger)
+
+        self._suite_playback_session.callback_events.on_step_started = \
+            self._on_playback_suite_step_started
+        self._suite_playback_session.callback_events.on_step_passed = \
+            self._on_playback_suite_step_passed
+        self._suite_playback_session.callback_events.on_step_failed = \
+            self._on_playback_suite_step_failed
+        self._suite_playback_session.callback_events.on_playback_finished = \
+            self._on_playback_suite_recording_finished
 
         print("[DEBUG] on_testsuite_playback_start_stop")
         if self._state_controller.state in (
@@ -1929,6 +1946,7 @@ class StudioMainFrame(wx.Frame):
 
         elif self._state_controller.state == StudioState.SOLUTION_LOADED:
             print("[DEBUG] Start Test Suite playback code goes here...")
+            self._suite_playback_session.start()
 
         else:
             print("[DEBUG] Incorrect state for Test Suite playback code goes here...")
@@ -1967,6 +1985,18 @@ class StudioMainFrame(wx.Frame):
     def _on_playback_finished(self):
         self._playback_session = None
         self._state_controller.on_solution_loaded()
+
+    def _on_playback_suite_step_started(self, index: int):
+        print(f"[DEBUG] _on_playback_suite_step_started : {index+1}")
+
+    def _on_playback_suite_step_passed(self, index: int):
+        print(f"[DEBUG] _on_playback_suite_step_passed : {index+1}")
+
+    def _on_playback_suite_step_failed(self, index: int, error: str):
+        print(f"[DEBUG] _on_playback_suite_step_failed : {index+1}, err: {error}")
+
+    def _on_playback_suite_recording_finished(self):
+        print("[DEBUG] _on_playback_suite_recording_finished")
 
     def _on_add_recording_to_suite(self, event):
 
@@ -2072,5 +2102,4 @@ class StudioMainFrame(wx.Frame):
 
         self._selected_test_suite = data
 
-        print("Selected:", data, dir(data))
         self._update_toolbar_state()
