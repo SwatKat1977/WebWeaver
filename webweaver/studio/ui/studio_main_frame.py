@@ -1580,6 +1580,30 @@ class StudioMainFrame(wx.Frame):
             state = ToolbarState(can_pause=True,
                                  is_playback_paused=True)
 
+        elif self._current_state == StudioState.TESTSUITE_PLAYBACK_RUNNING:
+            state = ToolbarState(can_close=False,
+                                 can_record=False,
+                                 can_inspect=False,
+                                 is_playback_running=False,
+                                 can_start_playback=False,
+                                 can_step_playback=False,
+                                 can_stop_playback=False,
+                                 is_testsuite_running=True,
+                                 can_play_test_suite=True,
+                                 can_pause_test_suite=True)
+
+        elif self._current_state == StudioState.TESTSUITE_PLAYBACK_PAUSED:
+            state = ToolbarState(can_close=False,
+                                 can_record=False,
+                                 can_inspect=False,
+                                 is_playback_running=False,
+                                 can_start_playback=False,
+                                 can_step_playback=False,
+                                 can_stop_playback=False,
+                                 is_testsuite_paused=True,
+                                 can_play_test_suite=True,
+                                 can_pause_test_suite=True)
+
         MainToolbar.apply_state(self._toolbar, state)
         self._manage_browser_state()
 
@@ -1943,9 +1967,11 @@ class StudioMainFrame(wx.Frame):
                 StudioState.TESTSUITE_PLAYBACK_RUNNING,
                 StudioState.TESTSUITE_PLAYBACK_PAUSED):
             print("[DEBUG] Stop Test Suite playback code goes here...")
+            self._state_controller.on_solution_loaded()
 
         elif self._state_controller.state == StudioState.SOLUTION_LOADED:
             print("[DEBUG] Start Test Suite playback code goes here...")
+            self._state_controller.on_testsuite_playback_running()
             self._suite_playback_session.start()
 
         else:
@@ -1994,6 +2020,12 @@ class StudioMainFrame(wx.Frame):
 
     def _on_playback_suite_step_failed(self, index: int, error: str):
         print(f"[DEBUG] _on_playback_suite_step_failed : {index+1}, err: {error}")
+
+        # Stop playback session.
+        self._suite_playback_session = None
+        self._state_controller.on_solution_loaded()
+
+        wx.MessageBox(error, "Test Suite Playback Failed", wx.ICON_ERROR)
 
     def _on_playback_suite_recording_finished(self):
         print("[DEBUG] _on_playback_suite_recording_finished")
