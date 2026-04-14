@@ -56,6 +56,7 @@ class TestSuitePlaybackSession:
         - A failure in any step halts the entire suite.
         - A step index of ``-1`` is used to signal the start of a recording.
     """
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(self,
                  browser: StudioBrowser,
@@ -78,8 +79,28 @@ class TestSuitePlaybackSession:
         self._running: bool = False
         self._current_session: RecordingPlaybackSession | None = None
 
+        self._recording_name: str | None = None
+
         # Public callback interface
         self.callback_events = PlaybackCallbackEvents()
+
+    @property
+    def recording_name(self) -> str:
+        """Get the name of the recording.
+
+        Returns:
+            str: The recording name.
+        """
+        return self._recording_name
+
+    @property
+    def suite_name(self) -> str:
+        """Get the name of the associated test suite.
+
+        Returns:
+            str: The suite name.
+        """
+        return self._suite.name
 
     def start(self):
         """Start playback of the test suite.
@@ -120,6 +141,7 @@ class TestSuitePlaybackSession:
             return
 
         recording = self._suite.recordings[self._index]
+        self._recording_name = recording.metadata.name
 
         # Notify recording started
         if self.callback_events.on_step_started:

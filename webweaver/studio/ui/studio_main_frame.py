@@ -1933,12 +1933,9 @@ class StudioMainFrame(wx.Frame):
             _evt (wx.Event): The UI event that triggered the handler. Unused.
         """
         data = self._selected_test_suite.metadata.data
-
         suite_name = data.get("name")
         recording_ids = data.get("recordings")
         recordings: list = []
-
-        print(f"Suite Name: {suite_name}")
 
         for rec_id in recording_ids:
             metadata = self._current_solution.get_recording_by_id(rec_id)
@@ -1962,20 +1959,19 @@ class StudioMainFrame(wx.Frame):
         self._suite_playback_session.callback_events.on_playback_finished = \
             self._on_playback_suite_recording_finished
 
-        print("[DEBUG] on_testsuite_playback_start_stop")
         if self._state_controller.state in (
                 StudioState.TESTSUITE_PLAYBACK_RUNNING,
                 StudioState.TESTSUITE_PLAYBACK_PAUSED):
-            print("[DEBUG] Stop Test Suite playback code goes here...")
             self._state_controller.on_solution_loaded()
 
         elif self._state_controller.state == StudioState.SOLUTION_LOADED:
-            print("[DEBUG] Start Test Suite playback code goes here...")
             self._state_controller.on_testsuite_playback_running()
             self._suite_playback_session.start()
 
         else:
-            print("[DEBUG] Incorrect state for Test Suite playback code goes here...")
+            wx.MessageBox("Incorrect state for Test Suite playback",
+                          "Invalid Test Suite playback state",
+                          wx.ICON_ERROR)
 
     def on_testsuite_playback_pause_resume(self, _evt):
         """Handles pause/resume actions for test suite playback.
@@ -1986,7 +1982,7 @@ class StudioMainFrame(wx.Frame):
         Args:
             _evt (wx.Event): The UI event that triggered the handler. Unused.
         """
-        print("[DEBUG] on_testsuite_playback_pause_resume")
+        self._logger.debug("on_testsuite_playback_pause_resume - TO BE IMPLEMENTED")
 
     def _on_playback_step_started(self, index: int):
         viewer = self._workspace_panel.get_active_viewer()
@@ -2013,25 +2009,26 @@ class StudioMainFrame(wx.Frame):
         self._state_controller.on_solution_loaded()
 
     def _on_playback_suite_step_started(self, index: int):
-        print(f"[DEBUG] _on_playback_suite_step_started : {index+1}")
+        self._logger.debug("_on_playback_suite_step_started : %s", index+1)
 
     def _on_playback_suite_step_passed(self, index: int):
-        print(f"[DEBUG] _on_playback_suite_step_passed : {index+1}")
+        self._logger.debug("_on_playback_suite_step_passed : %s", index+1)
 
     def _on_playback_suite_step_failed(self, index: int, error: str):
-        print(f"[DEBUG] _on_playback_suite_step_failed : {index+1}, err: {error}")
-
         # Stop playback session.
+        recording_name = self._suite_playback_session.recording_name
+        suite_name = self._suite_playback_session.suite_name
+
+        error_msg = (f"Recording '{recording_name}' failed on step {index}: "
+                     f"{error}'")
         self._suite_playback_session = None
         self._state_controller.on_solution_loaded()
-
-        wx.MessageBox(error, "Test Suite Playback Failed", wx.ICON_ERROR)
+        wx.MessageBox(error_msg, f"'{suite_name}' suite playback failed", wx.ICON_ERROR)
 
     def _on_playback_suite_recording_finished(self):
-        print("[DEBUG] _on_playback_suite_recording_finished")
+        pass
 
     def _on_add_recording_to_suite(self, event):
-
         data = event.GetClientData()
         suite = data["suite"]
         recording = data["recording"]
