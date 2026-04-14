@@ -17,11 +17,15 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import logging
 import wx
+from webweaver.studio.browsing.studio_browser import StudioBrowser
 from webweaver.studio.playback.playback_session_base import \
     PlaybackCallbackEvents
 from webweaver.studio.playback.recording_playback_session import \
     RecordingPlaybackSession
+from webweaver.studio.studio_solution import StudioSolution
+from webweaver.studio.test_suites.test_suite import TestSuite
 
 
 class TestSuitePlaybackSession:
@@ -52,8 +56,13 @@ class TestSuitePlaybackSession:
         - A failure in any step halts the entire suite.
         - A step index of ``-1`` is used to signal the start of a recording.
     """
+    # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, browser, suite, logger):
+    def __init__(self,
+                 browser: StudioBrowser,
+                 suite: TestSuite,
+                 solution: StudioSolution,
+                 logger: logging.Logger):
         """Initialise the TestSuitePlaybackSession.
 
         Args:
@@ -61,16 +70,37 @@ class TestSuitePlaybackSession:
             suite: The test suite containing recordings.
             logger: A logger instance.
         """
-        self._browser = browser
-        self._suite = suite
-        self._logger = logger.getChild(self.__class__.__name__)
+        self._browser: StudioBrowser = browser
+        self._suite: TestSuite = suite
+        self._logger: logging.Logger = logger.getChild(self.__class__.__name__)
+        self._solution = solution
 
-        self._index = 0  # current recording index
-        self._running = False
+        self._index: int = 0  # current recording index
+        self._running: bool = False
         self._current_session: RecordingPlaybackSession | None = None
+
+        self._recording_name: str | None = None
 
         # Public callback interface
         self.callback_events = PlaybackCallbackEvents()
+
+    @property
+    def recording_name(self) -> str:
+        """Get the name of the recording.
+
+        Returns:
+            str: The recording name.
+        """
+        return self._recording_name
+
+    @property
+    def suite_name(self) -> str:
+        """Get the name of the associated test suite.
+
+        Returns:
+            str: The suite name.
+        """
+        return self._suite.name
 
     def start(self):
         """Start playback of the test suite.
@@ -111,19 +141,17 @@ class TestSuitePlaybackSession:
             return
 
         recording = self._suite.recordings[self._index]
+        self._recording_name = recording.metadata.name
 
         # Notify recording started
         if self.callback_events.on_step_started:
             wx.CallAfter(self.callback_events.on_step_started,
-                         self._index, -1)  # -1 = recording start marker
-
-        # Solution: Temporarily set to None - THIS WILL NEED FIXING!
-        tmp_solution = None
+                         self._index)
 
         self._current_session = RecordingPlaybackSession(self._browser,
                                                          recording,
                                                          self._logger,
-                                                         tmp_solution)
+                                                         self._solution)
 
         self._bind_recording_callbacks(self._current_session)
 
@@ -154,7 +182,6 @@ class TestSuitePlaybackSession:
         """
         if self.callback_events.on_step_started:
             wx.CallAfter(self.callback_events.on_step_started,
-                         self._index,
                          step_index)
 
     def _on_step_passed(self, step_index: int):
@@ -164,9 +191,7 @@ class TestSuitePlaybackSession:
             step_index (int): Index of the step within the recording.
         """
         if self.callback_events.on_step_passed:
-            wx.CallAfter(self.callback_events.on_step_passed,
-                         self._index,
-                         step_index)
+            wx.CallAfter(self.callback_events.on_step_passed, step_index)
 
     def _on_step_failed(self, step_index: int, reason: str):
         """Handle a failed step and stop suite playback.
@@ -177,7 +202,6 @@ class TestSuitePlaybackSession:
         """
         if self.callback_events.on_step_failed:
             wx.CallAfter(self.callback_events.on_step_failed,
-                         self._index,
                          step_index,
                          reason)
 

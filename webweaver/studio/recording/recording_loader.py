@@ -19,6 +19,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import json
 from typing import Optional
+
+from webweaver.studio.recording_metadata import RecordingMetadata
 from webweaver.studio.recording_view_context import RecordingViewContext
 from webweaver.studio.recording.recording import Recording
 
@@ -43,4 +45,28 @@ def load_recording_from_context(ctx: RecordingViewContext) -> Optional[Recording
 
     return Recording(
         metadata=ctx.metadata,
+        events=events)
+
+
+def load_recording(metadata: RecordingMetadata) -> Optional[Recording]:
+    """
+    Load a full recording (metadata + events) from disk.
+    """
+    try:
+        with open(metadata.file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+    except (OSError, json.JSONDecodeError):
+        return None
+
+    rec = data.get("recording")
+    if not isinstance(rec, dict):
+        return None
+
+    events = rec.get("events")
+    if not isinstance(events, list):
+        return None
+
+    return Recording(
+        metadata=metadata,
         events=events)
