@@ -36,17 +36,8 @@ from webweaver.studio.persistence.test_suite_document import TestSuiteDocument
 from webweaver.studio.persistence.test_suite_persistence import (
     TestSuitePersistence, TestSuiteSaveError)
 from webweaver.studio.playback.test_suite_playback_session import TestSuitePlaybackSession
-from webweaver.studio.recent_solutions_manager import RecentSolutionsManager
 from webweaver.studio.recording_metadata import RecordingMetadata
-from webweaver.studio.persistence.solution_persistence import (
-                                                SolutionPersistence,
-                                                SolutionSaveStatus)
 from webweaver.studio.persistence.recording_document import RecordingDocument
-from webweaver.studio.persistence.recording_persistence import \
-    RecordingPersistence
-from webweaver.studio.browsing.web_driver_factory import \
-    create_driver_from_solution
-from webweaver.studio.browsing.studio_browser import StudioBrowser
 from webweaver.studio.recording_view_context import RecordingViewContext
 from webweaver.studio.recording.recording_events import (
     OpenRecordingEvent,
@@ -58,16 +49,14 @@ from webweaver.studio.recording.recording_events import (
     AddRecordingToTestSuiteEvent,
     RemoveRecordingFromTestSuiteEvent,
     SolutionSettingsEvent, TestSuiteSelectedInExplorerEvent)
-from webweaver.studio.recording.recording_session import RecordingSession
-from webweaver.studio.recording.recording_event_type import RecordingEventType
 from webweaver.studio.recording.recording_loader import \
     load_recording_from_context, load_recording
 from webweaver.studio.studio_state_controller import (StudioState,
                                                       StudioStateController)
-from webweaver.studio.studio_solution import (
-    StudioSolution,
-    solution_load_error_to_str,
-    SolutionDirectoryCreateStatus)
+from webweaver.studio.studio_solution import StudioSolution
+from webweaver.studio.solution_coordinator import SolutionCoordinator
+from webweaver.studio.recording_coordinator import RecordingCoordinator
+from webweaver.studio.browser_coordinator import BrowserCoordinator
 from webweaver.studio.test_suites.test_suite import TestSuite
 from webweaver.studio.ui.solution_create_wizard.wizard_basic_info_page import \
     WizardBasicInfoPage
@@ -184,6 +173,10 @@ class StudioMainFrame(wx.Frame):
         handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
         self._logger.addHandler(handler)
         self._closing_solution = False
+        self._solution_coordinator = SolutionCoordinator(self._logger)
+        self._recording_coordinator = RecordingCoordinator(
+            self._solution_coordinator, self._logger)
+        self._browser_coordinator = BrowserCoordinator(self._logger)
         self.menu_items: StudioMainFrameMenuItems = StudioMainFrameMenuItems()
         self._selected_test_suite = None
 
@@ -195,9 +188,6 @@ class StudioMainFrame(wx.Frame):
 
         self._status_bar = None
         """Status bar part of the UI"""
-
-        self._web_browser: Optional[StudioBrowser] = None
-        """Web browser application"""
 
         self._inspector_panel: Optional[wx.Panel] = None
 
@@ -238,16 +228,12 @@ class StudioMainFrame(wx.Frame):
         self._workspace_panel: Optional[WorkspacePanel] = None
 
         self._current_state: StudioState = StudioState.NO_SOLUTION
-        self._recording_session: Optional[RecordingSession] = None
-        self._current_solution: Optional[StudioSolution] = None
         self._state_controller: Optional[StudioStateController] = None
 
         # --------------------------------------------------------------
         # Test Suite Playback Parameters
         # --------------------------------------------------------------
         self._suite_playback_session: TestSuitePlaybackSession | None = None
-
-        self._recent_solutions: RecentSolutionsManager = RecentSolutionsManager()
 
         # Disable native macOS fullscreen handling
         if sys.platform == "darwin":
@@ -278,9 +264,9 @@ class StudioMainFrame(wx.Frame):
         return self._aui_mgr
 
     @property
-    def recent_solutions(self) -> RecentSolutionsManager:
+    def recent_solutions(self):
         """Property Accessor for recent solutions menu"""
-        return self._recent_solutions
+        return self._solution_coordinator.recent_solutions
 
     def init_aui(self) -> None:
         """
@@ -509,7 +495,7 @@ class StudioMainFrame(wx.Frame):
         if not page:
             return None
 
-        return RecordingPersistence.load_from_disk(page.get_recording_file())
+        return self._recording_coordinator.load_document(page.get_recording_file())
 
     def on_refresh_codegen_generators(self, _evt):
         """
@@ -604,37 +590,16 @@ class StudioMainFrame(wx.Frame):
         self.Close()
 
     def _create_solution(self, data):
-        self._current_solution = StudioSolution(
-            data.solution_name,
-            data.solution_directory,
-            data.create_solution_dir,
-            data.base_url,
-            data.browser,
-            data.launch_browser_automatically,
-            data.browser_launch_options)
-
-        result = SolutionPersistence.save_to_disk(self._current_solution)
-        if result is not SolutionSaveStatus.OK:
-            wx.MessageBox(result.value,
-                          "Failed to save solution",
-                          wx.ICON_ERROR,
-                          self)
+        ok, error = self._solution_coordinator.create(data)
+        if not ok:
+            wx.MessageBox(error, "Failed to save solution", wx.ICON_ERROR, self)
             return
 
+        solution = self._solution_coordinator.current_solution
         self._state_controller.on_solution_loaded()
-        self._solution_explorer_panel.show_solution(self._current_solution)
-
-        self._recent_solutions.add_solution(
-            self._current_solution.get_solution_file_path())
-        self._recent_solutions.save()
-
+        self._solution_explorer_panel.show_solution(solution)
         self.rebuild_recent_solutions_menu()
-
-        self._recording_session = RecordingSession(self._current_solution)
-
-        # Update solution name in the status bar.
-        self._status_bar.set_status_bar_current_solution(
-            self._current_solution.solution_name)
+        self._status_bar.set_status_bar_current_solution(solution.solution_name)
 
     def on_open_solution_event(self, _event: wx.CommandEvent):
         """
@@ -655,19 +620,30 @@ class StudioMainFrame(wx.Frame):
 
         try:
             if dlg.ShowModal() == wx.ID_OK:
-                path = Path(dlg.GetPath())
-
-                if self._open_solution(path):
-                    self._state_controller.on_solution_loaded()
-                    self._solution_explorer_panel.show_solution(
-                        self._current_solution
-                    )
-
-                    self._recording_session = RecordingSession(
-                        self._current_solution)
-
+                ok, error = self._solution_coordinator.open(Path(dlg.GetPath()))
+                if not ok:
+                    wx.MessageBox(error, "Open Solution", wx.ICON_ERROR)
+                    return
+                self._after_solution_opened()
         finally:
             dlg.Destroy()
+
+    def _after_solution_opened(self) -> None:
+        """Update UI after the coordinator has successfully opened a solution."""
+        solution = self._solution_coordinator.current_solution
+
+        if solution.launch_browser_automatically:
+            ok, error = self._browser_coordinator.open(solution)
+            if not ok:
+                wx.MessageBox(
+                    "Browser failed to open automatically: " + error,
+                    "Browser Error",
+                    wx.ICON_ERROR)
+
+        self._state_controller.on_solution_loaded()
+        self._solution_explorer_panel.show_solution(solution)
+        wx.CallAfter(self.rebuild_recent_solutions_menu)
+        self._status_bar.set_status_bar_current_solution(solution.solution_name)
 
     def on_about_studio(self, _event):
         """
@@ -728,21 +704,15 @@ class StudioMainFrame(wx.Frame):
             # Hide inspector immediately if relevant
             self._show_inspector_panel(False)
 
-            # Detach browser reference before UI/state churn
-            browser = self._web_browser
-            self._web_browser = None
+            self._browser_coordinator.close_async()
 
-            self._current_solution = None
+            self._solution_coordinator.close()
             self._state_controller.on_solution_closed()
 
             self._solution_explorer_panel.show_no_solution()
             self._workspace_panel.clear()
             self._status_bar.set_status_bar_current_solution(None)
 
-            if browser and browser.is_alive():
-                threading.Thread(target=self._quit_browser_safely,
-                                 args=(browser,),
-                                 daemon=True).start()
         finally:
             self._closing_solution = False
 
@@ -841,36 +811,11 @@ class StudioMainFrame(wx.Frame):
 
         dialog.Destroy()
 
-    def _quit_browser_safely(self, browser):
-        """Attempt to close the browser without raising exceptions.
-
-        This method calls ``browser.quit()`` and suppresses any exceptions
-        raised during shutdown. It is intended for use in cleanup or teardown
-        logic where failures during browser termination should not interrupt
-        execution.
-
-        Args:
-            browser: The browser instance to close. Expected to implement
-                a ``quit()`` method (e.g., a Selenium WebDriver wrapper).
-
-        Returns:
-            None
-        """
-        try:
-            browser.quit()
-        except WebDriverException:
-            pass
-
     def _stop_recording_session(self):
-        ok = self._recording_session.stop()
+        ok, error = self._recording_coordinator.stop()
 
         if not ok:
-            wx.MessageBox(
-                self._recording_session.last_error or
-                "Failed to stop recording.",
-                "Recording Error",
-                wx.ICON_ERROR,
-                self)
+            wx.MessageBox(error, "Recording Error", wx.ICON_ERROR, self)
             self._state_controller.on_record_start_stop()
             return
 
@@ -880,53 +825,31 @@ class StudioMainFrame(wx.Frame):
             page.reload_from_disk()
 
         self._solution_explorer_panel.refresh_recordings(
-            self._current_solution
-        )
+            self._solution_coordinator.current_solution)
 
-        self._solution_explorer_panel.refresh_recordings(
-            self._current_solution)
-
-        self._web_browser.disable_record_mode()
+        self._browser_coordinator.browser.disable_record_mode()
         self._recording_timer.Stop()
 
     def _start_new_recording_session(self):
-        ok = self._recording_session.start(
-            self._current_solution.generate_next_recording_name()
-        )
+        ok, error = self._recording_coordinator.start()
 
         if not ok:
-            wx.MessageBox(
-                self._recording_session.last_error or
-                "Failed to start recording.",
-                "Recording Error",
-                wx.ICON_ERROR,
-                self
-            )
-
-            # Revert state change
+            wx.MessageBox(error, "Recording Error", wx.ICON_ERROR, self)
             self._state_controller.on_record_start_stop()
             return
 
-        self._web_browser.enable_record_mode()
-
-        # 100ms polling for elements
+        self._browser_coordinator.browser.enable_record_mode()
         self._recording_timer.Start(100)
 
     def _resume_existing_recording_session(self, doc):
-        ok = self._recording_session.start_existing(doc)
+        ok, error = self._recording_coordinator.start_existing(doc)
 
         if not ok:
-            wx.MessageBox(
-                self._recording_session.last_error or
-                "Failed to resume recording.",
-                "Recording Error",
-                wx.ICON_ERROR,
-                self
-            )
+            wx.MessageBox(error, "Recording Error", wx.ICON_ERROR, self)
             self._state_controller.on_record_start_stop()
             return
 
-        self._web_browser.enable_record_mode()
+        self._browser_coordinator.browser.enable_record_mode()
         self._recording_timer.Start(100)
 
     def on_record_pause_event(self, _event: wx.CommandEvent):
@@ -955,14 +878,15 @@ class StudioMainFrame(wx.Frame):
 
         If no browser is currently active, this action has no effect.
         """
-        if self._web_browser:
-            if self._web_browser.inspect_active:
-                self._web_browser.disable_inspect_mode()
+        browser = self._browser_coordinator.browser
+        if browser:
+            if browser.inspect_active:
+                browser.disable_inspect_mode()
                 self._state_controller.on_inspector_toggle(False)
                 self._show_inspector_panel(False)
 
             else:
-                self._web_browser.enable_inspect_mode()
+                browser.enable_inspect_mode()
                 self._state_controller.on_inspector_toggle(True)
                 self._show_inspector_panel(True)
 
@@ -982,25 +906,18 @@ class StudioMainFrame(wx.Frame):
         After changing the browser state, the toolbar UI is updated to
         reflect the new state.
         """
-        if not self._web_browser:
-            try:
-                self._web_browser = create_driver_from_solution(
-                    self._current_solution, self._logger)
-                self._web_browser.open_page(self._current_solution.base_url)
-            except WebDriverException as ex:
+        if not self._browser_coordinator.is_open():
+            solution = self._solution_coordinator.current_solution
+            ok, error = self._browser_coordinator.open(solution)
+            if not ok:
                 wx.MessageBox(
-                    "Browser open/close failed : " + str(ex.msg),
+                    "Browser open/close failed : " + error,
                     "Browser Error",
                     wx.ICON_ERROR)
-                if self._web_browser and self._web_browser.is_alive():
-                    self._web_browser.quit()
-
                 return
 
-        else:
-            if self._web_browser.is_alive():
-                self._web_browser.quit()
-                self._web_browser = None
+        elif self._browser_coordinator.is_alive():
+            self._browser_coordinator.close()
 
         self._update_toolbar_state()
 
@@ -1057,74 +974,15 @@ class StudioMainFrame(wx.Frame):
             .BestSize(220, -1)
             .MinSize(180, -1))
 
-    def _open_solution(self, solution_file: Path) -> bool:
-        if not solution_file.exists():
-            wx.MessageBox(
-                "Solution file does not exist.",
-                "Open Solution",
-                wx.ICON_ERROR)
-            return False
-
-        try:
-            raw_data = SolutionPersistence.load_from_disk(solution_file)
-            result = StudioSolution.from_json(raw_data)
-
-        except (OSError, json.JSONDecodeError) as e:
-            wx.MessageBox(
-                f"Failed to read solution file:\n{e}",
-                "Open Solution",
-                wx.ICON_ERROR)
-            return False
-
-        if result.solution is None:
-            wx.MessageBox(
-                solution_load_error_to_str(result.error),
-                "Open Solution",
-                wx.ICON_ERROR)
-            return False
-
-        self._current_solution = result.solution
-        self._current_solution.solution_directory = str(solution_file.resolve().parent)
-        self._current_solution.create_directory_for_solution = False
-
-        # Ensure directory structure (safe, idempotent)
-        status = self._current_solution.ensure_directory_structure()
-        if status != SolutionDirectoryCreateStatus.NONE_:
-            wx.MessageBox(
-                "Failed to prepare solution folders.",
-                "Open Solution",
-                wx.ICON_ERROR)
-            self._current_solution = None
-            return False
-
-        if self._current_solution.launch_browser_automatically:
-            self._web_browser = create_driver_from_solution(
-                self._current_solution, self._logger)
-            self._web_browser.open_page(self._current_solution.base_url)
-
-        # Update state + UI
-        self._state_controller.on_solution_loaded()
-        self._solution_explorer_panel.show_solution(self._current_solution)
-
-        # Recent solutions
-        self._recent_solutions.add_solution(solution_file)
-        self._recent_solutions.save()
-        wx.CallAfter(self.rebuild_recent_solutions_menu)
-
-        self._status_bar.set_status_bar_current_solution(
-            self._current_solution.solution_name)
-
-        return True
 
     def _open_recording_event(self, evt: wx.CommandEvent) -> None:
         metadata = evt.GetClientData()
-        if not metadata or not self._current_solution or \
-                not self._workspace_panel:
+        solution = self._solution_coordinator.current_solution
+        if not metadata or not solution or not self._workspace_panel:
             return
 
         # 1. Ask the solution for a view context
-        ctx: RecordingViewContext = self._current_solution.open_recording(
-            metadata)
+        ctx: RecordingViewContext = solution.open_recording(metadata)
 
         # 2. Tell the workspace to display it
         self._workspace_panel.open_recording(ctx)
@@ -1168,22 +1026,15 @@ class StudioMainFrame(wx.Frame):
         if not new_name:
             return
 
-        # Make a copy of the recording to update.
-        updated: RecordingMetadata = recording
-        updated.name = new_name
-
-        if not updated.update_recording_name():
-            wx.MessageBox(
-                "Failed to save recording metadata.",
-                "Rename Recording",
-                wx.ICON_ERROR,
-                self)
+        ok, error = self._recording_coordinator.rename(recording, new_name)
+        if not ok:
+            wx.MessageBox(error, "Rename Recording", wx.ICON_ERROR, self)
             return
 
-        self._workspace_panel.on_recording_renamed_by_id(recording.id,
-                                                         new_name)
-        self._solution_explorer_panel.refresh_recordings(self._current_solution)
-        self._solution_explorer_panel.refresh_test_suites(self._current_solution)
+        solution = self._solution_coordinator.current_solution
+        self._workspace_panel.on_recording_renamed_by_id(recording.id, new_name)
+        self._solution_explorer_panel.refresh_recordings(solution)
+        self._solution_explorer_panel.refresh_test_suites(solution)
 
     def _delete_recording_event(self, evt: wx.CommandEvent) -> None:
         if self._state_controller.state in (StudioState.RECORDING_RUNNING,
@@ -1207,7 +1058,7 @@ class StudioMainFrame(wx.Frame):
             return
 
         path = Path(evt.GetClientData())
-        if not path or not self._current_solution:
+        if not path or not self._solution_coordinator.current_solution:
             return
 
         filename = Path(path).name
@@ -1219,14 +1070,9 @@ class StudioMainFrame(wx.Frame):
         if rc is not wx.YES:
             return
 
-        try:
-            Path(path).unlink()
-        except OSError as e:
-            wx.MessageBox(
-                f"Failed to delete recording:\n{e}",
-                "Delete Recording",
-                wx.ICON_ERROR,
-                self)
+        ok, error = self._recording_coordinator.delete(Path(path))
+        if not ok:
+            wx.MessageBox(error, "Delete Recording", wx.ICON_ERROR, self)
             return
 
         selected = self._solution_explorer_panel.get_selected_metadata()
@@ -1235,7 +1081,8 @@ class StudioMainFrame(wx.Frame):
         if selected_id:
             self._workspace_panel.on_recording_deleted_by_id(selected_id)
 
-        self._solution_explorer_panel.refresh_recordings(self._current_solution)
+        self._solution_explorer_panel.refresh_recordings(
+            self._solution_coordinator.current_solution)
 
     def _create_new_test_suite_event(self, _evt: wx.CommandEvent) -> None:
         dlg: wx.TextEntryDialog = wx.TextEntryDialog(
@@ -1257,7 +1104,8 @@ class StudioMainFrame(wx.Frame):
             "name": new_name
         }
 
-        suites_path: Path = self._current_solution.get_test_suites_directory()
+        solution = self._solution_coordinator.current_solution
+        suites_path: Path = solution.get_test_suites_directory()
         new_filename = TestSuitePersistence.generate_next_filename()
         suite_filename = suites_path / new_filename
         doc: TestSuiteDocument = TestSuiteDocument(suite_filename, data)
@@ -1273,7 +1121,7 @@ class StudioMainFrame(wx.Frame):
                 self)
             return
 
-        self._solution_explorer_panel.refresh_test_suites(self._current_solution)
+        self._solution_explorer_panel.refresh_test_suites(solution)
 
     def _delete_test_suite_event(self, evt: wx.CommandEvent) -> None:
         if self._state_controller.state in (StudioState.RECORDING_RUNNING,
@@ -1297,7 +1145,7 @@ class StudioMainFrame(wx.Frame):
             return
 
         path = Path(evt.GetClientData())
-        if not path or not self._current_solution:
+        if not path or not self._solution_coordinator.current_solution:
             return
 
         filename = Path(path).name
@@ -1320,7 +1168,7 @@ class StudioMainFrame(wx.Frame):
             return
 
         self._solution_explorer_panel.refresh_test_suites(
-            self._current_solution)
+            self._solution_coordinator.current_solution)
 
     def _rename_test_suite_event(self, _evt: wx.CommandEvent) -> None:
         if self._state_controller.state in (StudioState.RECORDING_RUNNING,
@@ -1374,7 +1222,8 @@ class StudioMainFrame(wx.Frame):
                 self)
             return
 
-        self._solution_explorer_panel.refresh_test_suites(self._current_solution)
+        self._solution_explorer_panel.refresh_test_suites(
+            self._solution_coordinator.current_solution)
 
     def _on_remove_recording_from_suite(self, event: wx.CommandEvent) -> None:
         if self._state_controller.state in (StudioState.RECORDING_RUNNING,
@@ -1416,9 +1265,11 @@ class StudioMainFrame(wx.Frame):
         TestSuitePersistence.save_to_disk(suite)
 
         # Refresh UI via panel
-        self._solution_explorer_panel.refresh_test_suites(self._current_solution)
+        self._solution_explorer_panel.refresh_test_suites(
+            self._solution_coordinator.current_solution)
 
     def _on_solution_settings(self, _event: wx.CommandEvent) -> None:
+        solution = self._solution_coordinator.current_solution
         page_definitions = [
             PageDefinition("General", SolutionSettingsGeneralPage),
             PageDefinition("Browser Settings", SolutionSettingsBrowserSettingsPage)
@@ -1427,30 +1278,27 @@ class StudioMainFrame(wx.Frame):
         dialog = SettingsDialog(
             self,
             title="Solution Settings",
-            context=self._current_solution,
+            context=solution,
             page_definitions=page_definitions)
 
-        old_solution = copy.deepcopy(self._current_solution)
+        old_solution = copy.deepcopy(solution)
 
         dialog_status = dialog.ShowModal()
         dialog.Destroy()
 
         if dialog_status == wx.ID_OK:
-            if self._current_solution != old_solution:
-                result = SolutionPersistence.save_to_disk(self._current_solution)
-                if result is not SolutionSaveStatus.OK:
-                    wx.MessageBox(result.value,
-                                  "Failed to save solution",
-                                  wx.ICON_ERROR,
-                                  self)
+            if solution != old_solution:
+                ok, error = self._solution_coordinator.save_current()
+                if not ok:
+                    wx.MessageBox(error, "Failed to save solution",
+                                  wx.ICON_ERROR, self)
                     return
 
                 if old_solution.browser_launch_options != \
-                        self._current_solution.browser_launch_options or \
-                        old_solution.base_url != self._current_solution.base_url:
-                    if self._web_browser and self._web_browser.is_alive():
-                        self._web_browser.quit()
-                        self._web_browser = None
+                        solution.browser_launch_options or \
+                        old_solution.base_url != solution.base_url:
+                    if self._browser_coordinator.is_alive():
+                        self._browser_coordinator.close()
                         self.on_web_browser_event(None)
 
     def rebuild_recent_solutions_menu(self) -> None:
@@ -1465,7 +1313,7 @@ class StudioMainFrame(wx.Frame):
 
         menu_id = self.RECENT_SOLUTION_BASE_ID
 
-        for path in self._recent_solutions.get_solutions():
+        for path in self._solution_coordinator.recent_solutions.get_solutions():
             self.recent_solutions_menu.Append(menu_id, str(path))
 
             self.Bind(
@@ -1486,14 +1334,15 @@ class StudioMainFrame(wx.Frame):
         Handle selection of an entry from the "Recent Solutions" menu.
 
         The menu item ID is mapped back to an index in the recent solutions list.
-        The selected solution is opened, and a new recording session is created
-        for the newly opened solution.
+        The selected solution is opened and all related UI state is updated.
         """
         index: int = evt.GetId() - self.RECENT_SOLUTION_BASE_ID
-        self._open_solution(self._recent_solutions.get_solutions()[index])
-
-        self._recording_session = RecordingSession(
-            self._current_solution)
+        path = self._solution_coordinator.recent_solutions.get_solutions()[index]
+        ok, error = self._solution_coordinator.open(path)
+        if not ok:
+            wx.MessageBox(error, "Open Solution", wx.ICON_ERROR)
+            return
+        self._after_solution_opened()
 
     def _update_toolbar_state(self) -> None:
         """
@@ -1516,8 +1365,7 @@ class StudioMainFrame(wx.Frame):
             pass
 
         elif self._current_state == StudioState.SOLUTION_LOADED:
-            browser_is_alive = self._web_browser is not None and \
-                self._web_browser.is_alive()
+            browser_is_alive = self._browser_coordinator.is_alive()
 
             page = self._workspace_panel.get_active_viewer()
             if not page:
@@ -1615,7 +1463,7 @@ class StudioMainFrame(wx.Frame):
         as having been closed by the user and triggers the appropriate cleanup and
         UI updates.
         """
-        if self._web_browser and not self._web_browser.is_alive():
+        if self._browser_coordinator.is_open() and not self._browser_coordinator.is_alive():
             self._on_browser_closed_by_user()
 
     def _on_browser_closed_by_user(self):
@@ -1625,18 +1473,14 @@ class StudioMainFrame(wx.Frame):
         Clears the internal browser reference, notifies the user, and updates the
         UI to reflect that no browser is currently running.
         """
-        if self._web_browser is None:
+        if not self._browser_coordinator.is_open():
             return  # Already closed/handled
 
-        self._web_browser = None
+        self._browser_coordinator.detach()
 
-        was_recording: bool = (
-                self._recording_session and
-                self._recording_session.is_recording())
-
-        if was_recording:
-            self._recording_session.stop()
-            # force state back
+        session = self._solution_coordinator.recording_session
+        if session and session.is_recording():
+            session.stop()
             self._state_controller.on_record_start_stop()
 
         # If 'inspecting' and the browser is closed then make sure we
@@ -1655,12 +1499,10 @@ class StudioMainFrame(wx.Frame):
 
         This method is safe to call multiple times.
         """
-        if self._web_browser is None:
+        if not self._browser_coordinator.is_open():
             return  # Already handled
 
         self._logger.warning("Browser session lost. Reason: %s", reason)
-
-        # Reuse your existing shutdown logic
         self._on_browser_closed_by_user()
 
     def _manage_browser_state(self):
@@ -1671,58 +1513,28 @@ class StudioMainFrame(wx.Frame):
         the status bar indicator, and updates the toolbar browser toggle button to
         reflect the current state.
         """
-        if not self._web_browser:
-            state = False
-        else:
-            state = self._web_browser.is_alive()
-
+        state = self._browser_coordinator.is_alive()
         self._status_bar.set_status_bar_browser_running(state)
 
         MainToolbar.manage_browser_status(self._toolbar, state)
 
     def _on_recording_tick(self, _evt):
-        if not self._recording_session or not self._recording_session.is_recording():
+        session = self._recording_coordinator.session
+        if not session or not session.is_recording():
             return
 
-        if not self._web_browser or not self._web_browser.is_alive():
+        if not self._browser_coordinator.is_alive():
             self._handle_browser_died()
             return
 
         try:
-            events = self._web_browser.pop_recorded_events()
+            events = self._browser_coordinator.browser.pop_recorded_events()
         except (InvalidSessionIdException, WebDriverException) as e:
             self._logger.warning("Browser connection lost during recording: %s", e)
             self._handle_browser_died()
             return
 
-        for ev in events:
-            # remove it from payload, it's served its purpose after this.
-            kind = ev.pop("__kind", None)
-
-            # We are already storing a timestamp
-            ev.pop("time", None)
-
-            if kind == "click":
-                self._recording_session.append_event(
-                    RecordingEventType.DOM_CLICK,
-                    payload=ev)
-
-            elif kind == "type":
-                self._recording_session.append_event(
-                    RecordingEventType.DOM_TYPE,
-                    payload=ev)
-
-            elif kind == "check":
-                self._recording_session.append_event(
-                    RecordingEventType.DOM_CHECK,
-                    payload=ev)
-
-            elif kind == "select":
-                self._recording_session.append_event(
-                    RecordingEventType.DOM_SELECT,
-                    payload=ev)
-
-            self._logger.debug("Recorded event: %s", ev)
+        self._recording_coordinator.flush_browser_events(events)
 
     def _on_close_app(self, event):
         result = wx.MessageBox(
@@ -1736,18 +1548,8 @@ class StudioMainFrame(wx.Frame):
             event.Veto()
             return
 
-        # Stop recording cleanly
-        if self._recording_session and self._recording_session.is_recording():
-            self._recording_session.stop()
-
-        # Close browser if open
-        if self._web_browser:
-            try:
-                self._web_browser.quit()
-
-            except WebDriverException:
-                pass
-            self._web_browser = None
+        self._solution_coordinator.close()
+        self._browser_coordinator.close()
 
         event.Skip()  # allow window to close
 
@@ -1755,14 +1557,15 @@ class StudioMainFrame(wx.Frame):
         if self._state_controller.state != StudioState.INSPECTING:
             return
 
-        if not self._web_browser:
+        browser = self._browser_coordinator.browser
+        if not browser:
             return
 
-        el = self._web_browser.poll_inspected_element()
+        el = browser.poll_inspected_element()
         if not el:
             return
 
-        info = self._web_browser.describe_element(el)
+        info = browser.describe_element(el)
         self._inspector_panel.append_element(info)
 
     def _create_inspector_panel(self):
@@ -1793,7 +1596,7 @@ class StudioMainFrame(wx.Frame):
 
     def _on_workspace_active_changed(self, _evt):
 
-        if self._closing_solution or self._current_solution is None:
+        if self._closing_solution or self._solution_coordinator.current_solution is None:
             return
 
         pane = self._aui_mgr.GetPane("StepsToolbar")
@@ -1843,10 +1646,10 @@ class StudioMainFrame(wx.Frame):
             recording = load_recording_from_context(ctx)
 
             self._playback_session = RecordingPlaybackSession(
-                self._web_browser,
+                self._browser_coordinator.browser,
                 recording,
                 self._logger,
-                self._current_solution)
+                self._solution_coordinator.current_solution)
             self._playback_session.callback_events.on_step_started = \
                 self._on_playback_step_started
             self._playback_session.callback_events.on_step_passed = \
@@ -1937,17 +1740,18 @@ class StudioMainFrame(wx.Frame):
         recording_ids = data.get("recordings")
         recordings: list = []
 
+        solution = self._solution_coordinator.current_solution
         for rec_id in recording_ids:
-            metadata = self._current_solution.get_recording_by_id(rec_id)
+            metadata = solution.get_recording_by_id(rec_id)
             recording = load_recording(metadata)
             recordings.append(recording)
 
         test_suite: TestSuite = TestSuite(suite_name, recordings)
 
         self._suite_playback_session = TestSuitePlaybackSession(
-            self._web_browser,
+            self._browser_coordinator.browser,
             test_suite,
-            self._current_solution,
+            solution,
             self._logger)
 
         self._suite_playback_session.callback_events.on_step_started = \
@@ -2049,7 +1853,8 @@ class StudioMainFrame(wx.Frame):
         TestSuitePersistence.save_to_disk(suite)
 
         # Refresh UI via panel
-        self._solution_explorer_panel.refresh_test_suites(self._current_solution)
+        self._solution_explorer_panel.refresh_test_suites(
+            self._solution_coordinator.current_solution)
 
     def menu_show_solution_explorer(self, _event):
         """Toggle visibility of the Solution Explorer pane.
